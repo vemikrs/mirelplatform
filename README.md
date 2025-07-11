@@ -2,6 +2,11 @@
 
 [![Build Status](https://dev.azure.com/vemicho/mir/_apis/build/status/vemic.promarker?branchName=master)](https://dev.azure.com/vemicho/mir/_build/latest?definitionId=2&branchName=azure-pipelines)
 
+開発プロジェクトのテンプレートや機能スケルトンの自動生成アプリケーションです。
+定型的なディレクトリ構成やソースコード、初期データを独自技術で自動生成します。
+プロジェクトフォルダや機能スケルトンを簡単に自動生成できるため、開発の高速化や品質の平準化に貢献します。
+テンプレートには [FreeMarker](https://freemarker.apache.org/) を使用しており、豊富なドキュメントを活用できます。
+
 **ProMarker**は、独自のmirelplatformフレームワーク上で構築された包括的なコード生成・管理プラットフォームです。SpringBootをベースとした拡張性に優れたアーキテクチャにより、柔軟で強力な開発支援機能を提供します。
 
 ## 🚀 主な機能
