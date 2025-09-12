@@ -62,7 +62,6 @@ dependencies {
     runtimeOnly 'org.springframework.boot:spring-boot-starter-tomcat'
     runtimeOnly 'org.hibernate.validator:hibernate-validator:6.2.3.Final'
     runtimeOnly 'org.glassfish:javax.el:3.0.1-b11'
-    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.batch:spring-batch-test'
@@ -72,8 +71,12 @@ dependencies {
 }
 
 jar {
-    archiveBaseName = 'mirelplatfrorm'
+    archiveBaseName = 'mirelplatform'
     archiveVersion = '1.0.0'
+}
+
+springBoot {
+    mainClass = 'jp.vemi.mirel.MiplaApplication'
 }
 
 tasks.withType(JavaCompile) {

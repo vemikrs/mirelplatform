@@ -3,20 +3,20 @@ server:
     context-path: /mipla2
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/mipla?characterEncoding=UTF-8&serverTimezone=Asia/Tokyo
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: mipla
-    password: mipla
+    url: ${DATABASE_URL:}
+    driver-class-name: ${DATABASE_DRIVER:}
+    username: ${DATABASE_USER:}
+    password: ${DATABASE_PASS:}
   session:
     jdbc:
       initialize-schema: always
-      schema: classpath:org/springframework/session/jdbc/schema-mysql.sql
+      schema: ${DATABASE_SESSION_SCHEMA:}
       table-name: SPRING_SESSION
     sql:
       init:
         mode: always
   jpa:
-    database-platform: org.hibernate.dialect.MySQL8Dialect
+    database-platform: ${DATABASE_PLATFORM:}
     hibernate:
       ddl-auto: update
   spring-boot:
@@ -32,4 +32,7 @@ mipla2:
     api:
       enabled: false
   config:
-    storage-dir: "C:\\data\\m2\\storage"
+    storage-dir: ${MIREL_STORAGE_DIR:}
+
+mirel:
+  storage-dir: ${MIREL_STORAGE_DIR:}
