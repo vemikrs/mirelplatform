@@ -2,8 +2,8 @@
   "name": "Mirel Platform Dev",
   "image": "mcr.microsoft.com/devcontainers/java:21",
   // Phase 3: Frontend + Backend simultaneous auto-startup
-  // Backend: Spring Boot (port 8080) + H2 dev database
-  // Frontend: Nuxt.js (port 8081) + Node.js LTS environment
+  // Backend: Spring Boot (port 3000) + H2 dev database
+  // Frontend: Nuxt.js (port 80) + Node.js LTS environment
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
@@ -51,9 +51,9 @@
     }
   },
   "remoteUser": "vscode",
-  "forwardPorts": [8080, 8081],
+  "forwardPorts": [3000, 80],
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
-  "postStartCommand": "bash -c 'export PATH=\"/usr/lib/git-core:$PATH\" && nohup ./gradlew :backend:bootRun > backend.log 2>&1 & cd frontend && npm install && nohup npm run dev > ../frontend.log 2>&1 &'",
+  "postStartCommand": "bash -c 'export PATH=\"/usr/lib/git-core:$PATH\" && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 nohup ./gradlew :backend:bootRun > backend.log 2>&1 & cd frontend && npm install && PORT=80 nohup npm run dev > ../frontend.log 2>&1 &'",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],

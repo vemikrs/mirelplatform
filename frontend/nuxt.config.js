@@ -18,7 +18,7 @@ export default {
 
   /** server settings */
   server: {
-    port: 8081,
+    port: process.env.PORT || 80,
     host: '0.0.0.0'
   },
 
@@ -88,13 +88,13 @@ export default {
   proxy: {
     '/mste/initialize': 'http://zipcloud.ibsnet.co.jp/api/search?zipcode=7830060&limit=1',
     '/mapi/': {
-      target: 'http://localhost:8080/mipla2/',
+      target: 'http://localhost:3000/mipla2/',
       pathRewrite: {
         '^/mapi/': '/'
       }
     },
     '/api/mste': {
-      target: 'http://localhost:8080/mipla2/apps/mste/api/',
+      target: 'http://localhost:3000/mipla2/apps/mste/api/',
       pathRewrite: {
         '^/api/mste': '/'
       }
