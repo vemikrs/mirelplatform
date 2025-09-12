@@ -1,13 +1,17 @@
 {
   "name": "Mirel Platform Dev",
   "image": "mcr.microsoft.com/devcontainers/java:21",
-  // Phase 3: Codespaces auto-startup configuration
-  // Current: Backend only (H2 dev environment)
-  // Future: Backend + Frontend simultaneous startup
+  // Phase 3: Frontend + Backend simultaneous auto-startup
+  // Backend: Spring Boot (port 8080) + H2 dev database
+  // Frontend: Nuxt.js (port 8081) + Node.js LTS environment
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
       "jdkDistro": "tem"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGlobalVersion": "lts",
+      "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
@@ -39,14 +43,17 @@
         "vscjava.vscode-gradle",
         "redhat.vscode-xml",
         "gabrielbb.vscode-lombok",
-        "oderwat.indent-rainbow"
+        "oderwat.indent-rainbow",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next"
       ]
     }
   },
   "remoteUser": "vscode",
-  "forwardPorts": [8080],
+  "forwardPorts": [8080, 8081],
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
-  "postStartCommand": "nohup ./gradlew :backend:bootRun > backend.log 2>&1 &",
+  "postStartCommand": "bash -c 'export PATH=\"/usr/lib/git-core:$PATH\" && nohup ./gradlew :backend:bootRun > backend.log 2>&1 & cd frontend && npm install && nohup npm run dev > ../frontend.log 2>&1 &'",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],
