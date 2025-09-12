@@ -58,10 +58,10 @@
               </b-row>
               <b-row class="my-1">
                 <b-col sm="3">
-                  <label v-if="stencilConfig.description !== null" for="head_stencil_cd" class="pm_label"> ステンシルについて</label>
+                  <label v-if="stencilConfig && stencilConfig.description !== null" for="head_stencil_cd" class="pm_label"> ステンシルについて</label>
                 </b-col>
                 <b-col sm="9" style="text-align:left">
-                  <span v-if="stencilConfig.description !== null">
+                  <span v-if="stencilConfig && stencilConfig.description !== null">
                     {{ stencilConfig.description }}
                   </span>
                 </b-col>
@@ -85,7 +85,7 @@
               <b-row class="my-1">
                 <b-col sm="3" />
                 <b-col sm="9" style="text-align:right">
-                  <span v-if="stencilConfig.lastUpdateUser !== null">
+                  <span v-if="stencilConfig && stencilConfig.lastUpdateUser !== null">
                     Stencil Updated by {{ stencilConfig.lastUpdateUser }}
                   </span>
                   <br>
@@ -190,7 +190,14 @@ export default {
       cateogryNoSelected: true,
       eparams: [],
       fileNames: {},
-      stencilConfig: null,
+      stencilConfig: {
+        id: null,
+        name: null,
+        serial: null,
+        lastUpdate: null,
+        lastUpdateUser: null,
+        description: null
+      },
       fltStrStencilCategory: {
         'selected': '',
         'items': []
@@ -220,24 +227,28 @@ export default {
         '/mapi/apps/mste/api/suggest',
         { content: this.createRequest(this) }
       ).then((resp) => {
-        if (!resp.data.errs === false &&
-          resp.data.errs.length > 0) {
+        if (resp.data.errs && resp.data.errs.length > 0) {
           this.bvMsgBoxErr(resp.data.errs)
           this.processing = false
           return false
         }
 
-        if (!resp.data.model.params === false) {
+        if (resp.data.model.params && resp.data.model.params.childs) {
           Object.assign(this.eparams, resp.data.model.params.childs)
         }
-        if (!resp.data.model.stencil === false &&
-          !resp.data.model.stencil.config === false) {
+        if (resp.data.model.stencil && resp.data.model.stencil.config) {
           this.stencilConfig = resp.data.model.stencil.config
         }
 
-        this.fltStrStencilCategory = resp.data.model.fltStrStencilCategory
-        this.fltStrStencilCd = resp.data.model.fltStrStencilCd
-        this.fltStrSerialNo = resp.data.model.fltStrSerialNo
+        if (resp.data.model.fltStrStencilCategory) {
+          this.fltStrStencilCategory = resp.data.model.fltStrStencilCategory
+        }
+        if (resp.data.model.fltStrStencilCd) {
+          this.fltStrStencilCd = resp.data.model.fltStrStencilCd
+        }
+        if (resp.data.model.fltStrSerialNo) {
+          this.fltStrSerialNo = resp.data.model.fltStrSerialNo
+        }
 
         this.processing = false
         return true
@@ -325,14 +336,13 @@ export default {
           return
         }
 
-        if (!resp.data.errs === false &&
-          resp.data.errs.length > 0) {
+        if (resp.data.errs && resp.data.errs.length > 0) {
           this.bvMsgBoxErr(resp.data.errs)
           this.processing = false
           return
         }
 
-        if (!resp.data.model.files === false) {
+        if (resp.data.model.files) {
           const paramFiles = []
           for (const key in resp.data.model.files) {
             paramFiles[key] = {
