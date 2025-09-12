@@ -1,4 +1,4 @@
-# application-dev.yml
+# application-dev.yml - Development Environment Configuration
 spring:
   datasource:
     url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=LEGACY
@@ -16,7 +16,22 @@ spring:
       hibernate:
         hbm2ddl:
           halt_on_error: false
-    show-sql: false
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    jp.vemi.mirel: DEBUG
+    jp.vemi.framework: DEBUG
+    jp.vemi.ste: DEBUG
 
 mirel:
   storage-dir: ./data/storage
+  stencil:
+    layers:
+      user: ${mirel.storage-dir}/user
+      standard: ${mirel.storage-dir}/standard  
+      samples: classpath:/stencil-samples
+    auto-deploy-samples: true

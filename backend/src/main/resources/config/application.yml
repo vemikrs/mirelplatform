@@ -3,6 +3,8 @@ server:
   servlet:
     context-path: /mipla2
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
     url: ${DATABASE_URL:}
     driver-class-name: ${DATABASE_DRIVER:}
@@ -36,4 +38,5 @@ mipla2:
     storage-dir: ${MIREL_STORAGE_DIR:}
 
 mirel:
-  storage-dir: ${MIREL_STORAGE_DIR:}
+  storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
