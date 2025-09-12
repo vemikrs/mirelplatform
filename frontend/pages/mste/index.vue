@@ -233,20 +233,20 @@ export default {
           return false
         }
 
-        if (resp.data.model.params && resp.data.model.params.childs) {
+        if (resp.data.model && resp.data.model.params && resp.data.model.params.childs) {
           Object.assign(this.eparams, resp.data.model.params.childs)
         }
-        if (resp.data.model.stencil && resp.data.model.stencil.config) {
+        if (resp.data.model && resp.data.model.stencil && resp.data.model.stencil.config) {
           this.stencilConfig = resp.data.model.stencil.config
         }
 
-        if (resp.data.model.fltStrStencilCategory) {
+        if (resp.data.model && resp.data.model.fltStrStencilCategory) {
           this.fltStrStencilCategory = resp.data.model.fltStrStencilCategory
         }
-        if (resp.data.model.fltStrStencilCd) {
+        if (resp.data.model && resp.data.model.fltStrStencilCd) {
           this.fltStrStencilCd = resp.data.model.fltStrStencilCd
         }
-        if (resp.data.model.fltStrSerialNo) {
+        if (resp.data.model && resp.data.model.fltStrSerialNo) {
           this.fltStrSerialNo = resp.data.model.fltStrSerialNo
         }
 
@@ -342,7 +342,7 @@ export default {
           return
         }
 
-        if (resp.data.model.files) {
+        if (resp.data.model && resp.data.model.files) {
           const paramFiles = []
           for (const key in resp.data.model.files) {
             paramFiles[key] = {

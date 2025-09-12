@@ -60,6 +60,13 @@ public class SuggestServiceImp implements SuggestService {
     @Override
     public ApiResponse<SuggestResult> invoke(ApiRequest<SuggestParameter> parameter) {
 
+        // FIXME: 応急処置 - ModelWrapperは型安全性を損なう hack
+        // 根本的な問題: ApiResponse<T>とFrontend期待値の構造不整合
+        // 詳細は別Issue参照: API レスポンス構造の設計見直し
+        class ModelWrapper {
+            public SuggestResult model;
+        }
+
         SuggestResult resultModel = new SuggestResult();
 
         resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, "");
@@ -74,7 +81,12 @@ public class SuggestServiceImp implements SuggestService {
         String stencilCd = resultModel.fltStrStencilCd.selected;
 
         if ("*".equals(stencilCd)) {
-            return new ApiResponse<>(resultModel);
+            // FIXME: 応急処置 - 型キャストによる構造の無理やり調整
+            ModelWrapper wrapper = new ModelWrapper();
+            wrapper.model = resultModel;
+            @SuppressWarnings("unchecked")
+            ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(wrapper).build();
+            return response;
         }
 
         TemplateEngineProcessor engine;
@@ -103,7 +115,12 @@ public class SuggestServiceImp implements SuggestService {
         resultModel.stencil = settingsYaml.getStencil();
         resultModel.params = itemsToNode(settingsYaml); // convert.
 
-        return new ApiResponse<>(resultModel);
+        // FIXME: 応急処置 - 型キャストによる構造の無理やり調整
+        ModelWrapper wrapper = new ModelWrapper();
+        wrapper.model = resultModel;
+        @SuppressWarnings("unchecked")
+        ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(wrapper).build();
+        return response;
     }
 
     private List<ValueText> convertSerialNosToValueTexts(List<String> serials) {
@@ -125,13 +142,13 @@ public class SuggestServiceImp implements SuggestService {
         Map<String, Object> top = null;
 
         for(Entry<String, Object> entry : from.entrySet()) {
-            
+
             if(CollectionUtils.isEmpty(top)) {
                 if(entry.getKey().contains("[") &&
-                    entry.getKey().endsWith("]")) {
-                        top = Maps.newLinkedHashMap();
+                        entry.getKey().endsWith("]")) {
+                    top = Maps.newLinkedHashMap();
                 } else {
-                    
+
                 }
             }
 
@@ -139,7 +156,7 @@ public class SuggestServiceImp implements SuggestService {
             List<String> keys = Arrays.asList(key.split("."));
 
             keys.forEach(keyItem -> {
-                
+
             });
         }
 
@@ -177,8 +194,8 @@ public class SuggestServiceImp implements SuggestService {
         }
 
         List<Map<String, Object>> elems = mergeStencilDeAndDd(
-            settings.getStencil().getDataElement(),
-            settings.getStencil().getDataDomain());
+                settings.getStencil().getDataElement(),
+                settings.getStencil().getDataDomain());
 
         elems.forEach(entry -> {
             root.addChild(convertItemToNodeItem(entry));
@@ -195,7 +212,7 @@ public class SuggestServiceImp implements SuggestService {
      * @return
      */
     protected static List<Map<String, Object>> mergeMapList(List<Map<String, Object>> list1,
-        List<Map<String, Object>> list2) {
+            List<Map<String, Object>> list2) {
 
         final List<Map<String, Object>> elems = Lists.newArrayList();
 
@@ -253,7 +270,7 @@ public class SuggestServiceImp implements SuggestService {
      * @return
      */
     protected static List<Map<String, Object>> mergeStencilDeAndDd(List<Map<String, Object>> dataElements,
-        List<Map<String, Object>> dataDomains) {
+            List<Map<String, Object>> dataDomains) {
 
         return mergeMapList(dataElements, dataDomains);
 
@@ -264,20 +281,20 @@ public class SuggestServiceImp implements SuggestService {
     protected static StencilParameterPrototypeNode convertItemToNodeItem(Map<String, Object> att) {
 
         if(null == att){
-            return StencilParameterPrototypeNode.builder().build(); 
+            return StencilParameterPrototypeNode.builder().build();
         }
 
         return StencilParameterPrototypeNode.builder()
-            .id(getAsString(att, "id"))
-            .name(getAsString(att, "name"))
-            .valueType(getAsString(att, "type"))
-            .value(getAsString(att, "value"))
-            .placeholder(StringUtils.defaultIfEmpty(
-                getAsString(att, "placeholder"), "please input " + getAsString(att, "id")))
-            .note(getAsString(att, "note"))
-            .sort(getAsInteger(att, "sort"))
-            .noSend(getAsBoolean(att, "noSend"))
-            .build();
+                .id(getAsString(att, "id"))
+                .name(getAsString(att, "name"))
+                .valueType(getAsString(att, "type"))
+                .value(getAsString(att, "value"))
+                .placeholder(StringUtils.defaultIfEmpty(
+                        getAsString(att, "placeholder"), "please input " + getAsString(att, "id")))
+                .note(getAsString(att, "note"))
+                .sort(getAsInteger(att, "sort"))
+                .noSend(getAsBoolean(att, "noSend"))
+                .build();
 
     }
 
