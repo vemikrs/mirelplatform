@@ -21,7 +21,8 @@
   },
   "containerEnv": {
     "GRADLE_USER_HOME": "/home/vscode/.gradle",
-    "SPRING_PROFILES_ACTIVE": "dev"
+    "SPRING_PROFILES_ACTIVE": "dev",
+    "HOST": "0.0.0.0"
   },
   "customizations": {
     "vscode": {
@@ -52,8 +53,18 @@
   },
   "remoteUser": "vscode",
   "forwardPorts": [3000, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Frontend App",
+      "onAutoForward": "openPreview"
+    }
+  },
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
-  "postStartCommand": "bash -c 'mkdir -p logs && export PATH=\"/usr/lib/git-core:$PATH\" && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 nohup ./gradlew :backend:bootRun > logs/backend.log 2>&1 & cd frontend && npm install && PORT=8080 nohup npm run dev > ../logs/frontend.log 2>&1 &'",
+  "postStartCommand": "bash -c 'mkdir -p logs && export PATH=\"/usr/lib/git-core:$PATH\" && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 nohup ./gradlew :backend:bootRun > logs/backend.log 2>&1 & cd frontend && npm install && HOST=0.0.0.0 PORT=8080 nohup npm run dev > ../logs/frontend.log 2>&1 &'",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],
