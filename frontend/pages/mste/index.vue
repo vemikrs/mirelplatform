@@ -366,12 +366,16 @@ export default {
         serialNo: body.fltStrSerialNo.selected
       }
 
-      const assigned = Object.assign(body.eparams)
-        .filter((item) => {
-          return !item.noSend
-        })
-      for (const key in assigned) {
-        pitems[assigned[key].id] = assigned[key].value
+      if (body.eparams && Array.isArray(body.eparams)) {
+        const assigned = Object.assign([], body.eparams)
+          .filter((item) => {
+            return item && !item.noSend
+          })
+        for (const key in assigned) {
+          if (assigned[key] && assigned[key].id) {
+            pitems[assigned[key].id] = assigned[key].value
+          }
+        }
       }
       return pitems
     },
@@ -480,7 +484,7 @@ export default {
     },
 
     async jsonValueToParam (psvBody) {
-      await this.clearAll
+      await this.clearAll()
       const psvBodyObj = JSON.parse(psvBody)
 
       // category selected
@@ -501,19 +505,26 @@ export default {
         return
       }
 
-      const eparams = Object.assign(this.eparams)
+      const eparams = this.eparams ? Object.assign([], this.eparams) : []
       this.eparams = []
-      for (const key in psvBodyObj.dataElements) {
-        const id = psvBodyObj.dataElements[key].id
-        const value = psvBodyObj.dataElements[key].value
-        this.setEparamById(eparams, id, value)
+      if (psvBodyObj.dataElements && Array.isArray(psvBodyObj.dataElements)) {
+        for (const key in psvBodyObj.dataElements) {
+          if (psvBodyObj.dataElements[key]) {
+            const id = psvBodyObj.dataElements[key].id
+            const value = psvBodyObj.dataElements[key].value
+            this.setEparamById(eparams, id, value)
+          }
+        }
       }
       Object.assign(this.eparams, eparams)
     },
 
     setEparamById (eparams, id, value) {
+      if (!eparams || !Array.isArray(eparams)) {
+        return
+      }
       for (const key in eparams) {
-        if (id === eparams[key].id) {
+        if (eparams[key] && id === eparams[key].id) {
           eparams[key].value = value
         }
       }
@@ -528,12 +539,16 @@ export default {
       }
 
       const dataElements = []
-      for (const key in eparams) {
-        const item = {
-          id: eparams[key].id,
-          value: eparams[key].value
+      if (eparams && Array.isArray(eparams)) {
+        for (const key in eparams) {
+          if (eparams[key] && eparams[key].id) {
+            const item = {
+              id: eparams[key].id,
+              value: eparams[key].value
+            }
+            dataElements.push(item)
+          }
         }
-        dataElements.push(item)
       }
       return {
         stencilCategory: this.fltStrStencilCategory.selected,
@@ -570,14 +585,18 @@ export default {
     },
     fixFileId (data) {
       let fileIds = ''
-      for (const i in data.files) {
-        this.fileNames[data.files[i].fileId] = { fileName: data.files[i].name }
-        fileIds += data.files[i].fileId
-        fileIds += ','
+      if (data.files && Array.isArray(data.files)) {
+        for (const i in data.files) {
+          if (data.files[i] && data.files[i].fileId) {
+            this.fileNames[data.files[i].fileId] = { fileName: data.files[i].name }
+            fileIds += data.files[i].fileId
+            fileIds += ','
+          }
+        }
       }
       fileIds = fileIds.slice(0, -1)
 
-      const eparams = Object.assign(this.eparams)
+      const eparams = this.eparams ? Object.assign([], this.eparams) : []
       this.setEparamById(eparams, data.uploadingItemId, fileIds)
       Object.assign(this.eparams, eparams)
       this.eparams.splice()
