@@ -47,18 +47,18 @@ check_service "Frontend (Nuxt.js)" "8080" "npm.*dev"
 
 # ログファイル確認
 echo "📄 ログファイル状況:"
-if [ -f "backend.log" ]; then
-    echo "✅ backend.log: $(wc -l < backend.log) 行"
-    echo "   最新: $(tail -n 1 backend.log 2>/dev/null | cut -c1-80)..."
+if [ -f "logs/backend.log" ]; then
+    echo "✅ logs/backend.log: $(wc -l < logs/backend.log) 行"
+    echo "   最新: $(tail -n 1 logs/backend.log 2>/dev/null | cut -c1-80)..."
 else
-    echo "❌ backend.log: 見つかりません"
+    echo "❌ logs/backend.log: 見つかりません"
 fi
 
-if [ -f "frontend.log" ]; then
-    echo "✅ frontend.log: $(wc -l < frontend.log) 行"
-    echo "   最新: $(tail -n 1 frontend.log 2>/dev/null | cut -c1-80)..."
+if [ -f "logs/frontend.log" ]; then
+    echo "✅ logs/frontend.log: $(wc -l < logs/frontend.log) 行"
+    echo "   最新: $(tail -n 1 logs/frontend.log 2>/dev/null | cut -c1-80)..."
 else
-    echo "❌ frontend.log: 見つかりません"
+    echo "❌ logs/frontend.log: 見つかりません"
 fi
 
 echo ""
@@ -72,6 +72,6 @@ echo ""
 
 # 再起動コマンド表示
 echo "🔧 手動起動コマンド:"
-echo "   Backend:  SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun"
-echo "   Frontend: cd frontend && PORT=8080 npm run dev"
+echo "   Backend:  SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > logs/backend.log 2>&1 &"
+echo "   Frontend: cd frontend && PORT=8080 npm run dev > ../logs/frontend.log 2>&1 &"
 echo "=========================================="
