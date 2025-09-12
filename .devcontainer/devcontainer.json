@@ -1,6 +1,9 @@
 {
   "name": "Mirel Platform Dev",
   "image": "mcr.microsoft.com/devcontainers/java:21",
+  // Phase 3: Codespaces auto-startup configuration
+  // Current: Backend only (H2 dev environment)
+  // Future: Backend + Frontend simultaneous startup
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
@@ -13,7 +16,8 @@
     }
   },
   "containerEnv": {
-    "GRADLE_USER_HOME": "/home/vscode/.gradle"
+    "GRADLE_USER_HOME": "/home/vscode/.gradle",
+    "SPRING_PROFILES_ACTIVE": "dev"
   },
   "customizations": {
     "vscode": {
@@ -42,6 +46,7 @@
   "remoteUser": "vscode",
   "forwardPorts": [8080],
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
+  "postStartCommand": "nohup ./gradlew :backend:bootRun > backend.log 2>&1 &",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],
