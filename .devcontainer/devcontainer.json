@@ -10,7 +10,7 @@
       "jdkDistro": "tem"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "nodeGlobalVersion": "16",
+      "version": "16",
       "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
