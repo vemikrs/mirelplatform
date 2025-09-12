@@ -87,7 +87,8 @@ public abstract class SteContext extends LinkedHashMap<String, Object> {
         }
 
         public String d2bs() {
-            return StringUtils.defaultIfEmpty(content, "").replaceAll("\\.", "\\\\");
+            // Convert dots to OS-appropriate path separators
+            return StringUtils.defaultIfEmpty(content, "").replace(".", java.io.File.separator);
         }
 
         public String replaceDot2Bs() {

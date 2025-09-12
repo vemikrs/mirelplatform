@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -193,9 +195,11 @@ public class FileUtil {
 
         String fileName;
         if (StringUtils.isEmpty(defaultFileName)) {
-            fileName = dest.getAbsolutePath() + "\\" + src.getName() + ".zip";
+            Path zipPath = dest.toPath().resolve(src.getName() + ".zip");
+            fileName = zipPath.toString();
         } else {
-            fileName = dest.getAbsolutePath() + "\\" + defaultFileName;
+            Path zipPath = dest.toPath().resolve(defaultFileName);
+            fileName = zipPath.toString();
         }
 
         byte[] buf = new byte[BUF_SIZE_ZIP];

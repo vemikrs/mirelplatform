@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import jakarta.servlet.ServletContext;
 
@@ -34,9 +36,11 @@ public class SourceResourceUtil {
         String pkg = clazz.getName().substring(0, lastPos);
         ;
 
-        String ret = DIR_CLASSES + (pkg + "\\").replaceAll("\\.", "\\\\")
-                + fileName;
-        return ret;
+        // Convert package dots to path separators using OS-independent Path
+        String packagePath = pkg.replace('.', File.separatorChar);
+        Path classesPath = Paths.get(DIR_CLASSES);
+        Path fullPath = classesPath.resolve(packagePath).resolve(fileName);
+        return fullPath.toString();
     }
 
     public static String readFileAsOneLine(String fileName, Class<?> clazz) {
@@ -98,10 +102,8 @@ public class SourceResourceUtil {
 
     public static synchronized void setDirClasses(ServletContext context) {
         String defaultPath = context.getRealPath("/WEB-INF/classes/");
-        if (!defaultPath.endsWith("\\"))
-            defaultPath = defaultPath + "\\";
-        if (defaultPath != null)
-            DIR_CLASSES = defaultPath;
+        Path normalizedPath = Paths.get(defaultPath).normalize();
+        DIR_CLASSES = normalizedPath.toString();
         return;
     }
 

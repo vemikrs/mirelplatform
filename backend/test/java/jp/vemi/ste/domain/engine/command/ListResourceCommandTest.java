@@ -29,9 +29,9 @@ public class ListResourceCommandTest {
 
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_29);
         try {
-            cfg.setDirectoryForTemplateLoading(new File(
-                    "C:\\data\\m2\\storage\\apps\\mste\\stencil\\bizintegral\\ledger_sms\\191207A\\files\\_appId___modId_\\src\\main\\java\\_grp.d2bs()_\\_appId_\\_modId_\\domain\\logic"));
-        } catch (IOException e1) {
+            // TODO: Use proper test resource path instead of hardcoded path
+            cfg.setClassForTemplateLoading(this.getClass(), "/test-templates/");
+        } catch (Exception e1) {
             e1.printStackTrace();
             fail();
             return;
@@ -45,7 +45,7 @@ public class ListResourceCommandTest {
 
         Template template;
         try {
-            template = cfg.getTemplate("common\\_constClassName_.java.ftl");
+            template = cfg.getTemplate("common/_constClassName_.java.ftl");
         } catch (IOException e) {
             e.printStackTrace();
             fail();

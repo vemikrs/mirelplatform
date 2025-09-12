@@ -4,6 +4,8 @@
 package jp.vemi.mirel.foundation.feature.files.service;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.UUID;
 
@@ -80,7 +82,8 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     FileManagement fileManagement = new FileManagement();
     fileManagement.fileId = uuid;
     fileManagement.fileName = fileName;
-    fileManagement.filePath = dest + "\\" + ATCH_FILE_NAME;
+    Path destPath = Paths.get(dest).resolve(ATCH_FILE_NAME);
+    fileManagement.filePath = destPath.toString();
     fileManagement.expireDate = DateUtils.addDays(new Date(), defaultExpireTerms());
     fileManagementRepository.save(fileManagement);
     return Pair.of(uuid, fileName);
@@ -100,7 +103,9 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     String m = DateUtil.toString(date, "MM");
 
     // concatenate.
-    return StringUtils.joinWith("\\", StorageUtil.getBaseDir(), defaultAppDir(), y, m, uuid);
+    Path basePath = Paths.get(StorageUtil.getBaseDir());
+    Path fullPath = basePath.resolve(defaultAppDir()).resolve(y).resolve(m).resolve(uuid);
+    return fullPath.toString();
 
   }
 

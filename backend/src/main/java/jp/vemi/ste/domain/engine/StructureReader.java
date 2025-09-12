@@ -44,8 +44,8 @@ public class StructureReader {
     }
 
     public Map<String, List<Map<String, Object>>> read() {
-        final String filePath = "C:\\data\\m2\\storage\\foundation\\filemanagement\\20\\02\\fe53d0cb-cbd2-47f4-a1f5-31f8de704243\\a_.xlsx";
-        return read(filePath);
+        // TODO: This is a development/testing method. Remove hardcoded path and use proper configuration.
+        throw new UnsupportedOperationException("Use read(String filePath) method with proper file path");
     }
 
     public Map<String, List<Map<String, Object>>> read(String filePath) {

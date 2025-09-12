@@ -4,35 +4,34 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
 import org.apache.commons.lang3.StringUtils;
 
+import jp.vemi.framework.config.StorageConfig;
 import jp.vemi.framework.exeption.MirelSystemException;
 
 /**
  * Strorageに関するユーティリティクラスです。<br/>
+ * 設定値はStorageConfigから取得します。
  *
  * @author mirelplaftofm
  *
  */
 public class StorageUtil {
 
-    protected static String baseDir;
-    static {
-        final String defaultBaseDir = "C:\\data\\m2\\storage";
-        String envMirelStoragePath = "";
-        if (StringUtils.isEmpty(envMirelStoragePath)) {
-            baseDir = defaultBaseDir;
-        } else {
-            baseDir = envMirelStoragePath;
-        }
-}
+    /**
+     * private constructor to prevent instantiation
+     */
+    private StorageUtil() {
+    }
 
     public static String getBaseDir() {
-        return baseDir;
+        return StorageConfig.getStorageDir();
     }
 
     /**
@@ -41,7 +40,7 @@ public class StorageUtil {
      * @return
      */
     public static String parseToCanonicalPath(String path) {
-        return StringUtils.join(baseDir, path);
+        return Paths.get(getBaseDir()).resolve(path).toString();
     }
 
     /**
@@ -50,7 +49,8 @@ public class StorageUtil {
      * @return ファイル
      */
     public static File getFile(String storagePath) {
-        return new File(baseDir + "\\" + storagePath);
+        Path resolved = Paths.get(getBaseDir()).resolve(storagePath);
+        return resolved.toFile();
     }
     /**
      * 配下ファイルの取得.<br/>
@@ -77,13 +77,12 @@ public class StorageUtil {
     }
 
     public static URL getResource(String storagePath) {
-        URL url;
         try {
-            url = new URL(baseDir + "\\" + storagePath);
+            Path resolved = Paths.get(getBaseDir()).resolve(storagePath);
+            return resolved.toUri().toURL();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
         }
-        return url;
     }
 }
