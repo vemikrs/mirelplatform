@@ -18,7 +18,7 @@ export default {
 
   /** server settings */
   server: {
-    port: process.env.PORT || 80,
+    port: process.env.PORT || 8080,
     host: '0.0.0.0'
   },
 
