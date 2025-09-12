@@ -3,14 +3,14 @@
   "image": "mcr.microsoft.com/devcontainers/java:21",
   // Phase 3: Frontend + Backend simultaneous auto-startup
   // Backend: Spring Boot (port 3000) + H2 dev database
-  // Frontend: Nuxt.js (port 80) + Node.js LTS environment
+  // Frontend: Nuxt.js (port 8080) + Node.js 16 (Nuxt 2.14.9 互換)
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
       "jdkDistro": "tem"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "nodeGlobalVersion": "lts",
+      "nodeGlobalVersion": "16",
       "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
@@ -51,9 +51,9 @@
     }
   },
   "remoteUser": "vscode",
-  "forwardPorts": [3000, 80],
+  "forwardPorts": [3000, 8080],
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
-  "postStartCommand": "bash -c 'export PATH=\"/usr/lib/git-core:$PATH\" && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 nohup ./gradlew :backend:bootRun > backend.log 2>&1 & cd frontend && npm install && PORT=80 nohup npm run dev > ../frontend.log 2>&1 &'",
+  "postStartCommand": "bash -c 'export PATH=\"/usr/lib/git-core:$PATH\" && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 nohup ./gradlew :backend:bootRun > backend.log 2>&1 & cd frontend && npm install && PORT=8080 nohup npm run dev > ../frontend.log 2>&1 &'",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],

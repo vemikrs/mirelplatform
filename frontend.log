@@ -1,0 +1,63 @@
+nohup: ignoring input
+
+> promarker-ui@1.0.0 dev
+> nuxt
+
+
+ WARN  mode option is deprecated. Please use ssr: true for universal mode or ssr: false for spa mode and remove mode from nuxt.config
+
+ℹ [HPM] Proxy created: /mste/initialize  -> http://zipcloud.ibsnet.co.jp/api/search?zipcode=7830060&limit=1
+ℹ [HPM] Proxy created: /mapi/  -> http://localhost:3000/mipla2/
+ℹ [HPM] Proxy rewrite rule created: "^/mapi/" ~> "/"
+ℹ [HPM] Proxy created: /api/mste  -> http://localhost:3000/mipla2/apps/mste/api/
+ℹ [HPM] Proxy rewrite rule created: "^/api/mste" ~> "/"
+ℹ Listening on: http://10.0.3.176:8080/mirel/
+ℹ Preparing project for development
+ℹ Initial build may take a while
+✔ Builder initialized
+
+ ERROR  (node:10835) [DEP0148] DeprecationWarning: Use of deprecated folder mapping "./" in the "exports" field module resolution of the package at /workspaces/mirelplatform/frontend/node_modules/vuex/package.json.
+Update this package.json to use a subpath pattern like "./*".
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+✔ Nuxt files generated
+
+ WARN  Browserslist: caniuse-lite is outdated. Please run:
+npx browserslist@latest --update-db
+
+Why you should do it regularly:
+https://github.com/browserslist/browserslist#browsers-data-updating
+
+ℹ Compiling Client
+✔ Client: Compiled successfully in 10.73s
+
+ WARN  Compiled with 1 warnings
+
+Module Warning (from ./node_modules/eslint-loader/dist/cjs.js):
+
+/workspaces/mirelplatform/frontend/components/dialog/BvDownloadDialog.vue
+  11:7   warning  Attribute "@ok" should go before "title"                          vue/attributes-order
+  15:9   warning  Require self-closing on Vue.js custom components (<b-form-file>)  vue/html-self-closing
+  15:52  warning  Expected to be enclosed by double quotes                          vue/html-quotes
+  18:57  warning  Attribute "@click" should go before "variant"                     vue/attributes-order
+  27:44  warning  Attribute "@click" should go before "href"                        vue/attributes-order
+  30:44  warning  Attribute "@click" should go before "href"                        vue/attributes-order
+  30:72  warning  Attribute "v-if" should go before "href"                          vue/attributes-order
+  36:55  warning  Attribute "@click" should go before "variant"                     vue/attributes-order
+
+✖ 8 problems (0 errors, 8 warnings)
+  0 errors and 8 warnings potentially fixable with the `--fix` option.
+
+
+You may use special comments to disable some warnings.
+Use // eslint-disable-next-line to ignore the next line.
+Use /* eslint-disable */ to ignore all warnings in a file.
+ℹ Waiting for file changes
+ℹ Memory usage: 522 MB (RSS: 645 MB)
+ℹ Listening on: http://10.0.3.176:8080/mirel/
+No issues found.
+ℹ [Development] Redirecting from /favicon.ico to /mirel/favicon.ico (router.base specified).
+ℹ [Development] Redirecting from / to /mirel/ (router.base specified).
+ℹ [Development] Redirecting from /.well-known/appspecific/com.chrome.devtools.json to /mirel/.well-known/appspecific/com.chrome.devtools.json (router.base specified).
+ℹ [Development] Redirecting from /.well-known/appspecific/com.chrome.devtools.json to /mirel/.well-known/appspecific/com.chrome.devtools.json (router.base specified).
+ℹ [Development] Redirecting from /favicon.ico to /mirel/favicon.ico (router.base specified).
