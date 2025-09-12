@@ -4,7 +4,7 @@
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
-      "jdkDistro": "microsoft"
+      "jdkDistro": "tem"
     },
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
@@ -12,21 +12,11 @@
     }
   },
   "containerEnv": {
-    "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current",
     "GRADLE_USER_HOME": "/home/vscode/.gradle"
   },
   "customizations": {
     "vscode": {
       "settings": {
-        "java.configuration.runtimes": [
-          {
-            "name": "JavaSE-21",
-            "path": "/usr/lib/jvm/msopenjdk-current",
-            "default": true
-          }
-        ],
-        "java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
-        "gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
         "terminal.integrated.defaultProfile.linux": "bash",
         "java.configuration.updateBuildConfiguration": "automatic",
         "java.compile.nullAnalysis.mode": "automatic",
@@ -50,10 +40,9 @@
   },
   "remoteUser": "vscode",
   "forwardPorts": [8080],
-  "postCreateCommand": "./gradlew --no-daemon build",
-  "updateContentCommand": "./gradlew --no-daemon build",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
+  "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
-    "--env", "JAVA_HOME=/usr/lib/jvm/msopenjdk-current"
   ],
   "mounts": [
     "source=mirelplatform-gradle-cache,target=/home/vscode/.gradle,type=volume"
