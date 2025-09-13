@@ -42,6 +42,7 @@ import jp.vemi.framework.util.DateUtil;
 import jp.vemi.framework.util.ModelUtil;
 import jp.vemi.framework.util.ResourceUtil;
 import jp.vemi.framework.util.StorageUtil;
+import jp.vemi.framework.config.StorageConfig;
 import jp.vemi.ste.domain.DictionaryMetaData;
 import jp.vemi.ste.domain.EngineBinds;
 import jp.vemi.ste.domain.context.SteContext;
@@ -414,12 +415,11 @@ public class TemplateEngineProcessor {
         // Validate.
         Assert.notNull(stencilName, "stencil name must not be null");
 
-        // Get template resource.
-        String stencilResource = getResourceWithParseLine(
-                StorageUtil.parseToCanonicalPath(StringUtils.join(getStencilAndSerialStorageDir(), "/", stencilName)));
+        // レイヤード検索でテンプレートファイルを探索
+        String templateContent = findTemplateInLayers(stencilName);
 
         // Stop if skip target.
-        if (StringUtils.isEmpty(stencilResource) || "skip:file".equals(stencilResource)) {
+        if (StringUtils.isEmpty(templateContent) || "skip:file".equals(templateContent)) {
             return null;
         }
 
@@ -432,6 +432,104 @@ public class TemplateEngineProcessor {
         } catch (IOException e) {
             throw new MirelSystemException("IOException in" + stencilName, e);
         }
+    }
+
+    /**
+     * レイヤード検索でテンプレートファイルを検索する
+     * @param stencilName ステンシル名
+     * @return テンプレートコンテンツ、または null
+     */
+    private String findTemplateInLayers(String stencilName) {
+        // 優先度順にレイヤーを検索: ユーザー → 標準 → サンプル
+        String[] searchLayers = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir(), 
+            StorageConfig.getSamplesStencilDir()
+        };
+        
+        for (String layerDir : searchLayers) {
+            String content = findTemplateInLayer(layerDir, stencilName);
+            if (content != null) {
+                return content;
+            }
+        }
+        
+        // 元のロジックへのフォールバック（後方互換性）
+        String fallbackPath = StorageUtil.parseToCanonicalPath(
+            StringUtils.join(getStencilAndSerialStorageDir(), "/", stencilName));
+        return getResourceWithParseLine(fallbackPath);
+    }
+
+    /**
+     * 指定されたレイヤーディレクトリでテンプレートファイルを検索する
+     * @param layerDir レイヤーディレクトリ
+     * @param stencilName ステンシル名  
+     * @return テンプレートコンテンツ、または null
+     */
+    private String findTemplateInLayer(String layerDir, String stencilName) {
+        if (StringUtils.isEmpty(layerDir)) {
+            return null;
+        }
+        
+        try {
+            if (layerDir.startsWith("classpath:")) {
+                return findTemplateInClasspath(layerDir, stencilName);
+            } else {
+                return findTemplateInFileSystem(layerDir, stencilName);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "テンプレート検索でエラーが発生: " + layerDir + "/" + stencilName, e);
+            return null;
+        }
+    }
+
+    /**
+     * classpathからテンプレートファイルを検索する
+     * @param classpathLocation classpath:で始まるパス
+     * @param stencilName ステンシル名
+     * @return テンプレートコンテンツ、または null
+     */
+    private String findTemplateInClasspath(String classpathLocation, String stencilName) {
+        try {
+            String resourcePath = classpathLocation.substring("classpath:".length()) 
+                + context.getStencilCanonicalName() + "/" + stencilName;
+            
+            InputStream inputStream = this.getClass().getClassLoader()
+                .getResourceAsStream(resourcePath);
+            
+            if (inputStream != null) {
+                try {
+                    byte[] bytes = inputStream.readAllBytes();
+                    return new String(bytes, "UTF-8");
+                } finally {
+                    CloseableUtil.close(inputStream);
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.FINE, "classpath検索失敗: " + classpathLocation + "/" + stencilName);
+        }
+        
+        return null;
+    }
+
+    /**
+     * ファイルシステムからテンプレートファイルを検索する
+     * @param layerDir レイヤーディレクトリ
+     * @param stencilName ステンシル名
+     * @return テンプレートコンテンツ、または null
+     */
+    private String findTemplateInFileSystem(String layerDir, String stencilName) {
+        try {
+            File templateFile = new File(layerDir + context.getStencilCanonicalName() + "/" + stencilName);
+            
+            if (templateFile.exists() && templateFile.isFile()) {
+                return getResourceWithParseLine(templateFile.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            logger.log(Level.FINE, "ファイルシステム検索失敗: " + layerDir + "/" + stencilName);
+        }
+        
+        return null;
     }
 
     /**
@@ -520,61 +618,107 @@ public class TemplateEngineProcessor {
     }
 
     public StencilSettingsYml getStencilSettings() {
-
-        // validate
-        File file = new File(
-                StorageUtil.getBaseDir() + getStencilAndSerialStorageDir() + "/stencil-settings.yml");
-        if(false == file.exists()) {
+        // レイヤード検索: ユーザー → 標準 → サンプル の順で検索
+        StencilSettingsYml settings = findStencilSettingsInLayers();
+        if (settings == null) {
             throw new MirelSystemException(
-                    "ステンシル定義が見つかりません。ファイル：" + context.getStencilCanonicalName() + "/" + file.getName(), null);
-        };
-
-        final File dir = StorageUtil.getFile(getStencilAndSerialStorageDir());
-
-        StencilSettingsYml settings = null;
-        File current = dir;
-        int stencilDirLength = StorageUtil.getFile(getStencilMasterStorageDir()).getAbsolutePath().length();
-        while (true) {
-
-            File[] currentFiles = current.listFiles(new FilenameFilter(){
-                @Override
-                public boolean accept(File dir, String name) {
-                    if(name.endsWith("stencil-settings.yml")) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            });
-
-            if (currentFiles.length == 0) {
-                if (current.getAbsolutePath().length() <=stencilDirLength) {
-                    break;
-                } else {
-                    current = current.getParentFile();
-                    continue;
-                }
-            }
-
-            for(File currentFile : currentFiles) {
-                StencilSettingsYml currSettings = getSsYmlRecurive(currentFile);
-                if (null == settings) {
-                    settings = currSettings;
-                } else {
-                    // append only dataelement
-                    settings.appendDataElementSublist(currSettings.getStencil().getDataDomain());
-                }
-            }
-
-            if (current.getParentFile().getAbsolutePath().length() <= stencilDirLength) {
-                break;
-            } else {
-                current = current.getParentFile();
-            }
-
+                "ステンシル定義が見つかりません。ステンシル：" + context.getStencilCanonicalName(), null);
         }
-
         return settings;
+    }
+
+    /**
+     * レイヤード検索でstencil-settings.ymlを検索する
+     * @return 見つかったStencilSettingsYml、または null
+     */
+    private StencilSettingsYml findStencilSettingsInLayers() {
+        // 優先度順にレイヤーを検索: ユーザー → 標準 → サンプル
+        String[] searchLayers = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir(),
+            StorageConfig.getSamplesStencilDir()
+        };
+        
+        for (String layerDir : searchLayers) {
+            StencilSettingsYml settings = findStencilSettingsInLayer(layerDir);
+            if (settings != null) {
+                return settings;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * 指定されたレイヤーディレクトリでstencil-settings.ymlを検索する
+     * @param layerDir レイヤーディレクトリ
+     * @return 見つかったStencilSettingsYml、または null
+     */
+    private StencilSettingsYml findStencilSettingsInLayer(String layerDir) {
+        if (StringUtils.isEmpty(layerDir)) {
+            return null;
+        }
+        
+        // classpath: プレフィックスの場合はclasspath検索
+        if (layerDir.startsWith("classpath:")) {
+            return findStencilSettingsInClasspath(layerDir);
+        }
+        
+        // ファイルシステム検索
+        return findStencilSettingsInFileSystem(layerDir);
+    }
+
+    /**
+     * classpathからstencil-settings.ymlを検索する
+     * @param classpathLocation classpath:で始まるパス
+     * @return 見つかったStencilSettingsYml、または null  
+     */
+    private StencilSettingsYml findStencilSettingsInClasspath(String classpathLocation) {
+        try {
+            String resourcePath = classpathLocation.substring("classpath:".length()) 
+                + context.getStencilCanonicalName() + "/stencil-settings.yml";
+            
+            // classpathリソースは先頭スラッシュを含まないため除去
+            if (resourcePath.startsWith("/")) {
+                resourcePath = resourcePath.substring(1);
+            }
+            
+            InputStream inputStream = this.getClass().getClassLoader()
+                .getResourceAsStream(resourcePath);
+            
+            if (inputStream != null) {
+                LoaderOptions options = new LoaderOptions();
+                Yaml yaml = new Yaml(options);
+                try {
+                    return yaml.loadAs(inputStream, StencilSettingsYml.class);
+                } finally {
+                    CloseableUtil.close(inputStream);
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "classpath検索でエラーが発生: " + classpathLocation, e);
+        }
+        
+        return null;
+    }
+
+    /**
+     * ファイルシステムからstencil-settings.ymlを検索する
+     * @param layerDir レイヤーディレクトリ
+     * @return 見つかったStencilSettingsYml、または null
+     */
+    private StencilSettingsYml findStencilSettingsInFileSystem(String layerDir) {
+        try {
+            File settingsFile = new File(layerDir + context.getStencilCanonicalName() + "/stencil-settings.yml");
+            
+            if (settingsFile.exists() && settingsFile.isFile()) {
+                return getSsYmlRecurive(settingsFile);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "ファイルシステム検索でエラーが発生: " + layerDir, e);
+        }
+        
+        return null;
     }
 
     protected static String createGenerateId() {

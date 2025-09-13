@@ -1,0 +1,67 @@
+###################################################################
+# Stencil settings.
+###################################################################
+# Sample Stencil: hello-world
+# Simple Hello World generator for immediate developer onboarding experience
+stencil:
+  config:
+    categoryId: "/samples"
+    categoryName: "Sample Stencils"
+    id: "/samples/hello-world"
+    name: "Hello World Generator"
+    serial: "1.0.0"
+    lastUpdate: "2025/09/13"
+    lastUpdateUser: "mirelplatform"
+    description: |
+      シンプルなHello Worldジェネレーターです。
+      新規開発者向けのサンプルとして、基本的なコード生成を体験できます。
+      即座に動作を確認できる最小限のステンシルです。
+  dataElement:
+    - id: grp
+    - id: className
+    - id: packageName
+    - id: author
+  dataDomain:
+    - id: grp
+      name: パッケージグループ
+      value: com.example
+      type: text
+      placeholder: com.example
+      note: Javaパッケージのグループ名を入力してください。
+    - id: className
+      name: クラス名
+      value: HelloWorld
+      type: text
+      placeholder: HelloWorld
+      note: 生成するJavaクラスの名前を入力してください。
+    - id: packageName
+      name: パッケージ名
+      value: hello
+      type: text
+      placeholder: hello
+      note: Javaパッケージ名を入力してください。
+    - id: author
+      name: 作成者
+      value: developer
+      type: text
+      placeholder: developer
+      note: コードの作成者名を入力してください。
+  codeInfo:
+    copyright: Copyright(c) 2025 mirelplatform.
+    versionNo: "1.0"
+    author: mirelplatform
+    vendor: mirelplatform
+  dataElement:
+    - id: "message"
+  dataDomain:
+    - id: "message"
+      name: "メッセージ"
+      value: "Hello, World!"
+      type: "text"
+      placeholder: "メッセージを入力してください"
+      note: "テンプレートで使用されるメッセージです。"
+  codeInfo:
+    copyright: ""
+    versionNo: "1.0"
+    author: ""
+    vendor: ""

@@ -14,6 +14,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 /**
  * StencilSettingsYml
@@ -22,6 +23,7 @@ import lombok.Setter;
 @Setter
 @Getter
 @NoArgsConstructor
+@Accessors(chain = false)
 public class StencilSettingsYml {
 
   protected Stencil stencil;
@@ -32,6 +34,7 @@ public class StencilSettingsYml {
   @Setter
   @Getter
   @NoArgsConstructor
+  @Accessors(chain = false)
   public static class Stencil {
     protected Config config;
     protected List<Map<String, Object>> dataElement;

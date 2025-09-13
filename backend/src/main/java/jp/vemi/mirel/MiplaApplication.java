@@ -16,6 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableJpaRepositories(basePackages = { "jp.vemi.mirel", "jp.vemi.framework" })
 @ComponentScan(basePackages = {
         "jp.vemi.framework.util",
+        "jp.vemi.framework.config",
         "jp.vemi.framework.security",
         "jp.vemi.mirel",
         "jp.vemi.mirel.config",
