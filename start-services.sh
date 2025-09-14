@@ -69,11 +69,15 @@ echo "   ./stop-services.sh"
 echo ""
 echo "⏰ 起動完了まで約30-60秒お待ちください..."
 
+# 起動状況ファイルのクリーンアップ
+rm -f logs/.backend_ready logs/.frontend_ready
+
 # バックグラウンドで起動状況を監視
-(
+{
     echo "起動状況を監視中..."
-    for i in {1..60}; do
+    for i in {1..180}; do
         sleep 1
+        echo -n "."
         
         # Backend起動チェック
         if curl -s http://localhost:3000/actuator/health >/dev/null 2>&1; then
@@ -96,9 +100,20 @@ echo "⏰ 起動完了まで約30-60秒お待ちください..."
             echo ""
             echo "🎉 全サービスが正常に起動しました!"
             echo "ブラウザでアクセスできます。"
-            break
+            exit 0
         fi
     done
-) &
+    
+    # タイムアウトした場合
+    echo ""
+    echo "⚠️  起動監視がタイムアウトしました（180秒）"
+    echo "サービスは継続実行中です。ログを確認してください。"
+} > logs/startup-monitor.log 2>&1 &
+
+# バックグラウンドプロセスをシェルから切り離す
+disown
 
 echo "起動スクリプト実行完了。バックグラウンドで監視中..."
+echo "監視状況: tail -f logs/startup-monitor.log"
+echo ""
+echo "このスクリプトは終了します。サービスは継続実行されます。"
