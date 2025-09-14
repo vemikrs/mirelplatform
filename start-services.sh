@@ -39,7 +39,7 @@ cd frontend
 # npm依存関係の確認・インストール
 if [ ! -d "node_modules" ]; then
     echo "   📦 npm依存関係をインストール中..."
-    npm install
+    npm install --legacy-peer-deps --no-audit
 fi
 
 HOST=0.0.0.0 PORT=8080 npm run dev > ../logs/frontend.log 2>&1 &

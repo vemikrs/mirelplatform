@@ -27,7 +27,7 @@ echo "   タスク: npm install --legacy-peer-deps"
 echo "   出力: リアルタイム表示 + logs/frontend-clean-install.log"
 echo ""
 
-if npm install --legacy-peer-deps 2>&1 | tee ../logs/frontend-clean-install.log; then
+if npm install --legacy-peer-deps --no-audit 2>&1 | tee ../logs/frontend-clean-install.log; then
     if [ "$?" -eq 0 ] && [ -d "node_modules" ]; then
         echo ""
         echo "✅ npm install 成功"
