@@ -18,6 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "jp.vemi.framework.util",
         "jp.vemi.framework.config",
         "jp.vemi.framework.security",
+        "jp.vemi.framework.web",
         "jp.vemi.mirel",
         "jp.vemi.mirel.config",
         "jp.vemi.mirel.security"
