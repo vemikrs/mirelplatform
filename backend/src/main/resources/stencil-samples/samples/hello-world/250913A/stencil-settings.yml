@@ -17,6 +17,8 @@ stencil:
       自動生成ソリューションのサンプルとして、最小限の生成結果を確認できます。
   dataElement:
     - id: "message"
+    - id: "userName" 
+    - id: "language"
   dataDomain:
     - id: "message"
       name: "メッセージ"
@@ -24,6 +26,23 @@ stencil:
       type: "text"
       placeholder: "メッセージを入力してください"
       note: "テンプレートで使用されるメッセージです。"
+    - id: "userName"
+      name: "ユーザー名"
+      value: "Developer"
+      type: "text"
+      placeholder: "ユーザー名を入力してください"
+      note: "挨拶に使用されるユーザー名です。"
+    - id: "language"
+      name: "言語"
+      value: "ja"
+      type: "select"
+      placeholder: "言語を選択してください"
+      note: "生成されるメッセージの言語です。"
+      options:
+        - value: "ja"
+          text: "日本語"
+        - value: "en"
+          text: "English"
   codeInfo:
     copyright: Copyright(c) 2025 mirelplatform.
     versionNo: "1.0"
