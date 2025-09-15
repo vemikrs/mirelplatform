@@ -1270,6 +1270,14 @@ public class TemplateEngineProcessor {
             return "";
         }
         
+        // 一時ファイル名から元のテンプレートファイル名を取得
+        String fileName = new File(fullPath).getName();
+        if (tempFileToOriginalMap.containsKey(fileName)) {
+            String originalFileName = tempFileToOriginalMap.get(fileName);
+            System.out.println("Mapped temp file: " + fileName + " -> " + originalFileName);
+            return originalFileName;
+        }
+        
         String baseDirPath = StorageUtil.getBaseDir();
         String stencilAndSerialDir = getStencilAndSerialStorageDir();
         
@@ -1279,11 +1287,11 @@ public class TemplateEngineProcessor {
                 return fullPath.substring(baseDirPath.length() + stencilAndSerialDir.length());
             } catch (StringIndexOutOfBoundsException e) {
                 // fallback: ファイル名のみ
-                return new File(fullPath).getName();
+                return fileName;
             }
         }
         
-        // クラスパスから展開された一時ファイルの場合
-        return new File(fullPath).getName();
+        // クラスパスから展開された一時ファイルの場合（マッピングが見つからない場合）
+        return fileName;
     }
 }
