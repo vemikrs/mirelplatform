@@ -108,6 +108,7 @@ public class WebSecurityConfig {
             authz.requestMatchers("/auth/login").permitAll()
                     .requestMatchers("/auth/check").permitAll()
                     .requestMatchers("/auth/**").permitAll()
+                    .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
                     .anyRequest().authenticated();
         });
     }
