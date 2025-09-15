@@ -14,6 +14,8 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +29,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
  * {@link FileRegisterService} の具象です。 .<br/>
  */
 @Service
+@Transactional
 public class FileRegisterServiceImpl implements FileRegisterService {
 
   @Autowired
@@ -52,8 +55,10 @@ public class FileRegisterServiceImpl implements FileRegisterService {
 
   /**
    * {@inheritDoc}
+   * 新しいトランザクションで実行して楽観ロック競合を回避
    */
   @Override
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public Pair<String, String> register(File srcFile, boolean isZip, String fileName) {
 
     String uuid = UUID.randomUUID().toString();
@@ -85,7 +90,11 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     Path destPath = Paths.get(dest).resolve(ATCH_FILE_NAME);
     fileManagement.filePath = destPath.toString();
     fileManagement.expireDate = DateUtils.addDays(new Date(), defaultExpireTerms());
-    fileManagementRepository.save(fileManagement);
+    
+    // @Versionフィールドはnullのままにして、JPA/Hibernateの自動管理に委ねる
+    // 手動初期化はHibernateの新規/既存判別を混乱させる
+    
+    FileManagement saved = fileManagementRepository.save(fileManagement);
     return Pair.of(uuid, fileName);
   }
 

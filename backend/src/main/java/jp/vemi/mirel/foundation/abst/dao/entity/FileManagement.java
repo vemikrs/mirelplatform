@@ -11,26 +11,38 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.DynamicUpdate;
 
 import lombok.Getter;
 import lombok.Setter;
 
 /**
  * ファイル管理
+ * @DynamicUpdate: 変更されたフィールドのみUPDATE文に含める
+ * H2環境でのoptimistic locking競合を削減
  */
 @Setter
 @Getter
 @Entity
 @Table(name = "mir_file_management")
+@DynamicUpdate
 public class FileManagement {
 
     /** ファイルID */
     @Id
-    @UuidGenerator
     @Column()
     public String fileId;
+
+    /** 実ファイル名 */
+    @Column(name = "real_file_name")
+    public String realFileName;
+
+    /** コンテンツタイプ */
+    @Column(name = "content_type")
+    public String contentType;
 
     /** ファイル名 */
     @Column()
@@ -40,13 +52,22 @@ public class FileManagement {
     @Column()
     public String filePath;
  
-    /** 期日日 */
-    @Column()
+    /** 期限日 */
+    @Column(name = "expire_date")
     public Date expireDate;
 
-    /** バージョン */
-    @Column(columnDefinition = "integer default 1")
-    public long version;
+    /** 削除日 */
+    @Column(name = "delete_date")
+    public Date deleteDate;
+
+    /** アップロード者ID */
+    @Column(name = "uploader_user_id")
+    public String uploaderUserId;
+
+    /** バージョン（楽観ロック用） */
+    @Version
+    @Column(name = "version", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    public Long version;
 
     /** 削除フラグ */
     @Column(columnDefinition = "boolean default false")
@@ -87,5 +108,8 @@ public class FileManagement {
         if(null == entity.updateDate) {
             entity.updateDate = new Date();
         }
+        
+        // @Versionはnullのままにしてhiberrateに自動初期化させる
+        // 手動でversion設定するとHibernateが既存エンティティと誤認する
     }
 }

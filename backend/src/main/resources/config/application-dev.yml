@@ -1,7 +1,7 @@
 # application-dev.yml - Development Environment Configuration
 spring:
   datasource:
-    url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=LEGACY
+    url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=LEGACY;LOCK_TIMEOUT=10000
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -16,6 +16,10 @@ spring:
       hibernate:
         hbm2ddl:
           halt_on_error: false
+        connection:
+          isolation: 2  # REPEATABLE_READ for MySQL compatibility
+        jdbc:
+          batch_size: 1  # Minimize batch conflicts
     show-sql: true
   h2:
     console:
