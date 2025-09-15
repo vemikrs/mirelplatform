@@ -102,7 +102,8 @@ public class WebSecurityConfig {
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
             if (!securityProperties.isEnabled()) {
-                authz.requestMatchers("/apps/*/api/**").permitAll();
+                authz.requestMatchers("/commons/**").permitAll()
+                    .requestMatchers("/apps/*/api/**").permitAll();
             }
 
             authz.requestMatchers("/auth/login").permitAll()
