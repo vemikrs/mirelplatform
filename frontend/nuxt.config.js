@@ -1,6 +1,6 @@
 
 export default {
-  mode: 'spa',
+  ssr: false, // spa mode (mode オプション非推奨のため変更)
   /*
   ** Headers of the page
   */

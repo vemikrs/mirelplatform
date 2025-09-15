@@ -42,7 +42,7 @@ if [ ! -d "node_modules" ]; then
     npm install --legacy-peer-deps --no-audit
 fi
 
-HOST=0.0.0.0 PORT=8080 npm run dev > ../logs/frontend.log 2>&1 &
+HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
 
