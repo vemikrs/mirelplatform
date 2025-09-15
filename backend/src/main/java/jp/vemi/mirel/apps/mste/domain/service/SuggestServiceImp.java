@@ -99,6 +99,18 @@ public class SuggestServiceImp implements SuggestService {
 
         String stencilNo = engine.getSerialNo();
         List<String> serials = engine.getSerialNos();
+        
+        // serialsが空の場合、config.serialからフォールバック
+        if (serials.isEmpty()) {
+            StencilSettingsYml tempSettings = engine.getStencilSettings();
+            if (tempSettings != null && tempSettings.getStencil() != null && 
+                tempSettings.getStencil().getConfig() != null && 
+                tempSettings.getStencil().getConfig().getSerial() != null) {
+                serials = Arrays.asList(tempSettings.getStencil().getConfig().getSerial());
+                stencilNo = tempSettings.getStencil().getConfig().getSerial();
+            }
+        }
+        
         resultModel.fltStrSerialNo = new ValueTextItems(convertSerialNosToValueTexts(serials), stencilNo);
 
         StencilSettingsYml settingsYaml = null;
@@ -176,7 +188,8 @@ public class SuggestServiceImp implements SuggestService {
             return;
         }
 
-        if(false == StringUtils.isEmpty(store.selected)) {
+        // '*' も「選択されていない」状態として扱う (Vue.js clearAll()から送信される)
+        if(false == StringUtils.isEmpty(store.selected) && !"*".equals(store.selected)) {
             return;
         }
 
