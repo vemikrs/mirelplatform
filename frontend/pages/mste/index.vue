@@ -215,6 +215,8 @@ export default {
     }
   },
   created () {
+    // 初回訪問時のみreloadStencilMasterを自動実行
+    this.checkAndExecuteInitialReload()
     // refresh
     this.clearAll()
   },
@@ -227,28 +229,31 @@ export default {
         '/mapi/apps/mste/api/suggest',
         { content: this.createRequest(this) }
       ).then((resp) => {
-        if (resp.data.errs && resp.data.errs.length > 0) {
-          this.bvMsgBoxErr(resp.data.errs)
+        if (resp.data.errors && resp.data.errors.length > 0) {
+          this.bvMsgBoxErr(resp.data.errors)
           this.processing = false
           return false
         }
 
-        if (resp.data.model && resp.data.model.params && resp.data.model.params.childs) {
-          Object.assign(this.eparams, resp.data.model.params.childs)
+        if (resp.data.data && resp.data.data.model && resp.data.data.model.params && resp.data.data.model.params.childs) {
+          Object.assign(this.eparams, resp.data.data.model.params.childs)
         }
-        if (resp.data.model && resp.data.model.stencil && resp.data.model.stencil.config) {
-          this.stencilConfig = resp.data.model.stencil.config
+        if (resp.data.data && resp.data.data.model && resp.data.data.model.stencil && resp.data.data.model.stencil.config) {
+          this.stencilConfig = resp.data.data.model.stencil.config
         }
 
-        if (resp.data.model && resp.data.model.fltStrStencilCategory) {
-          this.fltStrStencilCategory = resp.data.model.fltStrStencilCategory
+        if (resp.data.data && resp.data.data.model && resp.data.data.model.fltStrStencilCategory) {
+          this.fltStrStencilCategory = resp.data.data.model.fltStrStencilCategory
         }
-        if (resp.data.model && resp.data.model.fltStrStencilCd) {
-          this.fltStrStencilCd = resp.data.model.fltStrStencilCd
+        if (resp.data.data && resp.data.data.model && resp.data.data.model.fltStrStencilCd) {
+          this.fltStrStencilCd = resp.data.data.model.fltStrStencilCd
         }
-        if (resp.data.model && resp.data.model.fltStrSerialNo) {
-          this.fltStrSerialNo = resp.data.model.fltStrSerialNo
+        if (resp.data.data && resp.data.data.model && resp.data.data.model.fltStrSerialNo) {
+          this.fltStrSerialNo = resp.data.data.model.fltStrSerialNo
         }
+
+        // シリアル選択状態を更新
+        this.updateSerialSelectionStatus()
 
         this.processing = false
         return true
@@ -299,6 +304,26 @@ export default {
       this.stencilConfig = this.defaultStencilConfig()
     },
 
+    async checkAndExecuteInitialReload () {
+      // サーバ不具合のため、一旦無効化
+      // const STORAGE_KEY = 'mste_initial_reload_completed'
+
+      // sessionStorageで初回実行を確認
+      // if (!sessionStorage.getItem(STORAGE_KEY)) {
+      //  console.log('初回訪問: ステンシルマスタを自動ロード中...')
+
+      try {
+        await this.reloadStencilMaster()
+        // sessionStorage.setItem(STORAGE_KEY, 'true')
+        console.log('初期ステンシルマスタロード完了')
+      } catch (error) {
+        console.error('初期ステンシルマスタロードに失敗:', error)
+        // エラーでもsessionStorageに記録して無限ループを防止
+        // sessionStorage.setItem(STORAGE_KEY, 'error')
+      }
+      // }
+    },
+
     callHistory () {
     },
 
@@ -331,23 +356,39 @@ export default {
         /* eslint-disable no-console */
         console.log(resp)
         /* eslint-enable no-console */
-        if (!resp.data.model) {
+        if (!resp.data.data) {
           this.processing = false
           return
         }
 
-        if (resp.data.errs && resp.data.errs.length > 0) {
-          this.bvMsgBoxErr(resp.data.errs)
+        if (resp.data.errors && resp.data.errors.length > 0) {
+          this.bvMsgBoxErr(resp.data.errors)
           this.processing = false
           return
         }
 
-        if (resp.data.model && resp.data.model.files) {
+        if (resp.data.data && resp.data.data.files) {
           const paramFiles = []
-          for (const key in resp.data.model.files) {
-            paramFiles[key] = {
-              fileId: resp.data.model.files[key][0],
-              name: resp.data.model.files[key][1]
+          for (const key in resp.data.data.files) {
+            const fileData = resp.data.data.files[key]
+
+            // APIレスポンス形式を判定して適切に変換
+            if (Array.isArray(fileData)) {
+              // 配列形式: ["fileId", "fileName"]
+              paramFiles[key] = {
+                fileId: fileData[0],
+                name: fileData[1]
+              }
+            } else if (typeof fileData === 'object' && fileData !== null) {
+              // オブジェクト形式: {fileId: fileName}
+              const fileId = Object.keys(fileData)[0]
+              const fileName = fileData[fileId]
+              paramFiles[key] = {
+                fileId,
+                name: fileName
+              }
+            } else {
+              console.warn('Unexpected file data format:', fileData)
             }
           }
           this.$root.$emit('bv::show::modal', 'bv_dialog', { files: paramFiles })
@@ -361,9 +402,9 @@ export default {
 
     createRequest (body) {
       const pitems = {
-        stencilCategoy: body.fltStrStencilCategory.selected,
-        stencilCanonicalName: body.fltStrStencilCd.selected,
-        serialNo: body.fltStrSerialNo.selected
+        stencilCategory: body.fltStrStencilCategory.selected || '*',
+        stencilCanonicalName: body.fltStrStencilCd.selected || '*',
+        serialNo: body.fltStrSerialNo.selected || '*'
       }
 
       if (body.eparams && Array.isArray(body.eparams)) {
@@ -381,7 +422,7 @@ export default {
     },
     stencilCategorySelected () {
       this.fltStrStencilCd.selected = '*'
-      this.fltStrSerialNo.selected = ''
+      this.fltStrSerialNo.selected = '*'
       this.cateogryNoSelected = false
       this.stencilNoSelected = true
       this.serialNoNoSelected = true
@@ -395,8 +436,8 @@ export default {
       this.refresh()
       return true
     },
-    stencilSelected () {
-      this.fltStrSerialNo.selected = ''
+    async stencilSelected () {
+      this.fltStrSerialNo.selected = '*'
       this.cateogryNoSelected = false
       this.stencilNoSelected = false
       this.serialNoNoSelected = true
@@ -407,13 +448,8 @@ export default {
         return false
       }
 
-      this.refresh()
-
-      this.serialNoNoSelected = false
-      // if (this.isFltStrSelected(this.fltStrSerialNo)) {
-      //   this.serialNoNoSelected = false
-      // }
-
+      // refresh()の完了を待機してからシリアル状態を更新
+      await this.refresh()
       return true
     },
     serialSelected () {
@@ -421,10 +457,10 @@ export default {
       this.stencilNoSelected = false
       this.serialNoNoSelected = false
 
-      // if (!this.isFltStrSelected(this.fltStrSerialNo)) {
-      //   this.serialNoNoSelected = true
-      //   return false
-      // }
+      if (!this.isFltStrSelected(this.fltStrSerialNo)) {
+        this.serialNoNoSelected = true
+        return false
+      }
 
       this.refresh()
       return true
@@ -610,6 +646,23 @@ export default {
       return {
         'selected': '',
         'items': []
+      }
+    },
+
+    // シリアル選択状態を更新するメソッド
+    updateSerialSelectionStatus () {
+      // シリアル選択肢が存在し、有効な値が選択されている場合
+      if (this.isFltStrSelected(this.fltStrSerialNo) &&
+          this.fltStrSerialNo.selected !== '*') {
+        this.serialNoNoSelected = false
+      } else if (this.fltStrSerialNo.items &&
+                 this.fltStrSerialNo.items.length === 1 &&
+                 this.fltStrSerialNo.selected &&
+                 this.fltStrSerialNo.selected !== '*') {
+        // 選択肢が1つしかない場合（強制選択状態）も有効とする
+        this.serialNoNoSelected = false
+      } else {
+        this.serialNoNoSelected = true
       }
     }
   }
