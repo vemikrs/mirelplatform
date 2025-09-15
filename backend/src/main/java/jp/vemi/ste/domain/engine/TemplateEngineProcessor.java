@@ -5,16 +5,22 @@ package jp.vemi.ste.domain.engine;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,16 +30,23 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.ConstructorException;
 
+import freemarker.cache.ClassTemplateLoader;
+import freemarker.cache.FileTemplateLoader;
+import freemarker.cache.MultiTemplateLoader;
+import freemarker.cache.TemplateLoader;
 import freemarker.core.ParseException;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
+import freemarker.template.TemplateNotFoundException;
 import groovy.lang.Tuple3;
 import jp.vemi.framework.exeption.MirelApplicationException;
 import jp.vemi.framework.exeption.MirelSystemException;
@@ -64,10 +77,23 @@ public class TemplateEngineProcessor {
 
     protected SteContext context;
 
+    /** Spring標準のリソース検索機能 */
+    protected ResourcePatternResolver resourcePatternResolver;
+
+    /**
+     * ResourcePatternResolverを設定（テスト用）
+     */
+    public void setResourcePatternResolver(ResourcePatternResolver resourcePatternResolver) {
+        this.resourcePatternResolver = resourcePatternResolver;
+    }
+
     protected Configuration cfg = null;
     protected static final String STENCIL_EXTENSION = ".ftl";
     protected static final String REGEX = "[0-9]{6}[A-Z]+";
     protected boolean isLegacy = true;
+    
+    /** 一時ファイルと元のファイル名のマッピング */
+    protected Map<String, String> tempFileToOriginalMap = new HashMap<>();
 
     protected static Logger logger = Logger.getLogger(TemplateEngineProcessor.class.getName());
 
@@ -77,10 +103,23 @@ public class TemplateEngineProcessor {
      * @return instance
      */
     public static TemplateEngineProcessor create(final SteContext context) {
+        return create(context, null);
+    }
+
+    /**
+     * constructor with ResourcePatternResolver.
+     * @param context {@link SteContext}
+     * @param resourcePatternResolver {@link ResourcePatternResolver}
+     * @return instance
+     */
+    public static TemplateEngineProcessor create(final SteContext context, final ResourcePatternResolver resourcePatternResolver) {
         final TemplateEngineProcessor instance = new TemplateEngineProcessor();
 
         // context.
         instance.context = context;
+        
+        // resourcePatternResolver
+        instance.resourcePatternResolver = resourcePatternResolver;
 
         // decide serialNo (only stencil selected)
         if (false == StringUtils.isEmpty(instance.context.getStencilCanonicalName())
@@ -135,12 +174,10 @@ public class TemplateEngineProcessor {
         prepareBind();
 
         // get file items.
-        final List<String> stencilFileNames = StorageUtil.getFiles(getStencilAndSerialStorageDir());
+        final List<String> stencilFileNames = getStencilTemplateFiles();
 
         // ignore settings file.
-        if (false == stencilFileNames.remove(new File(
-                StorageUtil.getBaseDir() + getStencilAndSerialStorageDir() + "/stencil-settings.yml")
-                        .getAbsolutePath())) {
+        if (stencilFileNames.isEmpty()) {
             throw new MirelSystemException("ステンシル定義が行方不明です。。", null);
         }
 
@@ -150,10 +187,9 @@ public class TemplateEngineProcessor {
         // generate.
         for (final String stencilFileName : stencilFileNames) {
 
-            final String name = stencilFileName.substring(
-                StorageUtil.getBaseDir().length() + getStencilMasterStorageDir().length());
-            final String cname = stencilFileName.substring(
-                StorageUtil.getBaseDir().length() + getStencilAndSerialStorageDir().length());
+            // ファイルシステムとクラスパスの両方に対応したファイル名抽出
+            final String name = extractRelativeFileName(stencilFileName);
+            final String cname = extractTemplateFileName(stencilFileName);
 
             if (cname.startsWith("\\.")) {
                 // 
@@ -195,8 +231,45 @@ public class TemplateEngineProcessor {
     private void createConfiguration() {
         // configuration.
         cfg = new Configuration(Configuration.VERSION_2_3_29);
+        
         try {
-            cfg.setDirectoryForTemplateLoading(new File(StorageUtil.getBaseDir() + getStencilAndSerialStorageDir()));
+            // FreeMarkerのMultiTemplateLoaderを使用してファイルシステムとクラスパスの両方をサポート
+            List<TemplateLoader> loaders = new ArrayList<>();
+            
+            // Layer 1: ファイルシステムローダー（既存の機能）
+            File stencilDir = new File(StorageUtil.getBaseDir() + getStencilAndSerialStorageDir());
+            if (stencilDir.exists()) {
+                loaders.add(new FileTemplateLoader(stencilDir));
+                System.out.println("Added filesystem template loader: " + stencilDir.getAbsolutePath());
+            } else {
+                System.out.println("Filesystem stencil directory not found: " + stencilDir.getAbsolutePath());
+            }
+            
+            // Layer 2: クラスパスローダー（新機能）
+            if (resourcePatternResolver != null) {
+                // SpringClasspathローダーは複数のクラスパスパスをサポートできる
+                String stencilPath = "stencil-samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
+                ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
+                loaders.add(classpathLoader);
+                System.out.println("Added classpath template loader: " + stencilPath);
+            }
+            
+            // Layer 3: 一時ファイル用テンプレートローダー
+            if (!tempFileToOriginalMap.isEmpty()) {
+                File tempDir = new File(System.getProperty("java.io.tmpdir"));
+                FileTemplateLoader tempFileLoader = new FileTemplateLoader(tempDir);
+                loaders.add(tempFileLoader);
+                System.out.println("Added temp file template loader: " + tempDir.getAbsolutePath());
+            }
+            
+            if (!loaders.isEmpty()) {
+                TemplateLoader multiLoader = new MultiTemplateLoader(loaders.toArray(new TemplateLoader[0]));
+                cfg.setTemplateLoader(multiLoader);
+                System.out.println("FreeMarker configured with " + loaders.size() + " template loaders");
+            } else {
+                throw new IOException("No template loaders available");
+            }
+            
         } catch (IOException e1) {
             e1.printStackTrace();
             throw new MirelSystemException("システムエラー: ", e1);
@@ -411,26 +484,36 @@ public class TemplateEngineProcessor {
     }
 
     public freemarker.template.Template newTemplateFileSpec3(final String stencilName) {
+        System.out.println("=== newTemplateFileSpec3: " + stencilName + " ===");
 
         // Validate.
         Assert.notNull(stencilName, "stencil name must not be null");
 
-        // レイヤード検索でテンプレートファイルを探索
-        String templateContent = findTemplateInLayers(stencilName);
-
-        // Stop if skip target.
-        if (StringUtils.isEmpty(templateContent) || "skip:file".equals(templateContent)) {
-            return null;
+        // 一時ファイル名の場合は、元のファイル名を取得
+        String actualTemplateName = stencilName;
+        if (tempFileToOriginalMap.containsKey(stencilName)) {
+            actualTemplateName = tempFileToOriginalMap.get(stencilName);
+            System.out.println("Mapping temp file '" + stencilName + "' to original name '" + actualTemplateName + "'");
+        } else if (stencilName.endsWith(".tmp")) {
+            // 一時ファイルだが、マッピングが見つからない場合は一時ファイル名をそのまま使用
+            actualTemplateName = stencilName;
+            System.out.println("Using temp file name directly: " + stencilName);
         }
 
-        // Create template.
+        // FreeMarkerのConfigurationからテンプレートを取得
+        // MultiTemplateLoaderが自動的にファイルシステムとクラスパスを検索する
         try {
-            return cfg.getTemplate(stencilName);
+            freemarker.template.Template template = cfg.getTemplate(actualTemplateName);
+            System.out.println("Successfully loaded template via MultiTemplateLoader: " + actualTemplateName);
+            return template;
+        } catch (TemplateNotFoundException e) {
+            System.out.println("Template not found: " + actualTemplateName);
+            return null; // テンプレートが見つからない場合はnullを返す（スキップ対象）
         } catch (ParseException e) {
             String message = e.getLocalizedMessage();
-            throw new MirelSystemException("テンプレートの解析に失敗しました。" + stencilName + " Couase: " + message, e);
+            throw new MirelSystemException("テンプレートの解析に失敗しました。" + actualTemplateName + " Cause: " + message, e);
         } catch (IOException e) {
-            throw new MirelSystemException("IOException in" + stencilName, e);
+            throw new MirelSystemException("IOException in " + actualTemplateName, e);
         }
     }
 
@@ -492,7 +575,12 @@ public class TemplateEngineProcessor {
     private String findTemplateInClasspath(String classpathLocation, String stencilName) {
         try {
             String resourcePath = classpathLocation.substring("classpath:".length()) 
-                + context.getStencilCanonicalName() + "/" + stencilName;
+                + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/" + stencilName;
+            
+            // classpathリソースは先頭スラッシュを含まないため除去
+            if (resourcePath.startsWith("/")) {
+                resourcePath = resourcePath.substring(1);
+            }
             
             InputStream inputStream = this.getClass().getClassLoader()
                 .getResourceAsStream(resourcePath);
@@ -632,6 +720,10 @@ public class TemplateEngineProcessor {
      * @return 見つかったStencilSettingsYml、または null
      */
     private StencilSettingsYml findStencilSettingsInLayers() {
+        System.out.println("=== DEBUG findStencilSettingsInLayers ===");
+        System.out.println("context.getStencilCanonicalName(): " + context.getStencilCanonicalName());
+        System.out.println("resourcePatternResolver: " + resourcePatternResolver);
+        
         // 優先度順にレイヤーを検索: ユーザー → 標準 → サンプル
         String[] searchLayers = {
             StorageConfig.getUserStencilDir(),
@@ -670,19 +762,129 @@ public class TemplateEngineProcessor {
 
     /**
      * classpathからstencil-settings.ymlを検索する
+     * ResourcePatternResolverを使用して動的検索を行う
      * @param classpathLocation classpath:で始まるパス
      * @return 見つかったStencilSettingsYml、または null  
      */
     private StencilSettingsYml findStencilSettingsInClasspath(String classpathLocation) {
         try {
-            String resourcePath = classpathLocation.substring("classpath:".length()) 
-                + context.getStencilCanonicalName() + "/stencil-settings.yml";
+            System.out.println("=== DEBUG findStencilSettingsInClasspath ===");
+            System.out.println("classpathLocation: " + classpathLocation);
+            System.out.println("resourcePatternResolver is null: " + (resourcePatternResolver == null));
             
-            // classpathリソースは先頭スラッシュを含まないため除去
-            if (resourcePath.startsWith("/")) {
-                resourcePath = resourcePath.substring(1);
+            // ResourcePatternResolverが利用可能な場合は動的検索を使用
+            if (resourcePatternResolver != null) {
+                System.out.println("Using ResourcePatternResolver for dynamic search");
+                return findStencilSettingsWithResourcePatternResolver(classpathLocation);
             }
             
+            // フォールバック: 従来の固定パス検索
+            System.out.println("Fallback to fixed path search");
+            return findStencilSettingsWithFixedPath(classpathLocation);
+            
+        } catch (Exception e) {
+            System.out.println("Error finding stencil settings in classpath: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * ResourcePatternResolverを使用してstencil-settings.ymlを動的検索
+     * @param classpathLocation classpath:で始まるパス
+     * @return 見つかったStencilSettingsYml、または null
+     */
+    private StencilSettingsYml findStencilSettingsWithResourcePatternResolver(String classpathLocation) {
+        try {
+            // 指定されたstencilCanonicalNameに対応するstencil-settings.ymlを検索
+            String searchPattern = classpathLocation + context.getStencilCanonicalName() + "/**/stencil-settings.yml";
+            System.out.println("Searching for stencil settings with pattern: " + searchPattern);
+            
+            Resource[] resources = resourcePatternResolver.getResources(searchPattern);
+            System.out.println("Found " + resources.length + " stencil-settings.yml resources for " + context.getStencilCanonicalName());
+            
+            // 見つかったリソースから最初の有効なものを使用
+            for (Resource resource : resources) {
+                try {
+                    StencilSettingsYml settings = loadStencilSettingsFromResource(resource);
+                    if (settings != null && settings.getStencil() != null && settings.getStencil().getConfig() != null) {
+                        // serialNoが指定されている場合はマッチするかチェック
+                        if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                            String configSerial = settings.getStencil().getConfig().getSerial();
+                            if (!context.getSerialNo().equals(configSerial)) {
+                                continue; // serialNoが一致しない場合はスキップ
+                            }
+                        }
+                        System.out.println("Found matching stencil settings: " + resource.getURI());
+                        return settings;
+                    }
+                } catch (Exception resourceException) {
+                    System.out.println("Could not load stencil settings from resource " + resource.getURI() + ": " + resourceException.getMessage());
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            System.out.println("Error in ResourcePatternResolver search: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 従来の固定パス検索（フォールバック）
+     * @param classpathLocation classpath:で始まるパス
+     * @return 見つかったStencilSettingsYml、または null
+     */
+    private StencilSettingsYml findStencilSettingsWithFixedPath(String classpathLocation) {
+        try {
+            // シリアル番号が指定されている場合は直接検索
+            if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                String resourcePath = classpathLocation.substring("classpath:".length()) 
+                    + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/stencil-settings.yml";
+                
+                // classpathリソースは先頭スラッシュを含まないため除去
+                if (resourcePath.startsWith("/")) {
+                    resourcePath = resourcePath.substring(1);
+                }
+                
+                StencilSettingsYml result = loadStencilSettingsFromClasspath(resourcePath);
+                if (result != null) {
+                    return result;
+                }
+            }
+            
+            // シリアル番号が未指定の場合は利用可能なシリアル番号を動的検索
+            List<String> availableSerials = findAvailableSerialsInClasspath(classpathLocation, context.getStencilCanonicalName());
+            for (String serial : availableSerials) {
+                String resourcePath = classpathLocation.substring("classpath:".length()) 
+                    + context.getStencilCanonicalName() + "/" + serial + "/stencil-settings.yml";
+                
+                // classpathリソースは先頭スラッシュを含まないため除去
+                if (resourcePath.startsWith("/")) {
+                    resourcePath = resourcePath.substring(1);
+                }
+                
+                StencilSettingsYml result = loadStencilSettingsFromClasspath(resourcePath);
+                if (result != null) {
+                    return result;
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "classpath検索でエラーが発生: " + classpathLocation, e);
+        }
+        
+        return null;
+    }
+
+    /**
+     * classpathリソースからStencilSettingsYmlを読み込む
+     * @param resourcePath リソースパス
+     * @return 読み込まれたStencilSettingsYml、または null
+     */
+    private StencilSettingsYml loadStencilSettingsFromClasspath(String resourcePath) {
+        try {
             InputStream inputStream = this.getClass().getClassLoader()
                 .getResourceAsStream(resourcePath);
             
@@ -696,10 +898,47 @@ public class TemplateEngineProcessor {
                 }
             }
         } catch (Exception e) {
-            logger.log(Level.WARNING, "classpath検索でエラーが発生: " + classpathLocation, e);
+            logger.log(Level.FINE, "classpathリソース読み込み失敗: " + resourcePath, e);
+        }
+        return null;
+    }
+
+    /**
+     * classpathから利用可能なシリアル番号一覧を検索する
+     * @param classpathLocation classpath:で始まるパス
+     * @param stencilCanonicalName ステンシル正規名
+     * @return 利用可能なシリアル番号一覧（降順ソート）
+     */
+    private List<String> findAvailableSerialsInClasspath(String classpathLocation, String stencilCanonicalName) {
+        List<String> serials = Lists.newArrayList();
+        
+        try {
+            String baseResourcePath = classpathLocation.substring("classpath:".length()) + stencilCanonicalName;
+            if (baseResourcePath.startsWith("/")) {
+                baseResourcePath = baseResourcePath.substring(1);
+            }
+            
+            // classpathからディレクトリ一覧を取得（簡易実装）
+            // 実際のclasspath検索は制限があるため、既知のシリアル番号パターンで試行
+            String[] commonSerials = {"250913A", "191207A", "201019A"}; // よく使われるシリアル番号パターン
+            
+            for (String serial : commonSerials) {
+                String testPath = baseResourcePath + "/" + serial + "/stencil-settings.yml";
+                InputStream testStream = this.getClass().getClassLoader().getResourceAsStream(testPath);
+                if (testStream != null) {
+                    serials.add(serial);
+                    CloseableUtil.close(testStream);
+                }
+            }
+            
+            // 降順ソート（新しいシリアル番号が先頭に）
+            serials.sort(Collections.reverseOrder());
+            
+        } catch (Exception e) {
+            logger.log(Level.FINE, "シリアル番号検索でエラー: " + classpathLocation, e);
         }
         
-        return null;
+        return serials;
     }
 
     /**
@@ -798,5 +1037,253 @@ public class TemplateEngineProcessor {
 
     public String getSerialNo() {
         return context.getSerialNo();
+    }
+
+    /**
+     * Resource からStencilSettingsYmlを読み込む
+     * @param resource Spring Resource
+     * @return StencilSettingsYml、または null
+     */
+    private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
+        try (InputStream inputStream = resource.getInputStream()) {
+            LoaderOptions loaderOptions = new LoaderOptions();
+            Yaml yaml = new Yaml(loaderOptions);
+            return yaml.loadAs(inputStream, StencilSettingsYml.class);
+        } catch (Exception e) {
+            System.out.println("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * ResourcePatternResolverを使用してテンプレートファイルを検索
+     * @param templateFileName 検索するテンプレートファイル名
+     * @return 見つかったファイル、または null
+     */
+    private File findTemplateWithResourcePattern(String templateFileName) {
+        try {
+            if (resourcePatternResolver == null) {
+                return null;
+            }
+            
+            // 正しいクラスパス検索パターンを構築
+            String stencilDir = StorageConfig.getSamplesStencilDir();
+            if (stencilDir.startsWith("classpath:")) {
+                stencilDir = stencilDir.replace("classpath:", "classpath*:");
+            }
+            
+            String pattern = stencilDir + context.getStencilCanonicalName() + 
+                "/" + context.getSerialNo() + "/**/" + templateFileName;
+                
+            System.out.println("=== Searching for template files with pattern: " + pattern + " ===");
+            Resource[] resources = resourcePatternResolver.getResources(pattern);
+            System.out.println("Found " + resources.length + " resources for pattern: " + pattern);
+            
+            if (resources.length > 0) {
+                System.out.println("Found template resource: " + resources[0].getURI());
+                return extractResourceToTempFile(resources[0], templateFileName);
+            }
+        } catch (Exception e) {
+            System.out.println("ResourcePattern template search failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Resourceを一時ファイルに展開
+     * @param resource Spring Resource
+     * @param templateFileName テンプレートファイル名
+     * @return 一時ファイル
+     */
+    private File extractResourceToTempFile(Resource resource, String templateFileName) throws Exception {
+        File tempFile = File.createTempFile("template-" + templateFileName.replace(".", "-"), ".tmp");
+        tempFile.deleteOnExit();
+        
+        try (InputStream inputStream = resource.getInputStream();
+             FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+            inputStream.transferTo(outputStream);
+        }
+        
+        // 一時ファイル名と元のテンプレートファイル名のマッピングを保存
+        tempFileToOriginalMap.put(tempFile.getName(), templateFileName);
+        
+        System.out.println("Extracted template to temp file: " + tempFile.getAbsolutePath());
+        return tempFile;
+    }
+
+    /**
+     * ファイルからFreeMarkerテンプレートを作成
+     * @param templateFile テンプレートファイル
+     * @param stencilName ステンシル名
+     * @return FreeMarkerテンプレート
+     */
+    private freemarker.template.Template createTemplateFromFile(File templateFile, String stencilName) throws Exception {
+        // ファイルの内容を文字列として読み込み
+        String templateContent = Files.readString(templateFile.toPath());
+        
+        // FreeMarkerのTemplateオブジェクトを作成
+        return new freemarker.template.Template(stencilName, templateContent, cfg);
+    }
+
+    /**
+     * ResourcePatternResolverを使用してステンシルテンプレートファイルリストを取得
+     * @return テンプレートファイル名のリスト（stencil-settings.ymlは除外）
+     */
+    private List<String> getStencilTemplateFiles() {
+        List<String> templateFiles = new ArrayList<>();
+        Set<String> foundFileNames = new HashSet<>(); // 重複排除のため
+        
+        try {
+            String stencilCanonicalName = context.getStencilCanonicalName();
+            String serialNo = context.getSerialNo();
+            
+            System.out.println("=== Layered template search for stencil: " + stencilCanonicalName + " serial: " + serialNo + " ===");
+            
+            // Layer 1: Filesystem stencils (既存の/apps/mste/stencil)
+            searchFilesystemTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
+            
+            // Layer 2: Classpath stencils (stencil-samples)
+            searchClasspathTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
+            
+            System.out.println("=== Total template files found: " + templateFiles.size() + " ===");
+            for (String file : templateFiles) {
+                System.out.println("Template file: " + file);
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Error in getStencilTemplateFiles: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return templateFiles;
+    }
+    
+    private void searchFilesystemTemplates(List<String> templateFiles, Set<String> foundFileNames,
+                                          String stencilCanonicalName, String serialNo) {
+        try {
+            String fullPath = getStencilAndSerialStorageDir();
+            System.out.println("Searching filesystem layer: " + StorageUtil.getBaseDir() + fullPath);
+            
+            if (new File(StorageUtil.getBaseDir() + fullPath).exists()) {
+                List<String> files = StorageUtil.getFiles(fullPath);
+                
+                for (String filePath : files) {
+                    File file = new File(filePath);
+                    String fileName = file.getName();
+                    
+                    if (!fileName.equals("stencil-settings.yml") && 
+                        !foundFileNames.contains(fileName)) {
+                        templateFiles.add(filePath);
+                        foundFileNames.add(fileName);
+                        System.out.println("FILESYSTEM found: " + fileName);
+                    }
+                }
+            } else {
+                System.out.println("FILESYSTEM directory not found: " + StorageUtil.getBaseDir() + fullPath);
+            }
+        } catch (Exception e) {
+            System.out.println("Error searching filesystem layer: " + e.getMessage());
+        }
+    }
+    
+    private void searchClasspathTemplates(List<String> templateFiles, Set<String> foundFileNames,
+                                        String stencilCanonicalName, String serialNo) {
+        try {
+            if (resourcePatternResolver == null) {
+                System.out.println("ResourcePatternResolver not available for classpath search");
+                return;
+            }
+            
+            String searchPattern = "classpath*:stencil-samples" + stencilCanonicalName + "/" + serialNo + "/**";
+            System.out.println("Searching CLASSPATH layer: " + searchPattern);
+            
+            Resource[] resources = resourcePatternResolver.getResources(searchPattern);
+            System.out.println("Found " + resources.length + " classpath resources");
+            
+            for (Resource resource : resources) {
+                try {
+                    String filename = resource.getFilename();
+                    if (filename != null && 
+                        !filename.equals("stencil-settings.yml") && 
+                        !resource.getURI().toString().endsWith("/") &&
+                        !foundFileNames.contains(filename)) {
+                        
+                        // classpath resourceを一時ファイルに展開
+                        File tempFile = extractResourceToTempFile(resource, filename);
+                        if (tempFile != null) {
+                            templateFiles.add(tempFile.getAbsolutePath());
+                            foundFileNames.add(filename);
+                            System.out.println("CLASSPATH found: " + filename + " -> " + tempFile.getAbsolutePath());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error processing classpath resource: " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error searching classpath layer: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * ステンシルディレクトリパスを取得
+     * @return ステンシルディレクトリパス
+     */
+    private String getStencilDirPath() {
+        return getStencilAndSerialStorageDir().replace("\\", "/");
+    }
+
+    /**
+     * ファイルパスから相対ファイル名を抽出（name用）
+     * @param fullPath 完全なファイルパス
+     * @return 相対ファイル名
+     */
+    private String extractRelativeFileName(String fullPath) {
+        if (StringUtils.isEmpty(fullPath)) {
+            return "";
+        }
+        
+        String baseDirPath = StorageUtil.getBaseDir();
+        String stencilMasterDir = getStencilMasterStorageDir();
+        
+        // ファイルシステムパスの場合
+        if (fullPath.startsWith(baseDirPath)) {
+            try {
+                return fullPath.substring(baseDirPath.length() + stencilMasterDir.length());
+            } catch (StringIndexOutOfBoundsException e) {
+                // fallback: ファイル名のみ
+                return new File(fullPath).getName();
+            }
+        }
+        
+        // クラスパスから展開された一時ファイルの場合
+        return new File(fullPath).getName();
+    }
+
+    /**
+     * ファイルパスからテンプレートファイル名を抽出（cname用）
+     * @param fullPath 完全なファイルパス
+     * @return テンプレートファイル名
+     */
+    private String extractTemplateFileName(String fullPath) {
+        if (StringUtils.isEmpty(fullPath)) {
+            return "";
+        }
+        
+        String baseDirPath = StorageUtil.getBaseDir();
+        String stencilAndSerialDir = getStencilAndSerialStorageDir();
+        
+        // ファイルシステムパスの場合
+        if (fullPath.startsWith(baseDirPath)) {
+            try {
+                return fullPath.substring(baseDirPath.length() + stencilAndSerialDir.length());
+            } catch (StringIndexOutOfBoundsException e) {
+                // fallback: ファイル名のみ
+                return new File(fullPath).getName();
+            }
+        }
+        
+        // クラスパスから展開された一時ファイルの場合
+        return new File(fullPath).getName();
     }
 }
