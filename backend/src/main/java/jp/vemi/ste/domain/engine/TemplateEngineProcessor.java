@@ -118,8 +118,14 @@ public class TemplateEngineProcessor {
         // context.
         instance.context = context;
         
-        // resourcePatternResolver
+        // resourcePatternResolver with null check
         instance.resourcePatternResolver = resourcePatternResolver;
+        
+        if (resourcePatternResolver == null) {
+            System.out.println("WARNING: ResourcePatternResolver is null in TemplateEngineProcessor.create()");
+            System.out.println("This may cause classpath resource search to fail");
+            // nullの場合でもインスタンス生成は継続（フォールバック処理で対応）
+        }
 
         // decide serialNo (only stencil selected)
         if (false == StringUtils.isEmpty(instance.context.getStencilCanonicalName())
@@ -734,10 +740,12 @@ public class TemplateEngineProcessor {
         for (String layerDir : searchLayers) {
             StencilSettingsYml settings = findStencilSettingsInLayer(layerDir);
             if (settings != null) {
+                System.out.println("Found stencil settings in layer: " + layerDir);
                 return settings;
             }
         }
         
+        System.out.println("No stencil settings found in any layer");
         return null;
     }
 
@@ -948,12 +956,34 @@ public class TemplateEngineProcessor {
      */
     private StencilSettingsYml findStencilSettingsInFileSystem(String layerDir) {
         try {
-            File settingsFile = new File(layerDir + context.getStencilCanonicalName() + "/stencil-settings.yml");
+            System.out.println("=== DEBUG findStencilSettingsInFileSystem ===");
+            System.out.println("layerDir: " + layerDir);
+            System.out.println("stencilCanonicalName: " + context.getStencilCanonicalName());
+            
+            // パス構築の改善
+            String stencilPath;
+            if (layerDir.endsWith("/")) {
+                stencilPath = layerDir + context.getStencilCanonicalName().substring(1); // 先頭の"/"を除去
+            } else {
+                stencilPath = layerDir + context.getStencilCanonicalName(); 
+            }
+            
+            // serialNoが指定されている場合はそれも含める
+            if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                stencilPath = stencilPath + "/" + context.getSerialNo();
+            }
+            
+            File settingsFile = new File(stencilPath + "/stencil-settings.yml");
+            System.out.println("Searching settings file: " + settingsFile.getAbsolutePath());
             
             if (settingsFile.exists() && settingsFile.isFile()) {
+                System.out.println("Found stencil-settings.yml: " + settingsFile.getAbsolutePath());
                 return getSsYmlRecurive(settingsFile);
+            } else {
+                System.out.println("Settings file not found: " + settingsFile.getAbsolutePath());
             }
         } catch (Exception e) {
+            System.out.println("Error in filesystem search: " + e.getMessage());
             logger.log(Level.WARNING, "ファイルシステム検索でエラーが発生: " + layerDir, e);
         }
         
