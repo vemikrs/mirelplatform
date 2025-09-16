@@ -18,8 +18,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.ConstructorException;
 
@@ -54,6 +57,10 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     @Autowired
     protected FileManagementRepository fileManagementRepository;
 
+    /** Spring標準のリソース検索機能 */
+    @Autowired
+    protected ResourcePatternResolver resourcePatternResolver;
+
     /**
      * {@inheritDoc}
      */
@@ -76,6 +83,9 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
         try {
             // clear.
             stencilRepository.deleteAll();
+            
+            // FileManagementテーブルもクリア（重複エラー回避）
+            fileManagementRepository.deleteAll();
 
             // レイヤード検索でstencil-settings.ymlを収集
             Map<String, String> categories = Maps.newLinkedHashMap();
@@ -137,25 +147,30 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
 
     /**
      * レイヤード検索でstencil-settings.ymlファイルを収集する
-     * TemplateEngineProcessorの既存機能を活用してステンシル設定を収集
+     * StorageConfigの新しいレイヤー構造を使用してステンシル設定を収集
      */
     private List<String> collectStencilSettingsFromLayers() {
         List<String> allFiles = new ArrayList<>();
         
         try {
-            // 既存のファイルシステム検索（ユーザー・標準レイヤー）
-            String baseDir = StorageUtil.getBaseDir();
-            String stencilMasterStorageDir = TemplateEngineProcessor.getStencilMasterStorageDir();
-            String dir = baseDir + stencilMasterStorageDir;
+            System.out.println("=== Layered Stencil Collection Using StorageConfig ===");
             
-            System.out.println("=== Layered Stencil Collection Using TemplateEngineProcessor ===");
-            System.out.println("Base directory: " + baseDir);
-            System.out.println("Stencil master storage dir: " + stencilMasterStorageDir);
+            // StorageConfigから新しいレイヤーディレクトリを取得
+            String[] layerDirs = {
+                StorageConfig.getUserStencilDir(),
+                StorageConfig.getStandardStencilDir()
+            };
             
-            // 既存ディレクトリ検索（ユーザー・標準レイヤー）
-            List<String> legacyFiles = FileUtil.findByFileName(dir, "stencil-settings.yml");
-            allFiles.addAll(legacyFiles);
-            System.out.println("Found " + legacyFiles.size() + " legacy/user stencil files");
+            for (String layerDir : layerDirs) {
+                System.out.println("Searching layer directory: " + layerDir);
+                if (new File(layerDir).exists()) {
+                    List<String> layerFiles = FileUtil.findByFileName(layerDir, "stencil-settings.yml");
+                    allFiles.addAll(layerFiles);
+                    System.out.println("Found " + layerFiles.size() + " stencil files in layer: " + layerDir);
+                } else {
+                    System.out.println("Layer directory does not exist: " + layerDir);
+                }
+            }
             
             // TemplateEngineProcessorを使って既知のサンプルステンシルを検索
             collectKnownSampleStencilsUsingTemplateEngine(allFiles);
@@ -181,7 +196,8 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     }
 
     /**
-     * TemplateEngineProcessorを使って既知のサンプルステンシルを検索し、一時ファイルとして収集
+     * サンプルステンシルをclasspathから動的に収集
+     * Spring標準のResourcePatternResolverを使用してclasspathリソースを検索
      */
     private void collectKnownSampleStencilsUsingTemplateEngine(List<String> allFiles) {
         try {
@@ -191,39 +207,143 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                 return;
             }
             
-            System.out.println("Collecting sample stencils using direct classpath resource loading...");
+            System.out.println("Collecting sample stencils using ResourcePatternResolver...");
             
-            // 既知のサンプルステンシルリスト
-            String[] knownSampleStencils = {"/samples/hello-world"};
+            // サンプルステンシルディレクトリを取得
+            String samplesDir = StorageConfig.getSamplesStencilDir();
             
-            for (String stencilCanonicalName : knownSampleStencils) {
-                try {
-                    // classpathから直接stencil-settings.ymlを読み込み
-                    String resourcePath = "/stencil-samples" + stencilCanonicalName + "/stencil-settings.yml";
-                    
-                    try (InputStream inputStream = getClass().getResourceAsStream(resourcePath)) {
-                        if (inputStream != null) {
-                            // YAMLファイルを読み込んでStencilSettingsYmlオブジェクトに変換
-                            StencilSettingsYml settings = loadStencilSettingsFromStream(inputStream);
+            if (samplesDir.startsWith("classpath:")) {
+                // classpathリソース検索パターンを構築（再帰的に全てのstencil-settings.ymlを検索）
+                String searchPattern = samplesDir + "/**/stencil-settings.yml";
+                System.out.println("Searching for resources with pattern: " + searchPattern);
+                
+                // ResourcePatternResolverでclasspathリソースを検索
+                Resource[] resources = resourcePatternResolver.getResources(searchPattern);
+                System.out.println("Found " + resources.length + " sample stencil-settings.yml resources");
+                
+                // 見つかったリソースを処理
+                for (Resource resource : resources) {
+                    try {
+                        // Resourceから直接StencilSettingsYmlを読み込み
+                        StencilSettingsYml settings = loadStencilSettingsFromResource(resource);
+                        
+                        if (settings != null && settings.getStencil() != null && settings.getStencil().getConfig() != null) {
+                            // classpathリソースを物理ファイルとしてsamplesレイヤーに展開
+                            String stencilId = settings.getStencil().getConfig().getId();
+                            String serialNo = settings.getStencil().getConfig().getSerial();
                             
-                            if (settings != null && settings.getStencil() != null && settings.getStencil().getConfig() != null) {
-                                // 設定が見つかった場合、一時ファイルとして保存
-                                File tempFile = createTempStencilSettingsFile(stencilCanonicalName, settings);
-                                allFiles.add(tempFile.getAbsolutePath());
-                                System.out.println("Sample stencil collected: " + stencilCanonicalName + " -> " + tempFile.getAbsolutePath());
+                            // samplesレイヤーディレクトリに物理ファイルとして保存
+                            File samplesLayerFile = createPhysicalSampleStencilFile(stencilId, serialNo, settings);
+                            if (samplesLayerFile != null) {
+                                allFiles.add(samplesLayerFile.getAbsolutePath());
+                                System.out.println("Sample stencil expanded to physical file: " + resource.getURI() + " -> " + samplesLayerFile.getAbsolutePath());
                             }
-                        } else {
-                            System.out.println("Sample stencil resource not found: " + resourcePath);
                         }
+                    } catch (Exception resourceException) {
+                        System.out.println("Could not process sample stencil resource " + resource.getURI() + ": " + resourceException.getMessage());
                     }
-                } catch (Exception stencilException) {
-                    System.out.println("Could not collect sample stencil " + stencilCanonicalName + ": " + stencilException.getMessage());
-                    // 個別のステンシルが見つからない場合は継続
                 }
+            } else {
+                // ファイルシステムの場合は従来通りFileUtil.findByFileNameを使用
+                System.out.println("Using filesystem search for samples directory: " + samplesDir);
+                List<String> foundFiles = FileUtil.findByFileName(samplesDir, "stencil-settings.yml");
+                allFiles.addAll(foundFiles);
+                System.out.println("Found " + foundFiles.size() + " filesystem sample stencil files");
             }
+            
         } catch (Exception e) {
             System.out.println("Error collecting sample stencils: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * ResourceからStencilSettingsYmlを読み込む
+     * @param resource Spring Resource
+     * @return StencilSettingsYml、または null
+     */
+    private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
+        try (InputStream inputStream = resource.getInputStream()) {
+            return new Yaml().loadAs(inputStream, StencilSettingsYml.class);
+        } catch (Exception e) {
+            System.out.println("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * StencilSettingsYmlオブジェクトを物理YAMLファイルとしてsamplesレイヤーに作成
+     * TemplateEngineProcessorが見つけられるようにファイルシステムに展開
+     */
+    private File createPhysicalSampleStencilFile(String stencilId, String serialNo, StencilSettingsYml settings) {
+        try {
+            // samplesレイヤーディレクトリのパスを構築
+            String samplesDir = StorageConfig.getSamplesStencilDir();
+            if (samplesDir.startsWith("classpath:")) {
+                // classpathの場合はファイルシステムのsamplesディレクトリを使用
+                samplesDir = StorageConfig.getStandardStencilDir().replace("/standard", "/samples");
+            }
+            
+            // ステンシル固有のディレクトリ作成: /samples/hello-world/250913A/
+            File stencilDir = new File(samplesDir + stencilId + "/" + serialNo);
+            if (!stencilDir.exists()) {
+                stencilDir.mkdirs();
+            }
+            
+            File stencilFile = new File(stencilDir, "stencil-settings.yml");
+            
+            // StencilSettingsYmlオブジェクトをYAMLファイルとして書き込み
+            try (java.io.FileWriter writer = new java.io.FileWriter(stencilFile)) {
+                var config = settings.getStencil().getConfig();
+                writer.write("stencil:\n");
+                writer.write("  config:\n");
+                writer.write("    categoryId: \"" + (config.getCategoryId() != null ? config.getCategoryId() : "") + "\"\n");
+                writer.write("    categoryName: \"" + (config.getCategoryName() != null ? config.getCategoryName() : "") + "\"\n");
+                writer.write("    id: \"" + (config.getId() != null ? config.getId() : "") + "\"\n");
+                writer.write("    name: \"" + (config.getName() != null ? config.getName() : "") + "\"\n");
+                writer.write("    serial: \"" + (config.getSerial() != null ? config.getSerial() : "") + "\"\n");
+                writer.write("    lastUpdate: \"" + (config.getLastUpdate() != null ? config.getLastUpdate() : "") + "\"\n");
+                writer.write("    lastUpdateUser: \"" + (config.getLastUpdateUser() != null ? config.getLastUpdateUser() : "") + "\"\n");
+                writer.write("    description: |\n");
+                writer.write("      " + (config.getDescription() != null ? config.getDescription().replace("\n", "\n      ") : "") + "\n");
+                
+                // dataElementとdataDomainも含める
+                if (settings.getStencil().getDataElement() != null && !settings.getStencil().getDataElement().isEmpty()) {
+                    writer.write("  dataElement:\n");
+                    for (var element : settings.getStencil().getDataElement()) {
+                        writer.write("    - id: \"" + element.get("id") + "\"\n");
+                    }
+                }
+                
+                if (settings.getStencil().getDataDomain() != null && !settings.getStencil().getDataDomain().isEmpty()) {
+                    writer.write("  dataDomain:\n");
+                    for (var domain : settings.getStencil().getDataDomain()) {
+                        writer.write("    - id: \"" + domain.get("id") + "\"\n");
+                        if (domain.get("name") != null) writer.write("      name: \"" + domain.get("name") + "\"\n");
+                        if (domain.get("value") != null) writer.write("      value: \"" + domain.get("value") + "\"\n");
+                        if (domain.get("type") != null) writer.write("      type: \"" + domain.get("type") + "\"\n");
+                        if (domain.get("placeholder") != null) writer.write("      placeholder: \"" + domain.get("placeholder") + "\"\n");
+                        if (domain.get("note") != null) writer.write("      note: \"" + domain.get("note") + "\"\n");
+                    }
+                }
+                
+                // codeInfoも含める
+                if (settings.getStencil().getCodeInfo() != null) {
+                    var codeInfo = settings.getStencil().getCodeInfo();
+                    writer.write("  codeInfo:\n");
+                    writer.write("    copyright: \"" + (codeInfo.getCopyright() != null ? codeInfo.getCopyright() : "") + "\"\n");
+                    writer.write("    versionNo: \"" + (codeInfo.getVersionNo() != null ? codeInfo.getVersionNo() : "") + "\"\n");
+                    writer.write("    author: \"" + (codeInfo.getAuthor() != null ? codeInfo.getAuthor() : "") + "\"\n");
+                    writer.write("    vendor: \"" + (codeInfo.getVendor() != null ? codeInfo.getVendor() : "") + "\"\n");
+                }
+            }
+            
+            return stencilFile;
+            
+        } catch (Exception e) {
+            System.out.println("Error creating physical sample stencil file: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -258,7 +378,9 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
 
     /**
      * 従来のファイル管理処理（後方互換性）
+     * 新しいトランザクションで実行して楽観ロック競合を回避
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     private void readFileManagementLegacy() {
         String dir = StorageUtil.getBaseDir() + TemplateEngineProcessor.getStencilMasterStorageDir();
         String fileDir = dir + "/_filemanagement";
@@ -280,12 +402,23 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                 continue;
             }
 
+            String fileId = file.getName();
+            
+            // 重複チェック: 既存のFileManagementレコードがあるかチェック
+            if (fileManagementRepository.existsById(fileId)) {
+                System.out.println("FileManagement already exists, skipping: " + fileId);
+                continue;
+            }
+
             // create entity.
             FileManagement fileManagement = new FileManagement();
-            fileManagement.fileId = file.getName();
+            fileManagement.fileId = fileId;
             fileManagement.fileName = filesInUuid[0].getName();
             fileManagement.filePath = filesInUuid[0].getAbsolutePath();
             fileManagement.expireDate = DateUtils.addDays(new Date(), 3650);
+            
+            // @Versionフィールドは自動管理に委ねる（nullのまま保存）
+            
             fileManagementRepository.save(fileManagement);
         }
     }
