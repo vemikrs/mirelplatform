@@ -35,7 +35,7 @@ mirel:
   storage-dir: ./data/storage
   stencil:
     layers:
-      user: ${mirel.storage-dir}/user
-      standard: ${mirel.storage-dir}/standard  
+      user: ${mirel.storage-dir}/apps/promarker/stencil/user
+      standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
       samples: classpath:/stencil-samples
     auto-deploy-samples: true

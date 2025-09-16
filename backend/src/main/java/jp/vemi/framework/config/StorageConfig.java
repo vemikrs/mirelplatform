@@ -18,10 +18,10 @@ public class StorageConfig {
     @Value("${mirel.storage-dir:./data/storage}")
     private String storageDir;
     
-    @Value("${mirel.stencil.layers.user:${mirel.storage-dir}/user}")
+    @Value("${mirel.stencil.layers.user:${mirel.storage-dir}/apps/promarker/stencil/user}")
     private String userStencilDir;
     
-    @Value("${mirel.stencil.layers.standard:${mirel.storage-dir}/standard}")
+    @Value("${mirel.stencil.layers.standard:${mirel.storage-dir}/apps/promarker/stencil/standard}")
     private String standardStencilDir;
     
     @Value("${mirel.stencil.layers.samples:classpath:/stencil-samples}")
