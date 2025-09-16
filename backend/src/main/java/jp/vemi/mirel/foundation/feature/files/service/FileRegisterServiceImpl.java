@@ -95,6 +95,9 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     // 手動初期化はHibernateの新規/既存判別を混乱させる
     
     FileManagement saved = fileManagementRepository.save(fileManagement);
+    if (null == saved) {
+        throw new RuntimeException("Failed to save FileManagement entity");
+    }
     return Pair.of(uuid, fileName);
   }
 
@@ -118,10 +121,12 @@ public class FileRegisterServiceImpl implements FileRegisterService {
 
   }
 
+  // TODO: Config化
   protected String defaultAppDir() {
     return "foundation/filemanagement";
   }
 
+  // TODO: Config化
   protected int defaultExpireTerms() {
     return 3;
   }

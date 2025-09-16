@@ -348,35 +348,6 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     }
 
     /**
-     * StencilSettingsYmlオブジェクトを一時YAMLファイルとして作成
-     */
-    private File createTempStencilSettingsFile(String stencilCanonicalName, StencilSettingsYml settings) throws Exception {
-        File tempFile = File.createTempFile(
-            "stencil-settings-" + stencilCanonicalName.replace("/", "-"), 
-            ".yml"
-        );
-        tempFile.deleteOnExit();
-        
-        // 簡易的なYAML形式で書き出し（既存のStencilSettingsYml構造を参考）
-        try (java.io.FileWriter writer = new java.io.FileWriter(tempFile)) {
-            var config = settings.getStencil().getConfig();
-            writer.write("stencil:\n");
-            writer.write("  config:\n");
-            writer.write("    categoryId: " + (config.getCategoryId() != null ? config.getCategoryId() : "") + "\n");
-            writer.write("    categoryName: " + (config.getCategoryName() != null ? config.getCategoryName() : "") + "\n");
-            writer.write("    id: " + (config.getId() != null ? config.getId() : "") + "\n");
-            writer.write("    name: " + (config.getName() != null ? config.getName() : "") + "\n");
-            writer.write("    serial: " + (config.getSerial() != null ? config.getSerial() : "") + "\n");
-            writer.write("    lastUpdate: " + (config.getLastUpdate() != null ? config.getLastUpdate() : "") + "\n");
-            writer.write("    lastUpdateUser: " + (config.getLastUpdateUser() != null ? config.getLastUpdateUser() : "") + "\n");
-            writer.write("    description: |\n");
-            writer.write("      " + (config.getDescription() != null ? config.getDescription().replace("\n", "\n      ") : "") + "\n");
-        }
-        
-        return tempFile;
-    }
-
-    /**
      * 従来のファイル管理処理（後方互換性）
      * 新しいトランザクションで実行して楽観ロック競合を回避
      */

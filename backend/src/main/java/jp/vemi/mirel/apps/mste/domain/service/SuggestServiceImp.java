@@ -69,6 +69,7 @@ public class SuggestServiceImp implements SuggestService {
         // 根本的な問題: ApiResponse<T>とFrontend期待値の構造不整合
         // 詳細は別Issue参照: API レスポンス構造の設計見直し
         class ModelWrapper {
+            @SuppressWarnings("unused")
             public SuggestResult model;
         }
 
