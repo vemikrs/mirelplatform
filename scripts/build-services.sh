@@ -5,14 +5,15 @@
 
 set -e
 
+# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
+
 echo "🔨 Mirel Platform ビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成
 mkdir -p logs
-
-# プロジェクトルートに移動
-cd /workspaces/mirelplatform
 
 # Backend ビルド
 echo "🔧 Backend (Spring Boot) ビルド中..."

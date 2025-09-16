@@ -5,14 +5,15 @@
 
 set -e
 
+# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
+
 echo "🔧 Backend (Spring Boot) ビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成
 mkdir -p logs
-
-# プロジェクトルートに移動
-cd /workspaces/mirelplatform
 
 # Backend ビルド実行
 echo "   タスク: ./gradlew backend:build"

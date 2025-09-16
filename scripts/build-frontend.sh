@@ -5,6 +5,10 @@
 
 set -e
 
+# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
+
 echo "🎨 Frontend (Nuxt.js) ビルド開始..."
 echo "======================================"
 
@@ -12,7 +16,7 @@ echo "======================================"
 mkdir -p logs
 
 # frontendディレクトリに移動
-cd /workspaces/mirelplatform/frontend
+cd frontend
 
 # npm依存関係の確認・インストール
 if [ ! -d "node_modules" ]; then

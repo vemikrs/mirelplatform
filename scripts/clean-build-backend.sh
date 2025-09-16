@@ -1,6 +1,12 @@
-#!/bin/bash
+#!/bin/# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
 
-# Mirel Platform Backend クリーンビルドスクリプト
+echo "🧩 Backend (Spring Boot) クリーンビルド開始..."
+echo "======================================"
+
+# ログディレクトリの作成
+mkdir -p logsMirel Platform Backend クリーンビルドスクリプト
 # Spring Boot アプリケーションのクリーン＆ビルド
 
 set -e

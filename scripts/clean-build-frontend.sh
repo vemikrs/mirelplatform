@@ -1,6 +1,15 @@
-#!/bin/bash
+#!/bin/# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
 
-# Mirel Platform Frontend クリーンビルドスクリプト
+echo "🧩 Frontend (Nuxt.js) クリーンビルド開始..."
+echo "======================================"
+
+# ログディレクトリの作成
+mkdir -p logs
+
+# frontendディレクトリに移動
+cd frontendMirel Platform Frontend クリーンビルドスクリプト
 # Nuxt.js アプリケーションのクリーン＆ビルド
 
 set -e

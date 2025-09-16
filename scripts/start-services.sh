@@ -8,6 +8,10 @@ set -e
 echo "🚀 Mirel Platform サービス起動中..."
 echo "======================================"
 
+# プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
+PROJECT_ROOT="$(dirname "$0")"/.. 
+cd "$PROJECT_ROOT"
+
 # ログディレクトリの作成
 mkdir -p logs
 
@@ -24,7 +28,6 @@ echo "   ポート: 3000"
 echo "   プロファイル: dev"
 echo "   ログ: logs/backend.log"
 
-cd /workspaces/mirelplatform
 SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
