@@ -21,6 +21,8 @@
   },
   "containerEnv": {
     "GRADLE_USER_HOME": "/home/vscode/.gradle",
+    "TZ": "${localEnv:TZ}",
+    "DEVCONTAINER_TZ": "Asia/Tokyo",
     "SPRING_PROFILES_ACTIVE": "dev",
     "HOST": "0.0.0.0"
   },
@@ -64,6 +66,7 @@
     }
   },
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
+  "postStartCommand": "if [ -n \"$TZ\" ]; then sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ | sudo tee /etc/timezone; else sudo ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && echo 'Asia/Tokyo' | sudo tee /etc/timezone; fi",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
   ],
