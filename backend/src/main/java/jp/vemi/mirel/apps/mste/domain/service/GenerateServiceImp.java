@@ -14,6 +14,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -44,11 +45,18 @@ public class GenerateServiceImp implements GenerateService {
     @Autowired
     protected FileManagementRepository fileManagementRepository;
 
+    /** Spring標準のリソース検索機能 */
+    @Autowired
+    protected ResourcePatternResolver resourcePatternResolver;
+
     /**
      * {@inheritDoc}
      */
     @Override
     public ApiResponse<GenerateResult> invoke(ApiRequest<GenerateParameter> parameter) {
+        System.out.println("=== DEBUG GenerateServiceImp.invoke ===");
+        System.out.println("parameter.getModel(): " + parameter.getModel());
+        System.out.println("resourcePatternResolver: " + resourcePatternResolver);
 
         ApiResponse<GenerateResult> resp = ApiResponse.<GenerateResult>builder().build();
 
@@ -64,8 +72,12 @@ public class GenerateServiceImp implements GenerateService {
             }
 
             // prepare.
+            System.out.println("=== Creating TemplateEngineProcessor ===");
+            System.out.println("SteContext: " + SteContext.newSteContext(once));
+            System.out.println("resourcePatternResolver: " + resourcePatternResolver);
             TemplateEngineProcessor engine = TemplateEngineProcessor.create(
-                    SteContext.newSteContext(once));
+                    SteContext.newSteContext(once), resourcePatternResolver);
+            System.out.println("TemplateEngineProcessor created, getting stencil settings...");
             List<Map<String, Object>> delements = engine.getStencilSettings().getStencilDeAndDd();
             for (Map<String, Object> delement : delements) {
                 Object typeObject = delement.get("type");
