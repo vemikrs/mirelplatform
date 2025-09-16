@@ -479,6 +479,7 @@ public class SuggestServiceImp implements SuggestService {
             
             // ModelWrapper適用（既存のパターンに合わせる）
             class FallbackModelWrapper {
+                @SuppressWarnings("unused")
                 public SuggestResult model;
             }
             

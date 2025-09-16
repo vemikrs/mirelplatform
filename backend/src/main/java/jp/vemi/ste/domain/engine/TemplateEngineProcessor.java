@@ -253,7 +253,7 @@ public class TemplateEngineProcessor {
             // Layer 2: クラスパスローダー（新機能）
             if (resourcePatternResolver != null) {
                 // SpringClasspathローダーは複数のクラスパスパスをサポートできる
-                String stencilPath = "stencil-samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
+                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
                 ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
                 loaders.add(classpathLoader);
                 System.out.println("Added classpath template loader: " + stencilPath);
@@ -1021,7 +1021,7 @@ public class TemplateEngineProcessor {
             // Layer 1: Filesystem stencils (既存の/apps/mste/stencil)
             searchFilesystemTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
             
-            // Layer 2: Classpath stencils (stencil-samples)
+            // Layer 2: Classpath stencils (旧stencil-samples)
             searchClasspathTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
             
             System.out.println("=== Total template files found: " + templateFiles.size() + " ===");
@@ -1073,7 +1073,7 @@ public class TemplateEngineProcessor {
                 return;
             }
             
-            String searchPattern = "classpath*:stencil-samples" + stencilCanonicalName + "/" + serialNo + "/**";
+            String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/**";
             System.out.println("Searching CLASSPATH layer: " + searchPattern);
             
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
