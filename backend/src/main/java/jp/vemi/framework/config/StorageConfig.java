@@ -17,17 +17,22 @@ public class StorageConfig {
 
     @Value("${mirel.storage-dir:./data/storage}")
     private String storageDir;
-    
-    @Value("${mirel.stencil.layers.user:${mirel.storage-dir}/apps/promarker/stencil/user}")
+
+    // -------------------- ProMarker -------------------- //
+    @Value("${mirel.promarker.storage-dir:${mirel.storage-dir}/apps/promarker}")
+    @lombok.Getter
+    private String proMarkerAppDir = "apps/promarker";
+
+    @Value("${mirel.promarker.stencil.user:${mirel.storage-dir}/apps/promarker}/stencil/user")
     private String userStencilDir;
-    
-    @Value("${mirel.stencil.layers.standard:${mirel.storage-dir}/apps/promarker/stencil/standard}")
+
+    @Value("${mirel.promarker.stencil.standard:${mirel.storage-dir}/apps/promarker}/stencil/standard")
     private String standardStencilDir;
-    
-    @Value("${mirel.stencil.layers.samples:classpath:/stencil-samples}")
+
+    @Value("${mirel.promarker.stencil.samples:classpath:/promarker/stencil/samples}")
     private String samplesStencilDir;
-    
-    @Value("${mirel.stencil.auto-deploy-samples:true}")
+
+    @Value("${mirel.promarker.stencil.auto-deploy-samples:true}")
     private boolean autoDeploySamples;
 
     private static String configuredStorageDir;
@@ -40,6 +45,7 @@ public class StorageConfig {
     public void init() {
         System.out.println("=== StorageConfig PostConstruct Debug ===");
         System.out.println("Raw storageDir from @Value: " + storageDir);
+        System.out.println("Raw ProMarkerAppDir from @Value: " + proMarkerAppDir);
         System.out.println("Raw userStencilDir from @Value: " + userStencilDir);
         System.out.println("Raw standardStencilDir from @Value: " + standardStencilDir);
         System.out.println("Raw samplesStencilDir from @Value: " + samplesStencilDir);
@@ -104,7 +110,7 @@ public class StorageConfig {
      */
     public static String getSamplesStencilDir() {
         if (configuredSamplesStencilDir == null) {
-            return "classpath:/stencil-samples";
+            return "classpath:/promarker/stencil/samples";
         }
         return configuredSamplesStencilDir;
     }
