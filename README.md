@@ -131,6 +131,64 @@ mirelplatformの拡張性により、以下のカスタマイズが可能です�
 - **認証連携**: 外部認証システムとの統合
 - **データベース拡張**: 追加のエンティティとリポジトリ
 
+## 🧪 E2E テスト
+
+### 概要
+ProMarker アプリケーションのE2Eテスト基盤として Playwright を採用しています。
+
+### 特徴
+- **ブラウザサポート**: Chromium, Firefox, WebKit
+- **ロケール**: 日本語 (ja-JP) / タイムゾーン: Asia/Tokyo
+- **アクセシビリティ**: AXE による自動検査
+- **ビジュアル回帰**: スクリーンショット比較
+- **POM**: Page Object Model パターン採用
+
+### セットアップ
+
+```bash
+# E2E テスト依存関係のインストール
+npm install
+
+# Playwright ブラウザのインストール
+npx playwright install --with-deps
+
+# テスト実行
+npm run test:e2e
+
+# ヘッドモードでテスト実行 (ブラウザ表示)
+npm run test:e2e:headed
+
+# UIモードでテスト実行 (対話的)
+npm run test:e2e:ui
+
+# デバッグモード
+npm run test:e2e:debug
+```
+
+### 便利スクリプト
+
+```bash
+# E2E テスト専用スクリプト
+./scripts/e2e/run-tests.sh                    # 基本実行
+./scripts/e2e/run-tests.sh -b firefox -h      # Firefox ヘッドモード
+./scripts/e2e/run-tests.sh -u                 # UIモード
+./scripts/e2e/run-tests.sh -s                 # スナップショット更新
+./scripts/e2e/run-tests.sh -r                 # サービス起動済み
+```
+
+### テスト対象
+- **基本機能**: ページロード、UI要素、ナビゲーション
+- **ワークフロー**: ステンシル選択→パラメータ入力→生成→ダウンロード
+- **バリデーション**: 入力検証、エラーハンドリング
+- **アクセシビリティ**: WCAG 2.1 AA 準拠検査
+- **レスポンシブ**: デスクトップ・タブレット・モバイル対応
+
+### CI/CD
+GitHub Actions で自動実行されます：
+- **E2E Tests**: 全ブラウザでの機能テスト
+- **Accessibility Audit**: アクセシビリティ検査
+- **Visual Regression**: ビジュアル回帰テスト（メインブランチのみ）
+
 ## 📄 ライセンス
 
 Copyright(c) 2015-2025 vemi/mirelplatform. All rights reserved.

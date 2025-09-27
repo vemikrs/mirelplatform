@@ -40,3 +40,16 @@ out/
 
 ### Build ###
 /backend/bin/
+
+### E2E Testing ###
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+screenshots/
+videos/
+traces/
+
+### Playwright ###
+/test-results/
+/playwright-report/
