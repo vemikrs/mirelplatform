@@ -5,6 +5,16 @@ build/
 !**/src/main/**
 !**/src/test/**
 
+### Logs ###
+logs/
+*.log
+backend.log
+frontend.log
+
+### Database & Storage ###
+data/
+**/data/
+
 ### STS ###
 .apt_generated
 .classpath
@@ -29,4 +39,4 @@ out/
 /.nb-gradle/
 
 ### Build ###
-/bin/
+/backend/bin/

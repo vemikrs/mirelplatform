@@ -57,10 +57,11 @@ ProMarkerは**mirelplatform**という独自のフレームワーク上で動作
 
 ### 前提条件
 - Java 21 (Microsoft JVM推奨)
+- Node.js 16+ (Frontend用)
 - Gradle 8.4+
 - MySQL (本番環境)
 
-### 環境構築
+### DevContainer/Codespaces 環境構築
 
 1. **リポジトリのクローン**:
    ```bash
@@ -68,17 +69,46 @@ ProMarkerは**mirelplatform**という独自のフレームワーク上で動作
    cd mirelplatform
    ```
 
-2. **アプリケーションサーバの起動**:
+2. **サービス一括起動**:
    ```bash
-   ./gradlew bootRun
+   # Backend (Spring Boot) + Frontend (Nuxt.js) を同時起動
+   ./start-services.sh
    ```
 
-3. **フロントエンドサービスの起動** ⚠️:
-   ```bash
-   # 別ターミナルで promarker-ui を起動してください
-   # ProMarkerの完全な機能を利用するには、フロントエンドサービス（promarker-ui）を
-   # 別途起動する必要があります
-   ```
+3. **アクセスURL**:
+   - Frontend: http://localhost:8080/mirel/
+   - Backend API: http://localhost:3000
+
+### 管理コマンド
+
+```bash
+# サービス起動
+./start-services.sh
+
+# サービス停止  
+./stop-services.sh
+
+# リアルタイムログ監視
+./watch-logs.sh              # 両方のログを監視
+./watch-logs.sh backend      # Backendのみ
+./watch-logs.sh frontend     # Frontendのみ
+
+# サービス状況確認
+./startup-monitor.sh
+```
+
+### 手動起動（個別）
+
+**Backend のみ**:
+```bash
+SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun
+```
+
+**Frontend のみ**:
+```bash
+cd frontend
+HOST=0.0.0.0 PORT=8080 npm run dev
+```
 
 ### 設定ファイル
 主要な設定は `src/main/resources/config/application.yml` で管理されています。

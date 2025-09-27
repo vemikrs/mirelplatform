@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:3000}
+  servlet:
+    context-path: /mipla2
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${DATABASE_URL:}
+    driver-class-name: ${DATABASE_DRIVER:}
+    username: ${DATABASE_USER:}
+    password: ${DATABASE_PASS:}
+  session:
+    jdbc:
+      initialize-schema: always
+      schema: ${DATABASE_SESSION_SCHEMA:}
+      table-name: SPRING_SESSION
+    sql:
+      init:
+        mode: always
+  jpa:
+    database-platform: ${DATABASE_PLATFORM:}
+    hibernate:
+      ddl-auto: update
+  spring-boot:
+    run:
+      jvmArguments:: -Xint
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    jp.vemi.mirel: DEBUG
+mipla2:
+  security:
+    api:
+      enabled: false
+  config:
+    storage-dir: ${MIREL_STORAGE_DIR:}
+
+mirel:
+  storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理

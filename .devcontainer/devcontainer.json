@@ -1,0 +1,76 @@
+{
+  "name": "Mirel Platform Dev",
+  "image": "mcr.microsoft.com/devcontainers/java:21",
+  // Phase 3: Frontend + Backend simultaneous auto-startup
+  // Backend: Spring Boot (port 3000) + H2 dev database
+  // Frontend: Nuxt.js (port 8080) + Node.js 16 (Nuxt 2.14.9 互換)
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "tem"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "16",
+      "nvmVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "containerEnv": {
+    "GRADLE_USER_HOME": "/home/vscode/.gradle",
+    "TZ": "${localEnv:TZ}",
+    "DEVCONTAINER_TZ": "Asia/Tokyo",
+    "SPRING_PROFILES_ACTIVE": "dev",
+    "HOST": "0.0.0.0"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.compile.nullAnalysis.mode": "automatic",
+        "java.format.settings.url": ".vscode/java-formatter.xml",
+        "java.format.settings.profile": "Eclipse",
+        "[java]": {
+          "editor.formatOnSave": true
+        },
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+      },
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "redhat.vscode-xml",
+        "gabrielbb.vscode-lombok",
+        "oderwat.indent-rainbow",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "forwardPorts": [3000, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Frontend App",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
+  "postStartCommand": "if [ -n \"$TZ\" ]; then sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ | sudo tee /etc/timezone; else sudo ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && echo 'Asia/Tokyo' | sudo tee /etc/timezone; fi",
+  "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
+  "runArgs": [
+  ],
+  "mounts": [
+    "source=mirelplatform-gradle-cache,target=/home/vscode/.gradle,type=volume"
+  ]
+}
