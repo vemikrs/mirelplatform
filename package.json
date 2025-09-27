@@ -9,13 +9,14 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:codegen": "playwright codegen http://localhost:8080/mirel/mste",
+    "test:e2e:validate": "node tests/e2e/validate-setup.js",
     "test:install": "playwright install",
     "test:install-deps": "playwright install-deps",
     "test:update-snapshots": "playwright test --update-snapshots"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "@axe-core/playwright": "^4.8.2"
+    "@axe-core/playwright": "^4.8.2",
+    "@playwright/test": "^1.45.0"
   },
   "engines": {
     "node": ">=16.0.0"

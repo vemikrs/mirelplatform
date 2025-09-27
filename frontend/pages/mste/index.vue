@@ -5,16 +5,16 @@
     </div>
     <div class="inner">
       <div class="rightitems">
-        <b-button :disabled="disabled || processing || stencilNoSelected" @click="clearDelems()" variant="secondary">
+        <b-button :disabled="disabled || processing || stencilNoSelected" @click="clearDelems()" variant="secondary" data-test-id="clear-stencil-btn">
           📄ステンシル定義を再取得
         </b-button>
-        <b-button :disabled="disabled || processing" @click="clearAll()" variant="secondary">
+        <b-button :disabled="disabled || processing" @click="clearAll()" variant="secondary" data-test-id="clear-all-btn">
           📄全てクリア
         </b-button>
-        <b-button v-b-modal.modal-psv-dialog :disabled="disabled || processing" variant="secondary">
+        <b-button v-b-modal.modal-psv-dialog :disabled="disabled || processing" variant="secondary" data-test-id="json-format-btn">
           📎Json形式
         </b-button>
-        <b-button :disabled="disabled || processing " @click="reloadStencilMaster()" variant="secondary">
+        <b-button :disabled="disabled || processing " @click="reloadStencilMaster()" variant="secondary" data-test-id="reload-stencil-btn">
           📄ステンシルマスタをリロード
         </b-button>
       </div>
@@ -37,6 +37,7 @@
                     :options="fltStrStencilCategory.items"
                     :disabled="disabled || processing"
                     @change="stencilCategorySelected()"
+                    data-test-id="category-select"
                     required
                   />
                 </b-col>
@@ -52,6 +53,7 @@
                     :options="fltStrStencilCd.items"
                     :disabled="disabled || processing || cateogryNoSelected"
                     @change="stencilSelected()"
+                    data-test-id="stencil-select"
                     required
                   />
                 </b-col>
@@ -78,6 +80,7 @@
                     :options="fltStrSerialNo.items"
                     :disabled="disabled || processing || stencilNoSelected"
                     @change="serialSelected()"
+                    data-test-id="serial-select"
                     required
                   />
                 </b-col>
@@ -98,7 +101,7 @@
                   <label :for="`eparam-${eparam.id}`" class="pm_label">{{ eparam.name }}</label>
                 </b-col>
                 <b-col v-if="eparam.valueType=='file'" sm="1">
-                  <b-button @click="fileUpload(eparam.id, eparam.value)">
+                  <b-button @click="fileUpload(eparam.id, eparam.value)" data-test-id="file-upload-btn">
                     📎
                   </b-button>
                 </b-col>
@@ -108,6 +111,7 @@
                     v-model="eparam.value"
                     :placeholder="eparam.placeholder"
                     :disabled="true"
+                    :data-test-id="`param-input-${eparam.id}`"
                     required
                   />
                 </b-col>
@@ -117,6 +121,7 @@
                     v-model="eparam.value"
                     :placeholder="eparam.placeholder"
                     :disabled="disabled || processing"
+                    :data-test-id="`param-input-${eparam.id}`"
                     required
                   />
                 </b-col>
@@ -126,7 +131,7 @@
               </b-row>
             </b-container>
             <hr>
-            <b-button :disabled="disabled || processing || serialNoNoSelected" @click="generate()" variant="primary">
+            <b-button :disabled="disabled || processing || serialNoNoSelected" @click="generate()" variant="primary" data-test-id="generate-btn">
               Generate
             </b-button>
             <hr>

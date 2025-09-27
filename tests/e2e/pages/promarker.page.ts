@@ -19,20 +19,22 @@ export class ProMarkerPage extends BasePage {
     pageTitle: '.container_title',
     
     // Action buttons
-    clearStencilBtn: 'text=📄ステンシル定義を再取得',
-    clearAllBtn: 'text=📄全てクリア',
-    jsonFormatBtn: 'text=📎Json形式',
-    reloadStencilBtn: 'text=📄ステンシルマスタをリロード',
+    clearStencilBtn: '[data-test-id="clear-stencil-btn"]',
+    clearAllBtn: '[data-test-id="clear-all-btn"]',
+    jsonFormatBtn: '[data-test-id="json-format-btn"]',
+    reloadStencilBtn: '[data-test-id="reload-stencil-btn"]',
     
     // Form elements
     form: 'form[ref="form1"]',
-    categorySelect: '[data-test-id="category-select"]', // Will need to add data-test-id
-    stencilSelect: '[data-test-id="stencil-select"]',   // Will need to add data-test-id
-    generateBtn: 'text=Generate',
+    categorySelect: '[data-test-id="category-select"]',
+    stencilSelect: '[data-test-id="stencil-select"]',
+    serialSelect: '[data-test-id="serial-select"]',
+    generateBtn: '[data-test-id="generate-btn"]',
     
     // Parameter inputs (dynamic based on stencil)
     parameterContainer: '.fm_notes',
-    parameterInput: (id: string) => `#eparam-${id}`,
+    parameterInput: (id: string) => `[data-test-id="param-input-${id}"]`,
+    fileUploadBtn: '[data-test-id="file-upload-btn"]',
     
     // Modals and dialogs
     modal: '.modal',
@@ -47,7 +49,6 @@ export class ProMarkerPage extends BasePage {
     successMessage: '.alert-success',
     
     // File upload/download
-    fileUploadBtn: '[data-test-id="file-upload"]',
     downloadLink: '[data-test-id="download-link"]',
   };
   
