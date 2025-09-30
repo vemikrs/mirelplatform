@@ -99,8 +99,7 @@ jobs:
       
       - name: Start backend service
         run: |
-          cd backend
-          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew bootRun &
+          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
@@ -108,7 +107,7 @@ jobs:
       - name: Start frontend service
         run: |
           cd frontend
-          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev &
+          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
           echo "Frontend started with PID: $FRONTEND_PID"
@@ -116,17 +115,19 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Waiting for backend to be ready..."
-          timeout 120 bash -c 'until curl -sf http://localhost:3000/actuator/health; do echo "Waiting for backend..."; sleep 2; done' || {
+          timeout 180 bash -c 'until curl -sf http://localhost:3000/actuator/health; do echo "Waiting for backend..."; sleep 3; done' || {
             echo "Backend failed to start"
-            cat backend.log 2>/dev/null || echo "No backend log available"
+            echo "=== Backend log ==="
+            tail -100 backend.log 2>/dev/null || echo "No backend log available"
             exit 1
           }
           echo "Backend is ready"
           
           echo "Waiting for frontend to be ready..."
-          timeout 120 bash -c 'until curl -sf http://localhost:8080/mirel/; do echo "Waiting for frontend..."; sleep 2; done' || {
+          timeout 180 bash -c 'until curl -sf http://localhost:8080/mirel/; do echo "Waiting for frontend..."; sleep 3; done' || {
             echo "Frontend failed to start"
-            cat frontend.log 2>/dev/null || echo "No frontend log available"
+            echo "=== Frontend log ==="
+            tail -100 frontend.log 2>/dev/null || echo "No frontend log available"
             exit 1
           }
           echo "Frontend is ready"
@@ -217,14 +218,30 @@ jobs:
       
       - name: Start services
         run: |
-          cd backend
-          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew bootRun &
-          cd ../frontend
-          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev &
+          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          
+          cd frontend
+          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
+          FRONTEND_PID=$!
+          echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+          cd ..
           
           echo "Waiting for services..."
-          timeout 120 bash -c 'until curl -sf http://localhost:3000/actuator/health; do sleep 2; done'
-          timeout 120 bash -c 'until curl -sf http://localhost:8080/mirel/; do sleep 2; done'
+          timeout 180 bash -c 'until curl -sf http://localhost:3000/actuator/health; do echo "Waiting for backend..."; sleep 3; done' || {
+            echo "Backend failed to start"
+            echo "=== Backend log ==="
+            tail -100 backend.log 2>/dev/null || echo "No backend log available"
+            exit 1
+          }
+          
+          timeout 180 bash -c 'until curl -sf http://localhost:8080/mirel/; do echo "Waiting for frontend..."; sleep 3; done' || {
+            echo "Frontend failed to start"
+            echo "=== Frontend log ==="
+            tail -100 frontend.log 2>/dev/null || echo "No frontend log available"
+            exit 1
+          }
           echo "Services ready"
       
       - name: Run accessibility tests
@@ -239,3 +256,18 @@ jobs:
             test-results/
             playwright-report/
           retention-days: 7
+      
+      - name: Stop services
+        if: always()
+        run: |
+          echo "Stopping services..."
+          if [ ! -z "$BACKEND_PID" ]; then
+            kill $BACKEND_PID 2>/dev/null || true
+          fi
+          if [ ! -z "$FRONTEND_PID" ]; then
+            kill $FRONTEND_PID 2>/dev/null || true
+          fi
+          pkill -f "gradlew.*bootRun" || true
+          pkill -f "npm run dev" || true
+          pkill -f "nuxt" || true
+          echo "Services stopped"
