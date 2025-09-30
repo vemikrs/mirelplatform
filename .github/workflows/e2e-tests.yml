@@ -39,7 +39,7 @@ jobs:
         run: ./node_modules/.bin/playwright test --list
 
       - name: Upload validation results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: validation-results
@@ -74,7 +74,7 @@ jobs:
           java-version: '21'
       
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -180,7 +180,7 @@ jobs:
           CI: true
       
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-results-${{ matrix.browser }}
@@ -190,7 +190,7 @@ jobs:
           retention-days: 7
       
       - name: Upload screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-screenshots-${{ matrix.browser }}
@@ -235,7 +235,7 @@ jobs:
           java-version: '21'
       
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -313,7 +313,7 @@ jobs:
         run: npx playwright test --project=chromium --grep="accessibility"
       
       - name: Upload accessibility results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: accessibility-audit-results
