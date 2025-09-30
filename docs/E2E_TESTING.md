@@ -173,30 +173,23 @@ npx playwright test --debug --dry-run
 
 ## 📊 CI/CD 統合
 
-GitHub Actions ワークフローが以下のジョブを実行します：
+GitHub Actions ワークフローが以下のジョブを自動実行します：
 
-### Setup Validation (現在有効)
+### Setup Validation
 - E2E テストセットアップの検証
 - Playwright 設定の確認
 - テストファイル構造の検証
 
-**注意**: 現在、完全なE2Eテスト実行はネットワーク制限のためCIで無効化されています。
+### E2E Tests ✅
+- Chromiumブラウザでの完全なE2Eテスト実行
+- テスト結果・スクリーンショット・動画の自動保存
+- サービス自動起動・停止
 
-### CI でのテスト実行を有効化するには
+### Accessibility Audit ✅
+- アクセシビリティ専用テストの実行
+- WCAG 準拠レポートの生成
 
-以下のいずれかの方法でネットワークアクセスを設定してください：
-
-1. **カスタム許可リストに追加** (推奨):
-   - リポジトリ設定 → Copilot coding agent settings → Custom allowlist
-   - `api.foojay.io` を追加 (Gradle/Java toolchain用)
-   - `esm.ubuntu.com` を追加 (apt package manager用)
-
-2. **Actions setup steps での事前セットアップ**:
-   - ファイアウォール有効化前にサービスをセットアップ
-
-3. **詳細な手順**:
-   - `.github/workflows/e2e-tests-full.yml.disabled` を参照
-   - ネットワーク設定完了後、ジョブを有効化
+**注意**: ネットワーク許可リストの設定により、完全なE2Eテスト実行が有効化されています。
 
 ### 実行条件
 - `main`, `master`, `develop` ブランチへの push

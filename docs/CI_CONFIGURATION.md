@@ -1,23 +1,20 @@
 # CI Configuration Guide for Full E2E Test Execution
 
-## Current Status
+## Current Status - ENABLED ✅
 
-The E2E testing infrastructure is complete and fully functional for local development. However, full test execution in GitHub Actions CI is currently disabled due to network restrictions.
+The E2E testing infrastructure is complete and **fully functional in both local and CI environments**.
 
-## Network Restrictions
+Full E2E test execution has been **enabled in GitHub Actions** after network access configuration.
 
-GitHub Actions environment blocks access to:
-- `api.foojay.io` - Required for Gradle/Java toolchain
-- `esm.ubuntu.com` - Required for apt package manager
+## Network Configuration - COMPLETED ✅
 
-These domains are necessary for:
-1. Building the backend with Gradle (`./gradlew bootRun`)
-2. Installing Playwright system dependencies
-3. Starting the Java application
+Network access has been configured for:
+- ✅ `api.foojay.io` - Required for Gradle/Java toolchain
+- ✅ `esm.ubuntu.com` - Required for apt package manager
 
-## Current CI Workflow
+## Current CI Workflow - ACTIVE
 
-The workflow currently runs in **validation-only mode**:
+The workflow runs the following jobs:
 
 ```yaml
 jobs:
@@ -26,50 +23,31 @@ jobs:
     - Install E2E dependencies (npm ci)
     - Validate setup (npm run test:e2e:validate)
     - List test specifications
-```
-
-This ensures the E2E infrastructure is correct without requiring network-blocked services.
-
-## Enabling Full E2E Tests in CI
-
-### Option 1: Custom Allowlist (Recommended)
-
-1. Navigate to repository settings
-2. Go to: **Settings** → **Copilot coding agent settings**
-3. Find **Custom allowlist** section
-4. Add the following domains:
-   ```
-   api.foojay.io
-   esm.ubuntu.com
-   ```
-5. Save settings
-
-After configuration:
-1. Copy jobs from `.github/workflows/e2e-tests-full.yml.disabled`
-2. Merge into `.github/workflows/e2e-tests.yml`
-3. Commit and push changes
-
-### Option 2: Actions Setup Steps
-
-Configure services to start before the firewall is enabled:
-
-```yaml
-jobs:
+  
   e2e-tests:
-    steps:
-      - name: Pre-firewall setup
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      
-      # Additional setup steps before firewall activation
+    - Build backend with Gradle
+    - Start backend and frontend services
+    - Install Playwright browsers
+    - Run E2E tests on Chromium
+    - Upload test results and screenshots
+  
+  accessibility-audit:
+    - Build backend with Gradle
+    - Start backend and frontend services
+    - Run accessibility-specific tests
+    - Upload accessibility audit results
 ```
 
-See `.github/workflows/e2e-tests-full.yml.disabled` for complete implementation.
+## Test Execution
 
-## Local Development
+### CI Environment - Fully Enabled ✅
+All E2E tests run automatically in GitHub Actions:
+- Chromium browser tests
+- Accessibility audits
+- Visual regression tests
+- Workflow validation tests
 
+### Local Development - Fully Functional ✅
 No configuration needed - all features work immediately:
 
 ```bash
@@ -91,7 +69,7 @@ npm run test:e2e:debug          # Debug mode
 
 ## Test Infrastructure Components
 
-All components are implemented and ready:
+All components are implemented and running:
 
 - ✅ **47+ Test Specifications**
   - Basic functionality tests
@@ -110,31 +88,55 @@ All components are implemented and ready:
   - Validation test cases
   - Fixtures and helpers
 
-- ✅ **Documentation**
-  - Comprehensive testing guide
-  - Troubleshooting section
-  - Best practices
+- ✅ **CI/CD Integration**
+  - Automated service startup
+  - Multi-job workflow
+  - Artifact collection
+  - Failure reporting
 
-## Verification
+## Monitoring and Maintenance
 
-After enabling full CI execution, verify:
-
-1. Check the Actions tab for workflow runs
-2. Ensure all jobs complete successfully
+### Checking CI Status
+1. Go to the Actions tab in the repository
+2. View recent workflow runs
 3. Review test results and artifacts
-4. Check for any flaky tests
+4. Check for any failures or flaky tests
+
+### Reviewing Test Results
+- Test results are uploaded as artifacts
+- Screenshots available for failed tests
+- HTML reports generated for each run
+- Accessibility audit reports included
+
+### Adding More Browsers
+To test on Firefox and WebKit in addition to Chromium, update the matrix in `.github/workflows/e2e-tests.yml`:
+
+```yaml
+strategy:
+  fail-fast: false
+  matrix:
+    browser: [chromium, firefox, webkit]
+```
+
+## Reference Files
+
+- **Active Workflow**: `.github/workflows/e2e-tests.yml` (enabled with full jobs)
+- **Documentation**: `docs/E2E_TESTING.md` (complete testing guide)
+- **Configuration**: `playwright.config.ts` (Playwright settings)
+- **Scripts**: `scripts/e2e/run-tests.sh` (local execution helper)
 
 ## Support
 
 For questions or issues:
 1. Review `docs/E2E_TESTING.md` for detailed documentation
-2. Check `.github/workflows/e2e-tests-full.yml.disabled` for job templates
-3. Consult this guide for network configuration
+2. Check workflow logs in GitHub Actions
+3. Run validation locally: `npm run test:e2e:validate`
 
 ## Future Enhancements
 
-Once full CI execution is enabled, consider:
-- Visual regression baseline generation
+Potential improvements now that full CI execution is enabled:
+- ✅ Complete browser matrix (Chromium currently, can add Firefox/WebKit)
+- Visual regression baseline management
 - Performance testing integration
-- Cross-browser testing optimization
-- Parallel test execution tuning
+- Parallel test execution optimization
+- Extended timeout for complex scenarios
