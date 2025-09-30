@@ -94,43 +94,85 @@ jobs:
           cd frontend
           npm ci --legacy-peer-deps --no-audit
       
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      
       - name: Build backend
         run: ./gradlew :backend:build -x test
       
       - name: Start backend service
         run: |
+          echo "Starting backend service..."
+          echo "Working directory: $(pwd)"
+          echo "Gradlew location: $(ls -la ./gradlew)"
           SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
+          sleep 5
+          echo "Backend process status:"
+          ps aux | grep $BACKEND_PID || echo "Backend process not found"
       
       - name: Start frontend service
         run: |
+          echo "Starting frontend service..."
           cd frontend
           HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
           echo "Frontend started with PID: $FRONTEND_PID"
+          cd ..
+          sleep 5
+          echo "Frontend process status:"
+          ps aux | grep $FRONTEND_PID || echo "Frontend process not found"
       
       - name: Wait for services to be ready
         run: |
           echo "Waiting for backend to be ready..."
-          timeout 180 bash -c 'until curl -sf http://localhost:3000/actuator/health; do echo "Waiting for backend..."; sleep 3; done' || {
-            echo "Backend failed to start"
-            echo "=== Backend log ==="
-            tail -100 backend.log 2>/dev/null || echo "No backend log available"
-            exit 1
-          }
-          echo "Backend is ready"
+          echo "Backend log (first 50 lines):"
+          head -50 backend.log 2>/dev/null || echo "No backend log yet"
+          
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/actuator/health; then
+              echo "✅ Backend is ready!"
+              break
+            fi
+            echo "Attempt $i/60: Waiting for backend..."
+            sleep 3
+            
+            if [ $i -eq 60 ]; then
+              echo "❌ Backend failed to start within timeout"
+              echo "=== Last 200 lines of backend log ==="
+              tail -200 backend.log 2>/dev/null || echo "No backend log available"
+              echo "=== Checking if backend process is running ==="
+              ps aux | grep gradlew || echo "No gradlew process found"
+              exit 1
+            fi
+          done
           
           echo "Waiting for frontend to be ready..."
-          timeout 180 bash -c 'until curl -sf http://localhost:8080/mirel/; do echo "Waiting for frontend..."; sleep 3; done' || {
-            echo "Frontend failed to start"
-            echo "=== Frontend log ==="
-            tail -100 frontend.log 2>/dev/null || echo "No frontend log available"
-            exit 1
-          }
-          echo "Frontend is ready"
+          echo "Frontend log (first 50 lines):"
+          head -50 frontend.log 2>/dev/null || echo "No frontend log yet"
+          
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/mirel/; then
+              echo "✅ Frontend is ready!"
+              break
+            fi
+            echo "Attempt $i/60: Waiting for frontend..."
+            sleep 3
+            
+            if [ $i -eq 60 ]; then
+              echo "❌ Frontend failed to start within timeout"
+              echo "=== Last 200 lines of frontend log ==="
+              tail -200 frontend.log 2>/dev/null || echo "No frontend log available"
+              echo "=== Checking if frontend process is running ==="
+              ps aux | grep "npm run dev" || echo "No npm process found"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All services are ready!"
       
       - name: Run E2E tests
         run: npx playwright test --project=${{ matrix.browser }}
@@ -213,36 +255,59 @@ jobs:
           cd frontend
           npm ci --legacy-peer-deps --no-audit
       
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      
       - name: Build backend
         run: ./gradlew :backend:build -x test
       
       - name: Start services
         run: |
+          echo "Starting backend service..."
           SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          echo "Backend started with PID: $BACKEND_PID"
           
+          echo "Starting frontend service..."
           cd frontend
           HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+          echo "Frontend started with PID: $FRONTEND_PID"
           cd ..
           
-          echo "Waiting for services..."
-          timeout 180 bash -c 'until curl -sf http://localhost:3000/actuator/health; do echo "Waiting for backend..."; sleep 3; done' || {
-            echo "Backend failed to start"
-            echo "=== Backend log ==="
-            tail -100 backend.log 2>/dev/null || echo "No backend log available"
-            exit 1
-          }
+          echo "Waiting for backend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/actuator/health; then
+              echo "✅ Backend is ready!"
+              break
+            fi
+            echo "Attempt $i/60: Waiting for backend..."
+            sleep 3
+            if [ $i -eq 60 ]; then
+              echo "❌ Backend failed to start"
+              tail -200 backend.log 2>/dev/null || echo "No backend log"
+              exit 1
+            fi
+          done
           
-          timeout 180 bash -c 'until curl -sf http://localhost:8080/mirel/; do echo "Waiting for frontend..."; sleep 3; done' || {
-            echo "Frontend failed to start"
-            echo "=== Frontend log ==="
-            tail -100 frontend.log 2>/dev/null || echo "No frontend log available"
-            exit 1
-          }
-          echo "Services ready"
+          echo "Waiting for frontend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/mirel/; then
+              echo "✅ Frontend is ready!"
+              break
+            fi
+            echo "Attempt $i/60: Waiting for frontend..."
+            sleep 3
+            if [ $i -eq 60 ]; then
+              echo "❌ Frontend failed to start"
+              tail -200 frontend.log 2>/dev/null || echo "No frontend log"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All services ready!"
       
       - name: Run accessibility tests
         run: npx playwright test --project=chromium --grep="accessibility"
