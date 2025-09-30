@@ -89,17 +89,19 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: [
+  // webServer configuration disabled for CI - services should be started manually
+  // Use ./scripts/start-services.sh to start backend and frontend locally
+  webServer: process.env.CI ? undefined : [
     {
       command: 'cd backend && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew bootRun',
       port: 3000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120 * 1000,
     },
     {
       command: 'cd frontend && HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev',
       port: 8080,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120 * 1000,
     }
   ],

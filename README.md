@@ -185,9 +185,13 @@ npm run test:e2e:debug
 
 ### CI/CD
 GitHub Actions で自動実行されます：
-- **E2E Tests**: 全ブラウザでの機能テスト
-- **Accessibility Audit**: アクセシビリティ検査
-- **Visual Regression**: ビジュアル回帰テスト（メインブランチのみ）
+- **Setup Validation**: E2E テストセットアップの検証 ✅
+
+**注意**: 完全なE2Eテスト実行は現在ネットワーク制限のためCIで無効化されています。
+ローカル環境では全機能が利用可能です。CI での実行を有効化するには、リポジトリ設定で
+`api.foojay.io` と `esm.ubuntu.com` をカスタム許可リストに追加してください。
+
+詳細は `docs/E2E_TESTING.md` を参照してください。
 
 ## 📄 ライセンス
 
