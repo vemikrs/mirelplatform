@@ -133,7 +133,7 @@ jobs:
           head -50 backend.log 2>/dev/null || echo "No backend log yet"
           
           for i in {1..60}; do
-            if curl -sf http://localhost:3000/actuator/health; then
+            if curl -sf http://localhost:3000/mipla2/actuator/health; then
               echo "✅ Backend is ready!"
               break
             fi
@@ -279,7 +279,7 @@ jobs:
           
           echo "Waiting for backend..."
           for i in {1..60}; do
-            if curl -sf http://localhost:3000/actuator/health; then
+            if curl -sf http://localhost:3000/mipla2/actuator/health; then
               echo "✅ Backend is ready!"
               break
             fi
