@@ -188,6 +188,9 @@ public class ApiController {
         return executeApi(api, request, apiName);
     }
 
+    // ===== テスト/開発用エンドポイント =====
+    
+    @Hidden  // Swagger UIに表示しない
     @RequestMapping("/gen")
     public Map<String, Object> gen() {
 

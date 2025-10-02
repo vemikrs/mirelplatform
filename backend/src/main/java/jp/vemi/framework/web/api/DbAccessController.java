@@ -17,26 +17,40 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.google.common.collect.Maps;
 
 /**
- * Minimum Database Access Controller
- * For development and debugging purposes only.
- * Access is restricted to localhost for security.
+ * データベースアクセスコントローラ (開発用)
+ * 開発・デバッグ目的のみに使用します。
+ * セキュリティのため、localhostからのアクセスのみ許可されます。
  */
 @RestController
 @RequestMapping("/framework/db")
+@Hidden  // Swagger UIに表示しない (開発用のため)
 public class DbAccessController {
 
     @PersistenceContext
     private EntityManager entityManager;
 
     /**
-     * Execute SELECT query and return results as JSON
-     * @param request HTTP request
-     * @param body Request body containing SQL query
-     * @return Query results
+     * SELECTクエリを実行して結果をJSON形式で返却
+     * @param request HTTPリクエスト
+     * @param body SQLクエリを含むリクエストボディ
+     * @return クエリ結果
      */
+    @Operation(
+        summary = "データベースクエリ実行 (開発用)",
+        description = "SELECTクエリのみ実行可能。localhostからのアクセス限定。"
+    )
+    @Hidden  // Swagger UIに表示しない
     @PostMapping("/query")
     public ResponseEntity<?> executeQuery(HttpServletRequest request, @RequestBody Map<String, Object> body) {
         // Security: Only allow localhost access

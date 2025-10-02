@@ -35,6 +35,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import groovy.lang.Tuple3;
 import jp.vemi.framework.util.InstanceUtil;
 import jp.vemi.mirel.foundation.feature.files.service.FileDownloadService;
@@ -44,9 +52,10 @@ import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 
 /**
- * .<br/>
+ * ファイルダウンロードコントローラ.<br/>
  */
 @RestController
+@Tag(name = "File Management", description = "ファイルのアップロード・ダウンロード管理API")
 public class DownloadController {
 
     /**
@@ -56,14 +65,31 @@ public class DownloadController {
     FileDownloadService service;
 
     /**
-     * get.<br/>
+     * GETメソッドによるファイルダウンロード.<br/>
      * 
-     * @param path
-     * @param response
+     * @param path ファイルIDのカンマ区切りリスト
+     * @param response HTTPレスポンス
      * @return {@link ResponseEntity}
      */
+    @Operation(
+        summary = "ファイルダウンロード (GET)",
+        description = "ファイルIDを指定してファイルをダウンロードします。" +
+                      "複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
+                      "カンマ区切りで複数のファイルIDを指定可能です。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "ファイルダウンロード成功",
+            content = @Content(mediaType = "application/octet-stream")
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
+    })
     @RequestMapping(path = "commons/dlsite/{path}", method = RequestMethod.GET)
-    public ResponseEntity<ApiResponse<FileDownloadResult>> index4Get(@NotEmpty @PathVariable String path,
+    public ResponseEntity<ApiResponse<FileDownloadResult>> index4Get(
+            @Parameter(description = "ファイルID (カンマ区切りで複数指定可能)", example = "abc123,def456")
+            @NotEmpty @PathVariable String path,
             final HttpServletResponse response) {
         String[] spliteds = path.split(",");
 
@@ -80,14 +106,39 @@ public class DownloadController {
     }
 
     /**
-     * post. <br/>
+     * POSTメソッドによるファイルダウンロード. <br/>
      * 
-     * @param request
-     * @param response
-     * @return
+     * @param request リクエストボディ (fileIdリスト)
+     * @param response HTTPレスポンス
+     * @return レスポンスエンティティ
      */
+    @Operation(
+        summary = "ファイルダウンロード (POST)",
+        description = "リクエストボディでファイルIDを指定してファイルをダウンロードします。" +
+                      "複数ファイル指定時はZIP形式で圧縮してダウンロードします。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "ファイルダウンロード成功",
+            content = @Content(mediaType = "application/octet-stream")
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
+    })
     @RequestMapping(path = "commons/download")
-    public ResponseEntity<ApiResponse<FileDownloadResult>> index(@RequestBody final Map<String, Object> request,
+    public ResponseEntity<ApiResponse<FileDownloadResult>> index(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "ダウンロード対象ファイル情報",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = Map.class),
+                    examples = @ExampleObject(
+                        value = "{\"content\":[{\"fileId\":\"abc123\"},{\"fileId\":\"def456\"}]}"
+                    )
+                )
+            )
+            @RequestBody final Map<String, Object> request,
             final HttpServletResponse response) {
         return miho(request, response);
     }
