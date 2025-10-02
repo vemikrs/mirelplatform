@@ -19,11 +19,12 @@ import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
  *  .<br/>
  */
 @Service
-public class UploadStencilApi {
+public class UploadStencilApi implements MsteApi {
 
     @Autowired
     protected UploadStencilService service;
 
+    @Override
     public ApiResponse<?> service(Map<String, Object> request) {
 
         ApiRequest<UploadStencilParameter> apireq = ApiRequest.<UploadStencilParameter>builder().model(
