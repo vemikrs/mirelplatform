@@ -7,9 +7,12 @@ ProMarker Platform provides RESTful APIs for template management, code generatio
 ## Base Configuration
 
 ### URLs
-- **Development**: `http://localhost:3000`
-- **Frontend Proxy**: Requests to `/mapi/*` are proxied to backend
-- **Direct Backend**: `http://localhost:3000/apps/mste/api/*`
+- Backend base (dev): `http://localhost:3000/mipla2`
+- Swagger UI: `http://localhost:3000/mipla2/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:3000/mipla2/api-docs`
+- Frontend Proxy: Requests to `/mapi/*` are proxied to backend
+  - example: proxy path `/mapi/apps/mste/api/*` → backend `/apps/mste/api/*` (under base `/mipla2`)
+- Direct Backend: `http://localhost:3000/mipla2/apps/mste/api/*`
 
 ### Authentication
 - JWT-based authentication required for most endpoints
@@ -106,7 +109,8 @@ ProMarker Platform provides RESTful APIs for template management, code generatio
 - **Selection Logic**: Backend automatically selects first available item when input is "*" or empty
 
 #### 2. Generate API
-**Endpoint**: `POST /mapi/apps/mste/api/generate`
+**Endpoint**: `POST /mapi/apps/mste/api/generate` (proxy)
+  - Direct: `POST /mipla2/apps/mste/api/generate`
 
 **Purpose**: Generate code from selected stencil template with provided parameters
 
@@ -120,6 +124,18 @@ ProMarker Platform provides RESTful APIs for template management, code generatio
     "paramId1": "value1",
     "paramId2": "value2"
     // ... additional parameters based on stencil configuration
+  }
+}
+```
+
+Example:
+```json
+{
+  "content": {
+    "stencilCategoy": "/samples",
+    "stencilCanonicalName": "/samples/hello-world",
+    "serialNo": "250913A",
+    "message": "Hello"
   }
 }
 ```
@@ -138,13 +154,18 @@ ProMarker Platform provides RESTful APIs for template management, code generatio
 }
 ```
 
+Notes:
+- files is an array of tuples: [fileId, fileName]. Use fileId for download endpoints.
+- Related APIs: `/commons/upload` (for file-type parameters), `/commons/dlsite/{fileIds}` and `/commons/download` (downloading generated files)
+
 **Important Notes**:
 - **Standard ApiResponse**: Uses direct `ApiResponse<GenerateResult>` structure
 - **Frontend Access**: Use `resp.data.data` in Vue.js components
-- **File Download**: File IDs can be used with download endpoints
+- **File Download**: File IDs can be used with download endpoints (`/commons/dlsite/{fileIds}` GET or `/commons/download` POST)
 
 #### 3. Reload Stencil Master
-**Endpoint**: `POST /mapi/apps/mste/api/reloadStencilMaster`
+**Endpoint**: `POST /mapi/apps/mste/api/reloadStencilMaster` (proxy)
+  - Direct: `POST /mipla2/apps/mste/api/reloadStencilMaster`
 
 **Purpose**: Reload stencil templates from classpath and database
 
@@ -155,19 +176,30 @@ ProMarker Platform provides RESTful APIs for template management, code generatio
 }
 ```
 
+Example:
+```json
+{ "content": {} }
+```
+
 **Response**: Standard success/error response
 
 ### File Management APIs
 
 #### Upload Endpoint
-**Endpoint**: `POST /commons/upload`
+**Endpoint**: `POST /mapi/commons/upload` (proxy) / `POST /mipla2/commons/upload` (direct)
 - Handles file uploads with temporary storage
 - Returns file ID for template parameter usage
 
 #### Download Endpoints
-**Endpoint**: `GET /commons/download/{fileId}`
-- Downloads files by ID
-- Supports batch ZIP downloads
+**Endpoints**:
+- `GET /mapi/commons/dlsite/{fileIds}` (proxy) / `GET /mipla2/commons/dlsite/{fileIds}` (direct)
+  - Downloads files by IDs (comma-separated). Multiple IDs → ZIP archive
+- `POST /mapi/commons/download` (proxy) / `POST /mipla2/commons/download` (direct)
+  - Downloads by request body `{"content":[{"fileId":"id1"},{"fileId":"id2"}]}`
+  - Multiple IDs → ZIP archive
+  
+Notes:
+- The fileIds are the first elements of the `files` tuples returned by Generate API.
 
 ### Development/Debug APIs
 

@@ -74,8 +74,9 @@ public class DownloadController {
     @Operation(
         summary = "ファイルダウンロード (GET)",
         description = "ファイルIDを指定してファイルをダウンロードします。" +
-                      "複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
-                      "カンマ区切りで複数のファイルIDを指定可能です。"
+                      " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
+                      " カンマ区切りで複数のファイルIDを指定可能です。" +
+                      " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdを指定してください。"
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -115,7 +116,8 @@ public class DownloadController {
     @Operation(
         summary = "ファイルダウンロード (POST)",
         description = "リクエストボディでファイルIDを指定してファイルをダウンロードします。" +
-                      "複数ファイル指定時はZIP形式で圧縮してダウンロードします。"
+                      " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
+                      " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdをcontentに指定してください。"
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(

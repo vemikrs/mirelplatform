@@ -36,7 +36,7 @@ import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 
 @RestController
 @RequestMapping("apps/mste/api")
-@Tag(name = "ProMarker MSTE", description = "Master Stencil Template Engine - テンプレート管理・コード生成API")
+@Tag(name = "ProMarker (MSTE)", description = "Master Stencil Template Engine - テンプレート管理・コード生成API")
 public class ApiController {
 
     /** {@link GenerateService} */
@@ -101,14 +101,37 @@ public class ApiController {
     @Operation(
         summary = "コード生成",
         description = "選択したステンシルテンプレートからソースコードを生成します。" +
-                      "パラメータはステンシル定義に基づいて動的に変化します。"
+                      "パラメータはステンシル定義に基づいて動的に変化します。" +
+                      " 関連API: '/commons/upload'（ファイル型パラメータの事前アップロード）, '/commons/download'（生成結果のダウンロード）"
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功 - ファイルIDリストを返却"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "成功 - ファイルIDリストを返却",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "成功例",
+                    value = "{\n  \"data\": {\n    \"files\": [[\"abc123\", \"Hello.java\"], [\"def456\", \"Readme.md\"]]\n  },\n  \"messages\": [],\n  \"errors\": []\n}"
+                )
+            )
+        ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "パラメータエラー"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "生成処理エラー")
     })
     public ResponseEntity<ApiResponse<?>> generate(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "生成に必要なパラメータ（content直下に指定）",
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Map.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "Request例",
+                    value = "{\n  \"content\": {\n    \"stencilCategoy\": \"/samples\",\n    \"stencilCanonicalName\": \"/samples/hello-world\",\n    \"serialNo\": \"250913A\",\n    \"message\": \"Hello\"\n  }\n}"
+                )
+            )
+        )
         @RequestBody Map<String, Object> request) {
         
         return executeApi(generateApi, request, "generateApi");
@@ -118,28 +141,75 @@ public class ApiController {
     @Operation(
         summary = "ステンシルマスタ再読込",
         description = "クラスパスとデータベースからステンシル定義を再読み込みします。" +
-                      "新しいステンシルを追加した後に実行してください。"
+                      " 新しいステンシルを追加した後に実行してください。"
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "再読込成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "再読込成功",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "成功例",
+                    value = "{\n  \"data\": null,\n  \"messages\": [\"Reloaded successfully\"],\n  \"errors\": []\n}"
+                )
+            )
+        ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "読込エラー")
     })
     public ResponseEntity<ApiResponse<?>> reloadStencilMaster(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "再読込要求（contentは空でOK）",
+            required = false,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Map.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "Request例",
+                    value = "{\n  \"content\": {}\n}"
+                )
+            )
+        )
         @RequestBody Map<String, Object> request) {
         
         return executeApi(reloadStencilMasterApi, request, "reloadStencilMasterApi");
     }
 
     @PostMapping("/uploadStencil")
+    @Hidden
     @Operation(
         summary = "カスタムステンシルアップロード",
-        description = "ユーザー定義のステンシルテンプレートをアップロードします。"
+        description = "ユーザー定義のステンシルテンプレートを登録します。" +
+                      " フロー: (1) '/commons/upload' にZIP等をアップロード→fileId取得 (2) 本APIにfileId等を渡して取り込み。" +
+                      " 現状は暫定仕様で、次PRで確定予定です。"
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "アップロード成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "登録成功",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "成功例",
+                    value = "{\n  \"data\": {},\n  \"messages\": [\"Registered\"],\n  \"errors\": []\n}"
+                )
+            )
+        ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "ファイル形式エラー")
     })
     public ResponseEntity<ApiResponse<?>> uploadStencil(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "暫定スキーマ: content.zipFileId（必須）, content.categoryId, content.overwrite",
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = Map.class),
+                examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "Request例",
+                    value = "{\n  \"content\": {\n    \"zipFileId\": \"abc123\",\n    \"categoryId\": \"/user\",\n    \"overwrite\": true\n  }\n}"
+                )
+            )
+        )
         @RequestBody Map<String, Object> request) {
         
         return executeApi(uploadStencilApi, request, "uploadStencilApi");

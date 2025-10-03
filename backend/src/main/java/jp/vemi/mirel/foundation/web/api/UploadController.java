@@ -45,8 +45,8 @@ public class UploadController {
     @Operation(
         summary = "ファイルアップロード",
         description = "マルチパート形式でファイルをアップロードします。" +
-                      "アップロード成功時にファイルIDとファイル名を返却します。" +
-                      "このファイルIDは他のAPIで使用できます。"
+                      " アップロード成功時にファイルIDとファイル名を返却します。" +
+                      " 取得したfileIdは '/apps/mste/api/generate' のファイル型パラメータや '/apps/mste/api/uploadStencil' の zipFileId で使用します。"
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
