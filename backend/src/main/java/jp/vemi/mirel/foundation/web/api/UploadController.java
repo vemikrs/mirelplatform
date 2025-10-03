@@ -6,20 +6,30 @@ package jp.vemi.mirel.foundation.web.api;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jp.vemi.mirel.foundation.feature.files.dto.FileUploadResult;
 import jp.vemi.mirel.foundation.feature.files.service.FileRegisterService;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 
 /**
- * アップロードコントローラ.<br/>
+ * ファイルアップロードコントローラ.<br/>
  */
 @RestController
+@Tag(name = "File Management", description = "ファイルのアップロード・ダウンロード管理API")
 public class UploadController {
 
     /** {@link FileRegisterService サービス} */
@@ -27,14 +37,36 @@ public class UploadController {
     protected FileRegisterService service;
 
     /**
-     * post. <br/>
+     * ファイルアップロード. <br/>
      * 
-     * @param request
-     * @param response
-     * @return
+     * @param multipartFile アップロードファイル
+     * @return アップロード結果 (UUID、ファイル名)
      */
-    @RequestMapping(path = "commons/upload")
+    @Operation(
+        summary = "ファイルアップロード",
+        description = "マルチパート形式でファイルをアップロードします。" +
+                      " アップロード成功時にファイルIDとファイル名を返却します。" +
+                      " 取得したfileIdは '/apps/mste/api/generate' のファイル型パラメータや '/apps/mste/api/uploadStencil' の zipFileId で使用します。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "アップロード成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponse.class)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "ファイルが空です"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "アップロード処理エラー")
+    })
+    @RequestMapping(path = "commons/upload", method = RequestMethod.POST)
     public ResponseEntity<ApiResponse<FileUploadResult>> index(
+            @Parameter(
+                description = "アップロードするファイル",
+                required = true,
+                content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)
+            )
             @RequestParam("file") MultipartFile multipartFile) {
         if (multipartFile.isEmpty()) {
             // return

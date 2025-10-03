@@ -87,6 +87,13 @@ public class RunTestServiceImp implements RunTestService {
             return;
         }
 
+        // パス・インジェクション防止: 許可するのは英数、ハイフン、アンダースコアのみ
+        if (!testId.matches("[A-Za-z0-9_-]+")) {
+            resp.addError("testId の形式が不正です。英数・ハイフン・アンダースコアのみ使用可能です。");
+            return;
+        }
+
+        // StorageUtil でベース配下に固定
         List<File> files = FileUtil.getFiles(StorageUtil.getFile("apps/apprunner/defs/" + testId), IGNORE_FILES);
         if (CollectionUtils.isEmpty(files)) {
             resp.addError("テスト定義ファイルが見つかりません。");

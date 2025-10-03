@@ -14,21 +14,35 @@ ProMarker is a comprehensive code generation and template management platform bu
 ## Development Environment
 
 ### Quick Start
+
+**⚠️ 重要: サービス起動にはVS Code Tasksを使用すること**
+シェルスクリプトを直接実行すると、ターミナルがキャンセルされた際にプロセスが残り続けます。
+必ず `create_and_run_task` ツールを使用してバックグラウンドタスクとして起動してください。
+
 ```bash
-# Start both backend and frontend services
-./start-services.sh
+# ❌ 非推奨: シェルスクリプト直接実行
+./scripts/start-services.sh  # プロセスが残る可能性がある
 
-# Stop services
-./stop-services.sh
+# ✅ 推奨: VS Code Tasksまたはgradlewコマンド直接実行
+# バックエンド起動
+cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
 
-# Monitor logs
-./watch-logs.sh [backend|frontend]
+# フロントエンド起動
+cd frontend && npm run dev
 ```
+
+**GitHub Copilotへの指示:**
+- サービス起動時は必ずVS Code Tasksを作成・使用する
+- `run_in_terminal` で `isBackground=true` は使用しない（プロセスが残る）
+- 長時間実行プロセスは `create_and_run_task` でタスク化する
 
 ### Service URLs
 - Frontend: http://localhost:8080/mirel/
-- Backend API: http://localhost:3000
+- Backend API: http://localhost:3000/mipla2
+- Swagger UI: http://localhost:3000/mipla2/swagger-ui.html
+- OpenAPI JSON: http://localhost:3000/mipla2/api-docs
 - ProMarker UI: http://localhost:8080/mirel/mste/
+- H2 Console: http://localhost:3000/mipla2/h2-console
 
 ### Key Configuration Files
 - `backend/src/main/resources/config/application.yml` - Main configuration

@@ -54,6 +54,7 @@ import jp.vemi.framework.util.DateUtil;
 import jp.vemi.framework.util.ModelUtil;
 import jp.vemi.framework.util.ResourceUtil;
 import jp.vemi.framework.util.StorageUtil;
+import jp.vemi.framework.util.SanitizeUtil;
 import jp.vemi.framework.config.StorageConfig;
 import jp.vemi.ste.domain.DictionaryMetaData;
 import jp.vemi.ste.domain.EngineBinds;
@@ -535,7 +536,12 @@ public class TemplateEngineProcessor {
     }
 
     public String getStencilAndSerialStorageDir() {
-        return getStencilStorageDir() + "/" + context.getSerialNo();
+        // serialNo は "*" を許容する仕様のため、パス結合前に検証
+        final String serial = context.getSerialNo();
+        if (!StringUtils.isEmpty(serial) && !"*".equals(serial)) {
+            SanitizeUtil.sanitizeIdentifierAllowWildcard(serial); // 実質 IDENTIFIER 検証
+        }
+        return getStencilStorageDir() + "/" + serial;
     }
 
     public String getStencilStorageDir() {
@@ -543,9 +549,8 @@ public class TemplateEngineProcessor {
         // validate.
         Assert.notNull(context, "context");
         Assert.hasText(context.getStencilCanonicalName(), "stencilCanonicalName must not be empty");
-
-        Assert.isTrue(context.getStencilCanonicalName().startsWith("/"),
-            "stencilCanonicalName must be start with '/'");
+        // 正規名パス検証（先頭"/"、セグメントは識別子、.. や \\ 禁止）
+        SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
 
         final String dir = StringUtils.join(getStencilMasterStorageDir(), context.getStencilCanonicalName());
         return dir;
@@ -714,6 +719,8 @@ public class TemplateEngineProcessor {
                     if (settings != null && settings.getStencil() != null && settings.getStencil().getConfig() != null) {
                         // serialNoが指定されている場合はマッチするかチェック
                         if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                            // serial の識別子検証（"*" 以外）
+                            SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
                             String configSerial = settings.getStencil().getConfig().getSerial();
                             if (!context.getSerialNo().equals(configSerial)) {
                                 continue; // serialNoが一致しない場合はスキップ
@@ -744,6 +751,7 @@ public class TemplateEngineProcessor {
         try {
             // シリアル番号が指定されている場合は直接検索
             if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
                 String resourcePath = classpathLocation.substring("classpath:".length()) 
                     + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/stencil-settings.yml";
                 
@@ -866,6 +874,7 @@ public class TemplateEngineProcessor {
             
             // serialNoが指定されている場合はそれも含める
             if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
                 stencilPath = stencilPath + "/" + context.getSerialNo();
             }
             
@@ -1014,7 +1023,12 @@ public class TemplateEngineProcessor {
         
         try {
             String stencilCanonicalName = context.getStencilCanonicalName();
+            // 正規名パス検証
+            SanitizeUtil.sanitizeCanonicalPath(stencilCanonicalName);
             String serialNo = context.getSerialNo();
+            if (!StringUtils.isEmpty(serialNo) && !"*".equals(serialNo)) {
+                SanitizeUtil.sanitizeIdentifierAllowWildcard(serialNo);
+            }
             
             System.out.println("=== Layered template search for stencil: " + stencilCanonicalName + " serial: " + serialNo + " ===");
             
