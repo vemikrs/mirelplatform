@@ -27,7 +27,7 @@ echo "   プロファイル: dev"
 echo "   ログ: logs/backend.log"
 
 # nohupを使ってプロセスをシェルから完全に切り離す
-nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun" > logs/backend.log 2>&1 &
+nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun" > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 

@@ -74,7 +74,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun",
+      "command": "SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}"
       },
