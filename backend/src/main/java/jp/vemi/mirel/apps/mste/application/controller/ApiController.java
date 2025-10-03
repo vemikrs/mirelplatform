@@ -102,18 +102,25 @@ public class ApiController {
         summary = "コード生成",
         description = "選択したステンシルテンプレートからソースコードを生成します。" +
                       "パラメータはステンシル定義に基づいて動的に変化します。" +
-                      " 関連API: '/commons/upload'（ファイル型パラメータの事前アップロード）, '/commons/download'（生成結果のダウンロード）"
+                      "\n\n**レスポンス構造**: 生成されたファイル群はZIPアーカイブされ、そのZIPファイルのIDと論理名が返されます。" +
+                      "\n- `files`: Pair<String, String>のリストで、JSONではオブジェクト配列として表現されます" +
+                      "\n- オブジェクトのキー: ZIPファイルのファイル管理ID (UUID形式)" +
+                      "\n- オブジェクトの値: ZIPファイルの論理名（例: `hello-world-250913A.zip`）" +
+                      "\n- ZIP内には生成された複数のファイル（.java, .xml等）がアーカイブされています" +
+                      "\n\n**関連API**:" +
+                      "\n- `/commons/upload`: ファイル型パラメータの事前アップロード" +
+                      "\n- `/commons/dlsite/{fileId}` または `/commons/download`: ZIPファイルのダウンロード"
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
-            description = "成功 - ファイルIDリストを返却",
+            description = "成功 - ZIPファイルのIDと論理名を返却",
             content = @io.swagger.v3.oas.annotations.media.Content(
                 mediaType = "application/json",
                 schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class),
                 examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                     name = "成功例",
-                    value = "{\n  \"data\": {\n    \"files\": [[\"abc123\", \"Hello.java\"], [\"def456\", \"Readme.md\"]]\n  },\n  \"messages\": [],\n  \"errors\": []\n}"
+                    value = "{\n  \"data\": {\n    \"files\": [{\n      \"abc123-def456-...\": \"hello-world-250913A.zip\"\n    }]\n  },\n  \"messages\": [],\n  \"errors\": []\n}"
                 )
             )
         ),
