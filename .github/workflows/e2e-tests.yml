@@ -27,7 +27,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+
+      - name: Verify Node.js version
+        run: |
+          echo "Node version: $(node --version)"
+          node --version | grep "v18" || (echo "ERROR: Node 18 not detected!" && exit 1)
 
       - name: Install E2E test dependencies
         run: npm ci
@@ -65,7 +69,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+      
+      - name: Verify Node.js version
+        run: |
+          echo "Node version: $(node --version)"
+          node --version | grep "v18" || (echo "ERROR: Node 18 not detected!" && exit 1)
       
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -226,7 +234,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       
       - name: Setup Java
         uses: actions/setup-java@v4
