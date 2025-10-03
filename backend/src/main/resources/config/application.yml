@@ -40,3 +40,18 @@ mipla2:
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
   # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
+
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+  paths-to-match:
+    - /apps/**
+    - /commons/**
+    - /auth/**

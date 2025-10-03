@@ -110,6 +110,10 @@ public class WebSecurityConfig {
                     .requestMatchers("/auth/check").permitAll()
                     .requestMatchers("/auth/**").permitAll()
                     .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
+                    .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
+                    .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
+                    .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
+                    .requestMatchers("/swagger-ui.html").permitAll() // Swagger UI HTML
                     .anyRequest().authenticated();
         });
     }

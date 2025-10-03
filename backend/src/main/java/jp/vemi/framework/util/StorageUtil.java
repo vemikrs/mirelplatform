@@ -35,12 +35,38 @@ public class StorageUtil {
     }
 
     /**
+     * ストレージ基準ディレクトリ配下で安全にパスを解決します。
+     * - 先頭のスラッシュはストレージ相対とみなして除去
+     * - 正規化してベースディレクトリ配下であることを検証
+     *
+     * @param storagePath ストレージ相対パス（先頭に/が付いていても可）
+     * @return ベースディレクトリ配下の正規化済み Path
+     * @throws IllegalArgumentException ベースディレクトリ外へ逸脱する場合
+     */
+    private static Path resolveWithinBase(String storagePath) {
+        String sp = storagePath == null ? "" : storagePath;
+        // Windowsの区切りやバックスラッシュを防止
+        sp = sp.replace('\\', '/');
+        // 先頭の/はストレージ相対と見なして除去
+        if (sp.startsWith("/")) {
+            sp = sp.replaceFirst("^/+", "");
+        }
+
+        Path base = Paths.get(getBaseDir()).normalize();
+        Path resolved = base.resolve(sp).normalize();
+        if (!resolved.startsWith(base)) {
+            throw new IllegalArgumentException("Path escapes storage base directory: " + storagePath);
+        }
+        return resolved;
+    }
+
+    /**
      * キャノニキャルパス
      * @param path
      * @return
      */
     public static String parseToCanonicalPath(String path) {
-        return Paths.get(getBaseDir()).resolve(path).toString();
+        return resolveWithinBase(path).toString();
     }
 
     /**
@@ -49,8 +75,7 @@ public class StorageUtil {
      * @return ファイル
      */
     public static File getFile(String storagePath) {
-        Path resolved = Paths.get(getBaseDir()).resolve(storagePath);
-        return resolved.toFile();
+        return resolveWithinBase(storagePath).toFile();
     }
     /**
      * 配下ファイルの取得.<br/>
@@ -78,7 +103,7 @@ public class StorageUtil {
 
     public static URL getResource(String storagePath) {
         try {
-            Path resolved = Paths.get(getBaseDir()).resolve(storagePath);
+            Path resolved = resolveWithinBase(storagePath);
             return resolved.toUri().toURL();
         } catch (MalformedURLException e) {
             e.printStackTrace();

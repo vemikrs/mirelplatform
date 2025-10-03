@@ -17,6 +17,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jp.vemi.mirel.security.AuthenticationService;
@@ -28,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "認証・認可管理API")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -37,8 +45,40 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
+    @Operation(
+        summary = "ログイン",
+        description = "ユーザー名とパスワードで認証を行い、認証トークンを発行します。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "ログイン成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AuthenticationResponse.class),
+                examples = @ExampleObject(
+                    value = "{\"success\":true,\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"}"
+                )
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "認証失敗 - ユーザー名またはパスワードが正しくありません"
+        )
+    })
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
+    public ResponseEntity<AuthenticationResponse> login(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "ログイン情報",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = AuthenticationRequest.class),
+                    examples = @ExampleObject(
+                        value = "{\"username\":\"user@example.com\",\"password\":\"password123\"}"
+                    )
+                )
+            )
+            @RequestBody AuthenticationRequest request) {
         try {
             String token = authenticationService.authenticate(
                 request.getUsername(), 
@@ -59,6 +99,21 @@ public class AuthenticationController {
         }
     }
 
+    @Operation(
+        summary = "認証状態確認",
+        description = "現在のユーザーの認証状態を確認します。" +
+                      "認証済みの場合、ユーザー名と権限情報を返却します。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "認証状態の取得成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AuthenticationStatus.class)
+            )
+        )
+    })
     @GetMapping("/check")
     public ResponseEntity<AuthenticationStatus> check() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -83,6 +138,23 @@ public class AuthenticationController {
         return ResponseEntity.ok(status);
     }
 
+    @Operation(
+        summary = "ログアウト",
+        description = "現在のユーザーセッションを終了し、認証情報をクリアします。"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "ログアウト成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AuthenticationStatus.class),
+                examples = @ExampleObject(
+                    value = "{\"authenticated\":false,\"message\":\"Logged out successfully\"}"
+                )
+            )
+        )
+    })
     @PostMapping("/logout")
     public ResponseEntity<AuthenticationStatus> logout(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
