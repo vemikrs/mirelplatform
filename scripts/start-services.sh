@@ -3,8 +3,6 @@
 # Mirel Platform 一括起動スクリプト
 # Backend (Spring Boot) と Frontend (Nuxt.js) を同時起動
 
-set -e
-
 echo "🚀 Mirel Platform サービス起動中..."
 echo "======================================"
 
@@ -28,7 +26,8 @@ echo "   ポート: 3000"
 echo "   プロファイル: dev"
 echo "   ログ: logs/backend.log"
 
-SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > logs/backend.log 2>&1 &
+# nohupを使ってプロセスをシェルから完全に切り離す
+nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun" > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
@@ -38,18 +37,18 @@ echo "   ポート: 8080"
 echo "   ホスト: 0.0.0.0"
 echo "   ログ: logs/frontend.log"
 
-cd frontend
 # npm依存関係の確認・インストール
-if [ ! -d "node_modules" ]; then
+if [ ! -d "frontend/node_modules" ]; then
     echo "   📦 npm依存関係をインストール中..."
+    cd frontend
     npm install --legacy-peer-deps --no-audit
+    cd ..
 fi
 
-HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../logs/frontend.log 2>&1 &
+# nohupを使ってプロセスをシェルから完全に切り離す
+nohup bash -c "cd '$PROJECT_ROOT/frontend' && HOST=0.0.0.0 PORT=8080 NODE_OPTIONS='--no-deprecation' npm run dev" > logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
-
-cd ..
 
 # プロセス情報を保存
 echo "$BACKEND_PID" > logs/backend.pid
@@ -82,10 +81,10 @@ rm -f logs/.backend_ready logs/.frontend_ready
         sleep 1
         echo -n "."
         
-        # Backend起動チェック
-        if curl -s http://localhost:3000/actuator/health >/dev/null 2>&1; then
+        # Backend起動チェック (アプリのコンテキストパス配下)
+        if curl -s http://localhost:3000/mipla2/actuator/health >/dev/null 2>&1; then
             if [ ! -f "logs/.backend_ready" ]; then
-                echo "✅ Backend起動完了 (http://localhost:3000)"
+                echo "✅ Backend起動完了 (http://localhost:3000/mipla2)"
                 touch logs/.backend_ready
             fi
         fi

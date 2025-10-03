@@ -2,15 +2,81 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Start All Services",
+      "type": "shell",
+      "command": "./scripts/start-services.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*サービス起動中.*$",
+          "endsPattern": "^.*起動スクリプト実行完了.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Stop All Services",
+      "type": "shell",
+      "command": "./scripts/stop-services.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "Watch Logs",
+      "type": "shell",
+      "command": "./scripts/watch-logs.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      }
+    },
+    {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "../gradlew",
-      "args": [
-        "bootRun",
-        "--args='--spring.profiles.active=dev'"
-      ],
+      "command": "SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun",
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}"
       },
       "isBackground": true,
       "problemMatcher": {
@@ -44,10 +110,10 @@
     {
       "label": "Frontend: Start Nuxt.js",
       "type": "shell",
-      "command": "npm",
+      "command": "bash",
       "args": [
-        "run",
-        "dev"
+        "-c",
+        "if [ ! -d 'node_modules' ]; then npm install --legacy-peer-deps --no-audit; fi && HOST=0.0.0.0 PORT=8080 NODE_OPTIONS='--no-deprecation' npm run dev"
       ],
       "options": {
         "cwd": "${workspaceFolder}/frontend"
@@ -82,25 +148,12 @@
       }
     },
     {
-      "label": "Start All Services",
-      "dependsOn": [
-        "Backend: Start Spring Boot",
-        "Frontend: Start Nuxt.js"
-      ],
-      "dependsOrder": "parallel",
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-    },
-    {
       "label": "Backend: Stop",
       "type": "shell",
       "command": "pkill",
       "args": [
         "-f",
-        "MiplaApplication"
+        "gradlew.*bootRun"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -129,25 +182,11 @@
       }
     },
     {
-      "label": "Stop All Services",
-      "dependsOn": [
-        "Backend: Stop",
-        "Frontend: Stop"
-      ],
-      "dependsOrder": "parallel",
-      "problemMatcher": []
-    },
-    {
       "label": "Backend: Build",
       "type": "shell",
-      "command": "../gradlew",
-      "args": [
-        "build",
-        "-x",
-        "test"
-      ],
+      "command": "./scripts/build-backend.sh",
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}"
       },
       "problemMatcher": "$gradle",
       "presentation": {
@@ -165,13 +204,29 @@
     {
       "label": "Frontend: Build",
       "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "build"
-      ],
+      "command": "./scripts/build-frontend.sh",
       "options": {
-        "cwd": "${workspaceFolder}/frontend"
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Build All Services",
+      "type": "shell",
+      "command": "./scripts/build-services.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
       "problemMatcher": [],
       "presentation": {
