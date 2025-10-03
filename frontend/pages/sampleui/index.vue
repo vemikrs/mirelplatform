@@ -13,11 +13,9 @@
 </template>
 
 <script lang="ts">
-import DemoAgGrid1 from '~/components/pane/DemoAgGrid1.vue'
 export default {
   layout: 'Main',
   components: {
-    DemoAgGrid1
   }
 }
 </script>
