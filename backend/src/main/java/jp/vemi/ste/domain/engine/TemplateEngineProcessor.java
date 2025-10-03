@@ -547,6 +547,12 @@ public class TemplateEngineProcessor {
         Assert.isTrue(context.getStencilCanonicalName().startsWith("/"),
             "stencilCanonicalName must be start with '/'");
 
+        // 追加検証: パストラバーサル禁止（.. や バックスラッシュの混入を許さない）
+        String scn = context.getStencilCanonicalName();
+        if (scn.contains("..") || scn.contains("\\")) {
+            throw new IllegalArgumentException("Invalid stencilCanonicalName: path traversal detected");
+        }
+
         final String dir = StringUtils.join(getStencilMasterStorageDir(), context.getStencilCanonicalName());
         return dir;
     }

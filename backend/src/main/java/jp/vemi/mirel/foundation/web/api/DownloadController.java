@@ -191,8 +191,12 @@ public class DownloadController {
             try (ZipOutputStream zostream = new ZipOutputStream(response.getOutputStream())) {
                 for (final Tuple3<String, String, Path> item : apiResp.getData().paths) {
                     File entryFile = item.getV3().toFile();
-                    final ZipEntry entry = new ZipEntry(
-                            new File(entryFile.getParent()).getName() + "-" + item.getV2());
+                    // ZIP エントリ名のサニタイズ（パスセパレータを除去し、ベース名のみ使用）
+                    String parentName = new File(entryFile.getParent()).getName();
+                    String safeParent = parentName.replace('/', '_').replace('\\', '_');
+                    String baseName = new File(item.getV2()).getName();
+                    String safeBase = baseName.replace('/', '_').replace('\\', '_');
+                    final ZipEntry entry = new ZipEntry(safeParent + "-" + safeBase);
                     zostream.putNextEntry(entry);
                     zostream.write(Files.readAllBytes(item.getV3()));
                 }
