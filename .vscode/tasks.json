@@ -4,7 +4,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "./gradlew",
+      "command": "../gradlew",
       "args": [
         "bootRun",
         "--args='--spring.profiles.active=dev'"
@@ -140,7 +140,7 @@
     {
       "label": "Backend: Build",
       "type": "shell",
-      "command": "./gradlew",
+      "command": "../gradlew",
       "args": [
         "build",
         "-x",
