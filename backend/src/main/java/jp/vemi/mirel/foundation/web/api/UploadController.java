@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -59,7 +60,7 @@ public class UploadController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "ファイルが空です"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "アップロード処理エラー")
     })
-    @RequestMapping(path = "commons/upload")
+    @RequestMapping(path = "commons/upload", method = RequestMethod.POST)
     public ResponseEntity<ApiResponse<FileUploadResult>> index(
             @Parameter(
                 description = "アップロードするファイル",

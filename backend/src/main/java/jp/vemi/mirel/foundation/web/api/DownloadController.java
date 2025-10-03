@@ -126,7 +126,7 @@ public class DownloadController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
     })
-    @RequestMapping(path = "commons/download")
+    @RequestMapping(path = "commons/download", method = RequestMethod.POST)
     public ResponseEntity<ApiResponse<FileDownloadResult>> index(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                 description = "ダウンロード対象ファイル情報",
