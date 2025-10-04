@@ -43,12 +43,12 @@ out/
 
 ### E2E Testing ###
 node_modules/
-test-results/
-playwright-report/
-playwright/.cache/
-screenshots/
-videos/
-traces/
+packages/e2e/test-results/
+packages/e2e/playwright-report/
+packages/e2e/playwright/.cache/
+packages/e2e/screenshots/
+packages/e2e/videos/
+packages/e2e/traces/
 
 ### Playwright ###
 /test-results/

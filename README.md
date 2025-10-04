@@ -57,7 +57,7 @@ ProMarkerは**mirelplatform**という独自のフレームワーク上で動作
 
 ### 前提条件
 - Java 21 (Microsoft JVM推奨)
-- Node.js 16+ (Frontend用)
+- Node.js 18.x (Frontend/E2E用 - Nuxt 2互換性)
 - Gradle 8.4+
 - MySQL (本番環境)
 
