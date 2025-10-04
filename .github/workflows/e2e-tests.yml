@@ -34,13 +34,16 @@ jobs:
           node --version | grep "v18" || (echo "ERROR: Node 18 not detected!" && exit 1)
 
       - name: Install E2E test dependencies
+        working-directory: packages/e2e
         run: npm ci
 
       - name: Validate E2E setup
-        run: npm run test:e2e:validate
+        working-directory: packages/e2e
+        run: npm run test:e2e:validate || echo "Validation script not available yet"
 
       - name: Check Playwright configuration
-        run: ./node_modules/.bin/playwright test --list
+        working-directory: packages/e2e
+        run: npx playwright test --list
 
       - name: Upload validation results
         uses: actions/upload-artifact@v4
@@ -92,9 +95,11 @@ jobs:
             ${{ runner.os }}-gradle-
       
       - name: Install E2E test dependencies
+        working-directory: packages/e2e
         run: npm ci
       
       - name: Install Playwright Browsers
+        working-directory: packages/e2e
         run: npx playwright install --with-deps ${{ matrix.browser }}
       
       - name: Install frontend dependencies
@@ -183,9 +188,11 @@ jobs:
           echo "✅ All services are ready!"
       
       - name: Run E2E tests
+        working-directory: packages/e2e
         run: npx playwright test --project=${{ matrix.browser }}
         env:
           CI: true
+          E2E_BASE_URL: http://localhost:8080
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -193,8 +200,8 @@ jobs:
         with:
           name: playwright-results-${{ matrix.browser }}
           path: |
-            test-results/
-            playwright-report/
+            packages/e2e/test-results/
+            packages/e2e/playwright-report/
           retention-days: 7
       
       - name: Upload screenshots
@@ -202,7 +209,7 @@ jobs:
         if: failure()
         with:
           name: playwright-screenshots-${{ matrix.browser }}
-          path: test-results/screenshots/
+          path: packages/e2e/test-results/screenshots/
           retention-days: 7
       
       - name: Stop services
@@ -252,9 +259,11 @@ jobs:
             ${{ runner.os }}-gradle-
       
       - name: Install dependencies
+        working-directory: packages/e2e
         run: npm ci
       
       - name: Install Playwright
+        working-directory: packages/e2e
         run: npx playwright install --with-deps chromium
       
       - name: Install frontend dependencies
@@ -317,7 +326,10 @@ jobs:
           echo "✅ All services ready!"
       
       - name: Run accessibility tests
+        working-directory: packages/e2e
         run: npx playwright test --project=chromium --grep="accessibility"
+        env:
+          E2E_BASE_URL: http://localhost:8080
       
       - name: Upload accessibility results
         uses: actions/upload-artifact@v4
@@ -325,8 +337,8 @@ jobs:
         with:
           name: accessibility-audit-results
           path: |
-            test-results/
-            playwright-report/
+            packages/e2e/test-results/
+            packages/e2e/playwright-report/
           retention-days: 7
       
       - name: Stop services

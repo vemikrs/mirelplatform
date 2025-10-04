@@ -1,0 +1,24 @@
+{
+  "name": "@mirelplatform/e2e",
+  "version": "1.0.0",
+  "description": "E2E testing infrastructure for ProMarker platform",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:codegen": "playwright codegen ${E2E_BASE_URL:-http://localhost:3000}/mirel/mste",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.8.2",
+    "@playwright/test": "^1.45.0",
+    "axe-core": "^4.8.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18 <19"
+  }
+}
