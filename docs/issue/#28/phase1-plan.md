@@ -16,8 +16,8 @@
 | **Step 2** | API Client設定 | ✅ api-integration.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 3** | API型定義 | - | ✅ Completed | 2025-10-13 |
 | **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ✅ Completed | 2025-10-13 |
-| **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ⬜️ Not Started | - |
-| **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | ⬜️ Not Started | - |
+| **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ✅ Completed | 2025-10-13 |
+| **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | 🚧 In Progress | - |
 | **Step 7** | ファイルアップロード | ✅ file-upload.spec.ts | ⬜️ Not Started | - |
 | **Step 8** | JSON Import/Export | ✅ json-editor.spec.ts | ⬜️ Not Started | - |
 | **Step 9** | エラーハンドリング | ✅ error-handling.spec.ts | ⬜️ Not Started | - |
@@ -46,9 +46,10 @@
 - [x] `apps/frontend-v3/src/features/promarker/hooks/useFileUpload.ts` - Upload hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useParameterForm.ts` - Form hook
 - [x] `apps/frontend-v3/src/features/promarker/pages/ProMarkerPage.tsx` - メインページ
-- [ ] `apps/frontend-v3/src/features/promarker/components/StencilSelector.tsx` - 選択UI
-- [ ] `apps/frontend-v3/src/features/promarker/components/ParameterFields.tsx` - パラメータ入力
-- [ ] `apps/frontend-v3/src/features/promarker/components/ActionButtons.tsx` - ボタン群
+- [x] `apps/frontend-v3/src/features/promarker/components/StencilSelector.tsx` - 選択UI
+- [x] `apps/frontend-v3/src/features/promarker/components/ParameterFields.tsx` - パラメータ入力
+- [x] `apps/frontend-v3/src/features/promarker/components/ActionButtons.tsx` - ボタン群
+- [x] `apps/frontend-v3/src/features/promarker/components/StencilInfo.tsx` - ステンシル情報表示
 - [ ] `apps/frontend-v3/src/features/promarker/components/FileUploadButton.tsx` - ファイルアップロード
 - [ ] `apps/frontend-v3/src/features/promarker/components/JsonEditor.tsx` - JSON編集
 - [ ] `apps/frontend-v3/src/features/promarker/components/ErrorBoundary.tsx` - エラー境界
@@ -64,9 +65,8 @@
 - [x] `packages/e2e/tests/fixtures/test-file.txt` - テスト用ファイル
 - [x] `packages/e2e/tests/specs/promarker-v3/routing.spec.ts` - ルーティングテスト
 - [x] `packages/e2e/tests/specs/promarker-v3/api-integration.spec.ts` - API統合テスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/hooks.spec.ts` - Hooksテスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト
+- [x] `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト
+- [x] `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/form-validation.spec.ts` - バリデーションテスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/file-upload.spec.ts` - ファイルアップロードテスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/json-editor.spec.ts` - JSON編集テスト
@@ -83,22 +83,24 @@
 |---------------|---------|------|------|---------|---------|
 | routing.spec.ts | 8 | 8 | 0 | 0 | 1.4s |
 | api-integration.spec.ts | 8 | 8 | 0 | 0 | 4.3s |
+| stencil-selection.spec.ts | 8 | 6 | 0 | 2 | 2.5s |
+| parameter-input.spec.ts | 12 | 5 | 0 | 7 | 1.8s |
 | hooks.spec.ts | - | - | - | - | - |
-| stencil-selection.spec.ts | - | - | - | - | - |
-| parameter-input.spec.ts | - | - | - | - | - |
 | form-validation.spec.ts | - | - | - | - | - |
 | file-upload.spec.ts | - | - | - | - | - |
 | json-editor.spec.ts | - | - | - | - | - |
 | error-handling.spec.ts | - | - | - | - | - |
 | complete-workflow.spec.ts | - | - | - | - | - |
 | regression.spec.ts | - | - | - | - | - |
-| **合計** | **16** | **16** | **0** | **0** | **7.1s** |
+| **合計** | **36** | **27** | **0** | **9** | **10.0s** |
 
 ### 品質メトリクス
 
 | メトリクス | 目標 | 現在 | ステータス |
 |-----------|------|------|----------|
-| E2Eテスト数 | 20+ | 16 | 🟡 進行中 |
+| E2Eテスト数 | 100+ | 36 | 🟡 進行中 |
+| テスト成功率 | 100% | 75% (27/36) | 🟡 進行中 |
+| テストカバレッジ | 80%+ | 45% (5/11 steps) | 🟡 進行中 |
 | E2Eテスト成功率 | 100% | 100% | ✅ 達成 |
 | コードカバレッジ | > 80% | N/A | ⬜️ |
 | TypeScript型エラー | 0 | 0 | ✅ 達成 |

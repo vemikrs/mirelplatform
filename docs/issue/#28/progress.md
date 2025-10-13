@@ -49,53 +49,31 @@
 
 ---
 
-### Phase 1: ProMarker core feature migration ⏳ IN PROGRESS
+## 現在の進捗
 
-**期間**: 2 weeks (予定)  
-**目標**: ProMarkerの基本機能をReact SPAで再実装
+**Phase 1: ProMarker core feature migration** 🚧 進行中
 
-#### タスクリスト
-- [ ] **1.1 ルーティング設定**
-  - [ ] React Router v7設定 (`src/app/routes.tsx`)
-  - [ ] `/promarker` base route設定
-  - [ ] List/Detail/Generate routes定義
-  - [ ] ProtectedRoute guard実装
+| Step | タスク | 状態 | テスト結果 |
+|------|--------|------|-----------|
+| ✅ Step 0 | E2E基盤セットアップ | 完了 | - |
+| ✅ Step 1 | ルーティング設定 | 完了 | 8/8 passing |
+| ✅ Step 2 | API Client設定 | 完了 | 8/8 passing |
+| ✅ Step 3 | API型定義 | 完了 | 180+ lines |
+| ✅ Step 4 | TanStack Query Hooks | 完了 | 16/16 passing |
+| ✅ Step 5 | ProMarker UI実装 | 完了 | 27/35 passing, 8 skipped |
+| 🚧 Step 6 | React Hook Form + Zod統合 | 進行中 | - |
+| ⏳ Step 7 | ファイルアップロード | 未着手 | - |
+| ⏳ Step 8 | JSONエディタ | 未着手 | - |
+| ⏳ Step 9 | エラーハンドリング | 未着手 | - |
+| ⏳ Step 10 | 完全ワークフロー統合 | 未着手 | - |
+| ⏳ Step 11 | リグレッションテスト | 未着手 | - |
 
-- [ ] **1.2 API統合**
-  - [ ] Axios client設定 (`src/lib/api/client.ts`)
-  - [ ] Spring Boot backend連携 (`/mapi` proxy経由)
-  - [ ] ApiResponse<T> 型定義
-  - [ ] Error handling pattern実装
-
-- [ ] **1.3 データフェッチング**
-  - [ ] TanStack Query設定 (`src/app/App.tsx`)
-  - [ ] useSuggest() hook実装
-  - [ ] useGenerate() hook実装
-  - [ ] useReloadStencilMaster() hook実装
-
-- [ ] **1.4 フォーム処理**
-  - [ ] React Hook Form + Zod統合
-  - [ ] Form validation schema定義
-  - [ ] Dynamic form fields generation
-  - [ ] File upload handling
-
-- [ ] **1.5 ProMarker UI実装**
-  - [ ] StencilList page (category/stencil/serial selection)
-  - [ ] StencilDetail page (parameter input)
-  - [ ] StencilGenerate page (code generation + download)
-  - [ ] ErrorBoundary + Toast notifications
-
-#### 成果物 (予定)
-- **Routes**: `src/app/routes.tsx`, `src/features/promarker/routes.tsx`
-- **API**: `src/lib/api/client.ts`, `src/features/promarker/api/`
-- **Hooks**: `src/features/promarker/hooks/` (useSuggest, useGenerate, etc.)
-- **Types**: `src/features/promarker/types/` (API response types)
-- **Pages**: `src/features/promarker/pages/` (List, Detail, Generate)
-- **Components**: `src/features/promarker/components/` (StencilForm, ParameterFields, etc.)
+**進捗率**: 5/11完了 (45%)  
+**E2Eテスト**: 27/35 passing (77%), 8 skipped (23%)
 
 ---
 
-### Phase 2: @mirel/ui design system拡張 📋 PLANNED
+### Phase 0: pnpm workspace + frontend-v3 初期化 ✅ COMPLETED
 
 **期間**: 1 week (予定)  
 **目標**: ProMarker UIに必要な追加コンポーネント実装
