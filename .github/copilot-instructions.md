@@ -128,6 +128,10 @@ cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
 cd frontend && npm run dev
 ```
 
+**プロセスの強制停止**
+- **停止**：**Port→PID→Kill**。例：`fuser -k 5173/tcp`  
+- **禁止**：`pkill -f node` / `killall node` / `kill $(pgrep node)`
+
 **GitHub Copilotへの指示:**
 - サービス起動時は必ずVS Code Tasksを作成・使用する
 - `run_in_terminal` で `isBackground=true` は使用しない（プロセスが残る）
