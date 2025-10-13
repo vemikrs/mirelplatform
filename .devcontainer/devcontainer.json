@@ -25,9 +25,7 @@
     "DEVCONTAINER_TZ": "Asia/Tokyo",
     "SPRING_PROFILES_ACTIVE": "dev",
     "HOST": "0.0.0.0",
-    "PLAYWRIGHT_BROWSERS_PATH": "/home/vscode/.cache/playwright",
-    "LANG": "ja_JP.UTF-8",
-    "LC_ALL": "ja_JP.UTF-8"
+    "PLAYWRIGHT_BROWSERS_PATH": "/home/vscode/.cache/playwright"
   },
   "customizations": {
     "vscode": {

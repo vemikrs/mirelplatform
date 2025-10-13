@@ -8,10 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  # Japanese locale and timezone settings
+  # Timezone setting for Japanese environment
   TZ: Asia/Tokyo
-  LANG: ja_JP.UTF-8
-  LC_ALL: ja_JP.UTF-8
 
 jobs:
   validate-setup:
