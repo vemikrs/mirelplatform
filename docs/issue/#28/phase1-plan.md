@@ -15,7 +15,7 @@
 | **Step 1** | ルーティング設定 | ✅ routing.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 2** | API Client設定 | ✅ api-integration.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 3** | API型定義 | - | ✅ Completed | 2025-10-13 |
-| **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ⬜️ Not Started | - |
+| **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ⬜️ Not Started | - |
 | **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | ⬜️ Not Started | - |
 | **Step 7** | ファイルアップロード | ✅ file-upload.spec.ts | ⬜️ Not Started | - |
@@ -40,10 +40,10 @@
 - [x] `apps/frontend-v3/src/lib/api/types.ts` - API型定義
 - [x] `apps/frontend-v3/src/features/promarker/types/api.ts` - ProMarker API型
 - [x] `apps/frontend-v3/src/features/promarker/types/domain.ts` - ドメインモデル型
-- [ ] `apps/frontend-v3/src/features/promarker/hooks/useSuggest.ts` - Suggest hook
-- [ ] `apps/frontend-v3/src/features/promarker/hooks/useGenerate.ts` - Generate hook
-- [ ] `apps/frontend-v3/src/features/promarker/hooks/useReloadStencilMaster.ts` - Reload hook
-- [ ] `apps/frontend-v3/src/features/promarker/hooks/useFileUpload.ts` - Upload hook
+- [x] `apps/frontend-v3/src/features/promarker/hooks/useSuggest.ts` - Suggest hook
+- [x] `apps/frontend-v3/src/features/promarker/hooks/useGenerate.ts` - Generate hook
+- [x] `apps/frontend-v3/src/features/promarker/hooks/useReloadStencilMaster.ts` - Reload hook
+- [x] `apps/frontend-v3/src/features/promarker/hooks/useFileUpload.ts` - Upload hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useParameterForm.ts` - Form hook
 - [x] `apps/frontend-v3/src/features/promarker/pages/ProMarkerPage.tsx` - メインページ
 - [ ] `apps/frontend-v3/src/features/promarker/components/StencilSelector.tsx` - 選択UI
@@ -54,7 +54,7 @@
 - [ ] `apps/frontend-v3/src/features/promarker/components/ErrorBoundary.tsx` - エラー境界
 - [ ] `apps/frontend-v3/src/features/promarker/schemas/parameter.ts` - Zod schema
 - [ ] `apps/frontend-v3/src/features/promarker/utils/parameter.ts` - ユーティリティ
-- [ ] `apps/frontend-v3/src/lib/utils/error.ts` - エラーハンドリング
+- [x] `apps/frontend-v3/src/lib/utils/error.ts` - エラーハンドリング
 - [x] `apps/frontend-v3/src/layouts/RootLayout.tsx` - レイアウト
 
 #### テスト成果物 (Test Code)
@@ -81,8 +81,8 @@
 
 | テストスイート | テスト数 | 成功 | 失敗 | スキップ | 実行時間 |
 |---------------|---------|------|------|---------|---------|
-| routing.spec.ts | - | - | - | - | - |
-| api-integration.spec.ts | - | - | - | - | - |
+| routing.spec.ts | 8 | 8 | 0 | 0 | 1.4s |
+| api-integration.spec.ts | 8 | 8 | 0 | 0 | 4.3s |
 | hooks.spec.ts | - | - | - | - | - |
 | stencil-selection.spec.ts | - | - | - | - | - |
 | parameter-input.spec.ts | - | - | - | - | - |
@@ -92,18 +92,18 @@
 | error-handling.spec.ts | - | - | - | - | - |
 | complete-workflow.spec.ts | - | - | - | - | - |
 | regression.spec.ts | - | - | - | - | - |
-| **合計** | **0** | **0** | **0** | **0** | **0s** |
+| **合計** | **16** | **16** | **0** | **0** | **7.1s** |
 
 ### 品質メトリクス
 
 | メトリクス | 目標 | 現在 | ステータス |
 |-----------|------|------|----------|
-| E2Eテスト数 | 20+ | 0 | ⬜️ |
-| E2Eテスト成功率 | 100% | N/A | ⬜️ |
+| E2Eテスト数 | 20+ | 16 | 🟡 進行中 |
+| E2Eテスト成功率 | 100% | 100% | ✅ 達成 |
 | コードカバレッジ | > 80% | N/A | ⬜️ |
-| TypeScript型エラー | 0 | 0 | ✅ |
+| TypeScript型エラー | 0 | 0 | ✅ 達成 |
 | 初回ロード時間 | < 3秒 | N/A | ⬜️ |
-| API呼び出し時間 | < 1秒 | N/A | ⬜️ |
+| API呼び出し時間 | < 1秒 | ~300ms | ✅ 達成 |
 
 ---
 
