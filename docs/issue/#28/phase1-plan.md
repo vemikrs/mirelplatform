@@ -11,10 +11,10 @@
 
 | Step | タスク | E2Eテスト | ステータス | 完了日 |
 |------|--------|-----------|----------|--------|
-| **Step 0** | E2E基盤セットアップ | - | ⬜️ Not Started | - |
-| **Step 1** | ルーティング設定 | ✅ routing.spec.ts | ⬜️ Not Started | - |
-| **Step 2** | API Client設定 | ✅ api-integration.spec.ts | ⬜️ Not Started | - |
-| **Step 3** | API型定義 | - | ⬜️ Not Started | - |
+| **Step 0** | E2E基盤セットアップ | - | ✅ Completed | 2025-10-13 |
+| **Step 1** | ルーティング設定 | ✅ routing.spec.ts | ✅ Completed | 2025-10-13 |
+| **Step 2** | API Client設定 | ✅ api-integration.spec.ts | ✅ Completed | 2025-10-13 |
+| **Step 3** | API型定義 | - | ✅ Completed | 2025-10-13 |
 | **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ⬜️ Not Started | - |
 | **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ⬜️ Not Started | - |
 | **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | ⬜️ Not Started | - |
@@ -34,18 +34,18 @@
 ### 成果物チェックリスト
 
 #### コード成果物 (Production Code)
-- [ ] `apps/frontend-v3/src/app/routes.tsx` - React Router設定
-- [ ] `apps/frontend-v3/src/app/App.tsx` - Rootコンポーネント更新
-- [ ] `apps/frontend-v3/src/lib/api/client.ts` - Axios client
-- [ ] `apps/frontend-v3/src/lib/api/types.ts` - API型定義
-- [ ] `apps/frontend-v3/src/features/promarker/types/api.ts` - ProMarker API型
-- [ ] `apps/frontend-v3/src/features/promarker/types/domain.ts` - ドメインモデル型
+- [x] `apps/frontend-v3/src/app/routes.tsx` - React Router設定
+- [x] `apps/frontend-v3/src/app/App.tsx` - Rootコンポーネント更新
+- [x] `apps/frontend-v3/src/lib/api/client.ts` - Axios client
+- [x] `apps/frontend-v3/src/lib/api/types.ts` - API型定義
+- [x] `apps/frontend-v3/src/features/promarker/types/api.ts` - ProMarker API型
+- [x] `apps/frontend-v3/src/features/promarker/types/domain.ts` - ドメインモデル型
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useSuggest.ts` - Suggest hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useGenerate.ts` - Generate hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useReloadStencilMaster.ts` - Reload hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useFileUpload.ts` - Upload hook
 - [ ] `apps/frontend-v3/src/features/promarker/hooks/useParameterForm.ts` - Form hook
-- [ ] `apps/frontend-v3/src/features/promarker/pages/ProMarkerPage.tsx` - メインページ
+- [x] `apps/frontend-v3/src/features/promarker/pages/ProMarkerPage.tsx` - メインページ
 - [ ] `apps/frontend-v3/src/features/promarker/components/StencilSelector.tsx` - 選択UI
 - [ ] `apps/frontend-v3/src/features/promarker/components/ParameterFields.tsx` - パラメータ入力
 - [ ] `apps/frontend-v3/src/features/promarker/components/ActionButtons.tsx` - ボタン群
@@ -55,15 +55,15 @@
 - [ ] `apps/frontend-v3/src/features/promarker/schemas/parameter.ts` - Zod schema
 - [ ] `apps/frontend-v3/src/features/promarker/utils/parameter.ts` - ユーティリティ
 - [ ] `apps/frontend-v3/src/lib/utils/error.ts` - エラーハンドリング
-- [ ] `apps/frontend-v3/src/layouts/RootLayout.tsx` - レイアウト
+- [x] `apps/frontend-v3/src/layouts/RootLayout.tsx` - レイアウト
 
 #### テスト成果物 (Test Code)
-- [ ] `packages/e2e/playwright.config.ts` - baseURL更新
-- [ ] `packages/e2e/tests/pages/promarker-v3.page.ts` - Page Object Model
-- [ ] `packages/e2e/tests/fixtures/promarker-v3.fixture.ts` - テストデータ
-- [ ] `packages/e2e/tests/fixtures/test-file.txt` - テスト用ファイル
-- [ ] `packages/e2e/tests/specs/promarker-v3/routing.spec.ts` - ルーティングテスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/api-integration.spec.ts` - API統合テスト
+- [x] `packages/e2e/playwright.config.ts` - baseURL更新
+- [x] `packages/e2e/tests/pages/promarker-v3.page.ts` - Page Object Model
+- [x] `packages/e2e/tests/fixtures/promarker-v3.fixture.ts` - テストデータ
+- [x] `packages/e2e/tests/fixtures/test-file.txt` - テスト用ファイル
+- [x] `packages/e2e/tests/specs/promarker-v3/routing.spec.ts` - ルーティングテスト
+- [x] `packages/e2e/tests/specs/promarker-v3/api-integration.spec.ts` - API統合テスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/hooks.spec.ts` - Hooksテスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト
 - [ ] `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト

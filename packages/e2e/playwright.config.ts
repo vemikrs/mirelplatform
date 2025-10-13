@@ -29,8 +29,8 @@ export default defineConfig({
   
   /* Shared settings for all the projects below. */
   use: {
-    /* Base URL - use E2E_BASE_URL env var or default to localhost:8080 */
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:8080',
+    /* Base URL - use E2E_BASE_URL env var or default to localhost:5173 (frontend-v3) */
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
