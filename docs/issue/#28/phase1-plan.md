@@ -5,6 +5,108 @@
 
 ---
 
+## 🎯 進捗サマリ (Progress Summary)
+
+### Step一覧とステータス
+
+| Step | タスク | E2Eテスト | ステータス | 完了日 |
+|------|--------|-----------|----------|--------|
+| **Step 0** | E2E基盤セットアップ | - | ⬜️ Not Started | - |
+| **Step 1** | ルーティング設定 | ✅ routing.spec.ts | ⬜️ Not Started | - |
+| **Step 2** | API Client設定 | ✅ api-integration.spec.ts | ⬜️ Not Started | - |
+| **Step 3** | API型定義 | - | ⬜️ Not Started | - |
+| **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ⬜️ Not Started | - |
+| **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ⬜️ Not Started | - |
+| **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | ⬜️ Not Started | - |
+| **Step 7** | ファイルアップロード | ✅ file-upload.spec.ts | ⬜️ Not Started | - |
+| **Step 8** | JSON Import/Export | ✅ json-editor.spec.ts | ⬜️ Not Started | - |
+| **Step 9** | エラーハンドリング | ✅ error-handling.spec.ts | ⬜️ Not Started | - |
+| **Step 10** | 完全ワークフロー | ✅ complete-workflow.spec.ts | ⬜️ Not Started | - |
+| **Step 11** | 回帰テスト + CI統合 | ✅ regression.spec.ts | ⬜️ Not Started | - |
+
+### ステータス凡例
+- ⬜️ **Not Started**: 未着手
+- 🚧 **In Progress**: 作業中
+- ✅ **Completed**: 完了
+- ⚠️ **Blocked**: ブロック中
+- 🔄 **Refactoring**: リファクタリング中
+
+### 成果物チェックリスト
+
+#### コード成果物 (Production Code)
+- [ ] `apps/frontend-v3/src/app/routes.tsx` - React Router設定
+- [ ] `apps/frontend-v3/src/app/App.tsx` - Rootコンポーネント更新
+- [ ] `apps/frontend-v3/src/lib/api/client.ts` - Axios client
+- [ ] `apps/frontend-v3/src/lib/api/types.ts` - API型定義
+- [ ] `apps/frontend-v3/src/features/promarker/types/api.ts` - ProMarker API型
+- [ ] `apps/frontend-v3/src/features/promarker/types/domain.ts` - ドメインモデル型
+- [ ] `apps/frontend-v3/src/features/promarker/hooks/useSuggest.ts` - Suggest hook
+- [ ] `apps/frontend-v3/src/features/promarker/hooks/useGenerate.ts` - Generate hook
+- [ ] `apps/frontend-v3/src/features/promarker/hooks/useReloadStencilMaster.ts` - Reload hook
+- [ ] `apps/frontend-v3/src/features/promarker/hooks/useFileUpload.ts` - Upload hook
+- [ ] `apps/frontend-v3/src/features/promarker/hooks/useParameterForm.ts` - Form hook
+- [ ] `apps/frontend-v3/src/features/promarker/pages/ProMarkerPage.tsx` - メインページ
+- [ ] `apps/frontend-v3/src/features/promarker/components/StencilSelector.tsx` - 選択UI
+- [ ] `apps/frontend-v3/src/features/promarker/components/ParameterFields.tsx` - パラメータ入力
+- [ ] `apps/frontend-v3/src/features/promarker/components/ActionButtons.tsx` - ボタン群
+- [ ] `apps/frontend-v3/src/features/promarker/components/FileUploadButton.tsx` - ファイルアップロード
+- [ ] `apps/frontend-v3/src/features/promarker/components/JsonEditor.tsx` - JSON編集
+- [ ] `apps/frontend-v3/src/features/promarker/components/ErrorBoundary.tsx` - エラー境界
+- [ ] `apps/frontend-v3/src/features/promarker/schemas/parameter.ts` - Zod schema
+- [ ] `apps/frontend-v3/src/features/promarker/utils/parameter.ts` - ユーティリティ
+- [ ] `apps/frontend-v3/src/lib/utils/error.ts` - エラーハンドリング
+- [ ] `apps/frontend-v3/src/layouts/RootLayout.tsx` - レイアウト
+
+#### テスト成果物 (Test Code)
+- [ ] `packages/e2e/playwright.config.ts` - baseURL更新
+- [ ] `packages/e2e/tests/pages/promarker-v3.page.ts` - Page Object Model
+- [ ] `packages/e2e/tests/fixtures/promarker-v3.fixture.ts` - テストデータ
+- [ ] `packages/e2e/tests/fixtures/test-file.txt` - テスト用ファイル
+- [ ] `packages/e2e/tests/specs/promarker-v3/routing.spec.ts` - ルーティングテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/api-integration.spec.ts` - API統合テスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/hooks.spec.ts` - Hooksテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/form-validation.spec.ts` - バリデーションテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/file-upload.spec.ts` - ファイルアップロードテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/json-editor.spec.ts` - JSON編集テスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/error-handling.spec.ts` - エラーハンドリングテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/complete-workflow.spec.ts` - 完全ワークフローテスト
+- [ ] `packages/e2e/tests/specs/promarker-v3/regression.spec.ts` - 回帰テスト
+
+#### CI/CD成果物
+- [ ] `.github/workflows/e2e-frontend-v3.yml` - frontend-v3専用E2E CI
+
+### E2Eテスト実行結果
+
+| テストスイート | テスト数 | 成功 | 失敗 | スキップ | 実行時間 |
+|---------------|---------|------|------|---------|---------|
+| routing.spec.ts | - | - | - | - | - |
+| api-integration.spec.ts | - | - | - | - | - |
+| hooks.spec.ts | - | - | - | - | - |
+| stencil-selection.spec.ts | - | - | - | - | - |
+| parameter-input.spec.ts | - | - | - | - | - |
+| form-validation.spec.ts | - | - | - | - | - |
+| file-upload.spec.ts | - | - | - | - | - |
+| json-editor.spec.ts | - | - | - | - | - |
+| error-handling.spec.ts | - | - | - | - | - |
+| complete-workflow.spec.ts | - | - | - | - | - |
+| regression.spec.ts | - | - | - | - | - |
+| **合計** | **0** | **0** | **0** | **0** | **0s** |
+
+### 品質メトリクス
+
+| メトリクス | 目標 | 現在 | ステータス |
+|-----------|------|------|----------|
+| E2Eテスト数 | 20+ | 0 | ⬜️ |
+| E2Eテスト成功率 | 100% | N/A | ⬜️ |
+| コードカバレッジ | > 80% | N/A | ⬜️ |
+| TypeScript型エラー | 0 | 0 | ✅ |
+| 初回ロード時間 | < 3秒 | N/A | ⬜️ |
+| API呼び出し時間 | < 1秒 | N/A | ⬜️ |
+
+---
+
 ## 📋 機能要件分析 (既存Vue.js実装より)
 
 ### 既存ProMarker UI機能
@@ -61,9 +163,11 @@ Day 13-14: 回帰テスト + CI統合
 
 ---
 
-### Week 1: 基盤構築 + API統合 (10/13 - 10/20)
+### Week 1: 基盤構築 + API統合
 
-#### 1.0 E2E基盤セットアップ (Day 1 午前: 10/13)
+#### Step 0: E2E基盤セットアップ
+**推奨作業時間**: 2-3時間  
+**TDD**: なし (テスト基盤構築)
 **成果物**:
 - `packages/e2e/playwright.config.ts` - baseURL更新 (`http://localhost:5173`)
 - `packages/e2e/tests/pages/promarker-v3.page.ts` - frontend-v3用Page Object
@@ -107,7 +211,9 @@ export class ProMarkerV3Page extends BasePage {
 
 ---
 
-#### 1.1 ルーティング設定 + 初期E2Eテスト (Day 1 午後: 10/13)
+#### Step 1: ルーティング設定 + 初期E2Eテスト
+**推奨作業時間**: 3-4時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `src/app/routes.tsx` - React Router v7 設定
 - `src/app/App.tsx` - ルートコンポーネント更新
@@ -173,7 +279,9 @@ export const router = createBrowserRouter([
 
 ---
 
-#### 1.2 API Client設定 + API統合テスト (Day 2: 10/14)
+#### Step 2: API Client設定 + API統合テスト
+**推奨作業時間**: 4-5時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/api-integration.spec.ts` - API統合テスト ⚡TDD
 - `src/lib/api/client.ts` - Axios client設定
@@ -266,7 +374,9 @@ export interface ModelWrapper<T> {
 
 ---
 
-#### 1.3 ProMarker API型定義 (Day 2: 10/14)
+#### Step 3: ProMarker API型定義
+**推奨作業時間**: 2-3時間  
+**TDD**: なし (型定義のみ)
 **成果物**:
 - `src/features/promarker/types/api.ts` - API request/response型
 - `src/features/promarker/types/domain.ts` - ドメインモデル型
@@ -336,7 +446,9 @@ export interface GenerateResult {
 
 ---
 
-#### 1.4 TanStack Query Hooks実装 + Hookテスト (Day 3: 10/15)
+#### Step 4: TanStack Query Hooks実装 + Hookテスト
+**推奨作業時間**: 5-6時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/hooks.spec.ts` - Hooksテスト ⚡TDD
 - `src/features/promarker/hooks/useSuggest.ts`
@@ -427,9 +539,11 @@ test('should fetch stencil data when category selected', async ({ page }) => {
 
 ---
 
-### Week 2: UI実装 + フォーム処理 (10/21 - 10/27)
+### Week 2: UI実装 + フォーム処理
 
-#### 1.5 ProMarkerページUI実装 + UIテスト (Day 4-6: 10/16-10/18)
+#### Step 5: ProMarkerページUI実装 + UIテスト
+**推奨作業時間**: 12-15時間 (3日分)  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト ⚡TDD
 - `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト ⚡TDD
@@ -559,7 +673,9 @@ test.describe('Stencil Selection Flow', () => {
 
 ---
 
-#### 1.6 React Hook Form + Zod統合 + バリデーションテスト (Day 7: 10/19)
+#### Step 6: React Hook Form + Zod統合 + バリデーションテスト
+**推奨作業時間**: 4-5時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/form-validation.spec.ts` - バリデーションテスト ⚡TDD
 - `src/features/promarker/schemas/parameter.ts` - Zod schema
@@ -633,7 +749,9 @@ test.describe('Form Validation', () => {
 
 ---
 
-#### 1.7 ファイルアップロード対応 + ファイルテスト (Day 8: 10/20)
+#### Step 7: ファイルアップロード対応 + ファイルテスト
+**推奨作業時間**: 4-5時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/file-upload.spec.ts` - ファイルアップロードテスト ⚡TDD
 - `packages/e2e/tests/fixtures/test-file.txt` - テスト用ファイル
@@ -732,7 +850,9 @@ test.describe('File Upload', () => {
 
 ---
 
-#### 1.8 JSON Import/Export機能 + JSONテスト (Day 9: 10/21)
+#### Step 8: JSON Import/Export機能 + JSONテスト
+**推奨作業時間**: 4-5時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/json-editor.spec.ts` - JSON編集テスト ⚡TDD
 - `src/features/promarker/components/JsonEditor.tsx` - Dialog component
@@ -852,7 +972,9 @@ test.describe('JSON Editor', () => {
 
 ---
 
-#### 1.9 エラーハンドリング + Toast通知 + エラーテスト (Day 10: 10/22)
+#### Step 9: エラーハンドリング + Toast通知 + エラーテスト
+**推奨作業時間**: 3-4時間  
+**TDD**: ✅ Red → Green → Refactor
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/error-handling.spec.ts` - エラーハンドリングテスト ⚡TDD
 - `src/lib/utils/error.ts` - エラーハンドリングユーティリティ
@@ -945,7 +1067,9 @@ test.describe('Error Handling', () => {
 
 ---
 
-#### 1.10 E2E完全ワークフローテスト (Day 11: 10/23)
+#### Step 10: E2E完全ワークフローテスト
+**推奨作業時間**: 4-5時間  
+**TDD**: ✅ Integration Testing
 **成果物**:
 - `packages/e2e/tests/specs/promarker-v3/complete-workflow.spec.ts` - エンドツーエンドテスト ⚡TDD
 
@@ -1021,7 +1145,9 @@ test.describe('ProMarker Complete Workflow', () => {
 
 ---
 
-#### 1.11 回帰テスト + CI統合 + バグ修正 (Day 12-14: 10/24-10/27)
+#### Step 11: 回帰テスト + CI統合 + バグ修正
+**推奨作業時間**: 12-15時間 (3日分)  
+**TDD**: ✅ Regression Testing + Performance Testing
 **成果物**:
 - `.github/workflows/e2e-frontend-v3.yml` - frontend-v3専用E2E CI
 - `packages/e2e/tests/specs/promarker-v3/regression.spec.ts` - 回帰テスト
@@ -1229,22 +1355,113 @@ packages/e2e/tests/
 
 ## 📊 進捗管理
 
-- **TDD Cycle**: 各機能で Red → Green → Refactor サイクル実施
-- **Daily Stand-up**: 毎朝9:00 (Copilot報告)
-  - 前日完了タスク + E2Eテスト結果
-  - 本日タスク + 予定E2Eテスト
-  - ブロッカー
-- **Weekly Review**: 金曜17:00 (Week 1: 10/18, Week 2: 10/25)
+### 作業開始時
+1. **Step開始報告**: GitHub Issue #28にコメント投稿
+   ```markdown
+   ## Step X 開始
+   
+   **タスク**: [タスク名]
+   **推定時間**: X時間
+   **TDD**: [Red/Green/Refactor or なし]
+   
+   ### 作業内容
+   - [ ] タスク1
+   - [ ] タスク2
+   - [ ] E2Eテスト作成
+   - [ ] 実装
+   - [ ] テストパス確認
+   
+   *Powered by Copilot 🤖*
+   ```
+
+2. **進捗サマリ更新**: `phase1-plan.md` のStepステータスを🚧に変更
+
+### 作業完了時
+1. **Step完了報告**: GitHub Issue #28にコメント投稿
+   ```markdown
+   ## Step X 完了 ✅
+   
+   **作業時間**: X時間
+   **E2Eテスト結果**: ✅ All Passed / ❌ X Failed
+   
+   ### 成果物
+   - [x] ファイル1
+   - [x] ファイル2
+   - [x] E2Eテスト: `test-name.spec.ts`
+   
+   ### スクリーンショット
+   ![screenshot](url)
+   
+   ### 次のStep
+   Step X+1: [タスク名]
+   
+   *Powered by Copilot 🤖*
+   ```
+
+2. **進捗サマリ更新**: 
+   - Stepステータスを✅に変更
+   - 完了日を記入
+   - E2Eテスト実行結果テーブルを更新
+   - 成果物チェックリストにチェック
+
+3. **コミット**: 
+   ```bash
+   git add .
+   git commit -m "feat(promarker): Step X完了 - [タスク名] (refs #28)"
+   git push origin feature/frontend-v3-spa-initial
+   ```
+
+### 週次レビュー
+- **Week 1レビュー** (Step 0-4完了時):
   - E2Eテストカバレッジレポート
+  - TypeScript型エラーチェック
+  - パフォーマンス計測 (初期)
+  
+- **Week 2レビュー** (Step 5-11完了時):
+  - 全E2Eテスト実行結果
   - CI/CD成功率
-  - バグ修正状況
-- **Issue Comments**: 各タスク完了時にGitHub Issue #28へ報告
-  - E2Eテスト結果添付 (screenshot, video)
-  - Playwright HTMLレポートリンク
-- **Commit Convention**: 
-  - `feat(promarker): <description> (refs #28)`
-  - `test(e2e): <description> (refs #28)`
-  - `fix(promarker): <description> (closes #XX, refs #28)`
+  - パフォーマンス基準達成確認
+  - Definition of Done達成確認
+
+### TDDサイクル管理
+各Stepで以下のサイクルを実施:
+
+1. 🔴 **Red**: E2Eテスト作成 → テスト失敗確認
+   - テストコード作成
+   - 失敗理由を明確化
+   - Issue #28にテスト失敗スクリーンショット投稿
+
+2. 🟢 **Green**: 実装 → テストパス
+   - 最小限の実装でテスト通過
+   - テストパス確認
+   - Issue #28にテスト成功スクリーンショット投稿
+
+3. 🔵 **Refactor**: コード改善
+   - コード品質向上
+   - TypeScript型安全性確認
+   - パフォーマンス最適化
+
+### Commit Convention
+```
+<type>(<scope>): <subject> (refs #28)
+
+type:
+  - feat: 新機能
+  - test: テスト追加
+  - fix: バグ修正
+  - refactor: リファクタリング
+  - docs: ドキュメント更新
+
+scope:
+  - promarker: ProMarker機能
+  - e2e: E2Eテスト
+  - ci: CI/CD
+
+例:
+  feat(promarker): Step 1完了 - React Router設定 (refs #28)
+  test(e2e): Step 1 - routing.spec.ts追加 (refs #28)
+  fix(promarker): Step 5 - 選択クリア時のバグ修正 (closes #XX, refs #28)
+```
 
 ## 🧪 E2Eテスト実行方法
 
