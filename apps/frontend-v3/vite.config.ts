@@ -15,8 +15,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/mapi': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3000/mipla2',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/mapi/, ''),
       },
     },
   },

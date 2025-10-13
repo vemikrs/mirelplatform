@@ -18,7 +18,7 @@ test.describe('ProMarker v3 API Integration', () => {
     promarkerPage = new ProMarkerV3Page(page);
   });
   
-  test.skip('should call suggest API and receive response', async ({ page }) => {
+  test('should call suggest API and receive response', async ({ page }) => {
     // Setup: Wait for suggest API call
     const apiPromise = page.waitForResponse(
       response => response.url().includes('/mapi/apps/mste/api/suggest') 
@@ -63,7 +63,7 @@ test.describe('ProMarker v3 API Integration', () => {
     }
   });
   
-  test.skip('should set correct request headers', async ({ page }) => {
+  test('should set correct request headers', async ({ page }) => {
     let capturedHeaders: Record<string, string> = {};
     
     // Intercept API call to capture headers
