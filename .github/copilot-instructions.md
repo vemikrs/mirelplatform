@@ -11,6 +11,103 @@ ProMarker is a comprehensive code generation and template management platform bu
 - **Template Engine**: FreeMarker with custom function resolvers
 - **Container**: DevContainer support for Codespaces and local development
 
+## Copilot Workflow（作業報告ルール）
+
+Copilotが作業を行う際のルール：
+
+### Issue/PRへのコメント
+* 各Phaseの作業開始時・完了時に関連Issue/PRへ進捗報告を投稿し、対応する `docs/issue/#<Issue>/*.md` を更新
+* コメントの末尾に必ず **"Powered by Copilot 🤖"** を明記
+* 作業内容・変更点・次のステップを簡潔に記載
+
+### コミットメッセージ
+
+コミットメッセージは以下のルールに従う：
+
+#### **形式**
+
+```
+<type>(<scope>): <subject> (refs #<issue-number>)
+```
+
+#### **Type（必須）**
+
+- **feat**: 新機能追加
+- **fix**: バグ修正
+- **docs**: ドキュメント変更のみ
+- **style**: コードの意味に影響しない変更（空白、フォーマット、セミコロン等）
+- **refactor**: リファクタリング（バグ修正も機能追加もしない）
+- **perf**: パフォーマンス改善
+- **test**: テスト追加・修正
+- **chore**: ビルドプロセスや補助ツールの変更
+- **ci**: CI/CD設定の変更
+- **build**: ビルドシステムや外部依存関係の変更
+- **revert**: 以前のコミットを取り消す
+
+#### **Scope（オプション）**
+
+変更の範囲を示す（括弧内）：
+- `ci`: CI/CD関連
+- `deps`: 依存関係
+- `modal`: モーダルコンポーネント
+- `nav`: ナビゲーション
+- `seo`: SEO関連
+- `liquid`: Liquid Design関連
+- 等
+
+#### **Subject（必須）**
+
+- 50文字以内を目安
+- 日本語OK
+- 文末にピリオド不要
+
+#### **Issue参照（推奨）**
+
+- `(refs #<issue>)`: 作業中のIssue参照
+- `(closes #<issue>)`: Issueをクローズする場合
+- 複数Issue: `(refs #12, #34)`
+
+#### **例**
+
+```bash
+# 機能追加
+feat(modal): プロダクト詳細モーダルを追加 (refs #25)
+
+# バグ修正
+fix(nav): スクロール時のNavbar表示バグを修正 (closes #34)
+
+# CI/CD改善
+chore(ci): Yarn Cacheを有効化してビルド時間短縮 (refs #45)
+
+# ドキュメント更新
+docs: copilot-instructionsにコミットルールを追記 (refs #45)
+
+```
+
+#### **コミット前の確認**
+* `git status` で変更ファイル一覧を確認
+* `git diff` で意図しない差分がないかチェック
+* 特に以下に注意：
+  - README.mdの意図しない上書き
+  - 既存ファイルの削除・移動漏れ
+  - ビルド成果物（`dist/`等）のコミット防止
+  - `copilot-instructions.md` の意図しない変更
+* 確認後に `git add` してコミット
+
+### 進捗の可視化
+* 複数ファイルの変更は、変更内容を箇条書きで報告
+* ビルドエラーや問題発生時は即座に報告し、解決策を提示
+
+### PRレビューコメントの取得
+* GitHub PRのレビューコメント（インラインコメント）を取得する場合：
+  ```bash
+  gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[] | {path, line, body, user: .user.login, created_at}'
+  ```
+* レビュー全体のサマリーを取得する場合：
+  ```bash
+  gh pr view {pr_number} --json reviews,comments
+  ```
+
 ## Development Environment
 
 ### Quick Start

@@ -3,14 +3,14 @@
   "image": "mcr.microsoft.com/devcontainers/java:21",
   // Phase 3: Frontend + Backend simultaneous auto-startup
   // Backend: Spring Boot (port 3000) + H2 dev database
-  // Frontend: Nuxt.js (port 8080) + Node.js 16 (Nuxt 2.14.9 互換)
+  // Frontend: Nuxt.js (port 8080) + Node.js 18 (Nuxt 2.14.9 compatibility)
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
       "jdkDistro": "tem"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20",
+      "version": "18",
       "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
@@ -25,9 +25,7 @@
     "DEVCONTAINER_TZ": "Asia/Tokyo",
     "SPRING_PROFILES_ACTIVE": "dev",
     "HOST": "0.0.0.0",
-    "PLAYWRIGHT_BROWSERS_PATH": "/home/vscode/.cache/playwright",
-    "LANG": "ja_JP.UTF-8",
-    "LC_ALL": "ja_JP.UTF-8"
+    "PLAYWRIGHT_BROWSERS_PATH": "/home/vscode/.cache/playwright"
   },
   "customizations": {
     "vscode": {
@@ -68,7 +66,7 @@
       "onAutoForward": "openPreview"
     }
   },
-  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build && npm install && npx playwright install --with-deps",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build && npm install && cd packages/e2e && npm install && npx playwright install --with-deps",
   "postStartCommand": "if [ -n \"$TZ\" ]; then sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ | sudo tee /etc/timezone; else sudo ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && echo 'Asia/Tokyo' | sudo tee /etc/timezone; fi",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [

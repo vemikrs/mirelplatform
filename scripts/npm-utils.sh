@@ -30,11 +30,12 @@ check_node_environment() {
     echo "   Node.js: $NODE_VERSION"
     echo "   npm: $NPM_VERSION"
     
-    # Node.js 16以上を推奨
-    if ! node -e "process.exit(process.version.split('.')[0].slice(1) >= 16 ? 0 : 1)" 2>/dev/null; then
-        print_warning "⚠️  Node.js 16以上を推奨します (現在: $NODE_VERSION)"
+    # Node.js 18 required for Nuxt 2 compatibility
+    if ! node -e "const major = parseInt(process.version.slice(1).split('.')[0]); process.exit(major === 18 ? 0 : 1)" 2>/dev/null; then
+        print_warning "⚠️  Node.js 18 required for Nuxt 2 compatibility (current: $NODE_VERSION)"
+        print_warning "    Use: nvm install 18.20.4 && nvm use 18"
     else
-        print_success "✅ Node.js バージョン OK"
+        print_success "✅ Node.js version OK (18.x)"
     fi
     
     # npm キャッシュをクリア（古い依存関係の問題を回避）
