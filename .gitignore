@@ -53,3 +53,6 @@ packages/e2e/traces/
 ### Playwright ###
 /test-results/
 /playwright-report/
+
+### pnpm ###
+.pnpm-store/
