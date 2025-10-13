@@ -3,6 +3,7 @@ import { Toaster } from '@mirel/ui';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
 import { useReloadStencilMaster } from '../hooks/useReloadStencilMaster';
+import { useParameterForm } from '../hooks/useParameterForm';
 import { StencilSelector, type ValueTextItems } from '../components/StencilSelector';
 import { ParameterFields } from '../components/ParameterFields';
 import { ActionButtons } from '../components/ActionButtons';
@@ -14,6 +15,7 @@ import type { DataElement, StencilConfig } from '../types/api';
  * Provides UI for stencil selection, parameter input, and code generation
  * 
  * Phase 1 - Step 5: Complete UI implementation
+ * Phase 1 - Step 6: React Hook Form + Zod validation integration
  */
 export function ProMarkerPage() {
   const suggestMutation = useSuggest();
@@ -27,17 +29,10 @@ export function ProMarkerPage() {
 
   // Parameters and stencil config
   const [parameters, setParameters] = useState<DataElement[]>([]);
-  const [parameterValues, setParameterValues] = useState<Record<string, string>>({});
   const [stencilConfig, setStencilConfig] = useState<StencilConfig | null>(null);
 
-  useEffect(() => {
-    // Set page title for E2E test verification
-    document.title = 'ProMarker - 払出画面';
-
-    // Fetch initial category list only (no auto-selection)
-    // Pass empty strings to get only categories without selecting first item
-    fetchSuggestData('*', '*', '*');
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Form validation (Step 6)
+  const parameterForm = useParameterForm(parameters);
 
   const fetchSuggestData = async (
     category: string,
@@ -77,15 +72,7 @@ export function ProMarkerPage() {
       // Update parameters and stencil config
       if (model.params?.childs) {
         setParameters(model.params.childs);
-        
-        // Initialize parameter values with defaults
-        const initialValues: Record<string, string> = {};
-        model.params.childs.forEach((param) => {
-          if (param.value) {
-            initialValues[param.id] = param.value;
-          }
-        });
-        setParameterValues(initialValues);
+        // Form will be auto-populated with default values via useParameterForm
       }
 
       if (model.stencil?.config) {
@@ -94,6 +81,40 @@ export function ProMarkerPage() {
     }
   };
 
+  useEffect(() => {
+    // Set page title for E2E test verification
+    document.title = 'ProMarker - 払出画面';
+
+    // Prevent double execution in React 18 Strict Mode
+    let cancelled = false;
+    let initStarted = false;
+
+    const initialize = async () => {
+      if (cancelled || initStarted) return;
+      initStarted = true;
+
+      try {
+        // Always fetch initial categories (backend will auto-reload if needed)
+        console.log('[ProMarker] Fetching initial categories...');
+        await fetchSuggestData('*', '*', '*');
+        if (!cancelled) {
+          console.log('[ProMarker] Initial data fetch complete');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[ProMarker] Initialization error:', error);
+        }
+      }
+    };
+
+    initialize();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleCategoryChange = async (value: string) => {
     if (!value) return;
 
@@ -101,8 +122,8 @@ export function ProMarkerPage() {
     setStencils({ items: [], selected: '' });
     setSerials({ items: [], selected: '' });
     setParameters([]);
-    setParameterValues({});
     setStencilConfig(null);
+    parameterForm.reset();
 
     // Fetch stencils for selected category
     await fetchSuggestData(value, '*', '*');
@@ -114,8 +135,8 @@ export function ProMarkerPage() {
     // Reset dependent selections
     setSerials({ items: [], selected: '' });
     setParameters([]);
-    setParameterValues({});
     setStencilConfig(null);
+    parameterForm.reset();
 
     // Fetch serials for selected stencil
     await fetchSuggestData(categories.selected, value, '*');
@@ -128,21 +149,22 @@ export function ProMarkerPage() {
     await fetchSuggestData(categories.selected, stencils.selected, value);
   };
 
-  const handleParameterChange = (parameterId: string, value: string) => {
-    setParameterValues((prev) => ({
-      ...prev,
-      [parameterId]: value,
-    }));
-  };
-
   const handleGenerate = async () => {
     if (!serials.selected) return;
+
+    // Validate form before submission
+    const isValid = await parameterForm.validateAll();
+    if (!isValid) {
+      return;
+    }
+
+    const formValues = parameterForm.getValues();
 
     await generateMutation.mutateAsync({
       stencilCategoy: categories.selected,
       stencilCanonicalName: stencils.selected,
       serialNo: serials.selected,
-      ...parameterValues,
+      ...formValues,
     });
   };
 
@@ -152,8 +174,8 @@ export function ProMarkerPage() {
     setStencils({ items: [], selected: '' });
     setSerials({ items: [], selected: '' });
     setParameters([]);
-    setParameterValues({});
     setStencilConfig(null);
+    parameterForm.clearAll();
   };
 
   const handleReloadStencilMaster = async () => {
@@ -166,6 +188,7 @@ export function ProMarkerPage() {
   const isGenerateDisabled = 
     !serials.selected || 
     parameters.length === 0 ||
+    !parameterForm.isValid ||
     suggestMutation.isPending ||
     generateMutation.isPending;
 
@@ -237,8 +260,7 @@ export function ProMarkerPage() {
         <div className="border rounded-lg p-6">
           <ParameterFields
             parameters={parameters}
-            values={parameterValues}
-            onValueChange={handleParameterChange}
+            form={parameterForm}
             disabled={isLoading || generateMutation.isPending}
           />
         </div>

@@ -7,9 +7,11 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
+    "test:report:open": "playwright show-report --host 0.0.0.0 --port 9323",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:codegen": "playwright codegen ${E2E_BASE_URL:-http://localhost:3000}/mirel/mste",
+    "test:form-validation": "playwright test tests/specs/promarker-v3/form-validation.spec.ts",
     "install:browsers": "playwright install --with-deps"
   },
   "devDependencies": {
