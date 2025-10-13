@@ -68,7 +68,7 @@
       "onAutoForward": "openPreview"
     }
   },
-  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build && cd packages/e2e && npm install && npx playwright install --with-deps",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build && npm install && cd packages/e2e && npm install && npx playwright install --with-deps",
   "postStartCommand": "if [ -n \"$TZ\" ]; then sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ | sudo tee /etc/timezone; else sudo ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && echo 'Asia/Tokyo' | sudo tee /etc/timezone; fi",
   "updateContentCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --no-daemon build",
   "runArgs": [
