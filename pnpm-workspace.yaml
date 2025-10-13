@@ -1,0 +1,6 @@
+# pnpm ワークスペース設定
+# frontend-v3 および共通パッケージ管理
+
+packages:
+  - 'apps/*'
+  - 'packages/*'

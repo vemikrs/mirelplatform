@@ -3,18 +3,23 @@
   "version": "1.0.0",
   "description": "ProMarker platform monorepo",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "test:e2e": "npm run test --workspace=packages/e2e",
-    "test:e2e:ui": "npm run test:ui --workspace=packages/e2e",
-    "test:e2e:report": "npm run test:report --workspace=packages/e2e"
+    "dev": "pnpm --filter frontend-v3 dev",
+    "build": "pnpm --filter frontend-v3 build",
+    "preview": "pnpm --filter frontend-v3 preview",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter e2e test",
+    "test:e2e:ui": "pnpm --filter e2e test:ui",
+    "test:e2e:report": "pnpm --filter e2e test:report"
   },
   "engines": {
-    "node": ">=18 <19"
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
   },
-  "overrides": {
-    "vuex": "3.6.2"
+  "packageManager": "pnpm@9.15.9",
+  "devDependencies": {
+    "prettier": "^3.4.2"
   }
 }
