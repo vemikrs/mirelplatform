@@ -21,8 +21,8 @@ test.describe('ProMarker v3 Routing', () => {
     // Verify URL
     await expect(page).toHaveURL(/\/promarker/);
     
-    // Verify page is loaded (wait for h1 element)
-    await expect(page.locator('h1')).toBeVisible();
+    // Verify page is loaded (check for specific ProMarker heading)
+    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
   });
   
   test('should have correct page title', async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe('ProMarker v3 Routing', () => {
     await promarkerPage.navigate();
     
     // Verify main heading
-    const heading = page.locator('h1');
+    const heading = page.getByRole('heading', { name: /ProMarker 払出画面/ });
     await expect(heading).toBeVisible();
     await expect(heading).toContainText('ProMarker');
   });
@@ -93,14 +93,14 @@ test.describe('ProMarker v3 Routing', () => {
     
     // Verify page loaded successfully
     await expect(page).toHaveURL(/\/promarker/);
-    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
   });
   
   test('should handle page refresh', async ({ page }) => {
     await promarkerPage.navigate();
     
     // Verify page loaded
-    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
     
     // Reload page
     await page.reload();
@@ -108,6 +108,6 @@ test.describe('ProMarker v3 Routing', () => {
     
     // Verify page still loaded
     await expect(page).toHaveURL(/\/promarker/);
-    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
   });
 });
