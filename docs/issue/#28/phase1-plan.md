@@ -18,7 +18,8 @@
 | **Step 4** | TanStack Query Hooks | ✅ hooks.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 5** | ProMarker UI実装 | ✅ stencil-selection.spec.ts<br>✅ parameter-input.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 6** | Form + Zod統合 | ✅ form-validation.spec.ts | ✅ Completed | 2025-10-13 |
-| **Step 7** | ファイルアップロード | ✅ file-upload.spec.ts | 🚧 In Progress | - |
+| **Step 7** | ファイルアップロード | ✅ file-upload.spec.ts | ✅ Completed | 2025-10-13 |
+| **Step 7.1** | Recovery Work | ✅ complete-workflow.spec.ts | ✅ Completed | 2025-10-13 |
 | **Step 8** | JSON Import/Export | ✅ json-editor.spec.ts | ⬜️ Not Started | - |
 | **Step 9** | エラーハンドリング | ✅ error-handling.spec.ts | ⬜️ Not Started | - |
 | **Step 10** | 完全ワークフロー | ✅ complete-workflow.spec.ts | ⬜️ Not Started | - |
@@ -51,9 +52,9 @@
 - [x] `apps/frontend-v3/src/features/promarker/components/ParameterFields.tsx` - パラメータ入力
 - [x] `apps/frontend-v3/src/features/promarker/components/ActionButtons.tsx` - ボタン群
 - [x] `apps/frontend-v3/src/features/promarker/components/StencilInfo.tsx` - ステンシル情報表示
-- [ ] `apps/frontend-v3/src/features/promarker/components/FileUploadButton.tsx` - ファイルアップロード
-- [ ] `apps/frontend-v3/src/features/promarker/components/JsonEditor.tsx` - JSON編集
-- [x] `apps/frontend-v3/src/features/promarker/components/ErrorBoundary.tsx` - エラー境界
+- [x] `apps/frontend-v3/src/features/promarker/components/FileUploadButton.tsx` - ファイルアップロード (Step 7)
+- [x] `apps/frontend-v3/src/features/promarker/components/JsonEditor.tsx` - JSON編集 (Step 7.1-A)
+- [x] `apps/frontend-v3/src/features/promarker/components/ErrorBoundary.tsx` - エラー境界 (Step 7.1-A)
 - [x] `apps/frontend-v3/src/features/promarker/schemas/parameter.ts` - Zod schema
 - [x] `apps/frontend-v3/src/features/promarker/utils/parameter.ts` - ユーティリティ
 - [x] `apps/frontend-v3/src/lib/utils/error.ts` - エラーハンドリング
@@ -69,10 +70,10 @@
 - [x] `packages/e2e/tests/specs/promarker-v3/stencil-selection.spec.ts` - 3段階選択テスト
 - [x] `packages/e2e/tests/specs/promarker-v3/parameter-input.spec.ts` - パラメータ入力テスト
 - [x] `packages/e2e/tests/specs/promarker-v3/form-validation.spec.ts` - バリデーションテスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/file-upload.spec.ts` - ファイルアップロードテスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/json-editor.spec.ts` - JSON編集テスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/error-handling.spec.ts` - エラーハンドリングテスト
-- [ ] `packages/e2e/tests/specs/promarker-v3/complete-workflow.spec.ts` - 完全ワークフローテスト
+- [x] `packages/e2e/tests/specs/promarker-v3/file-upload.spec.ts` - ファイルアップロードテスト (Step 7)
+- [ ] `packages/e2e/tests/specs/promarker-v3/json-editor.spec.ts` - JSON編集テスト (Step 8予定)
+- [ ] `packages/e2e/tests/specs/promarker-v3/error-handling.spec.ts` - エラーハンドリングテスト (Step 9予定)
+- [x] `packages/e2e/tests/specs/promarker-v3/complete-workflow.spec.ts` - 完全ワークフローテスト (Step 7.1-A)
 - [ ] `packages/e2e/tests/specs/promarker-v3/regression.spec.ts` - 回帰テスト
 
 #### CI/CD成果物
@@ -88,12 +89,12 @@
 | parameter-input.spec.ts | 12 | 5 | 0 | 7 | 1.8s |
 | hooks.spec.ts | - | - | - | - | - |
 | form-validation.spec.ts | 13 | 11 | 0 | 2 | 8.9s |
-| file-upload.spec.ts | - | - | - | - | - |
+| file-upload.spec.ts | 7 | 2 | 0 | 5 | 3.2s |
+| complete-workflow.spec.ts | 6 | 0 | 0 | 0 | TBD |
 | json-editor.spec.ts | - | - | - | - | - |
 | error-handling.spec.ts | - | - | - | - | - |
-| complete-workflow.spec.ts | - | - | - | - | - |
 | regression.spec.ts | - | - | - | - | - |
-| **合計** | **49** | **38** | **0** | **11** | **18.9s** |
+| **合計** | **62** | **40** | **0** | **18** | **22.1s** |
 
 ### 品質メトリクス
 
@@ -145,23 +146,32 @@
 
 ### 🧪 E2Eテスト戦略 - Test-First Approach
 
-**方針**: **段階的テストファースト実装**
-- 各機能実装前に失敗するE2Eテストを作成 (Red)
-- 機能を実装してテストをパス (Green)
-- 必要に応じてリファクタリング (Refactor)
+**⚠️ 重要**: Step 7完了時点でTDD原則からの逸脱が判明。**TDD実践ガイド必読**: [`tdd-practice-guide.md`](./tdd-practice-guide.md)
+
+**方針**: **段階的テストファースト実装（厳格版）**
+- 🔴 **Red**: 各機能実装前に失敗するE2Eテストを作成（必須）
+- 🟢 **Green**: 機能を実装してテストをパス（テストがパスして初めて実装完了）
+- 🔵 **Refactor**: 必要に応じてリファクタリング（テストパス維持）
+
+**🚨 TDD違反の禁止事項**:
+- ❌ 「動くから完了」判断（テストなし実装）
+- ❌ 「後でテストを書く」先延ばし
+- ❌ コア機能のテスト後回し（complete-workflow.spec.ts等）
 
 **既存基盤活用**:
 - `packages/e2e/` - Playwright設定済み (baseURL: `http://localhost:5173` に変更)
 - `tests/pages/promarker.page.ts` - Page Object Model (frontend-v3用に更新)
 - GitHub Actions CI連携 (既存ワークフロー流用)
 
-**テスト実装タイミング**:
+**テスト実装タイミング（修正版）**:
 ```
 Day 1: E2E基盤セットアップ (frontend-v3対応)
-Day 2-3: API統合テスト (TDD)
-Day 5-7: UI機能テスト (TDD)
-Day 10-11: ファイル/JSONテスト (TDD)
+Day 2-3: API統合テスト (TDD厳格実施)
+Day 5-7: UI機能テスト (TDD厳格実施) + complete-workflow.spec.ts作成必須
+Day 10-11: ファイル/JSONテスト (TDD厳格実施)
 Day 13-14: 回帰テスト + CI統合
+
+⚠️ Step 7.1: TDD原則違反の修正（complete-workflow.spec.ts, hooks.spec.ts追加）
 ```
 
 ---
