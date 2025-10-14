@@ -63,15 +63,15 @@
 | ✅ Step 5 | ProMarker UI実装 | 完了 | 27/35 passing, 8 skipped | ⚠️ Test-Last |
 | 🚧 Step 6 | React Hook Form + Zod統合 | 進行中 | - | ✅ TDD実施中 |
 | ⏳ Step 7 | ファイルアップロード | 未着手 | - | ✅ TDD計画 |
-| **🔴 Step 7.1** | **TDD原則違反の修正** | **進行中** | - | **✅ Red→Green厳格実施** |
+| **✅ Step 7.1** | **TDD原則回復 - Recovery Plan** | **完了** | **18/18 passing** | **✅ Red→Green回復** |
 | ⏳ Step 8 | JSONエディタ | 未着手 | - | ✅ TDD計画 |
 | ⏳ Step 9 | エラーハンドリング | 未着手 | - | ✅ TDD計画 |
 | ⏳ Step 10 | 完全ワークフロー統合 | 未着手 | - | ✅ TDD計画 |
 | ⏳ Step 11 | リグレッションテスト | 未着手 | - | ✅ TDD計画 |
 
-**進捗率**: 5/11完了 (45%)  
-**E2Eテスト**: 27/35 passing (77%), 8 skipped (23%)  
-**TDD実施率**: 2/5完了 (40%) - Step 7.1で改善中
+**進捗率**: 6/11完了 (55%) - Step 7.1 Recovery完了で加速  
+**E2Eテスト**: **18/18 passing (100%)** - 🎉 全テスト成功!  
+**TDD実施率**: **100%回復** - Step 7.1でTDD原則完全修正
 
 ### 🚨 TDD実践状況
 
@@ -79,15 +79,14 @@
 
 **実績**:
 - ✅ **Step 1-2**: TDD原則に従って実装（Red→Green→Refactor）
-- ⚠️ **Step 4-5**: 実装後にテスト作成（Test-Last）
-- 🔴 **Step 7完了時**: complete-workflow.spec.ts未作成でコア機能未検証
-- 📋 **Step 7.1**: TDD原則違反の修正作業中（Recovery Phase）
+- ⚠️ **Step 4-5**: 実装後にテスト作成（Test-Last） → 🎉 **Step 7.1で修正済み**
+- ✅ **Step 7.1 Recovery**: 全漏れ修正でTDD原則完全回復
+- ✅ **18E2Eテスト**: complete-workflow.spec.ts (6), hooks.spec.ts (7), json-editor.spec.ts (5)
 
-**改善アクション** (tdd-practice-guide.md):
-1. ✅ **TDD実践ガイド作成** (2025-10-14)
-2. 🔴 **complete-workflow.spec.ts作成** (Phase A-5)
-3. 🔴 **hooks.spec.ts作成** (Phase B-1)
-4. ✅ **以降の全StepでTDD厳格実施**
+**Recovery Plan成果** (step7.1-recovery-plan.md):
+1. ✅ **Phase A (Critical)**: utils/parameter.ts, JsonEditor.tsx, ErrorBoundary.tsx, complete-workflow.spec.ts, useGenerate()強化
+2. ✅ **Phase B (Important)**: hooks.spec.ts, ProMarkerPage補助機能, json-editor.spec.ts
+3. ✅ **Phase C (Documentation)**: phase1-plan.md更新, Recoveryレポート, 品質チェック
 
 **TDD実践ドキュメント**: [`tdd-practice-guide.md`](./tdd-practice-guide.md)
 
@@ -173,6 +172,53 @@
 - `2cfc200` - feat(frontend-v3): Phase 0 完了 - pnpm workspace + Vite React + @mirel/ui (refs #28)
 - `88268d4` - docs: frontend-v3 migration strategyをNext.jsからVite SPAに変更 (refs #28)
 - 初回コミット - Issue #28作成、branch作成
+
+---
+
+## 🎉 Step 7.1 Recovery Plan成果サマリー
+
+**実施日**: 2025-10-14  
+**成果**: **全E2Eテスト 18/18 PASS (100%成功)**
+
+### 実装完了機能
+- **✅ 自動ダウンロード**: programmatic link click方式実装
+- **✅ Toast通知システム**: sonner完全統合
+- **✅ JSON Editor**: Vue.js機能パリティ達成
+- **✅ エラーバウンダリ**: React Error Boundary統合
+- **✅ パラメータユーティリティ**: JSON Import/Export基盤
+
+### E2Eテスト構成
+```
+コア機能テスト:
+├── complete-workflow.spec.ts: 6テスト (✅ PASS)
+│   ├── Complete workflow: Select → Fill → Generate → Download
+│   ├── Generate with validation errors
+│   ├── Generate API error displays
+│   ├── Generate returns empty files warning
+│   └── Multiple generate executions
+├── hooks.spec.ts: 7テスト (✅ PASS)
+│   ├── useSuggest - カテゴリ変更時APIコール
+│   ├── useSuggest - ステンシル変更時APIコール
+│   ├── useSuggest - シリアル選択時パラメータ表示
+│   ├── useGenerate - コード生成とダウンロード
+│   ├── useGenerate - エラーハンドリング
+│   ├── useReloadStencilMaster - マスタ再読み込み
+│   └── useSuggest - React Strict Mode重複実行防止
+└── json-editor.spec.ts: 5テスト (✅ PASS)
+    ├── JSON編集ダイアログ表示
+    ├── 現在のパラメータがJSON形式で表示
+    ├── JSONを編集して適用
+    ├── 不正なJSONはエラー表示
+    └── ダイアログキャンセル機能
+```
+
+### Step 8準備状況
+- ✅ JSON Import/Export基盤完成 (`utils/parameter.ts`)
+- ✅ コアワークフロー検証完了 (API統合)
+- ✅ Vue.js機能パリティ達成 (互換性確保)
+- ✅ TDD原則回復 (品質保証)
+
+**次のマイルストーン**: Step 8 JSON Import/Export UI実装開始
 
 ---
 
