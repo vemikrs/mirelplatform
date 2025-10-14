@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Toaster } from '@mirel/ui';
+import { toast } from 'sonner';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
 import { useReloadStencilMaster } from '../hooks/useReloadStencilMaster';
@@ -8,6 +9,9 @@ import { StencilSelector, type ValueTextItems } from '../components/StencilSelec
 import { ParameterFields } from '../components/ParameterFields';
 import { ActionButtons } from '../components/ActionButtons';
 import { StencilInfo } from '../components/StencilInfo';
+import { JsonEditor } from '../components/JsonEditor';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+// import { updateFileNames } from '../utils/parameter';
 import type { DataElement, StencilConfig } from '../types/api';
 
 /**
@@ -30,6 +34,17 @@ export function ProMarkerPage() {
   // Parameters and stencil config
   const [parameters, setParameters] = useState<DataElement[]>([]);
   const [stencilConfig, setStencilConfig] = useState<StencilConfig | null>(null);
+
+  // File management system (Vue.js compatible) - 準備済み
+  // const [fileNames, setFileNames] = useState<Record<string, string>>({});
+
+  // Selection state flags (Vue.js compatible)
+  const [, setCategoryNoSelected] = useState(true);
+  const [, setStencilNoSelected] = useState(true);
+  const [, setSerialNoSelected] = useState(true);
+
+  // JSON Editor state
+  const [jsonEditorOpen, setJsonEditorOpen] = useState(false);
 
   // Form validation (Step 6)
   const parameterForm = useParameterForm(parameters);
@@ -118,6 +133,11 @@ export function ProMarkerPage() {
   const handleCategoryChange = async (value: string) => {
     if (!value) return;
 
+    // Update selection state flags
+    setCategoryNoSelected(false);
+    setStencilNoSelected(true);
+    setSerialNoSelected(true);
+
     // Reset dependent selections
     setStencils({ items: [], selected: '' });
     setSerials({ items: [], selected: '' });
@@ -132,6 +152,10 @@ export function ProMarkerPage() {
   const handleStencilChange = async (value: string) => {
     if (!value) return;
 
+    // Update selection state flags
+    setStencilNoSelected(false);
+    setSerialNoSelected(true);
+
     // Reset dependent selections
     setSerials({ items: [], selected: '' });
     setParameters([]);
@@ -144,6 +168,9 @@ export function ProMarkerPage() {
 
   const handleSerialChange = async (value: string) => {
     if (!value) return;
+
+    // Update selection state flags
+    setSerialNoSelected(false);
 
     // Fetch full stencil configuration with parameters
     await fetchSuggestData(categories.selected, stencils.selected, value);
@@ -168,14 +195,36 @@ export function ProMarkerPage() {
     });
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     // Reset all selections and values
     setCategories({ items: categories.items, selected: '' });
     setStencils({ items: [], selected: '' });
     setSerials({ items: [], selected: '' });
     setParameters([]);
     setStencilConfig(null);
+    // setFileNames({});
+    
+    // Reset selection state flags
+    setCategoryNoSelected(true);
+    setStencilNoSelected(true);
+    setSerialNoSelected(true);
+    
     parameterForm.clearAll();
+    
+    // Refresh data
+    await fetchSuggestData('*', '*', '*');
+    toast.success('全てクリアしました');
+  };
+
+  const handleClearStencil = async () => {
+    // Clear only parameters and stencil config
+    setParameters([]);
+    setStencilConfig(null);
+    parameterForm.reset();
+    
+    // Re-fetch current stencil data
+    await fetchSuggestData(categories.selected, stencils.selected, serials.selected);
+    toast.success('ステンシル定義を再取得しました');
   };
 
   const handleReloadStencilMaster = async () => {
@@ -183,6 +232,51 @@ export function ProMarkerPage() {
     
     // Refresh categories after reload
     await fetchSuggestData('*', '*', '*');
+  };
+
+  // File upload handler (準備済み - 将来のファイルアップロード機能用)
+  // const handleFileUploaded = (parameterId: string, fileId: string, fileName: string) => {
+  //   parameterForm.setValue(parameterId, fileId);
+  //   setFileNames(prev => updateFileNames(prev, fileId, fileName));
+  // };
+
+  // JSON Editor handlers
+  const handleJsonApply = async (data: {
+    stencilCategory: string;
+    stencilCd: string;
+    serialNo: string;
+    dataElements: Array<{id: string; value: string}>;
+  }) => {
+    try {
+      // Clear all first
+      await handleClearAll();
+      
+      // Set selections step by step
+      setCategories(prev => ({ ...prev, selected: data.stencilCategory }));
+      setCategoryNoSelected(false);
+      await fetchSuggestData(data.stencilCategory, '*', '*');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setStencils(prev => ({ ...prev, selected: data.stencilCd }));
+      setStencilNoSelected(false);
+      await fetchSuggestData(data.stencilCategory, data.stencilCd, '*');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setSerials(prev => ({ ...prev, selected: data.serialNo }));
+      setSerialNoSelected(false);
+      await fetchSuggestData(data.stencilCategory, data.stencilCd, data.serialNo);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set parameter values
+      data.dataElements.forEach((elem) => {
+        parameterForm.setValue(elem.id, elem.value);
+      });
+      
+      toast.success('JSONを適用しました');
+    } catch (error) {
+      toast.error('JSON適用中にエラーが発生しました');
+      console.error('JSON apply error:', error);
+    }
   };
 
   const isGenerateDisabled = 
@@ -271,14 +365,36 @@ export function ProMarkerPage() {
         <ActionButtons
           onGenerate={handleGenerate}
           onClearAll={handleClearAll}
+          onClearStencil={handleClearStencil}
           onReloadStencilMaster={handleReloadStencilMaster}
+          onJsonEdit={() => setJsonEditorOpen(true)}
           generateDisabled={isGenerateDisabled}
           generateLoading={generateMutation.isPending}
           reloadLoading={reloadMutation.isPending}
         />
       </div>
 
+      {/* JSON Editor Dialog */}
+      <JsonEditor
+        open={jsonEditorOpen}
+        onOpenChange={setJsonEditorOpen}
+        category={categories.selected || ''}
+        stencil={stencils.selected || ''}
+        serial={serials.selected || ''}
+        parameters={parameters}
+        onApply={handleJsonApply}
+      />
+
       <Toaster />
     </div>
+  );
+}
+
+// Wrap with ErrorBoundary
+export default function ProMarkerPageWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <ProMarkerPage />
+    </ErrorBoundary>
   );
 }

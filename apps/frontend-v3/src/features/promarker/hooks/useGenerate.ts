@@ -68,7 +68,12 @@ export function useGenerate() {
             throw new Error('No file entries found')
           }
           
-          const [fileId, fileName] = entries[0]
+          const entry = entries[0]
+          if (!entry) {
+            throw new Error('File entry is undefined')
+          }
+          
+          const [fileId, fileName] = entry
           
           if (!fileId) {
             throw new Error('File ID is missing')

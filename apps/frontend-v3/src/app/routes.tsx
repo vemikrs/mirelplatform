@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
-import { ProMarkerPage } from '@/features/promarker/pages/ProMarkerPage';
+import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarkerPage';
 
 /**
  * React Router v7 configuration
@@ -18,7 +18,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'promarker',
-        element: <ProMarkerPage />,
+        element: <ProMarkerPageWithErrorBoundary />,
       },
     ],
   },

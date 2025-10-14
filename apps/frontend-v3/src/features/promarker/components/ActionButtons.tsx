@@ -1,8 +1,9 @@
 interface ActionButtonsProps {
   onGenerate: () => void;
   onClearAll: () => void;
+  onClearStencil: () => void;
   onReloadStencilMaster: () => void;
-  onJsonEditor?: () => void;
+  onJsonEdit: () => void;
   generateDisabled?: boolean;
   generateLoading?: boolean;
   reloadLoading?: boolean;
@@ -20,8 +21,9 @@ interface ActionButtonsProps {
 export function ActionButtons({
   onGenerate,
   onClearAll,
+  onClearStencil,
   onReloadStencilMaster,
-  onJsonEditor,
+  onJsonEdit,
   generateDisabled = false,
   generateLoading = false,
   reloadLoading = false,
@@ -73,7 +75,17 @@ export function ActionButtons({
           disabled={generateLoading}
           className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          🔄 Clear All
+          🔄 全てクリア
+        </button>
+
+        <button
+          type="button"
+          data-testid="clear-stencil-btn"
+          onClick={onClearStencil}
+          disabled={generateLoading}
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        >
+          🔄 ステンシル定義を再取得
         </button>
       </div>
 
@@ -115,17 +127,15 @@ export function ActionButtons({
           )}
         </button>
 
-        {onJsonEditor && (
-          <button
-            type="button"
-            data-testid="json-editor-btn"
-            onClick={onJsonEditor}
-            disabled={generateLoading}
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-          >
-            📎 JSON Editor
-          </button>
-        )}
+        <button
+          type="button"
+          data-testid="json-edit-btn"
+          onClick={onJsonEdit}
+          disabled={generateLoading}
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        >
+          � Json形式
+        </button>
       </div>
     </div>
   );
