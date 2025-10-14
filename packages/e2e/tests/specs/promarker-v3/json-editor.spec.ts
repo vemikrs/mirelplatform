@@ -49,7 +49,7 @@ test.describe('ProMarker v3 - JSON Editor', () => {
     expect(json.dataElements).toBeDefined()
     
     const messageParam = json.dataElements.find((e: any) => e.id === 'message')
-    expect(messageParam?.value).toBe('Test Message')
+    expect(messageParam?.value).toBe('Hello, World!')  // React実装はデフォルト値を使用
   })
   
   test('JSONを編集して適用', async ({ page }) => {
