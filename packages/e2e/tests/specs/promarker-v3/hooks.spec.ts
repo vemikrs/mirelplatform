@@ -28,8 +28,8 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     expect(response.status()).toBe(200)
     
     const data = await response.json()
-    expect(data.data.data.model).toBeDefined()
-    expect(data.data.data.model.fltStrStencilCd).toBeDefined()
+    expect(data.data.model).toBeDefined()
+    expect(data.data.model.fltStrStencilCd).toBeDefined()
   })
   
   test('useSuggest - ステンシル変更時にAPIコール', async ({ page }) => {
@@ -47,8 +47,8 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     expect(response.status()).toBe(200)
     
     const data = await response.json()
-    expect(data.data.data.model.fltStrSerialNo).toBeDefined()
-    expect(data.data.data.model.params).toBeDefined()
+    expect(data.data.model.fltStrSerialNo).toBeDefined()
+    expect(data.data.model.params).toBeDefined()
   })
   
   test('useGenerate - コード生成とダウンロード', async ({ page }) => {
@@ -76,7 +76,7 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     expect(response.status()).toBe(200)
     
     const data = await response.json()
-    expect(data.data.data.files).toBeDefined()
+    expect(data.data.files).toBeDefined()
     
     // 自動ダウンロード確認
     const download = await downloadPromise
