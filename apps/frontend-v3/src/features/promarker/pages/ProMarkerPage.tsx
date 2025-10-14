@@ -49,6 +49,10 @@ export function ProMarkerPage() {
   // Form validation (Step 6)
   const parameterForm = useParameterForm(parameters);
 
+  // Disabled state conditions
+  const selectorsDisabled = suggestMutation.isPending;
+  const inputFieldsDisabled = generateMutation.isPending;
+
   const fetchSuggestData = async (
     category: string,
     stencil: string,
@@ -105,7 +109,13 @@ export function ProMarkerPage() {
     let initStarted = false;
 
     const initialize = async () => {
-      if (cancelled || initStarted) return;
+      if (cancelled) return;
+      
+      // Prevent multiple concurrent initialization attempts
+      if (initStarted) {
+        console.log('[ProMarker] Initialization already in progress, waiting...');
+        return;
+      }
       initStarted = true;
 
       try {
@@ -185,14 +195,22 @@ export function ProMarkerPage() {
       return;
     }
 
-    const formValues = parameterForm.getValues();
+    try {
+      const formValues = parameterForm.getValues();
 
-    await generateMutation.mutateAsync({
-      stencilCategoy: categories.selected,
-      stencilCanonicalName: stencils.selected,
-      serialNo: serials.selected,
-      ...formValues,
-    });
+      await generateMutation.mutateAsync({
+        stencilCategoy: categories.selected,
+        stencilCanonicalName: stencils.selected,
+        serialNo: serials.selected,
+        ...formValues,
+      });
+      
+      console.log('Generate completed successfully - ready for next execution');
+    } catch (error) {
+      console.error('Generate failed:', error);
+      // Error is already handled by useGenerate hook
+      // Ensure UI state is ready for next attempt
+    }
   };
 
   const handleClearAll = async () => {
@@ -286,8 +304,6 @@ export function ProMarkerPage() {
     suggestMutation.isPending ||
     generateMutation.isPending;
 
-  const isLoading = suggestMutation.isPending;
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -301,7 +317,7 @@ export function ProMarkerPage() {
       </div>
 
       {/* Loading Indicator */}
-      {isLoading && (
+      {(suggestMutation.isPending || generateMutation.isPending) && (
         <div 
           className="flex items-center justify-center p-4 bg-muted/50 rounded-lg"
           data-testid="loading-indicator"
@@ -326,7 +342,9 @@ export function ProMarkerPage() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <span className="text-sm text-muted-foreground">読み込み中...</span>
+          <span className="text-sm text-muted-foreground">
+            {generateMutation.isPending ? 'コード生成中...' : suggestMutation.isPending ? 'データ読み込み中...' : 'ローディング中...'}
+          </span>
         </div>
       )}
 
@@ -340,7 +358,7 @@ export function ProMarkerPage() {
           onCategoryChange={handleCategoryChange}
           onStencilChange={handleStencilChange}
           onSerialChange={handleSerialChange}
-          disabled={isLoading}
+          disabled={selectorsDisabled}
         />
       </div>
 
@@ -355,7 +373,7 @@ export function ProMarkerPage() {
           <ParameterFields
             parameters={parameters}
             form={parameterForm}
-            disabled={isLoading || generateMutation.isPending}
+            disabled={inputFieldsDisabled}
           />
         </div>
       )}

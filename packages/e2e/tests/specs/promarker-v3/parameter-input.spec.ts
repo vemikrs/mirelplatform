@@ -38,8 +38,8 @@ test.describe('ProMarker v3 Parameter Input', () => {
   });
   
   test('should display parameter with label and placeholder', async ({ page }) => {
-    // Get first parameter field
-    const firstParam = page.locator('[data-testid^="param-"]').first();
+    // Get first parameter input field
+    const firstParam = page.locator('input[data-testid^="param-"]').first();
     await expect(firstParam).toBeVisible();
     
     // Verify it has a label
@@ -51,8 +51,11 @@ test.describe('ProMarker v3 Parameter Input', () => {
   });
   
   test('should allow text input in parameter fields', async ({ page }) => {
-    // Find first text parameter
-    const textParam = page.locator('[data-testid^="param-"]').first();
+    // Find first text parameter input element
+    const textParam = page.locator('input[data-testid^="param-"]').first();
+    
+    // Clear existing value first (component has default value)
+    await textParam.clear();
     
     // Type value
     const testValue = 'test-value-123';

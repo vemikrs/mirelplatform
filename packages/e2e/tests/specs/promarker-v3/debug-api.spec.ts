@@ -45,6 +45,6 @@ test.describe('ProMarker v3 API Debug', () => {
     console.log(`[TEST] Requests:`, requests);
     
     // Check if page loaded
-    await expect(page.locator('h1')).toContainText('ProMarker');
+    await expect(page.locator('h1').first()).toContainText('ProMarker');
   });
 });

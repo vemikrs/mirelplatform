@@ -54,9 +54,10 @@ test.describe('ProMarker v3 File Upload', () => {
     
     await page.selectOption('[data-testid="serial-select"]', { index: 1 })
     
-    // Fill a text parameter
+    // Fill a text parameter (clear existing value first)
     const messageInput = page.locator('[data-testid="param-message"]')
     if (await messageInput.count() > 0) {
+      await messageInput.clear()
       await messageInput.fill('Test message')
       const value = await messageInput.inputValue()
       expect(value).toBe('Test message')

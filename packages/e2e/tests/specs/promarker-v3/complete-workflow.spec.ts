@@ -7,14 +7,15 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   test.beforeEach(async ({ page }) => {
     promarkerPage = new ProMarkerV3Page(page)
     
-    // API待機設定
-    const responsePromise = page.waitForResponse(
-      r => r.url().includes('/mapi/apps/mste/api/suggest'),
-      { timeout: 60000 }
-    )
-    
     await promarkerPage.navigate()
-    await responsePromise
+    
+    // Wait for UI to be ready - category select should be enabled and have options
+    await page.waitForSelector('[data-testid="category-select"]:not([disabled])', { 
+      timeout: 30000 
+    })
+    
+    // Wait a bit for any async operations to complete
+    await page.waitForTimeout(1000)
   })
   
   test('Complete workflow: Select → Fill → Generate → Download', async ({ page }) => {
@@ -153,6 +154,12 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await page.click('[data-testid="generate-btn"]')
     
     let response = await responsePromise
+    console.log('API Response Details:', {
+      url: response.url(),
+      status: response.status(),
+      statusText: response.statusText(),
+      headers: response.headers()
+    })
     expect(response.status()).toBe(200)
     
     // 2回目の生成（パラメータ変更）
