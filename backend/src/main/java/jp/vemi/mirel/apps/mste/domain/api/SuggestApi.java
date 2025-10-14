@@ -5,6 +5,7 @@ package jp.vemi.mirel.apps.mste.domain.api;
 
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,15 +27,26 @@ public class SuggestApi implements MsteApi {
 
     @Override
     public ApiResponse<SuggestResult> service(Map<String, Object> request) {
-        SuggestParameter parameter = new SuggestParameter();
         Map<String, Object> content = InstanceUtil.forceCast(request.get("content"));
 
-        parameter.stencilCategory = (String)content.get("stencilCategoy");
-        parameter.stencilCd = (String)content.get("stencilCanonicalName");
-        parameter.serialNo = (String)content.get("serialNo");
+        String stencilCategory = (String)content.get("stencilCategory");
+        if (StringUtils.isEmpty(stencilCategory)) {
+            stencilCategory = (String)content.get("stencilCategoy"); // Typo互換対応;
+        }
+        String stencilCd = (String)content.get("stencilCanonicalName");
+        String serialNo = (String)content.get("serialNo");
+        Boolean isInitialLoad = content.containsKey("isInitialLoad") ? false : (Boolean)content.get("isInitialLoad");
 
-        ApiRequest<SuggestParameter> apiRequest = new ApiRequest<>();
-        apiRequest.setModel(parameter);
+        ApiRequest<SuggestParameter> apiRequest = ApiRequest.<SuggestParameter>builder()
+            .model(
+                SuggestParameter
+                .builder()
+                .stencilCategory(stencilCategory)
+                .stencilCd(stencilCd)
+                .serialNo(serialNo)
+                .isInitialLoad(isInitialLoad)
+            .build())
+        .build();
 
         ApiResponse<SuggestResult> response = service.invoke(apiRequest);
         return response;

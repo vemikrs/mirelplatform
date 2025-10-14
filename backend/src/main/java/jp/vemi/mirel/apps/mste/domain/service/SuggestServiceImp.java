@@ -77,12 +77,12 @@ public class SuggestServiceImp implements SuggestService {
 
         resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, "");
         resultModel.fltStrStencilCategory.selected = parameter.getModel().stencilCategory;
-        setFirstItemIfNoSelected(resultModel.fltStrStencilCategory);
+        setFirstItemIfNoSelected(resultModel.fltStrStencilCategory, parameter.getModel().isInitialLoad);
 
         List<MsteStencil> stencils = stencilRepository.findByStencilCd(resultModel.fltStrStencilCategory.selected,
                 Const.STENCIL_ITEM_KIND_ITEM);
         resultModel.fltStrStencilCd = new ValueTextItems(convertStencilToValueTexts(stencils), parameter.getModel().stencilCd);
-        setFirstItemIfNoSelected(resultModel.fltStrStencilCd);
+        setFirstItemIfNoSelected(resultModel.fltStrStencilCd, parameter.getModel().isInitialLoad);
 
         String stencilCd = resultModel.fltStrStencilCd.selected;
 
@@ -201,7 +201,12 @@ public class SuggestServiceImp implements SuggestService {
      * 初期値設定.<br/>
      * @param store
      */
-    protected static void setFirstItemIfNoSelected(ValueTextItems store) {
+    protected static void setFirstItemIfNoSelected(ValueTextItems store, boolean isInitialLoad) {
+        // 初回ロード時は自動選択しない
+        if (isInitialLoad) {
+            store.selected = "";
+            return;
+        }
 
         if(null == store) {
             return;

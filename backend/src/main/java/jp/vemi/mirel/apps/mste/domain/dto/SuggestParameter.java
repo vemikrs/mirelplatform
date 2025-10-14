@@ -3,6 +3,10 @@
  */
 package jp.vemi.mirel.apps.mste.domain.dto;
 
+@lombok.Data
+@lombok.AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
+@lombok.NoArgsConstructor
+@lombok.Builder
 public class SuggestParameter {
 
     /** ステンシル種類 */
@@ -13,4 +17,7 @@ public class SuggestParameter {
 
     /** シリアル */
     public String serialNo;
+
+    /** 初期ロードフラグ */
+    public boolean isInitialLoad;
 }
