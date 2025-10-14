@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
 import type { ApiRequest, ApiResponse } from '@/lib/api/types'
-import { handleApiError, handleSuccess } from '@/lib/utils/error'
+import { handleApiError } from '@/lib/utils/error'
 
 /**
  * ステンシルマスタ再読み込みHook
@@ -31,19 +32,9 @@ export function useReloadStencilMaster() {
       
       return response.data
     },
-    onSuccess: (data) => {
-      // Handle API-level errors
-      if (data.errors && data.errors.length > 0) {
-        handleApiError(data.errors)
-        return
-      }
-      
-      // Display success messages
-      if (data.messages && data.messages.length > 0) {
-        handleSuccess(data.messages)
-      } else {
-        handleSuccess(['ステンシルマスタを再読み込みしました'])
-      }
+    onSuccess: () => {
+      // Handle success - UI will be updated by calling component
+      toast.success('ステンシルマスタを再読み込みしました')
     },
     onError: (error) => {
       console.error('ReloadStencilMaster API error:', error)

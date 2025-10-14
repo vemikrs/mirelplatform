@@ -84,14 +84,19 @@ export function useGenerate() {
           // Download notification
           toast.success(`${fileName} をダウンロード中...`)
           
-          // Trigger download via backend endpoint
+          // Trigger download via programmatic link click (better for E2E testing)
           if (typeof window !== 'undefined') {
-            window.location.href = `/mapi/commons/dlsite/${fileId}`
+            const link = document.createElement('a')
+            link.href = `/mapi/commons/dlsite/${fileId}`
+            link.download = fileName || 'generated-code.zip'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
             
             // Success notification
             setTimeout(() => {
-              toast.success('ダウンロードが完了しました')
-            }, 1000)
+              toast.success(`${fileName} のダウンロードが完了しました`)
+            }, 100)
           }
         } catch (error) {
           console.error('Download error:', error)

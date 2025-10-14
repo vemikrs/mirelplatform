@@ -32,10 +32,10 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await page.fill('input[name="message"]', 'E2E Test Message')
     
     // 3. Generate実行
-    const downloadPromise = page.waitForEvent('download', { timeout: 30000 })
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 })
     const responsePromise = page.waitForResponse(
       r => r.url().includes('/mapi/apps/mste/api/generate'),
-      { timeout: 30000 }
+      { timeout: 15000 }
     )
     
     await page.click('[data-testid="generate-btn"]')
@@ -55,7 +55,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     console.log(`Downloaded: ${filename}`)
     
     // 6. Toast通知確認
-    await expect(page.locator('.sonner-toast')).toContainText(
+    await expect(page.locator('[data-sonner-toast]')).toContainText(
       /ダウンロード|成功/i,
       { timeout: 5000 }
     )
@@ -78,7 +78,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     // 必須パラメータを空に（バリデーションエラー発生）
     await page.fill('input[name="message"]', '')
     
-    // Generate実行（ボタンは無効化されているはず）
+    // パラメータが未入力のためGenerateボタンが無効化されていることを確認
     const generateBtn = page.locator('[data-testid="generate-btn"]')
     await expect(generateBtn).toBeDisabled()
     
@@ -115,7 +115,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await page.click('[data-testid="generate-btn"]')
     
     // エラートースト表示確認
-    await expect(page.locator('.sonner-toast')).toContainText(
+    await expect(page.locator('[data-sonner-toast]')).toContainText(
       /失敗|エラー/i,
       { timeout: 5000 }
     )
@@ -149,7 +149,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await page.click('[data-testid="generate-btn"]')
     
     // 警告トースト表示確認
-    await expect(page.locator('.sonner-toast')).toContainText(
+    await expect(page.locator('[data-sonner-toast]')).toContainText(
       /ファイルがありません/i,
       { timeout: 5000 }
     )
@@ -169,7 +169,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     // 1回目の生成
     await page.fill('input[name="message"]', 'First Generation')
     
-    let downloadPromise = page.waitForEvent('download', { timeout: 30000 })
+    let downloadPromise = page.waitForEvent('download', { timeout: 15000 })
     await page.click('[data-testid="generate-btn"]')
     
     let download = await downloadPromise
@@ -178,7 +178,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     // 2回目の生成（パラメータ変更）
     await page.fill('input[name="message"]', 'Second Generation')
     
-    downloadPromise = page.waitForEvent('download', { timeout: 30000 })
+    downloadPromise = page.waitForEvent('download', { timeout: 15000 })
     await page.click('[data-testid="generate-btn"]')
     
     download = await downloadPromise
