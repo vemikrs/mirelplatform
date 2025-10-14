@@ -56,3 +56,6 @@ packages/e2e/traces/
 
 ### pnpm ###
 .pnpm-store/
+
+### VSCode Counter ###
+.VSCodeCounter/
