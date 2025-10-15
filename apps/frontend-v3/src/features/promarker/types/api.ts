@@ -76,7 +76,9 @@ export interface SuggestRequest {
   stencilCategoy: string;          // Typo: should be 'Category', but matches backend
   stencilCanonicalName: string;
   serialNo: string;
-  [key: string]: string;           // Allow additional dynamic parameters
+  selectFirstIfWildcard?: boolean; // * の自動選択を backend に委譲
+  // 動的パラメータ（実際は値に number や boolean が来る可能性もあるので any）
+  [key: string]: any;           // Allow additional dynamic parameters
 }
 
 /**

@@ -12,7 +12,7 @@ import { StencilInfo } from '../components/StencilInfo';
 import { JsonEditor } from '../components/JsonEditor';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 // import { updateFileNames } from '../utils/parameter';
-import type { DataElement, StencilConfig } from '../types/api';
+import type { DataElement, StencilConfig, SuggestModel } from '../types/api';
 
 /**
  * ProMarker main page component
@@ -56,48 +56,38 @@ export function ProMarkerPage() {
   const fetchSuggestData = async (
     category: string,
     stencil: string,
-    serial: string
+    serial: string,
+    selectFirstIfWildcard: boolean = false
   ) => {
     const result = await suggestMutation.mutateAsync({
       stencilCategoy: category,
       stencilCanonicalName: stencil,
       serialNo: serial,
+      selectFirstIfWildcard,
     });
 
-    if (result.data?.model) {
-      const model = result.data.model;
+    return updateState(result);
+  };
 
-      // Update dropdowns
-      if (model.fltStrStencilCategory) {
-        // For initial load, clear auto-selection to keep dropdowns disabled
-        const categories = category === '*' && stencil === '*' && serial === '*'
-          ? { ...model.fltStrStencilCategory, selected: '' }
-          : model.fltStrStencilCategory;
-        setCategories(categories);
-      }
-      if (model.fltStrStencilCd) {
-        const stencils = stencil === '*' && serial === '*'
-          ? { ...model.fltStrStencilCd, selected: '' }
-          : model.fltStrStencilCd;
-        setStencils(stencils);
-      }
-      if (model.fltStrSerialNo) {
-        const serials = serial === '*'
-          ? { ...model.fltStrSerialNo, selected: '' }
-          : model.fltStrSerialNo;
-        setSerials(serials);
-      }
+  const updateState = (result: { data: { model: SuggestModel } }) => {
+    const model = result.data.model;
 
-      // Update parameters and stencil config
-      if (model.params?.childs) {
-        setParameters(model.params.childs);
-        // Form will be auto-populated with default values via useParameterForm
-      }
+    if (model.fltStrStencilCategory) setCategories(model.fltStrStencilCategory);
+    if (model.fltStrStencilCd) setStencils(model.fltStrStencilCd);
+    if (model.fltStrSerialNo) setSerials(model.fltStrSerialNo);
 
-      if (model.stencil?.config) {
-        setStencilConfig(model.stencil.config);
-      }
+    // params / stencil は serial 確定時のみ入る
+    if (model.params?.childs) setParameters(model.params.childs);
+    else setParameters([]);
+    if (model.stencil?.config) {
+      console.log('[ProMarker] Stencil config loaded:', model.stencil.config);
+      setStencilConfig(model.stencil.config);
+    } else {
+      console.log('[ProMarker] No stencil config in response');
+      setStencilConfig(null);
     }
+
+    return result;
   };
 
   useEffect(() => {
@@ -119,9 +109,9 @@ export function ProMarkerPage() {
       initStarted = true;
 
       try {
-        // Always fetch initial categories (backend will auto-reload if needed)
-        console.log('[ProMarker] Fetching initial categories...');
-        await fetchSuggestData('*', '*', '*');
+      // 初期ロード: 全未選択、リストのみ取得
+      console.log('[ProMarker] Initial suggest (empty)...');
+      await fetchSuggestData('*', '*', '*', false);
         if (!cancelled) {
           console.log('[ProMarker] Initial data fetch complete');
         }
@@ -156,7 +146,14 @@ export function ProMarkerPage() {
     parameterForm.reset();
 
     // Fetch stencils for selected category
-    await fetchSuggestData(value, '*', '*');
+    // 1st call: get stencil list, auto-select first
+    const r1 = await fetchSuggestData(value, '*', '*', true);
+    const autoStencil = r1.data?.model?.fltStrStencilCd?.selected;
+    if (autoStencil) {
+      setStencilNoSelected(false);
+      // 2nd call: get serial list & params (auto-select serial)
+      await fetchSuggestData(value, autoStencil, '*', true);
+    }
   };
 
   const handleStencilChange = async (value: string) => {
@@ -173,7 +170,7 @@ export function ProMarkerPage() {
     parameterForm.reset();
 
     // Fetch serials for selected stencil
-    await fetchSuggestData(categories.selected, value, '*');
+    await fetchSuggestData(categories.selected, value, '*', true);
   };
 
   const handleSerialChange = async (value: string) => {
@@ -183,7 +180,7 @@ export function ProMarkerPage() {
     setSerialNoSelected(false);
 
     // Fetch full stencil configuration with parameters
-    await fetchSuggestData(categories.selected, stencils.selected, value);
+    await fetchSuggestData(categories.selected, stencils.selected, value, false);
   };
 
   const handleGenerate = async () => {
@@ -230,7 +227,7 @@ export function ProMarkerPage() {
     parameterForm.clearAll();
     
     // Refresh data
-    await fetchSuggestData('*', '*', '*');
+    await fetchSuggestData('*', '*', '*', false);
     toast.success('全てクリアしました');
   };
 
@@ -241,7 +238,7 @@ export function ProMarkerPage() {
     parameterForm.reset();
     
     // Re-fetch current stencil data
-    await fetchSuggestData(categories.selected, stencils.selected, serials.selected);
+    await fetchSuggestData(categories.selected, stencils.selected, serials.selected, false);
     toast.success('ステンシル定義を再取得しました');
   };
 
@@ -269,20 +266,20 @@ export function ProMarkerPage() {
       // Clear all first
       await handleClearAll();
       
-      // Set selections step by step
+      // Set selections step by step (explicit, no auto-select except where needed)
       setCategories(prev => ({ ...prev, selected: data.stencilCategory }));
       setCategoryNoSelected(false);
-      await fetchSuggestData(data.stencilCategory, '*', '*');
+      await fetchSuggestData(data.stencilCategory, '*', '*', true);
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setStencils(prev => ({ ...prev, selected: data.stencilCd }));
       setStencilNoSelected(false);
-      await fetchSuggestData(data.stencilCategory, data.stencilCd, '*');
+      await fetchSuggestData(data.stencilCategory, data.stencilCd, '*', true);
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setSerials(prev => ({ ...prev, selected: data.serialNo }));
       setSerialNoSelected(false);
-      await fetchSuggestData(data.stencilCategory, data.stencilCd, data.serialNo);
+      await fetchSuggestData(data.stencilCategory, data.stencilCd, data.serialNo, false);
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Set parameter values

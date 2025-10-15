@@ -35,7 +35,7 @@ public class SuggestApi implements MsteApi {
         }
         String stencilCd = (String)content.get("stencilCanonicalName");
         String serialNo = (String)content.get("serialNo");
-        Boolean isInitialLoad = content.containsKey("isInitialLoad") ? false : (Boolean)content.get("isInitialLoad");
+        Boolean selectFirstIfWildcard = content.get("selectFirstIfWildcard") instanceof Boolean ? (Boolean)content.get("selectFirstIfWildcard") : true; // 後方互換: 旧クライアントは自動選択有効
 
         ApiRequest<SuggestParameter> apiRequest = ApiRequest.<SuggestParameter>builder()
             .model(
@@ -44,7 +44,7 @@ public class SuggestApi implements MsteApi {
                 .stencilCategory(stencilCategory)
                 .stencilCd(stencilCd)
                 .serialNo(serialNo)
-                .isInitialLoad(isInitialLoad)
+                .selectFirstIfWildcard(selectFirstIfWildcard)
             .build())
         .build();
 

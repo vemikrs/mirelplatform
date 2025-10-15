@@ -68,92 +68,112 @@ public class SuggestServiceImp implements SuggestService {
         // FIXME: 応急処置 - ModelWrapperは型安全性を損なう hack
         // 根本的な問題: ApiResponse<T>とFrontend期待値の構造不整合
         // 詳細は別Issue参照: API レスポンス構造の設計見直し
-        class ModelWrapper {
-            @SuppressWarnings("unused")
-            public SuggestResult model;
-        }
-
         SuggestResult resultModel = new SuggestResult();
 
-        resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, "");
-        resultModel.fltStrStencilCategory.selected = parameter.getModel().stencilCategory;
-        setFirstItemIfNoSelected(resultModel.fltStrStencilCategory, parameter.getModel().isInitialLoad);
+        SuggestParameter p = parameter.getModel();
 
-        List<MsteStencil> stencils = stencilRepository.findByStencilCd(resultModel.fltStrStencilCategory.selected,
-                Const.STENCIL_ITEM_KIND_ITEM);
-        resultModel.fltStrStencilCd = new ValueTextItems(convertStencilToValueTexts(stencils), parameter.getModel().stencilCd);
-        setFirstItemIfNoSelected(resultModel.fltStrStencilCd, parameter.getModel().isInitialLoad);
-
-        String stencilCd = resultModel.fltStrStencilCd.selected;
-
-        if ("*".equals(stencilCd)) {
-            // FIXME: 応急処置 - 型キャストによる構造の無理やり調整
-            ModelWrapper wrapper = new ModelWrapper();
-            wrapper.model = resultModel;
-            @SuppressWarnings("unchecked")
-            ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(wrapper).build();
-            return response;
+        // 1) Category list
+        resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, p.stencilCategory);
+        if (isWildcard(resultModel.fltStrStencilCategory.selected) && p.selectFirstIfWildcard) {
+            autoSelectFirst(resultModel.fltStrStencilCategory);
+        } else {
+            validateSelectedExists(resultModel.fltStrStencilCategory);
         }
 
-        TemplateEngineProcessor engine;
-        try {
-            System.out.println("=== DEBUG SuggestServiceImp ===");
-            System.out.println("stencilCd: " + stencilCd);
-            System.out.println("serialNo: " + parameter.getModel().serialNo);
-            System.out.println("resourcePatternResolver: " + resourcePatternResolver);
-            System.out.println("resourcePatternResolver is null: " + (resourcePatternResolver == null));
-            
-            if (resourcePatternResolver == null) {
-                System.out.println("WARNING: ResourcePatternResolver is null, TemplateEngineProcessor may fail");
+        // If category not fixed yet → return early (no stencil/serial)
+        if (StringUtils.isEmpty(resultModel.fltStrStencilCategory.selected)) {
+            return wrap(resultModel);
+        }
+
+        // 2) Stencil list (depends on category)
+        List<MsteStencil> stencils = stencilRepository.findByStencilCd(resultModel.fltStrStencilCategory.selected, Const.STENCIL_ITEM_KIND_ITEM);
+        resultModel.fltStrStencilCd = new ValueTextItems(convertStencilToValueTexts(stencils), p.stencilCd);
+        if (isWildcard(resultModel.fltStrStencilCd.selected) && p.selectFirstIfWildcard) {
+            autoSelectFirst(resultModel.fltStrStencilCd);
+        } else {
+            validateSelectedExists(resultModel.fltStrStencilCd);
+        }
+
+        if (StringUtils.isEmpty(resultModel.fltStrStencilCd.selected)) {
+            return wrap(resultModel);
+        }
+
+        // 3) Serial & parameters (depends on stencil)
+        String requestedSerial = p.serialNo;
+        boolean needAutoSelectSerial = isWildcard(requestedSerial) && p.selectFirstIfWildcard;
+        boolean serialSpecified = !isWildcard(requestedSerial);
+        String effectiveSerial = null;
+        TemplateEngineProcessor engine = null;
+        if (needAutoSelectSerial || serialSpecified) {
+            try {
+                engine = TemplateEngineProcessor.create(
+                    SteContext.standard(resultModel.fltStrStencilCd.selected, isWildcard(requestedSerial)?"":requestedSerial),
+                    resourcePatternResolver);
+            } catch (Throwable e) {
+                System.out.println("ERROR in TemplateEngineProcessor.create: " + e.getMessage());
+                return createFallbackResponse(resultModel.fltStrStencilCd.selected, requestedSerial, resultModel);
             }
-            
-            engine = TemplateEngineProcessor.create(
-                SteContext.standard(stencilCd, parameter.getModel().serialNo), 
-                resourcePatternResolver);
-        } catch (Throwable e) {
-            System.out.println("ERROR in TemplateEngineProcessor.create: " + e.getMessage());
-            System.out.println("Attempting graceful fallback using database information");
-            e.printStackTrace();
-            
-            // フォールバック: データベース情報を使用してレスポンス構築
-            return createFallbackResponse(stencilCd, parameter.getModel().serialNo, resultModel);
-        }
 
-        String stencilNo = engine.getSerialNo();
-        List<String> serials = engine.getSerialNos();
-        
-        // serialsが空の場合、config.serialからフォールバック
-        if (serials.isEmpty()) {
-            StencilSettingsYml tempSettings = engine.getStencilSettings();
-            if (tempSettings != null && tempSettings.getStencil() != null && 
-                tempSettings.getStencil().getConfig() != null && 
-                tempSettings.getStencil().getConfig().getSerial() != null) {
-                serials = Arrays.asList(tempSettings.getStencil().getConfig().getSerial());
-                stencilNo = tempSettings.getStencil().getConfig().getSerial();
+            List<String> serials = engine.getSerialNos();
+            if (serials.isEmpty()) {
+                StencilSettingsYml tempSettings = engine.getStencilSettings();
+                if (tempSettings != null && tempSettings.getStencil()!=null && tempSettings.getStencil().getConfig()!=null && tempSettings.getStencil().getConfig().getSerial()!=null) {
+                    serials = Arrays.asList(tempSettings.getStencil().getConfig().getSerial());
+                }
             }
+            if (needAutoSelectSerial) {
+                effectiveSerial = serials.isEmpty()?"":serials.get(0);
+            } else if (serialSpecified) {
+                effectiveSerial = requestedSerial;
+            }
+            resultModel.fltStrSerialNo = new ValueTextItems(convertSerialNosToValueTexts(serials), effectiveSerial==null?"":effectiveSerial);
+            if (StringUtils.isEmpty(resultModel.fltStrSerialNo.selected)) {
+                return wrap(resultModel); // serial 未確定 → params なし
+            }
+            // 完全確定 → settings & params
+            StencilSettingsYml settingsYaml = engine.getStencilSettings();
+            resultModel.stencil = settingsYaml.getStencil();
+            resultModel.params = itemsToNode(settingsYaml);
+            return wrap(resultModel);
+        } else {
+            // Serial まだ不要 → 空の serial list
+            resultModel.fltStrSerialNo = new ValueTextItems(Lists.newArrayList(), "");
+            return wrap(resultModel);
         }
-        
-        resultModel.fltStrSerialNo = new ValueTextItems(convertSerialNosToValueTexts(serials), stencilNo);
+    }
 
-        StencilSettingsYml settingsYaml = null;
-        try {
-            settingsYaml = engine.getStencilSettings();
-        } catch(Throwable e) {
-            e.printStackTrace();
-            throw e;
+    private boolean isWildcard(String v){
+        return StringUtils.isEmpty(v) || "*".equals(v);
+    }
+    private void autoSelectFirst(ValueTextItems items){
+        if(items==null||CollectionUtils.isEmpty(items.items)){return;}
+        // 既存優先ルール再利用
+        String preferred = items.items.stream().filter(i->i.value.startsWith("/samples"))
+            .map(i->i.value).findFirst().orElse(null);
+        if(preferred==null){
+            preferred = items.items.stream().filter(i->i.value.contains("spring_service") && !i.value.contains("mvc"))
+                .map(i->i.value).findFirst().orElse(null);
         }
-
-        System.out.println(settingsYaml);
-
-        // stencil-settings
-        resultModel.stencil = settingsYaml.getStencil();
-        resultModel.params = itemsToNode(settingsYaml); // convert.
-
-        // FIXME: 応急処置 - 型キャストによる構造の無理やり調整
-        ModelWrapper wrapper = new ModelWrapper();
-        wrapper.model = resultModel;
+        if(preferred==null){
+            preferred = items.items.get(0).value;
+        }
+        items.selected = preferred;
+    }
+    private void validateSelectedExists(ValueTextItems items){
+        if(items==null){return;}
+        if(StringUtils.isEmpty(items.selected)){return;}
+        boolean exists = items.items.stream().anyMatch(i->i.value.equals(items.selected));
+        if(!exists){
+            // 不正指定はクリアして上位へ早期リターン可能にする
+            items.selected = "";
+        }
+    }
+    private ApiResponse<SuggestResult> wrap(SuggestResult model){
+        class ModelWrapper { @SuppressWarnings("unused") public SuggestResult model; }
+        ModelWrapper w = new ModelWrapper();
+        w.model = model;
         @SuppressWarnings("unchecked")
-        ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(wrapper).build();
+        ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(w).build();
         return response;
     }
 
@@ -394,7 +414,7 @@ public class SuggestServiceImp implements SuggestService {
 
         Assert.notNull(kind, "kind must not be null");
 
-        List<MsteStencil> stencils = stencilRepository.findAll();
+        List<MsteStencil> stencils = new ArrayList<>(stencilRepository.findAll());
         /*
          * 0：ステンシル分類, 1：ステンシル
          */
@@ -477,10 +497,20 @@ public class SuggestServiceImp implements SuggestService {
             
             resultModel.params = rootNode;
             
-            // ステンシル設定情報（最小限）
-            // resultModel.stencil は StencilSettingsYml.Stencil 型なので、null のままにしておく
-            // フォールバックモードでは詳細情報は提供しない
-            resultModel.stencil = null;
+            // ステンシル設定情報（最小限でも構造体を返す - フロントのStencilInfo表示用）
+            StencilSettingsYml.Stencil stencilInfo = new StencilSettingsYml.Stencil();
+            StencilSettingsYml.Stencil.Config minimalConfig = new StencilSettingsYml.Stencil.Config();
+            // resultModelに既にセット済みのカテゴリ・ステンシル情報を使用
+            minimalConfig.setCategoryId(resultModel.fltStrStencilCategory != null ? resultModel.fltStrStencilCategory.selected : "");
+            minimalConfig.setCategoryName("フォールバックカテゴリ");
+            minimalConfig.setId(stencilCd);
+            minimalConfig.setName("フォールバックステンシル");
+            minimalConfig.setSerial(fallbackSerials.get(0));
+            minimalConfig.setLastUpdate("N/A");
+            minimalConfig.setLastUpdateUser("system");
+            minimalConfig.setDescription("TemplateEngineProcessor使用不可のためフォールバックモード");
+            stencilInfo.setConfig(minimalConfig);
+            resultModel.stencil = stencilInfo;
             
             // ModelWrapper適用（既存のパターンに合わせる）
             class FallbackModelWrapper {

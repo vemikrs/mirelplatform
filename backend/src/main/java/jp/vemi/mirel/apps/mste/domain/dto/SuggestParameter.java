@@ -18,6 +18,6 @@ public class SuggestParameter {
     /** シリアル */
     public String serialNo;
 
-    /** 初期ロードフラグ */
-    public boolean isInitialLoad;
+    /** ワイルドカード(*)指定時に最初の要素を自動選択するか */
+    public boolean selectFirstIfWildcard;
 }
