@@ -19,6 +19,9 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   
+  /* WSL2 Crash Prevention: Stop test execution after N failures to prevent resource exhaustion */
+  maxFailures: 5,
+  
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -60,8 +63,8 @@ export default defineConfig({
     },
   ],
 
-  /* Test timeout */
-  timeout: 30 * 1000,
+  /* Test timeout - Reduced from 30s to 10s to prevent WSL2 resource exhaustion */
+  timeout: 10 * 1000,
   expect: {
     /* Maximum time expect() should wait for the condition to be met. */
     timeout: 5000,
