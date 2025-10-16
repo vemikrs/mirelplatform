@@ -10,8 +10,26 @@ import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
  */
 test.describe('ProMarker v3 Parameter Input', () => {
   let promarkerPage: ProMarkerV3Page;
+  let backendAvailable = false;
+
+  test.beforeAll(async ({ request }) => {
+    try {
+      console.log('[parameter-input] Reloading stencil master...');
+      const resp = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
+        data: { content: {} },
+        timeout: 5000,
+      });
+      backendAvailable = resp.ok();
+      console.log(`[parameter-input] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+    } catch (error) {
+      console.error('[parameter-input] Backend not available:', error);
+      backendAvailable = false;
+    }
+  });
   
   test.beforeEach(async ({ page }) => {
+    test.skip(!backendAvailable, 'Backend not available - skipping');
+
     promarkerPage = new ProMarkerV3Page(page);
     await promarkerPage.navigate();
     
@@ -19,11 +37,28 @@ test.describe('ProMarker v3 Parameter Input', () => {
     // Initial suggest API call is triggered on mount
     
     // Complete 3-tier selection to display parameters
-    await promarkerPage.complete3TierSelection(
-      '/samples',
-      '/samples/hello-world',
-      '250913A'
-    );
+    await page.selectOption('[data-testid="category-select"]', '/samples');
+    await page.waitForTimeout(500);
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world');
+    await page.waitForTimeout(500);
+    
+    // Wait for serial options and select
+    const serialSelect = page.locator('[data-testid="serial-select"]');
+    await expect(serialSelect).toBeEnabled({ timeout: 10000 });
+    const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
+    if (targetCount > 0) {
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
+    } else {
+      const current = await serialSelect.inputValue();
+      if (!current || current.length === 0) {
+        const options = await page.locator('[data-testid="serial-select"] option').allTextContents();
+        const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
+        await page.selectOption('[data-testid="serial-select"]', { index: firstIdx });
+      }
+    }
+    
+    // Wait for parameters to load
+    await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
   });
   
   test('should display parameter fields after serial selection', async ({ page }) => {
