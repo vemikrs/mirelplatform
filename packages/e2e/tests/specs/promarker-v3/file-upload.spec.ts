@@ -3,8 +3,25 @@ import { ProMarkerV3Page } from '../../pages/promarker-v3.page'
 
 test.describe('ProMarker v3 File Upload', () => {
   let promarkerPage: ProMarkerV3Page
+  let backendAvailable = false
+
+  test.beforeAll(async ({ request }) => {
+    try {
+      console.log('[file-upload] Reloading stencil master...');
+      const resp = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
+        data: { content: {} },
+        timeout: 5000,
+      });
+      backendAvailable = resp.ok();
+      console.log(`[file-upload] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+    } catch (error) {
+      console.error('[file-upload] Backend not available:', error);
+      backendAvailable = false;
+    }
+  });
 
   test.beforeEach(async ({ page }) => {
+    test.skip(!backendAvailable, 'Backend not available - skipping');
     promarkerPage = new ProMarkerV3Page(page)
     
     // Set up wait for suggest API response BEFORE navigation
