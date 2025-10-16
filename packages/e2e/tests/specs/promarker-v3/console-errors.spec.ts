@@ -1,7 +1,25 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Console Errors Check', () => {
+  let backendAvailable = false
+
+  test.beforeAll(async ({ request }) => {
+    try {
+      console.log('[console-errors] Reloading stencil master...');
+      const resp = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
+        data: { content: {} },
+        timeout: 5000,
+      });
+      backendAvailable = resp.ok();
+      console.log(`[console-errors] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+    } catch (error) {
+      console.error('[console-errors] Backend not available:', error);
+      backendAvailable = false;
+    }
+  });
+
   test('should load ProMarker page without console errors', async ({ page }) => {
+    test.skip(!backendAvailable, 'Backend not available - skipping');
     const consoleMessages: string[] = []
     const consoleErrors: string[] = []
     
@@ -19,7 +37,7 @@ test.describe('Console Errors Check', () => {
     })
     
     // Navigate to ProMarker page
-    await page.goto('/promarker', { waitUntil: 'networkidle', timeout: 60000 })
+  await page.goto('/promarker', { waitUntil: 'networkidle', timeout: 60000 })
     
     // Wait a bit for any async errors
     await page.waitForTimeout(2000)

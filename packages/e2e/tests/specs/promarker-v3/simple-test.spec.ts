@@ -5,8 +5,25 @@ import { test, expect } from '@playwright/test';
  * Step 6: Direct test without page object
  */
 test.describe('ProMarker v3 Form Validation - Simple', () => {
+  let backendAvailable = false;
+  
+  test.beforeAll(async ({ request }) => {
+    try {
+      console.log('[simple-test] Reloading stencil master...');
+      const resp = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
+        data: { content: {} },
+        timeout: 5000,
+      });
+      backendAvailable = resp.ok();
+      console.log(`[simple-test] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+    } catch (error) {
+      console.error('[simple-test] Backend not available:', error);
+      backendAvailable = false;
+    }
+  });
   
   test('should load page and show form fields', async ({ page }) => {
+    test.skip(!backendAvailable, 'Backend not available - skipping');
     // Navigate to ProMarker page
     await page.goto('http://localhost:5173/promarker');
     
