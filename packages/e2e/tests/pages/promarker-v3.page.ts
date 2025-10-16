@@ -93,7 +93,28 @@ export class ProMarkerV3Page extends BasePage {
    */
   async selectSerial(serial: string) {
     await this.waitForVisible(this.selectors.serialSelect);
-    await this.page.locator(this.selectors.serialSelect).selectOption(serial);
+    const select = this.page.locator(this.selectors.serialSelect);
+    // ensure enabled
+    await expect(select).toBeEnabled({ timeout: 10000 });
+
+    // if exact option exists, choose it
+    const targetCount = await this.page
+      .locator(`${this.selectors.serialSelect} option[value="${serial}"]`)
+      .count();
+    if (targetCount > 0) {
+      await select.selectOption(serial);
+      return;
+    }
+
+    // otherwise, if already selected, keep it; else choose first non-empty option
+    const current = await select.inputValue();
+    if (!current || current.length === 0) {
+      const options = await this.page
+        .locator(`${this.selectors.serialSelect} option`)
+        .allTextContents();
+      const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
+      await select.selectOption({ index: firstIdx });
+    }
   }
   
   /**

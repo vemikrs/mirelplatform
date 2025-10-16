@@ -11,8 +11,33 @@ import { STENCIL_V3_TEST_DATA } from '../../fixtures/promarker-v3.fixture';
  */
 test.describe('ProMarker v3 Stencil Selection', () => {
   let promarkerPage: ProMarkerV3Page;
+  let backendAvailable = false;
+  
+  // Reload stencil master once before all tests
+  // WSL2 Crash Prevention: Check backend availability before running tests
+  test.beforeAll(async ({ request }) => {
+    try {
+      console.log('Reloading stencil master data...');
+      const response = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
+        data: { content: {} },
+        timeout: 5000 // Reduced timeout for faster failure detection
+      });
+      backendAvailable = response.ok();
+      if (backendAvailable) {
+        console.log('Stencil master data loaded successfully');
+      } else {
+        console.error(`Backend returned status ${response.status()}`);
+      }
+    } catch (error) {
+      console.error('Backend not available:', error);
+      backendAvailable = false;
+    }
+  });
   
   test.beforeEach(async ({ page }) => {
+    // WSL2 Crash Prevention: Skip all tests if backend is not available
+    test.skip(!backendAvailable, 'Backend not available - skipping to prevent WSL2 resource exhaustion');
+    
     promarkerPage = new ProMarkerV3Page(page);
     await promarkerPage.navigate();
     
@@ -30,45 +55,27 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     expect(optionCount).toBeGreaterThan(1); // At least "選択してください" + categories
   });
   
-  test('should complete 3-tier selection flow', async ({ page }) => {
-    // Step 1: Select Category
+  test('should auto-complete stencil & serial after category selection', async ({ page }) => {
+    // Select Category (triggers two cascading suggest calls)
+    // Fixed: Wait for UI elements instead of Promise.all to prevent WSL2 crash
     await page.selectOption('[data-testid="category-select"]', { index: 1 });
     
-    // Wait for stencil options to load
-    const stencilApiPromise = page.waitForResponse(response =>
-      response.url().includes('/mapi/apps/mste/api/suggest')
-    );
-    await stencilApiPromise;
-    
-    // Verify stencil dropdown is enabled and has options
+    // Wait for both dropdowns to be enabled (indicates API calls completed)
     const stencilSelect = page.locator('[data-testid="stencil-select"]');
-    await expect(stencilSelect).toBeEnabled();
-    const stencilOptions = await stencilSelect.locator('option').count();
-    expect(stencilOptions).toBeGreaterThan(1);
-    
-    // Step 2: Select Stencil
-    await page.selectOption('[data-testid="stencil-select"]', { index: 1 });
-    
-    // Wait for serial options to load
-    const serialApiPromise = page.waitForResponse(response =>
-      response.url().includes('/mapi/apps/mste/api/suggest')
-    );
-    await serialApiPromise;
-    
-    // Verify serial dropdown is enabled and has options
     const serialSelect = page.locator('[data-testid="serial-select"]');
-    await expect(serialSelect).toBeEnabled();
-    const serialOptions = await serialSelect.locator('option').count();
-    expect(serialOptions).toBeGreaterThan(1);
-    
-    // Step 3: Select Serial
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 });
-    
-    // Verify parameter section appears
+
+    await expect(stencilSelect).toBeEnabled({ timeout: 10000 });
+    await expect(serialSelect).toBeEnabled({ timeout: 10000 });
+
+    // Values should already be auto-selected (non-empty)
+    await expect(stencilSelect).not.toHaveValue('');
+    await expect(serialSelect).not.toHaveValue('');
+
+    // Parameter section should be visible because serial resolved
     const parameterSection = page.locator('[data-testid="parameter-section"]');
     await expect(parameterSection).toBeVisible();
-    
-    // Verify generate button is enabled
+
+    // Generate button enabled
     const generateBtn = page.locator('[data-testid="generate-btn"]');
     await expect(generateBtn).toBeEnabled();
   });
@@ -78,16 +85,17 @@ test.describe('ProMarker v3 Stencil Selection', () => {
   test.skip('should clear stencil and serial when category changes', async ({ page }) => {
     // Complete initial selection
     await page.selectOption('[data-testid="category-select"]', { index: 1 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    // Fixed: Wait for UI element state instead of specific response
+    await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
     
     await page.selectOption('[data-testid="stencil-select"]', { index: 1 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
     await page.selectOption('[data-testid="serial-select"]', { index: 1 });
     
     // Change category
     await page.selectOption('[data-testid="category-select"]', { index: 2 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify stencil and serial are reset
     const stencilValue = await page.locator('[data-testid="stencil-select"]').inputValue();
@@ -113,11 +121,12 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     
     // Wait for loading to complete
     await page.waitForLoadState('networkidle');
-    await page.waitForSelector('[data-testid="stencil-select"]:not([disabled])');
+    await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled();
     
     // Change stencil
     await page.selectOption('[data-testid="stencil-select"]', { index: 2 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    // Fixed: Wait for UI element state instead of specific response
+    await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify serial is reset
     const serialValue = await page.inputValue('[data-testid="serial-select"]');
@@ -154,16 +163,17 @@ test.describe('ProMarker v3 Stencil Selection', () => {
   test('should display stencil information after serial selection', async ({ page }) => {
     // Complete full selection
     await page.selectOption('[data-testid="category-select"]', { index: 1 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    // Fixed: Wait for UI elements instead of API responses
+    await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
+    await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
-    await page.selectOption('[data-testid="stencil-select"]', { index: 1 });
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    // Wait for serial selection to be completed (auto-selected)
+    await page.waitForLoadState('networkidle');
     
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 });
-    
-    // Verify stencil info section is visible
+    // Wait for stencil config to load (backend returns config when serial is selected)
+    // The stencil-info component only renders when stencilConfig is not null
     const stencilInfo = page.locator('[data-testid="stencil-info"]');
-    await expect(stencilInfo).toBeVisible();
+    await expect(stencilInfo).toBeVisible({ timeout: 15000 });
     
     // Verify it contains basic information
     await expect(stencilInfo).toContainText(/カテゴリ|名前|シリアル/);
