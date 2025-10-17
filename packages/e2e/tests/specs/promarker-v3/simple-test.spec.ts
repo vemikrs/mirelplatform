@@ -24,6 +24,8 @@ test.describe('ProMarker v3 Form Validation - Simple', () => {
   
   test('should load page and show form fields', async ({ page }) => {
     test.skip(!backendAvailable, 'Backend not available - skipping');
+    test.setTimeout(30000);
+    
     // Navigate to ProMarker page
     await page.goto('http://localhost:5173/promarker');
     
