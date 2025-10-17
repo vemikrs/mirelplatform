@@ -59,3 +59,6 @@ packages/e2e/traces/
 
 ### VSCode Counter ###
 .VSCodeCounter/
+
+### History Files ###
+.history/
