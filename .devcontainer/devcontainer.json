@@ -14,10 +14,15 @@
       "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/git-lfs:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest"
-    }
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
+    // Docker-in-Docker (DinD) - 現在未使用のためコメントアウト
+    // 理由: プロジェクト内でDocker操作を行っていない（Playwright, Gradle, npm等は直接実行）
+    // 将来的にDocker操作が必要な場合は docker-outside-of-docker の使用を推奨
+    // "ghcr.io/devcontainers/features/docker-in-docker:2": {
+    //   "version": "latest"
+    // }
+    // 代替案: "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    //   - ホストのDockerソケットをマウント（特権モード不要、より軽量・安定）
   },
   "containerEnv": {
     "GRADLE_USER_HOME": "/home/vscode/.gradle",
