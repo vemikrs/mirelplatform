@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Mirel Platform 一括起動スクリプト
-# Backend (Spring Boot) と Frontend (Nuxt.js) を同時起動
+# Backend (Spring Boot) と Frontend v3 (Vite) を同時起動
 
 echo "🚀 Mirel Platform サービス起動中..."
 echo "======================================"
@@ -16,7 +16,8 @@ mkdir -p logs
 # 既存のプロセスを停止
 echo "📋 既存プロセスの停止中..."
 pkill -f "gradlew.*bootRun" 2>/dev/null || true
-pkill -f "npm run dev" 2>/dev/null || true
+pkill -f "pnpm --filter frontend-v3 dev" 2>/dev/null || true
+pkill -f "vite" 2>/dev/null || true
 pkill -f "nuxt" 2>/dev/null || true
 sleep 2
 
@@ -31,22 +32,29 @@ nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
-# Frontend起動
-echo "🎨 Frontend (Nuxt.js) 起動中..."
-echo "   ポート: 8080"
+# Frontend 起動
+echo "🎨 Frontend v3 (Vite) 起動中..."
+echo "   ポート: 5173"
 echo "   ホスト: 0.0.0.0"
 echo "   ログ: logs/frontend.log"
 
-# npm依存関係の確認・インストール
-if [ ! -d "frontend/node_modules" ]; then
-    echo "   📦 npm依存関係をインストール中..."
-    cd frontend
-    npm install --legacy-peer-deps --no-audit
-    cd ..
+# 依存関係インストール（必要時）
+if [ ! -d "apps/frontend-v3/node_modules" ]; then
+    echo "   📦 依存関係をインストール中..."
+    if command -v pnpm >/dev/null 2>&1; then
+        (cd apps/frontend-v3 && pnpm install) || true
+    else
+        (cd apps/frontend-v3 && npm ci --no-audit) || true
+    fi
 fi
 
-# nohupを使ってプロセスをシェルから完全に切り離す
-nohup bash -c "cd '$PROJECT_ROOT/frontend' && HOST=0.0.0.0 PORT=8080 NODE_OPTIONS='--no-deprecation' npm run dev" > logs/frontend.log 2>&1 &
+# Vite 開発サーバ起動（nohup で切り離し）
+if command -v pnpm >/dev/null 2>&1; then
+    FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && pnpm dev"
+else
+    FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && npm run dev"
+fi
+nohup bash -c "$FRONTEND_CMD" > logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
 
@@ -58,7 +66,7 @@ echo ""
 echo "✅ サービス起動完了!"
 echo "======================================"
 echo "🌐 アクセスURL:"
-echo "   Frontend: http://localhost:8080/mirel/"
+echo "   Frontend: http://localhost:5173/"
 echo "   Backend API: http://localhost:3000"
 echo ""
 echo "📊 リアルタイムログ監視コマンド:"
@@ -89,10 +97,10 @@ rm -f logs/.backend_ready logs/.frontend_ready
             fi
         fi
         
-        # Frontend起動チェック
-        if curl -s http://localhost:8080/mirel/ >/dev/null 2>&1; then
+        # Frontend 起動チェック
+        if curl -s http://localhost:5173/ >/dev/null 2>&1; then
             if [ ! -f "logs/.frontend_ready" ]; then
-                echo "✅ Frontend起動完了 (http://localhost:8080/mirel/)"
+                echo "✅ Frontend起動完了 (http://localhost:5173/)"
                 touch logs/.frontend_ready
             fi
         fi

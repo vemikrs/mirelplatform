@@ -48,7 +48,7 @@ check_service() {
 check_service "Backend (Spring Boot)" "3000" "bootRun"
 
 # Frontend チェック
-check_service "Frontend (Nuxt.js)" "8080" "npm.*dev"
+check_service "Frontend v3 (Vite)" "5173" "vite"
 
 # ログファイル確認
 echo "📄 ログファイル状況:"
@@ -70,13 +70,13 @@ echo ""
 
 # アクセス先表示
 echo "🌐 アクセス先:"
-echo "   Frontend: http://localhost:8080/mirel"
-echo "   ProMarker: http://localhost:8080/mirel/mste"  
+echo "   Frontend: http://localhost:5173/"
+echo "   ProMarker (v3 UI 予定地): http://localhost:5173/"
 echo "   Backend API: http://localhost:3000/mipla2"
 echo ""
 
 # 再起動コマンド表示
 echo "🔧 手動起動コマンド:"
 echo "   Backend:  SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > logs/backend.log 2>&1 &"
-echo "   Frontend: cd frontend && PORT=8080 npm run dev > ../logs/frontend.log 2>&1 &"
+echo "   Frontend: pnpm --filter frontend-v3 dev > logs/frontend.log 2>&1 &  # または: (cd apps/frontend-v3 && npm run dev)"
 echo "=========================================="

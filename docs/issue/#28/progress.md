@@ -230,4 +230,16 @@
 
 ---
 
-*Last Updated: 2025-10-13 by Copilot 🤖*
+### 2025-10-22
+- レガシー `frontend/` ディレクトリ削除に伴い、参照先を `apps/frontend-v3` に統一。
+- スクリプト/タスクの更新:
+  - `scripts/start-services.sh`, `scripts/stop-services.sh`
+  - `scripts/build-frontend.sh`, `scripts/build-services.sh`
+  - `scripts/clean-build-frontend.sh`, `scripts/clean-build-services.sh`
+  - `.vscode/tasks.json`（Nuxt タスク削除、v3 利用を明示）
+- 起動ポートを `5173` に変更（監視・案内・ヘルスチェック含めて更新）。
+- 次の確認: VS Code の「Start All Services」→ http://localhost:5173/ 表示。
+
+Powered by Copilot 🤖
+
+*Last Updated: 2025-10-22 by Copilot 🤖*
