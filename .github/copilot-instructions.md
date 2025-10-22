@@ -6,7 +6,7 @@ ProMarker is a comprehensive code generation and template management platform bu
 
 ### Architecture
 - **Backend**: Spring Boot 3.3 with Java 21, mirelplatform framework
-- **Frontend**: Vue.js 2.x with Nuxt.js, Bootstrap Vue components
+- **Frontend**: React 18+ with Vite, Tailwind CSS, Radix UI, shadcn/ui components
 - **Database**: H2 (development), MySQL (production)
 - **Template Engine**: FreeMarker with custom function resolvers
 - **Container**: DevContainer support for Codespaces and local development
@@ -125,7 +125,7 @@ docs: copilot-instructionsにコミットルールを追記 (refs #45)
 cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
 
 # フロントエンド起動
-cd frontend && npm run dev
+pnpm --filter frontend-v3 dev  # または: cd apps/frontend-v3 && npm run dev
 ```
 
 **プロセスの強制停止**
@@ -138,16 +138,16 @@ cd frontend && npm run dev
 - 長時間実行プロセスは `create_and_run_task` でタスク化する
 
 ### Service URLs
-- Frontend: http://localhost:8080/mirel/
+- Frontend v3: http://localhost:5173/
 - Backend API: http://localhost:3000/mipla2
 - Swagger UI: http://localhost:3000/mipla2/swagger-ui.html
 - OpenAPI JSON: http://localhost:3000/mipla2/api-docs
-- ProMarker UI: http://localhost:8080/mirel/mste/
+- ProMarker UI (v3): http://localhost:5173/promarker
 - H2 Console: http://localhost:3000/mipla2/h2-console
 
 ### Key Configuration Files
 - `backend/src/main/resources/config/application.yml` - Main configuration
-- `frontend/nuxt.config.js` - Frontend proxy and build settings
+- `apps/frontend-v3/vite.config.ts` - Frontend build and proxy settings
 - `settings.gradle` - Multi-project Gradle configuration
 - `.devcontainer/devcontainer.json` - Development container setup
 
@@ -171,22 +171,21 @@ backend/
 
 ### Frontend Structure
 ```
-frontend/
-├── pages/
-│   └── mste/
-│       └── index.vue          # Main ProMarker UI component
-├── components/
-│   ├── frame/                 # Layout components
-│   └── dialog/                # Modal dialogs
-├── layouts/
-│   └── Main.vue              # Main application layout
+apps/frontend-v3/
+├── src/
+│   ├── app/routes/            # React Router pages
+│   ├── features/promarker/    # ProMarker feature module
+│   ├── components/            # Shared components
+│   └── lib/                   # Utilities and API client
+├── packages/ui/               # Design system (@mirel/ui)
+└── vite.config.ts            # Vite configuration
 ```
 
 ## Development Guidelines
 
 ### Code Style
 - Java: Follow Spring Boot conventions, use Lombok for boilerplate reduction
-- Vue.js: Use Composition API patterns where possible, maintain reactive data patterns
+- React: Use functional components with hooks, TypeScript strict mode, maintain immutable state patterns
 - Ensure proper null safety checks, especially for API response handling
 
 ### API Response Patterns
@@ -208,7 +207,7 @@ frontend/
 
 ### ProMarker (MSTE) - Main Template Engine
 - **Purpose**: Dynamic code generation from templates
-- **Main UI**: `/frontend/pages/mste/index.vue`
+- **Main UI**: `/apps/frontend-v3/src/features/promarker/` (React)
 - **Core Service**: `SuggestServiceImp`, `GenerateServiceImp`
 - **Workflow**: Category selection → Stencil selection → Parameter input → Generation
 
@@ -241,10 +240,10 @@ For detailed information on specific aspects, refer to:
 4. Register with Spring's component scanning
 
 ### Frontend Component Development
-1. Follow Vue.js 2.x patterns with Options API
-2. Use Bootstrap Vue components for UI consistency
-3. Implement proper error handling with `bvMsgBoxErr`
-4. Maintain reactive state management patterns
+1. Follow React functional component patterns with TypeScript
+2. Use @mirel/ui components for design system consistency
+3. Implement proper error handling with Toast notifications (sonner)
+4. Use TanStack Query for server state, React hooks for local state
 
 ### Template Development
 1. Create YAML configuration in `stencil-samples/`

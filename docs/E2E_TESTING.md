@@ -211,8 +211,8 @@ npx playwright install --force
 ```bash
 # 解決策:
 ./scripts/start-services.sh
-curl http://localhost:8080/mirel/  # Frontend 確認
-curl http://localhost:3000/actuator/health  # Backend 確認
+curl http://localhost:5173/  # Frontend-v3 確認
+curl http://localhost:3000/mipla2/actuator/health  # Backend 確認
 ```
 
 #### 3. スクリーンショット差分エラー

@@ -520,7 +520,7 @@ curl -X POST http://localhost:3000/mipla2/commons/upload \
 
 ### ProMarker UI Workflow
 
-**Access URL**: http://localhost:8080/mirel/mste/
+**Access URL**: http://localhost:5173/promarker
 
 #### Typical Code Generation Workflow
 
@@ -672,7 +672,7 @@ methods: {
 
 ### Frontend Testing
 
-- [ ] **ProMarker UI Access**: http://localhost:8080/mirel/mste/ loads successfully
+- [ ] **ProMarker UI Access**: http://localhost:5173/promarker loads successfully
 - [ ] **Category Selection**: Dropdown populates with available categories
 - [ ] **Stencil Selection**: Stencil dropdown updates based on selected category
 - [ ] **Parameter Display**: Input fields appear based on stencil configuration

@@ -3,7 +3,7 @@
   "image": "mcr.microsoft.com/devcontainers/java:21",
   // Phase 3: Frontend + Backend simultaneous auto-startup
   // Backend: Spring Boot (port 3000) + H2 dev database
-  // Frontend: Nuxt.js (port 8080) + Node.js 18 (Nuxt 2.14.9 compatibility)
+  // Frontend: React + Vite (port 5173) + Node.js 18+
   // Docker-in-Docker (DinD) - 現在未使用のためコメントアウト
   // 理由: プロジェクト内でDocker操作を行っていない（Playwright, Gradle, npm等は直接実行）
   // 将来的にDocker操作が必要な場合は docker-outside-of-docker の使用を推奨
@@ -71,8 +71,8 @@
       "onAutoForward": "notify"
     },
     "8080": {
-      "label": "Frontend App (Nuxt)",
-      "onAutoForward": "openPreview"
+      "label": "Frontend (Legacy - Removed)",
+      "onAutoForward": "ignore"
     },
     "9323": {
       "label": "Playwright Report",

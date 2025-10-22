@@ -126,13 +126,11 @@ jobs:
       
       - name: Start frontend service
         run: |
-          echo "Starting frontend service..."
-          cd frontend
-          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
+          echo "Starting frontend-v3 service (Vite)..."
+          pnpm --filter frontend-v3 dev > frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
           echo "Frontend started with PID: $FRONTEND_PID"
-          cd ..
           sleep 5
           echo "Frontend process status:"
           ps aux | grep $FRONTEND_PID || echo "Frontend process not found"
@@ -166,7 +164,7 @@ jobs:
           head -50 frontend.log 2>/dev/null || echo "No frontend log yet"
           
           for i in {1..60}; do
-            if curl -sf http://localhost:8080/mirel/; then
+            if curl -sf http://localhost:5173/; then
               echo "✅ Frontend is ready!"
               break
             fi
@@ -178,7 +176,7 @@ jobs:
               echo "=== Last 200 lines of frontend log ==="
               tail -200 frontend.log 2>/dev/null || echo "No frontend log available"
               echo "=== Checking if frontend process is running ==="
-              ps aux | grep "npm run dev" || echo "No npm process found"
+              ps aux | grep "vite" || echo "No vite process found"
               exit 1
             fi
           done
@@ -190,7 +188,7 @@ jobs:
         run: npx playwright test --project=${{ matrix.browser }}
         env:
           CI: true
-          E2E_BASE_URL: http://localhost:8080
+          E2E_BASE_URL: http://localhost:5173
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -283,13 +281,11 @@ jobs:
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
           
-          echo "Starting frontend service..."
-          cd frontend
-          HOST=0.0.0.0 PORT=8080 NODE_OPTIONS="--no-deprecation" npm run dev > ../frontend.log 2>&1 &
+          echo "Starting frontend-v3 service (Vite)..."
+          pnpm --filter frontend-v3 dev > frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
           echo "Frontend started with PID: $FRONTEND_PID"
-          cd ..
           
           echo "Waiting for backend..."
           for i in {1..60}; do
@@ -308,7 +304,7 @@ jobs:
           
           echo "Waiting for frontend..."
           for i in {1..60}; do
-            if curl -sf http://localhost:8080/mirel/; then
+            if curl -sf http://localhost:5173/; then
               echo "✅ Frontend is ready!"
               break
             fi
@@ -327,7 +323,7 @@ jobs:
         working-directory: packages/e2e
         run: npx playwright test --project=chromium --grep="accessibility"
         env:
-          E2E_BASE_URL: http://localhost:8080
+          E2E_BASE_URL: http://localhost:5173
       
       - name: Upload accessibility results
         uses: actions/upload-artifact@v4

@@ -57,7 +57,7 @@ ProMarkerは**mirelplatform**という独自のフレームワーク上で動作
 
 ### 前提条件
 - Java 21 (Microsoft JVM推奨)
-- Node.js 18.x (Frontend/E2E用 - Nuxt 2互換性)
+- Node.js 22.x (Frontend/E2E用 - React/Vite開発環境)
 - Gradle 8.4+
 - MySQL (本番環境)
 
@@ -71,12 +71,12 @@ ProMarkerは**mirelplatform**という独自のフレームワーク上で動作
 
 2. **サービス一括起動**:
    ```bash
-   # Backend (Spring Boot) + Frontend (Nuxt.js) を同時起動
+   # Backend (Spring Boot) + Frontend-v3 (Vite) を同時起動
    ./start-services.sh
    ```
 
 3. **アクセスURL**:
-   - Frontend: http://localhost:8080/mirel/
+   - Frontend v3: http://localhost:5173/
    - Backend API: http://localhost:3000
 
 ### 管理コマンド
@@ -106,8 +106,11 @@ SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun
 
 **Frontend のみ**:
 ```bash
-cd frontend
-HOST=0.0.0.0 PORT=8080 npm run dev
+# 方法1: pnpm workspace (推奨)
+pnpm --filter frontend-v3 dev
+
+# 方法2: 直接ディレクトリ移動
+cd apps/frontend-v3 && npm run dev
 ```
 
 ### 設定ファイル
