@@ -232,12 +232,20 @@
 
 ### 2025-10-22
 - レガシー `frontend/` ディレクトリ削除に伴い、参照先を `apps/frontend-v3` に統一。
-- スクリプト/タスクの更新:
+- **第1弾: スクリプト/タスク更新** (Commit: `6d404a0`):
   - `scripts/start-services.sh`, `scripts/stop-services.sh`
   - `scripts/build-frontend.sh`, `scripts/build-services.sh`
   - `scripts/clean-build-frontend.sh`, `scripts/clean-build-services.sh`
+  - `scripts/startup-monitor.sh`
   - `.vscode/tasks.json`（Nuxt タスク削除、v3 利用を明示）
 - 起動ポートを `5173` に変更（監視・案内・ヘルスチェック含めて更新）。
+- **第2弾: ドキュメント/設定更新** (Commit: `540d442`):
+  - `.github/copilot-instructions.md` - フロントエンドアーキテクチャ記述を React/Vite に更新
+  - `README.md` - サービスURL、起動コマンド、Node.js要件を v3 に更新
+  - `.devcontainer/devcontainer.json` - ポート5173ラベル、コメント修正
+  - `.github/workflows/e2e-tests.yml` - E2E_BASE_URL を 5173 に変更、frontend起動を pnpm/vite に更新
+  - `.github/docs/api-reference.md` - ProMarker UI アクセスURLを `localhost:5173/promarker` に変更
+  - `docs/E2E_TESTING.md` - ヘルスチェックURLを更新
 - 次の確認: VS Code の「Start All Services」→ http://localhost:5173/ 表示。
 
 Powered by Copilot 🤖
