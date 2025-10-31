@@ -16,7 +16,7 @@ export class ProMarkerPage extends BasePage {
   private readonly selectors = {
     // Main container and title
     container: '.space-y-6', // Updated for React structure
-    pageTitle: '.container_title, h1', // Support both old and new structure
+    pageTitle: '.container_title', // Use unique class to avoid multiple matches
     
     // Action buttons
     clearStencilBtn: '[data-test-id="clear-stencil-btn"]',

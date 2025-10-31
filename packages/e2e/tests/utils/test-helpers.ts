@@ -21,7 +21,18 @@ export class TestHelpers {
    */
   static async waitForElement(page: Page, selector: string, timeout = 5000) {
     await page.waitForSelector(selector, { state: 'visible', timeout });
-    await expect(page.locator(selector)).toBeEnabled({ timeout });
+    // Only check enabled state for interactive elements (inputs, buttons, etc.)
+    // Skip for heading, paragraph, div, span elements
+    const element = page.locator(selector).first();
+    const tagName = await element.evaluate((el) => el.tagName.toLowerCase()).catch(() => null);
+    const nonInteractiveElements = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'label', 'section', 'article', 'main', 'header', 'footer'];
+    
+    if (tagName && !nonInteractiveElements.includes(tagName)) {
+      await expect(element).toBeEnabled({ timeout });
+    } else {
+      // For non-interactive elements, just verify visibility
+      await expect(element).toBeVisible({ timeout });
+    }
   }
   
   /**
