@@ -24,24 +24,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
 
       - name: Verify Node.js version
         run: |
           echo "Node version: $(node --version)"
-          node --version | grep "v18" || (echo "ERROR: Node 18 not detected!" && exit 1)
+          node --version | grep "v22" || (echo "ERROR: Node 22 not detected!" && exit 1)
 
       - name: Install E2E test dependencies
         working-directory: packages/e2e
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Validate E2E setup
         working-directory: packages/e2e
-        run: npm run test:e2e:validate || echo "Validation script not available yet"
+        run: pnpm run test:e2e:validate || echo "Validation script not available yet"
 
       - name: Check Playwright configuration
         working-directory: packages/e2e
-        run: npx playwright test --list
+        run: pnpm exec playwright test --list
 
       - name: Upload validation results
         uses: actions/upload-artifact@v4
@@ -69,12 +74,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
       
       - name: Verify Node.js version
         run: |
           echo "Node version: $(node --version)"
-          node --version | grep "v18" || (echo "ERROR: Node 18 not detected!" && exit 1)
+          node --version | grep "v22" || (echo "ERROR: Node 22 not detected!" && exit 1)
       
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -94,16 +104,14 @@ jobs:
       
       - name: Install E2E test dependencies
         working-directory: packages/e2e
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       
       - name: Install Playwright Browsers
         working-directory: packages/e2e
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci --legacy-peer-deps --no-audit
+        run: pnpm install --frozen-lockfile
       
       - name: Make gradlew executable
         run: chmod +x ./gradlew
@@ -185,7 +193,7 @@ jobs:
       
       - name: Run E2E tests
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.browser }}
+        run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
           CI: true
           E2E_BASE_URL: http://localhost:5173
@@ -236,7 +244,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
       
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -256,16 +269,14 @@ jobs:
       
       - name: Install dependencies
         working-directory: packages/e2e
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       
       - name: Install Playwright
         working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
       
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci --legacy-peer-deps --no-audit
+        run: pnpm install --frozen-lockfile
       
       - name: Make gradlew executable
         run: chmod +x ./gradlew
@@ -321,7 +332,7 @@ jobs:
       
       - name: Run accessibility tests
         working-directory: packages/e2e
-        run: npx playwright test --project=chromium --grep="accessibility"
+        run: pnpm exec playwright test --project=chromium --grep="accessibility"
         env:
           E2E_BASE_URL: http://localhost:5173
       
