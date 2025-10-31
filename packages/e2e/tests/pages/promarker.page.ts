@@ -15,8 +15,8 @@ export class ProMarkerPage extends BasePage {
   // Selectors
   private readonly selectors = {
     // Main container and title
-    container: '.container',
-    pageTitle: '.container_title',
+    container: '.space-y-6', // Updated for React structure
+    pageTitle: '.container_title, h1', // Support both old and new structure
     
     // Action buttons
     clearStencilBtn: '[data-test-id="clear-stencil-btn"]',
@@ -24,8 +24,8 @@ export class ProMarkerPage extends BasePage {
     jsonFormatBtn: '[data-test-id="json-format-btn"]',
     reloadStencilBtn: '[data-test-id="reload-stencil-btn"]',
     
-    // Form elements
-    form: 'form[ref="form1"]',
+    // Form elements - React uses divs with data-testid instead of form element
+    form: '.border.rounded-lg', // Main content container in React
     categorySelect: '[data-test-id="category-select"]',
     stencilSelect: '[data-test-id="stencil-select"]',
     serialSelect: '[data-test-id="serial-select"]',
@@ -36,9 +36,9 @@ export class ProMarkerPage extends BasePage {
     parameterInput: (id: string) => `[data-test-id="param-input-${id}"]`,
     fileUploadBtn: '[data-test-id="file-upload-btn"]',
     
-    // Modals and dialogs
-    modal: '.modal',
-    modalDialog: '#modal-psv-dialog',
+    // Modals and dialogs - React uses Radix UI Dialog
+    modal: '[role="dialog"]',
+    modalDialog: '[role="dialog"]',
     
     // Loading and status indicators
     loadingSpinner: '.b-spinner',
