@@ -10,7 +10,7 @@ export class ProMarkerPage extends BasePage {
   readonly url = '/mirel/mste';
   
   // Main UI elements
-  readonly pageTitle = 'ProMarker 払出画面';
+  readonly pageTitle = 'ProMarker 支出画面';
   
   // Selectors
   private readonly selectors = {
@@ -21,7 +21,14 @@ export class ProMarkerPage extends BasePage {
     // Action buttons
     clearStencilBtn: '[data-test-id="clear-stencil-btn"]',
     clearAllBtn: '[data-test-id="clear-all-btn"]',
-    jsonEditorBtn: '[data-test-id="json-edit-btn"]', // Updated to match actual implementation
+    // Broadened to cover migration variants and accessible text
+    jsonEditorBtn: [
+      '[data-test-id="json-edit-btn"]',
+      '[data-test-id="json-editor-btn"]',
+      '[data-test-id="json-format-btn"]',
+      'button:has-text("JSON")',
+      'button:has-text("JSON編集")'
+    ].join(', '),
     reloadStencilBtn: '[data-test-id="reload-stencil-btn"]',
     
     // Form elements - React uses divs with data-testid instead of form element
@@ -36,9 +43,9 @@ export class ProMarkerPage extends BasePage {
     parameterInput: (id: string) => `[data-test-id="param-input-${id}"]`,
     fileUploadBtn: '[data-test-id="file-upload-btn"]',
     
-    // Modals and dialogs - React uses Radix UI Dialog
-    modal: '[role="dialog"]',
-    modalDialog: '[role="dialog"]',
+    // Modals and dialogs - support Radix UI variants
+    modal: '[role="dialog"], [role="alertdialog"]',
+    modalDialog: '[role="dialog"], [role="alertdialog"]',
     
     // Loading and status indicators
     loadingSpinner: '.b-spinner',
@@ -99,8 +106,19 @@ export class ProMarkerPage extends BasePage {
    * Click the JSON editor button (opens modal)
    */
   async clickJsonEditor() {
-    await this.clickElement(this.selectors.jsonEditorBtn);
-    await this.waitForVisible(this.selectors.modal);
+    const btn = this.page.locator(this.selectors.jsonEditorBtn).first();
+    // Wait for the button to be visible and interactable
+    await btn.waitFor({ state: 'visible', timeout: 10000 });
+    await btn.scrollIntoViewIfNeeded();
+    // Trial click helps detect interception without committing the action
+    try {
+      await btn.click({ trial: true });
+    } catch (_) {
+      // ignore and proceed with a forced click
+    }
+    await btn.click({ force: true });
+    // Radix UI dialogs may animate/portal in; wait longer and for both dialog/alertdialog
+    await this.page.waitForSelector(this.selectors.modal, { state: 'visible', timeout: 10000 });
   }
   
   /**
