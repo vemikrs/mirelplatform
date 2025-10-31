@@ -23,8 +23,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     // Check for proper heading hierarchy
     const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
     
-    // Verify main page title exists (React uses h1 with container_title class)
-    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
+    // Verify main page title exists (use specific selector to match only one element)
+    await expect(page.locator('h1.container_title').first()).toBeVisible();
     
     // Run accessibility scan focusing on structure
     await AccessibilityUtils.runAccessibilityScan(page, {
@@ -98,23 +98,27 @@ test.describe('ProMarker Accessibility Tests', () => {
   });
 
   test('should have proper ARIA attributes', async ({ page }) => {
-    // Check for proper ARIA usage
-    const elementsWithAria = await page.locator('[aria-*]').all();
+    // Check for proper ARIA usage by evaluating all elements
+    const elementsWithAria = await page.evaluate(() => {
+      const allElements = Array.from(document.querySelectorAll('*'));
+      return allElements
+        .filter(el => {
+          return Array.from(el.attributes).some(attr => attr.name.startsWith('aria-'));
+        })
+        .map(el => {
+          const attrs: Record<string, string> = {};
+          for (const attr of el.attributes) {
+            if (attr.name.startsWith('aria-')) {
+              attrs[attr.name] = attr.value;
+            }
+          }
+          return { tagName: el.tagName, attributes: attrs };
+        });
+    });
     
     // Verify ARIA attributes are valid
     for (const element of elementsWithAria) {
-      const ariaAttributes = await element.evaluate(el => {
-        const attrs: Record<string, string> = {};
-        for (const attr of el.attributes) {
-          if (attr.name.startsWith('aria-')) {
-            attrs[attr.name] = attr.value;
-          }
-        }
-        return attrs;
-      });
-      
-      // Basic validation that ARIA attributes have values
-      for (const [name, value] of Object.entries(ariaAttributes)) {
+      for (const [name, value] of Object.entries(element.attributes)) {
         expect(value).not.toBe('');
       }
     }
@@ -129,8 +133,8 @@ test.describe('ProMarker Accessibility Tests', () => {
   });
 
   test('should handle modal accessibility', async ({ page }) => {
-    // Open JSON format modal
-    await proMarkerPage.clickJsonFormat();
+    // Open JSON editor modal (button is json-edit-btn, not json-format-btn)
+    await proMarkerPage.clickJsonEditor();
     
     // Verify modal has proper ARIA attributes (Radix UI uses role="dialog")
     const modal = page.locator('[role="dialog"]');
@@ -164,8 +168,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     // At least one main content area should exist
     // expect(main).toBeGreaterThan(0); // Commented as current structure may not have explicit main
     
-    // Verify important content has proper labels (React uses h1 with container_title)
-    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
+    // Verify important content has proper labels (use specific selector to match only one element)
+    await expect(page.locator('h1.container_title').first()).toBeVisible();
     
     // Run comprehensive screen reader accessibility scan
     await AccessibilityUtils.runAccessibilityScan(page, {
@@ -190,8 +194,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     
     await proMarkerPage.takeProMarkerScreenshot('accessibility-high-contrast-light');
     
-    // Verify essential elements are still visible (React uses h1 with container_title)
-    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
+    // Verify essential elements are still visible (use specific selector to match only one element)
+    await expect(page.locator('h1.container_title').first()).toBeVisible();
     // React doesn't use form element, check for content containers instead
     await expect(page.locator('.border.rounded-lg').first()).toBeVisible();
   });
@@ -201,14 +205,14 @@ test.describe('ProMarker Accessibility Tests', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     
     // Test interactions that might involve animations
-    await proMarkerPage.clickJsonFormat();
+    await proMarkerPage.clickJsonEditor();
     await proMarkerPage.takeProMarkerScreenshot('accessibility-reduced-motion-modal');
     
     await proMarkerPage.closeModal();
     await proMarkerPage.takeProMarkerScreenshot('accessibility-reduced-motion-closed');
     
-    // Verify functionality still works without animations (React uses h1 with container_title)
-    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
+    // Verify functionality still works without animations (use specific selector to match only one element)
+    await expect(page.locator('h1.container_title').first()).toBeVisible();
   });
 
   test.afterEach(async ({ page }, testInfo) => {
