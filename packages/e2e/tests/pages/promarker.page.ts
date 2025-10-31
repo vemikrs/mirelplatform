@@ -21,7 +21,7 @@ export class ProMarkerPage extends BasePage {
     // Action buttons
     clearStencilBtn: '[data-test-id="clear-stencil-btn"]',
     clearAllBtn: '[data-test-id="clear-all-btn"]',
-    jsonFormatBtn: '[data-test-id="json-format-btn"]',
+    jsonEditorBtn: '[data-test-id="json-edit-btn"]', // Updated to match actual implementation
     reloadStencilBtn: '[data-test-id="reload-stencil-btn"]',
     
     // Form elements - React uses divs with data-testid instead of form element
@@ -96,10 +96,10 @@ export class ProMarkerPage extends BasePage {
   }
   
   /**
-   * Click the JSON format button (opens modal)
+   * Click the JSON editor button (opens modal)
    */
-  async clickJsonFormat() {
-    await this.clickElement(this.selectors.jsonFormatBtn);
+  async clickJsonEditor() {
+    await this.clickElement(this.selectors.jsonEditorBtn);
     await this.waitForVisible(this.selectors.modal);
   }
   
