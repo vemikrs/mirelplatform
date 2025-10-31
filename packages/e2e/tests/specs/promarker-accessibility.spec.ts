@@ -23,8 +23,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     // Check for proper heading hierarchy
     const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
     
-    // Verify main page title exists
-    await expect(page.locator('.container_title')).toBeVisible();
+    // Verify main page title exists (React uses h1 with container_title class)
+    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
     
     // Run accessibility scan focusing on structure
     await AccessibilityUtils.runAccessibilityScan(page, {
@@ -57,10 +57,9 @@ test.describe('ProMarker Accessibility Tests', () => {
       }
     }
     
-    // Run accessibility scan focusing on forms
+    // Run accessibility scan focusing on forms (React uses divs, not form elements)
     await AccessibilityUtils.runAccessibilityScan(page, {
       tags: ['wcag2a', 'wcag2aa'],
-      include: ['form']
     });
     
     await proMarkerPage.takeProMarkerScreenshot('accessibility-form-labels');
@@ -133,8 +132,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     // Open JSON format modal
     await proMarkerPage.clickJsonFormat();
     
-    // Verify modal has proper ARIA attributes
-    const modal = page.locator('.modal');
+    // Verify modal has proper ARIA attributes (Radix UI uses role="dialog")
+    const modal = page.locator('[role="dialog"]');
     await expect(modal).toBeVisible();
     
     // Check for focus trap in modal
@@ -143,7 +142,7 @@ test.describe('ProMarker Accessibility Tests', () => {
     // Run accessibility scan on modal
     await AccessibilityUtils.runAccessibilityScan(page, {
       tags: ['wcag2a', 'wcag2aa'],
-      include: ['.modal']
+      include: ['[role="dialog"]']
     });
     
     await proMarkerPage.takeProMarkerScreenshot('accessibility-modal-open');
@@ -165,8 +164,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     // At least one main content area should exist
     // expect(main).toBeGreaterThan(0); // Commented as current structure may not have explicit main
     
-    // Verify important content has proper labels
-    await expect(page.locator('.container_title')).toBeVisible();
+    // Verify important content has proper labels (React uses h1 with container_title)
+    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
     
     // Run comprehensive screen reader accessibility scan
     await AccessibilityUtils.runAccessibilityScan(page, {
@@ -191,9 +190,10 @@ test.describe('ProMarker Accessibility Tests', () => {
     
     await proMarkerPage.takeProMarkerScreenshot('accessibility-high-contrast-light');
     
-    // Verify essential elements are still visible
-    await expect(page.locator('.container_title')).toBeVisible();
-    await expect(page.locator('form')).toBeVisible();
+    // Verify essential elements are still visible (React uses h1 with container_title)
+    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
+    // React doesn't use form element, check for content containers instead
+    await expect(page.locator('.border.rounded-lg').first()).toBeVisible();
   });
 
   test('should handle reduced motion preferences', async ({ page }) => {
@@ -207,8 +207,8 @@ test.describe('ProMarker Accessibility Tests', () => {
     await proMarkerPage.closeModal();
     await proMarkerPage.takeProMarkerScreenshot('accessibility-reduced-motion-closed');
     
-    // Verify functionality still works without animations
-    await expect(page.locator('.container_title')).toBeVisible();
+    // Verify functionality still works without animations (React uses h1 with container_title)
+    await expect(page.locator('h1.container_title, h1:has-text("ProMarker")')).toBeVisible();
   });
 
   test.afterEach(async ({ page }, testInfo) => {

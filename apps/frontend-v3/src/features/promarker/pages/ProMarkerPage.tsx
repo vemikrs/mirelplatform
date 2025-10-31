@@ -305,7 +305,7 @@ export function ProMarkerPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold text-foreground">
+        <h1 className="container_title text-4xl font-bold text-foreground">
           ProMarker 払出画面
         </h1>
         <p className="text-muted-foreground">

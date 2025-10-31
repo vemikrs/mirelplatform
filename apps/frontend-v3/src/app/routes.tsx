@@ -20,6 +20,11 @@ export const router = createBrowserRouter([
         path: 'promarker',
         element: <ProMarkerPageWithErrorBoundary />,
       },
+      // Backward compatibility route for E2E tests
+      {
+        path: 'mirel/mste',
+        element: <ProMarkerPageWithErrorBoundary />,
+      },
     ],
   },
 ]);
