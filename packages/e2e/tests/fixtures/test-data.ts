@@ -115,11 +115,11 @@ export const TIMEOUTS = {
 export const PAGE_ELEMENTS = {
   title: 'ProMarker 払出画面',
   buttons: [
-    '📄ステンシル定義を再取得',
-    '📄全てクリア',
-    '📎Json形式',
-    '📄ステンシルマスタをリロード',
-    'Generate'
+    '� Generate',
+    '� 全てクリア',
+    '� ステンシル定義を再取得',
+    '♻️ Reload Stencil Master',
+    '📝 Json形式'
   ]
 };
 

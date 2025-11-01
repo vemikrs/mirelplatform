@@ -30,6 +30,22 @@ export default defineConfig({
     ['list']
   ],
   
+  /* Start dev servers automatically for local/CI E2E runs */
+  webServer: [
+    {
+      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun"',
+      url: 'http://localhost:3000/mipla2/swagger-ui.html',
+      reuseExistingServer: true,
+      timeout: 180_000
+    },
+    {
+      command: 'bash -lc "cd ../../ && pnpm --filter frontend-v3 dev"',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 120_000
+    }
+  ],
+  
   /* Shared settings for all the projects below. */
   use: {
     /* Base URL - use E2E_BASE_URL env var or default to localhost:5173 (frontend-v3) */
