@@ -20,7 +20,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   
   /* WSL2 Crash Prevention: Stop test execution after N failures to prevent resource exhaustion */
-  maxFailures: 5,
+  maxFailures: process.env.E2E_FULL_RUN ? undefined : 5,
   
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -64,9 +64,9 @@ export default defineConfig({
   ],
 
   /* Test timeout - Reduced from 30s to 10s to prevent WSL2 resource exhaustion */
-  timeout: 10 * 1000,
+  timeout: process.env.E2E_FULL_RUN ? 30 * 1000 : 10 * 1000,
   expect: {
     /* Maximum time expect() should wait for the condition to be met. */
-    timeout: 5000,
+    timeout: process.env.E2E_FULL_RUN ? 10000 : 5000,
   },
 });
