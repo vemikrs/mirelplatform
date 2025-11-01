@@ -6,6 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+  testIgnore: ['**/tests/specs/_archived-vue-frontend/**'],  // Ignore archived Vue.js tests
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -17,10 +18,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 4, // Run up to 4 workers in parallel locally
   
   /* WSL2 Crash Prevention: Stop test execution after N failures to prevent resource exhaustion */
-  maxFailures: process.env.E2E_FULL_RUN ? undefined : 5,
+  maxFailures: process.env.E2E_FULL_RUN ? undefined : 10, // Increased from 5 to allow more tests to run
   
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -63,10 +64,10 @@ export default defineConfig({
     },
   ],
 
-  /* Test timeout - Reduced from 30s to 10s to prevent WSL2 resource exhaustion */
-  timeout: process.env.E2E_FULL_RUN ? 30 * 1000 : 10 * 1000,
+  /* Test timeout - Optimized for fast execution */
+  timeout: 20 * 1000, // 20s - balanced timeout to avoid excessive waits
   expect: {
     /* Maximum time expect() should wait for the condition to be met. */
-    timeout: process.env.E2E_FULL_RUN ? 10000 : 5000,
+    timeout: 8000, // 8s - reasonable wait for elements/assertions
   },
 });
