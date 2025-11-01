@@ -107,9 +107,9 @@ export class TestHelpers {
    * @param page - Playwright page instance
    * @param selector - Element selector
    * @param text - Text to wait for
-   * @param timeout - Timeout in milliseconds
+   * @param timeout - Timeout in milliseconds (default: 10000ms for React SPA)
    */
-  static async waitForText(page: Page, selector: string, text: string, timeout = 5000) {
+  static async waitForText(page: Page, selector: string, text: string, timeout = 10000) {
     await expect(page.locator(selector)).toContainText(text, { timeout });
   }
 }

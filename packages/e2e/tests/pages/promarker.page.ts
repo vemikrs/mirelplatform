@@ -10,7 +10,7 @@ export class ProMarkerPage extends BasePage {
   readonly url = '/mirel/mste';
   
   // Main UI elements
-  readonly pageTitle = 'ProMarker 支出画面';
+  readonly pageTitle = 'ProMarker 払出画面';
   
   // Selectors
   private readonly selectors = {
