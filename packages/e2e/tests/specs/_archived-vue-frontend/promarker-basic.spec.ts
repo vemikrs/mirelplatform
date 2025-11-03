@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import { ProMarkerPage } from '../pages/promarker.page';
 import { PAGE_ELEMENTS, TIMEOUTS } from '../fixtures/test-data';
 
+// Increase timeout for React SPA rendering
+test.setTimeout(30000);
+
 test.describe('ProMarker Basic Functionality', () => {
   let proMarkerPage: ProMarkerPage;
 
@@ -30,13 +33,20 @@ test.describe('ProMarker Basic Functionality', () => {
   test('should display all required UI elements', async ({ page }) => {
     await proMarkerPage.verifyPageLoaded();
     
-    // Check all expected buttons are present
-    for (const buttonText of PAGE_ELEMENTS.buttons) {
-      await expect(page.locator(`text=${buttonText}`)).toBeVisible();
+    // Check action buttons by data-testid (more robust than text match with emojis)
+    const buttonTestIds = [
+      'generate-btn',
+      'clear-all-btn',
+      'clear-stencil-btn',
+      'reload-stencil-btn',
+      'json-edit-btn'
+    ];
+    for (const id of buttonTestIds) {
+      await expect(page.locator(`[data-testid="${id}"]`)).toBeVisible();
     }
     
-    // Verify form is present
-    await expect(page.locator('form')).toBeVisible();
+    // Verify main content container is present (React uses div with border.rounded-lg)
+    await expect(page.locator('.border.rounded-lg').first()).toBeVisible();
     
     // Take screenshot
     await proMarkerPage.takeProMarkerScreenshot('ui-elements');
@@ -58,11 +68,11 @@ test.describe('ProMarker Basic Functionality', () => {
   test('should open JSON format modal', async ({ page }) => {
     await proMarkerPage.verifyPageLoaded();
     
-    // Click JSON format button
-    await proMarkerPage.clickJsonFormat();
+    // Click JSON editor button
+    await proMarkerPage.clickJsonEditor();
     
-    // Verify modal opened
-    await expect(page.locator('.modal')).toBeVisible();
+    // Verify modal opened (Radix UI dialog)
+    await expect(page.locator('[role="dialog"]')).toBeVisible();
     
     // Take screenshot
     await proMarkerPage.takeProMarkerScreenshot('json-modal-open');
@@ -71,7 +81,7 @@ test.describe('ProMarker Basic Functionality', () => {
     await proMarkerPage.closeModal();
     
     // Verify modal closed
-    await expect(page.locator('.modal')).not.toBeVisible();
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible();
   });
 
   test('should handle reload stencil master', async ({ page }) => {
@@ -108,7 +118,7 @@ test.describe('ProMarker Basic Functionality', () => {
     
     // Verify essential elements are still visible on mobile
     await expect(page.locator('.container_title')).toBeVisible();
-    await expect(page.locator('form')).toBeVisible();
+    await expect(page.locator('.border.rounded-lg').first()).toBeVisible();
   });
 
   test('should handle keyboard navigation', async ({ page }) => {

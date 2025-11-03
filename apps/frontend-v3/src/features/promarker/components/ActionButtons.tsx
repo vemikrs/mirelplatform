@@ -134,7 +134,7 @@ export function ActionButtons({
           disabled={generateLoading}
           className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          📎Json形式
+          📝 Json形式
         </button>
       </div>
     </div>

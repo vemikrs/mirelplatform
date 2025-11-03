@@ -103,7 +103,8 @@ export abstract class BasePage {
       '.loading',
       '.spinner',
       '[data-test-id="loading"]',
-      '.b-spinner'
+      '.b-spinner',
+      '[data-testid="loading-indicator"]'
     ];
     
     for (const selector of loadingSelectors) {

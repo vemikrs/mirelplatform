@@ -19,36 +19,36 @@ export class ProMarkerPage extends BasePage {
     pageTitle: '.container_title', // Use unique class to avoid multiple matches
     
     // Action buttons
-    clearStencilBtn: '[data-test-id="clear-stencil-btn"]',
-    clearAllBtn: '[data-test-id="clear-all-btn"]',
+    clearStencilBtn: '[data-testid="clear-stencil-btn"]',
+    clearAllBtn: '[data-testid="clear-all-btn"]',
     // Broadened to cover migration variants and accessible text
     jsonEditorBtn: [
-      '[data-test-id="json-edit-btn"]',
-      '[data-test-id="json-editor-btn"]',
-      '[data-test-id="json-format-btn"]',
+      '[data-testid="json-edit-btn"]',
+      '[data-testid="json-editor-btn"]',
+      '[data-testid="json-format-btn"]',
       'button:has-text("JSON")',
       'button:has-text("JSON編集")'
     ].join(', '),
-    reloadStencilBtn: '[data-test-id="reload-stencil-btn"]',
+    reloadStencilBtn: '[data-testid="reload-stencil-btn"]',
     
     // Form elements - React uses divs with data-testid instead of form element
     form: '.border.rounded-lg', // Main content container in React
-    categorySelect: '[data-test-id="category-select"]',
-    stencilSelect: '[data-test-id="stencil-select"]',
-    serialSelect: '[data-test-id="serial-select"]',
-    generateBtn: '[data-test-id="generate-btn"]',
+    categorySelect: '[data-testid="category-select"]',
+    stencilSelect: '[data-testid="stencil-select"]',
+    serialSelect: '[data-testid="serial-select"]',
+    generateBtn: '[data-testid="generate-btn"]',
     
     // Parameter inputs (dynamic based on stencil)
     parameterContainer: '.fm_notes',
-    parameterInput: (id: string) => `[data-test-id="param-input-${id}"]`,
-    fileUploadBtn: '[data-test-id="file-upload-btn"]',
+    parameterInput: (id: string) => `[data-testid="param-${id}"]`,
+    fileUploadBtn: '[data-testid="file-upload-btn"]',
     
     // Modals and dialogs - support Radix UI variants
     modal: '[role="dialog"], [role="alertdialog"]',
     modalDialog: '[role="dialog"], [role="alertdialog"]',
     
     // Loading and status indicators
-    loadingSpinner: '.b-spinner',
+    loadingSpinner: '[data-testid="loading-indicator"]',
     
     // Error and success messages
     alertContainer: '.alert',
@@ -56,7 +56,7 @@ export class ProMarkerPage extends BasePage {
     successMessage: '.alert-success',
     
     // File upload/download
-    downloadLink: '[data-test-id="download-link"]',
+    downloadLink: '[data-testid="download-link"]',
   };
   
   constructor(page: Page) {
@@ -125,7 +125,10 @@ export class ProMarkerPage extends BasePage {
    * Click the reload stencil master button
    */
   async clickReloadStencilMaster() {
+    // Set up API wait before clicking
+    const waitForApi = this.waitForApiCall(/\/apps\/mste\/api\/reloadStencilMaster/);
     await this.clickElement(this.selectors.reloadStencilBtn);
+    await waitForApi;
     await this.waitForLoadingComplete();
   }
   
