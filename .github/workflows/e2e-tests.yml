@@ -401,7 +401,7 @@ jobs:
       
       - name: Run accessibility tests
         working-directory: packages/e2e
-        run: pnpm exec playwright test --project=chromium --grep="accessibility"
+        run: pnpm exec playwright test --project=chromium --grep="@a11y"
         env:
           E2E_BASE_URL: http://localhost:5173
       
