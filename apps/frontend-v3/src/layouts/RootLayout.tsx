@@ -13,7 +13,7 @@ export function RootLayout() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-foreground">
-                ProMarker Platform
+                mirelplatform
               </h1>
               <nav className="flex space-x-4">
                 <a 
@@ -43,7 +43,7 @@ export function RootLayout() {
       <footer className="border-t mt-auto">
         <div className="container mx-auto px-4 py-6">
           <p className="text-sm text-muted-foreground text-center">
-            © 2025 ProMarker Platform. Powered by mirelplatform framework.
+            © 2016-2025 mirelplatform. All rights reserved.
           </p>
         </div>
       </footer>
