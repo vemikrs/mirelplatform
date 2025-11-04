@@ -545,13 +545,30 @@ public class TemplateEngineProcessor {
     }
 
     public String getStencilStorageDir() {
-
         // validate.
         Assert.notNull(context, "context");
         Assert.hasText(context.getStencilCanonicalName(), "stencilCanonicalName must not be empty");
         // 正規名パス検証（先頭"/"、セグメントは識別子、.. や \\ 禁止）
         SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
-
+        
+        // レイヤー検索: user → standard の順で実際に存在するディレクトリを返す
+        String[] layerDirs = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir()
+        };
+        
+        String stencilCanonicalName = context.getStencilCanonicalName();
+        
+        for (String layerDir : layerDirs) {
+            String candidatePath = layerDir + stencilCanonicalName;
+            File candidateDir = new File(candidatePath);
+            
+            if (candidateDir.exists() && candidateDir.isDirectory()) {
+                return candidatePath;
+            }
+        }
+        
+        // 見つからない場合はデフォルトのパス（下位互換性）
         final String dir = StringUtils.join(getStencilMasterStorageDir(), context.getStencilCanonicalName());
         return dir;
     }
@@ -924,23 +941,112 @@ public class TemplateEngineProcessor {
     }
 
     public List<String> getSerialNos() {
-
-        final File sdir = StorageUtil.getFile(getStencilStorageDir());
-        final File[] sdirFiles = sdir.listFiles();
-
         final List<String> serialNos = Lists.newArrayList();
-
-        // for npe
-        if (null == sdirFiles) {
-            return serialNos;
-        }
-
-        for (File sdirFile : sdirFiles) {
-            if(isSerialNoDir(sdirFile)) {
-                serialNos.add(sdirFile.getName());
+        final Set<String> foundSerials = new HashSet<>(); // 重複排除
+        
+        // レイヤー検索: user → standard → samples の順
+        String[] layerDirs = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir(),
+            StorageConfig.getSamplesStencilDir()
+        };
+        
+        String stencilCanonicalName = context.getStencilCanonicalName();
+        
+        for (String layerDir : layerDirs) {
+            // classpath: プレフィックスの場合はclasspath検索
+            if (layerDir != null && layerDir.startsWith("classpath:")) {
+                List<String> classpathSerials = findSerialNosInClasspath(layerDir, stencilCanonicalName);
+                for (String serial : classpathSerials) {
+                    if (!foundSerials.contains(serial)) {
+                        serialNos.add(serial);
+                        foundSerials.add(serial);
+                    }
+                }
+            } else {
+                // ファイルシステム検索
+                File stencilDir = new File(layerDir + stencilCanonicalName);
+                
+                if (!stencilDir.exists() || !stencilDir.isDirectory()) {
+                    continue;
+                }
+                
+                File[] serialDirs = stencilDir.listFiles();
+                if (serialDirs == null) {
+                    continue;
+                }
+                
+                for (File serialDir : serialDirs) {
+                    if (isSerialNoDir(serialDir) && !foundSerials.contains(serialDir.getName())) {
+                        serialNos.add(serialDir.getName());
+                        foundSerials.add(serialDir.getName());
+                    }
+                }
+            }
+            
+            // 見つかったら早期終了（上位レイヤー優先）
+            if (!serialNos.isEmpty()) {
+                break;
             }
         }
-
+        
+        return serialNos;
+    }
+    
+    /**
+     * classpathから指定されたstencilのシリアル番号を検索
+     * @param classpathLocation classpath:で始まるパス
+     * @param stencilCanonicalName ステンシルの正規名
+     * @return 見つかったシリアル番号のリスト
+     */
+    private List<String> findSerialNosInClasspath(String classpathLocation, String stencilCanonicalName) {
+        List<String> serialNos = new ArrayList<>();
+        Set<String> foundSerials = new HashSet<>();
+        
+        try {
+            if (resourcePatternResolver == null) {
+                System.out.println("findSerialNosInClasspath: resourcePatternResolver is null");
+                return serialNos;
+            }
+            
+            // stencil-settings.ymlファイルを検索してシリアル番号を抽出
+            // パターン: classpath:/promarker/stencil/samples/samples/hello-world/*/stencil-settings.yml
+            String searchPattern = classpathLocation + stencilCanonicalName + "/*/stencil-settings.yml";
+            System.out.println("findSerialNosInClasspath: searching with pattern: " + searchPattern);
+            
+            Resource[] resources = resourcePatternResolver.getResources(searchPattern);
+            System.out.println("findSerialNosInClasspath: found " + resources.length + " resources");
+            
+            for (Resource resource : resources) {
+                try {
+                    // URLからパスを取得
+                    String urlPath = resource.getURL().getPath();
+                    System.out.println("findSerialNosInClasspath: processing resource: " + urlPath);
+                    
+                    // パスからシリアル番号を抽出
+                    // 例: /path/to/samples/hello-world/250913A/stencil-settings.yml -> 250913A
+                    String[] pathSegments = urlPath.split("/");
+                    for (int i = pathSegments.length - 1; i >= 0; i--) {
+                        String segment = pathSegments[i];
+                        if (isSerialNoVal(segment) && !foundSerials.contains(segment)) {
+                            serialNos.add(segment);
+                            foundSerials.add(segment);
+                            System.out.println("findSerialNosInClasspath: found serial: " + segment);
+                            break; // 見つかったら次のリソースへ
+                        }
+                    }
+                } catch (IOException e) {
+                    System.out.println("findSerialNosInClasspath: IOException for resource: " + e.getMessage());
+                    // リソース処理エラーは無視して続行
+                }
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Error finding serial numbers in classpath: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        System.out.println("findSerialNosInClasspath: returning serials: " + serialNos);
         return serialNos;
     }
 

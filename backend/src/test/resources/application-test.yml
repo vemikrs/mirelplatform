@@ -12,10 +12,12 @@ spring:
   h2:
     console:
       enabled: false
+  batch:
+    jdbc:
+      initialize-schema: never  # Disable batch schema initialization
   session:
-    sql:
-      init:
-        mode: never  # Disable session schema initialization for tests
+    jdbc:
+      initialize-schema: never  # Disable session schema initialization
   sql:
     init:
       mode: never  # Disable database initialization for tests
