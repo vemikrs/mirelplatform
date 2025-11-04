@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import type { DataElement } from '../types/api';
@@ -23,7 +23,7 @@ export function useParameterForm(parameters: DataElement[]) {
 
   // Initialize form
   const form = useForm<ParameterFormValues>({
-    resolver: zodResolver(schema) as any, // Schema is dynamically generated
+    resolver: zodResolver(schema) as unknown as Resolver<ParameterFormValues>,
     defaultValues,
     mode: 'onBlur', // Validate on blur
     reValidateMode: 'onChange', // Re-validate on change after first validation
