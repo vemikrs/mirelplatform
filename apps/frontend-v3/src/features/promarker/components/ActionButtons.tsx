@@ -64,7 +64,7 @@ export function ActionButtons({
               生成中...
             </>
           ) : (
-            <>🚀 Generate</>
+            <>Generate</>
           )}
         </button>
 
@@ -75,7 +75,7 @@ export function ActionButtons({
           disabled={generateLoading}
           className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          🔄 全てクリア
+          📄全てクリア
         </button>
 
         <button
@@ -85,7 +85,7 @@ export function ActionButtons({
           disabled={generateLoading}
           className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          🔄 ステンシル定義を再取得
+          📄ステンシル定義を再取得
         </button>
       </div>
 
@@ -123,7 +123,7 @@ export function ActionButtons({
               再読み込み中...
             </>
           ) : (
-            <>♻️ Reload Stencil Master</>
+            <>📄ステンシルマスタをリロード</>
           )}
         </button>
 
