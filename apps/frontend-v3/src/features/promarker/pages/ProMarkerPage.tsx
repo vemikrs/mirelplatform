@@ -12,7 +12,8 @@ import { StencilInfo } from '../components/StencilInfo';
 import { JsonEditor } from '../components/JsonEditor';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 // import { updateFileNames } from '../utils/parameter';
-import type { DataElement, StencilConfig, SuggestModel } from '../types/api';
+import type { DataElement, StencilConfig, SuggestResult } from '../types/api';
+import type { ApiResponse, ModelWrapper } from '@/lib/api/types';
 
 /**
  * ProMarker main page component
@@ -69,7 +70,9 @@ export function ProMarkerPage() {
     return updateState(result);
   };
 
-  const updateState = (result: { data: { model: SuggestModel } }) => {
+  const updateState = (result: ApiResponse<ModelWrapper<SuggestResult>>) => {
+    if (!result.data?.model) return;
+    
     const model = result.data.model;
 
     if (model.fltStrStencilCategory) setCategories(model.fltStrStencilCategory);
@@ -148,7 +151,7 @@ export function ProMarkerPage() {
     // Fetch stencils for selected category
     // 1st call: get stencil list, auto-select first
     const r1 = await fetchSuggestData(value, '*', '*', true);
-    const autoStencil = r1.data?.model?.fltStrStencilCd?.selected;
+    const autoStencil = r1?.data?.model?.fltStrStencilCd?.selected;
     if (autoStencil) {
       setStencilNoSelected(false);
       // 2nd call: get serial list & params (auto-select serial)

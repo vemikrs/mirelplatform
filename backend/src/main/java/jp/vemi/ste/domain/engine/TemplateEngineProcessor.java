@@ -10,6 +10,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -544,12 +546,49 @@ public class TemplateEngineProcessor {
         return getStencilStorageDir() + "/" + serial;
     }
 
+    /**
+     * Securely constructs a file path by validating that the resolved path
+     * is within the expected base directory, preventing path traversal attacks.
+     * 
+     * @param baseDir Base directory path
+     * @param userProvidedPath User-provided path component (already sanitized)
+     * @return Secure File object
+     * @throws IllegalArgumentException if path escapes base directory
+     */
+    private File constructSecurePath(String baseDir, String userProvidedPath) {
+        try {
+            Path basePath = Paths.get(baseDir).toRealPath();
+            // Resolve and normalize the combined path
+            Path resolvedPath = basePath.resolve(userProvidedPath.replaceFirst("^/", "")).normalize();
+            
+            // Verify the resolved path is within base directory
+            if (!resolvedPath.startsWith(basePath)) {
+                throw new IllegalArgumentException(
+                    "Path traversal detected: resolved path escapes base directory");
+            }
+            
+            return resolvedPath.toFile();
+        } catch (IOException e) {
+            // If base path doesn't exist or can't be resolved, fall back to regular File construction
+            // but still validate that the path doesn't contain suspicious patterns
+            Path basePath = Paths.get(baseDir).normalize();
+            Path resolvedPath = basePath.resolve(userProvidedPath.replaceFirst("^/", "")).normalize();
+            
+            if (!resolvedPath.startsWith(basePath)) {
+                throw new IllegalArgumentException(
+                    "Path traversal detected: resolved path escapes base directory");
+            }
+            
+            return resolvedPath.toFile();
+        }
+    }
+
     public String getStencilStorageDir() {
         // validate.
         Assert.notNull(context, "context");
         Assert.hasText(context.getStencilCanonicalName(), "stencilCanonicalName must not be empty");
         // 正規名パス検証（先頭"/"、セグメントは識別子、.. や \\ 禁止）
-        SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
+        String sanitizedCanonicalName = SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
         
         // レイヤー検索: user → standard の順で実際に存在するディレクトリを返す
         String[] layerDirs = {
@@ -557,20 +596,18 @@ public class TemplateEngineProcessor {
             StorageConfig.getStandardStencilDir()
         };
         
-        String stencilCanonicalName = context.getStencilCanonicalName();
-        
         for (String layerDir : layerDirs) {
-            String candidatePath = layerDir + stencilCanonicalName;
-            File candidateDir = new File(candidatePath);
+            // Use secure path construction to prevent path traversal
+            File candidateDir = constructSecurePath(layerDir, sanitizedCanonicalName);
             
             if (candidateDir.exists() && candidateDir.isDirectory()) {
-                return candidatePath;
+                return candidateDir.getAbsolutePath();
             }
         }
         
         // 見つからない場合はデフォルトのパス（下位互換性）
-        final String dir = StringUtils.join(getStencilMasterStorageDir(), context.getStencilCanonicalName());
-        return dir;
+        File defaultDir = constructSecurePath(getStencilMasterStorageDir(), sanitizedCanonicalName);
+        return defaultDir.getAbsolutePath();
     }
 
     /** 
@@ -951,12 +988,13 @@ public class TemplateEngineProcessor {
             StorageConfig.getSamplesStencilDir()
         };
         
-        String stencilCanonicalName = context.getStencilCanonicalName();
+        // Sanitize canonical name first
+        String sanitizedCanonicalName = SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
         
         for (String layerDir : layerDirs) {
             // classpath: プレフィックスの場合はclasspath検索
             if (layerDir != null && layerDir.startsWith("classpath:")) {
-                List<String> classpathSerials = findSerialNosInClasspath(layerDir, stencilCanonicalName);
+                List<String> classpathSerials = findSerialNosInClasspath(layerDir, sanitizedCanonicalName);
                 for (String serial : classpathSerials) {
                     if (!foundSerials.contains(serial)) {
                         serialNos.add(serial);
@@ -964,8 +1002,8 @@ public class TemplateEngineProcessor {
                     }
                 }
             } else {
-                // ファイルシステム検索
-                File stencilDir = new File(layerDir + stencilCanonicalName);
+                // ファイルシステム検索 - Use secure path construction
+                File stencilDir = constructSecurePath(layerDir, sanitizedCanonicalName);
                 
                 if (!stencilDir.exists() || !stencilDir.isDirectory()) {
                     continue;
