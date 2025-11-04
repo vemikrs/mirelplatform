@@ -1,0 +1,151 @@
+###################################################################
+# Spring Boot Service Stencil - Sample Template (Generalized)
+# 
+# このステンシルは、実際のSpring Boot開発で使用されているテンプレートを
+# 汎化したサンプルです。validation定義の実践的な使用例を提供します。
+###################################################################
+stencil:
+  config:
+    categoryId: /samples/springboot
+    categoryName: Spring Boot Samples
+    id: /samples/springboot/spring-boot-service
+    name: Spring Boot Service Generator (Sample)
+    serial: 250101A
+    lastUpdate: 2025/01/01
+    lastUpdateUser: mirelplatform
+    description: |
+      Spring Boot Service層のコードを自動生成するサンプルステンシルです。
+      以下のファイルを生成します：
+      - Service クラス
+      - Controller クラス
+      - Request/Response DTO
+      - Mapper インターフェース
+      
+      validation定義の実践例として使用できます。
+
+  dataElement:
+    - id: packageGroup
+    - id: applicationId
+    - id: serviceId
+    - id: serviceName
+    - id: eventId
+    - id: eventName
+    - id: version
+    - id: author
+    - id: vendor
+
+  dataDomain:
+    - id: packageGroup
+      name: パッケージグループ
+      value: com.example
+      type: text
+      placeholder: com.example
+      note: Javaパッケージのベース（例：com.example）
+      validation:
+        required: true
+        minLength: 3
+        maxLength: 100
+        pattern: "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$"
+        errorMessage: 小文字英数字とドット（.）のみ使用可能です（例：com.example）
+
+    - id: applicationId
+      name: アプリケーションID
+      value: sampleApp
+      type: text
+      placeholder: sampleApp
+      note: アプリケーション識別子（キャメルケース）
+      validation:
+        required: true
+        minLength: 2
+        maxLength: 50
+        pattern: "^[a-z][a-zA-Z0-9]*$"
+        errorMessage: ローワーキャメルケースで入力してください（例：sampleApp）
+
+    - id: serviceId
+      name: サービスID
+      value: userService
+      type: text
+      placeholder: userService
+      note: サービス識別子（キャメルケース）
+      validation:
+        required: true
+        minLength: 2
+        maxLength: 50
+        pattern: "^[a-z][a-zA-Z0-9]*$"
+        errorMessage: ローワーキャメルケースで入力してください（例：userService）
+
+    - id: serviceName
+      name: サービス名
+      value: ユーザーサービス
+      type: text
+      placeholder: ユーザーサービス
+      note: サービスの日本語名称（コメントに使用）
+      validation:
+        required: true
+        minLength: 2
+        maxLength: 100
+        errorMessage: サービス名を入力してください
+
+    - id: eventId
+      name: イベントID
+      value: get
+      type: text
+      placeholder: get
+      note: メソッド名として使用（キャメルケース）
+      validation:
+        required: true
+        minLength: 2
+        maxLength: 50
+        pattern: "^[a-z][a-zA-Z0-9]*$"
+        errorMessage: ローワーキャメルケースで入力してください（例：get、create、update）
+
+    - id: eventName
+      name: イベント名
+      value: 取得
+      type: text
+      placeholder: 取得
+      note: メソッドの日本語名称（コメントに使用）
+      validation:
+        required: true
+        minLength: 1
+        maxLength: 50
+        errorMessage: イベント名を入力してください
+
+    - id: version
+      name: バージョン
+      value: "1.0"
+      type: text
+      placeholder: "1.0"
+      note: バージョン番号
+      validation:
+        required: false
+        minLength: 1
+        maxLength: 20
+        pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        errorMessage: バージョン形式で入力してください（例：1.0、1.0.0）
+
+    - id: author
+      name: 作成者
+      value: ProMarker Platform
+      type: text
+      placeholder: ProMarker Platform
+      note: 作成者名（コメントに使用）
+      validation:
+        required: false
+        maxLength: 100
+
+    - id: vendor
+      name: ベンダー
+      value: Open Source Community
+      type: text
+      placeholder: Open Source Community
+      note: ベンダー名（コメントに使用）
+      validation:
+        required: false
+        maxLength: 100
+
+  codeInfo:
+    copyright: Copyright (c) 2025 ProMarker Platform
+    versionNo: "1.0"
+    author: ProMarker Platform
+    vendor: Open Source Community
