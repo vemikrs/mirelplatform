@@ -5,7 +5,8 @@ import type { DataElement } from '../types/api';
  * Dynamic parameter validation schema builder
  * Creates Zod schema based on parameter definitions from API
  * 
- * Step 6: React Hook Form + Zod integration
+ * **重要**: バリデーションルールはステンシル定義（YAML）から取得すべき
+ * ハードコードされたルールは使用しない（緊急対応として削除）
  */
 
 /**
@@ -18,59 +19,50 @@ function createParameterSchema(param: DataElement): z.ZodTypeAny {
     case 'string': {
       let stringSchema = z.string();
       
-      // Apply required validation
-      const isRequired = !param.value || param.note?.includes('必須');
+      // Apply required validation based on note or value presence
+      const isRequired = param.note?.includes('必須');
+      
       if (isRequired) {
+        // Required field - must have at least 1 character
         stringSchema = stringSchema.min(1, '必須項目です');
       }
       
-      // Min length: Default 3 chars for text fields
-      stringSchema = stringSchema.min(3, '3文字以上入力してください');
+      // ❌ 削除: ハードコードされた min(3) - バリデーションルールはステンシル定義から取得すべき
+      // ❌ 削除: ハードコードされた max(100) - 同上
+      // ❌ 削除: 特定フィールド名への依存（userName, language） - 同上
       
-      // Max length: Default 100 chars
-      stringSchema = stringSchema.max(100, '100文字以内で入力してください');
-      
-      // Pattern validation based on parameter ID
-      if (param.id === 'userName') {
-        stringSchema = stringSchema.regex(/^[a-zA-Z0-9]+$/, '半角英数字のみ使用できます');
-      }
-      
-      if (param.id === 'language') {
-        stringSchema = stringSchema.regex(/^[a-z]{2}$/, '2文字の言語コードを入力してください');
-      }
-      
-      return isRequired ? stringSchema : stringSchema.optional();
+      // Optional field - allow empty string
+      return isRequired ? stringSchema : stringSchema.optional().or(z.literal(''));
     }
     case 'number': {
       let numberSchema = z.coerce.number();
       
-      // Default range for numbers
-      numberSchema = numberSchema.min(0, '0以上の値を入力してください');
-      numberSchema = numberSchema.max(9999, '9999以下の値を入力してください');
+      // ❌ 削除: ハードコードされた範囲制限
+      // バリデーションルールはステンシル定義から取得すべき
       
-      const isRequired = !param.value || param.note?.includes('必須');
+      const isRequired = param.note?.includes('必須');
       return isRequired ? numberSchema : numberSchema.optional();
     }
     case 'file': {
       // File IDs are strings (uploaded file references)
       let fileSchema = z.string();
-      const isRequired = !param.value || param.note?.includes('必須');
+      const isRequired = param.note?.includes('必須');
       
       if (isRequired) {
         fileSchema = fileSchema.min(1, 'ファイルをアップロードしてください');
       }
       
-      return isRequired ? fileSchema : fileSchema.optional();
+      return isRequired ? fileSchema : fileSchema.optional().or(z.literal(''));
     }
     default: {
       let defaultSchema = z.string();
-      const isRequired = !param.value || param.note?.includes('必須');
+      const isRequired = param.note?.includes('必須');
       
       if (isRequired) {
         defaultSchema = defaultSchema.min(1, '必須項目です');
       }
       
-      return isRequired ? defaultSchema : defaultSchema.optional();
+      return isRequired ? defaultSchema : defaultSchema.optional().or(z.literal(''));
     }
   }
 }
