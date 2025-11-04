@@ -8,6 +8,26 @@
  */
 
 /**
+ * Validation Rule Definition
+ * Corresponds to backend ValidationRule class
+ * Maps to the 'validation' field in stencil YAML definitions
+ * 
+ * @see backend/src/main/java/jp/vemi/ste/domain/dto/yml/ValidationRule.java
+ */
+export interface ValidationRule {
+  /** Whether the field is required (default: false if not specified) */
+  required?: boolean;
+  /** Minimum length for text fields (default: no restriction) */
+  minLength?: number;
+  /** Maximum length for text fields (default: no restriction) */
+  maxLength?: number;
+  /** Regular expression pattern for validation (default: no pattern) */
+  pattern?: string;
+  /** Custom error message to display when validation fails */
+  errorMessage?: string;
+}
+
+/**
  * Value-Text Item for dropdown options
  */
 export interface ValueTextItem {
@@ -50,6 +70,9 @@ export interface DataElement {
   placeholder: string;
   note: string;
   nodeType: 'ELEMENT';
+  
+  /** Validation rules from stencil YAML definition (optional for backward compatibility) */
+  validation?: ValidationRule;
 }
 
 /**

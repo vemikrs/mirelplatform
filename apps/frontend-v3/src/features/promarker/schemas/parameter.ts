@@ -5,72 +5,92 @@ import type { DataElement } from '../types/api';
  * Dynamic parameter validation schema builder
  * Creates Zod schema based on parameter definitions from API
  * 
- * Step 6: React Hook Form + Zod integration
+ * **重要**: バリデーションルールはステンシル定義（YAML）から取得
+ * ハードコードされたルールは使用しない
+ * 
+ * @see validation-improvement-plan.md
  */
 
 /**
  * Create validation schema for a single parameter
+ * @param param - Parameter definition from API (includes validation rules)
  */
 function createParameterSchema(param: DataElement): z.ZodTypeAny {
+  // Get validation rules from API (defaults to empty object)
+  const validation = param.validation || {};
+  
   // Apply type-specific validation
   switch (param.valueType?.toLowerCase()) {
     case 'text':
     case 'string': {
-      let stringSchema = z.string();
+      let schema: z.ZodString = z.string();
       
-      // Apply required validation
-      const isRequired = !param.value || param.note?.includes('必須');
-      if (isRequired) {
-        stringSchema = stringSchema.min(1, '必須項目です');
+      // Apply minLength if specified in YAML
+      if (validation.minLength !== undefined && validation.minLength > 0) {
+        schema = schema.min(validation.minLength, `${validation.minLength}文字以上入力してください`);
       }
       
-      // Min length: Default 3 chars for text fields
-      stringSchema = stringSchema.min(3, '3文字以上入力してください');
-      
-      // Max length: Default 100 chars
-      stringSchema = stringSchema.max(100, '100文字以内で入力してください');
-      
-      // Pattern validation based on parameter ID
-      if (param.id === 'userName') {
-        stringSchema = stringSchema.regex(/^[a-zA-Z0-9]+$/, '半角英数字のみ使用できます');
+      // Apply maxLength if specified in YAML
+      if (validation.maxLength !== undefined && validation.maxLength > 0) {
+        schema = schema.max(validation.maxLength, `${validation.maxLength}文字以内で入力してください`);
       }
       
-      if (param.id === 'language') {
-        stringSchema = stringSchema.regex(/^[a-z]{2}$/, '2文字の言語コードを入力してください');
+      // Apply pattern if specified in YAML
+      if (validation.pattern) {
+        const message = validation.errorMessage || '入力形式が正しくありません';
+        schema = schema.regex(new RegExp(validation.pattern), message);
       }
       
-      return isRequired ? stringSchema : stringSchema.optional();
+      // Handle required flag
+      if (validation.required) {
+        // Required field - ensure at least 1 character (only if minLength not specified)
+        if (!validation.minLength || validation.minLength < 1) {
+          schema = schema.min(1, '必須項目です');
+        }
+        return schema;
+      } else {
+        // Optional field - allow empty string
+        return schema.optional().or(z.literal(''));
+      }
     }
+    
     case 'number': {
-      let numberSchema = z.coerce.number();
+      let schema = z.coerce.number();
       
-      // Default range for numbers
-      numberSchema = numberSchema.min(0, '0以上の値を入力してください');
-      numberSchema = numberSchema.max(9999, '9999以下の値を入力してください');
+      // Apply min/max if specified
+      if (validation.minLength !== undefined) {
+        schema = schema.min(validation.minLength, 
+          validation.errorMessage || `${validation.minLength}以上の値を入力してください`);
+      }
       
-      const isRequired = !param.value || param.note?.includes('必須');
-      return isRequired ? numberSchema : numberSchema.optional();
+      if (validation.maxLength !== undefined) {
+        schema = schema.max(validation.maxLength, 
+          `${validation.maxLength}以下の値を入力してください`);
+      }
+      
+      return validation.required ? schema : schema.optional();
     }
+    
     case 'file': {
       // File IDs are strings (uploaded file references)
-      let fileSchema = z.string();
-      const isRequired = !param.value || param.note?.includes('必須');
+      let schema = z.string();
       
-      if (isRequired) {
-        fileSchema = fileSchema.min(1, 'ファイルをアップロードしてください');
+      if (validation.required) {
+        return schema.min(1, validation.errorMessage || 'ファイルをアップロードしてください');
+      } else {
+        return schema.optional().or(z.literal(''));
       }
-      
-      return isRequired ? fileSchema : fileSchema.optional();
     }
+    
     default: {
-      let defaultSchema = z.string();
-      const isRequired = !param.value || param.note?.includes('必須');
+      // Unknown type - treat as text with minimal validation
+      let schema = z.string();
       
-      if (isRequired) {
-        defaultSchema = defaultSchema.min(1, '必須項目です');
+      if (validation.required) {
+        return schema.min(1, validation.errorMessage || '必須項目です');
+      } else {
+        return schema.optional().or(z.literal(''));
       }
-      
-      return isRequired ? defaultSchema : defaultSchema.optional();
     }
   }
 }
