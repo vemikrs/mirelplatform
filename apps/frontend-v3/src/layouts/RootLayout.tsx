@@ -12,9 +12,9 @@ export function RootLayout() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold text-foreground">
                 mirelplatform
-              </h1>
+              </div>
               <nav className="flex space-x-4">
                 <a 
                   href="/" 
