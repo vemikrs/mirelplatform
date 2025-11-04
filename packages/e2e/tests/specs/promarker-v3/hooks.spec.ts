@@ -160,9 +160,11 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     expect(data.errors).toHaveLength(0)
   })
   
-  // TODO: バリデーションエラー表示機能実装後に有効化
+  // TODO: バリデーションエラー表示のUI実装に問題があるため一時的にスキップ
+  // React Hook Form の mode: 'onBlur' が期待通りに動作していない可能性
+  // Issue #XX で追跡予定
   test.skip('useGenerate - エラーハンドリング', async ({ page }) => {
-    // 不正なリクエストでエラー発生
+    // カテゴリ・ステンシル・シリアル選択
     await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
@@ -185,13 +187,20 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     }
     await page.waitForTimeout(500)
     
-    // 必須パラメータを空にしてエラー発生
-    await page.fill('input[name="message"]', '')
+    // パラメータセクションが表示されるまで待機
+    await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 10000 });
     
-    await page.click('[data-testid="generate-btn"]')
+    // 必須パラメータ (userName) に不正な値（1文字のみ、minLength: 2に違反）を入力
+    const userNameField = page.locator('input[name="userName"]');
+    await userNameField.fill('A'); // minLength: 2 未満
+    await userNameField.blur(); // onBlurバリデーションをトリガー
     
-    // バリデーションエラー表示確認
-    await expect(page.locator('[data-testid="error-message"]')).toBeVisible()
+    // バリデーションエラーが表示されることを確認
+    await expect(page.locator('[data-testid="error-userName"]')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="error-userName"]')).toContainText('2文字以上入力してください')
+    
+    // Generateボタンがdisabledになっていることを確認（バリデーションエラー時）
+    await expect(page.locator('[data-testid="generate-btn"]')).toBeDisabled()
   })
   
   test('useSuggest - React Strict Mode重複実行防止', async ({ page }) => {

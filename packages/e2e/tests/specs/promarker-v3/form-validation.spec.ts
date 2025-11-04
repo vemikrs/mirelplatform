@@ -11,7 +11,9 @@ import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
  * - エラーメッセージ表示
  * - Generate button有効/無効制御
  * 
- * TODO: バリデーション機能実装後にテストを有効化
+ * TODO: バリデーションエラー表示のUI実装に問題があるためスキップ中
+ * React Hook Form の mode: 'onBlur' が期待通りに動作していない
+ * バリデーションロジックは実装済みだが、エラーメッセージの表示が機能していない
  */
 test.describe.skip('ProMarker v3 Form Validation', () => {
   let promarkerPage: ProMarkerV3Page;
