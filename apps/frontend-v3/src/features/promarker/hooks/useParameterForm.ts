@@ -23,7 +23,7 @@ export function useParameterForm(parameters: DataElement[]) {
 
   // Initialize form
   const form = useForm<ParameterFormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any, // Schema is dynamically generated
     defaultValues,
     mode: 'onBlur', // Validate on blur
     reValidateMode: 'onChange', // Re-validate on change after first validation

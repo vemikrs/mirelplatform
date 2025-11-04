@@ -77,8 +77,8 @@ export interface SuggestRequest {
   stencilCanonicalName: string;
   serialNo: string;
   selectFirstIfWildcard?: boolean; // * の自動選択を backend に委譲
-  // 動的パラメータ（実際は値に number や boolean が来る可能性もあるので any）
-  [key: string]: any;           // Allow additional dynamic parameters
+  // 動的パラメータ（実際は値に number や boolean が来る可能性もあるので unknown）
+  [key: string]: string | number | boolean | undefined;           // Allow additional dynamic parameters
 }
 
 /**
@@ -104,12 +104,9 @@ export interface SuggestResult {
 
 /**
  * Generate API Request Parameters
- * Extends SuggestRequest with actual parameter values
+ * Same as SuggestRequest - all dynamic parameters handled by index signature
  */
-export interface GenerateRequest extends SuggestRequest {
-  // Additional dynamic parameters from form (e.g., 'message', 'userName')
-  // Handled by index signature in SuggestRequest
-}
+export type GenerateRequest = SuggestRequest;
 
 /**
  * Generate API Response Model
