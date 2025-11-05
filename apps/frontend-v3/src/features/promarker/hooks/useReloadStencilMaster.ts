@@ -1,8 +1,9 @@
+import { toast } from '@mirel/ui'
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
 import type { ApiRequest, ApiResponse } from '@/lib/api/types'
-import { handleApiError } from '@/lib/utils/error'
+import { formatError } from '@/lib/utils/error'
+import { toastMessages } from '../constants/toastMessages'
 
 /**
  * ステンシルマスタ再読み込みHook
@@ -33,12 +34,16 @@ export function useReloadStencilMaster() {
       return response.data
     },
     onSuccess: () => {
-      // Handle success - UI will be updated by calling component
-      toast.success('ステンシルマスタを再読み込みしました')
+      toast({
+        ...toastMessages.reloadSuccess,
+      })
     },
     onError: (error) => {
       console.error('ReloadStencilMaster API error:', error)
-      handleApiError(['ステンシルマスタの再読み込みに失敗しました'])
+      toast({
+        ...toastMessages.reloadError,
+        description: formatError(error),
+      })
     },
   })
 }

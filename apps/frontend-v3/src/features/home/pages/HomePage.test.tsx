@@ -1,50 +1,36 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 
 describe('HomePage', () => {
-  it('renders the welcome heading', () => {
-    render(<HomePage />);
-    const heading = screen.getByRole('heading', { name: /welcome to mirelplatform/i });
+  it('renders enterprise portal heading', () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+    const heading = screen.getByRole('heading', { name: '業務アプリ基盤ポータル' });
     expect(heading).toBeInTheDocument();
   });
 
-  it('renders the description text', () => {
-    render(<HomePage />);
-    const description = screen.getByText(/エンタープライズ向けの軽量な開発支援プラットフォーム/i);
-    expect(description).toBeInTheDocument();
+  it('lists key platform modules', () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+    const moduleCards = screen.getAllByTestId('home-module-card');
+    expect(moduleCards.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('renders ProMarker button', () => {
-    render(<HomePage />);
-    const button = screen.getByRole('button', { name: /ProMarker を開く/i });
-    expect(button).toBeInTheDocument();
-  });
-
-  it('renders toast button', () => {
-    render(<HomePage />);
-    const button = screen.getByRole('button', { name: /トースト表示/i });
-    expect(button).toBeInTheDocument();
-  });
-
-  it('calls navigation function when ProMarker button is clicked', () => {
-    // Spy on window.location.href setter
-    const hrefSpy = vi.fn();
-    Object.defineProperty(window, 'location', {
-      value: { href: '' },
-      writable: true,
-      configurable: true,
-    });
-    
-    Object.defineProperty(window.location, 'href', {
-      set: hrefSpy,
-      get: () => '',
-    });
-
-    render(<HomePage />);
-    const button = screen.getByRole('button', { name: /ProMarker を開く/i });
-    button.click();
-
-    expect(hrefSpy).toHaveBeenCalledWith('/promarker');
+  it('provides CTA links to ProMarker workspace', () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+    const link = screen.getByRole('link', { name: 'ProMarker を開く' });
+    expect(link).toHaveAttribute('href', '/promarker');
   });
 });

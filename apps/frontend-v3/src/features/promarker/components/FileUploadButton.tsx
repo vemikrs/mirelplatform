@@ -1,8 +1,8 @@
-import { Button } from '@mirel/ui'
+import { Button, toast } from '@mirel/ui'
 import { Upload } from 'lucide-react'
 import { useRef } from 'react'
 import { useFileUpload } from '../hooks/useFileUpload'
-import { toast } from 'sonner'
+import { toastMessages } from '../constants/toastMessages'
 
 interface FileUploadButtonProps {
   parameterId: string
@@ -29,7 +29,8 @@ export function FileUploadButton({
 
       if (result.errors && result.errors.length > 0) {
         result.errors.forEach((error) => {
-          toast.error('エラー', {
+          toast({
+            ...toastMessages.fileUploadError,
             description: error,
           })
         })
@@ -42,14 +43,16 @@ export function FileUploadButton({
           const { fileId, name } = uploadedFile
           onFileUploaded(parameterId, fileId, name)
 
-          toast.success('成功', {
+          toast({
+            ...toastMessages.fileUploadSuccess,
             description: `ファイル "${name}" をアップロードしました`,
           })
         }
       }
-    } catch {
-      toast.error('エラー', {
-        description: 'ファイルアップロードに失敗しました',
+    } catch (error) {
+      toast({
+        ...toastMessages.fileUploadError,
+        description: error instanceof Error ? error.message : toastMessages.fileUploadError.description,
       })
     }
 

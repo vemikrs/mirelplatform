@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Toaster } from '@mirel/ui';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useState } from 'react';
+import { toast, Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator } from '@mirel/ui';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
 import { useReloadStencilMaster } from '../hooks/useReloadStencilMaster';
@@ -14,6 +13,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 // import { updateFileNames } from '../utils/parameter';
 import type { DataElement, StencilConfig, SuggestResult } from '../types/api';
 import type { ApiResponse, ModelWrapper } from '@/lib/api/types';
+import { toastMessages } from '../constants/toastMessages';
 
 /**
  * ProMarker main page component
@@ -112,9 +112,9 @@ export function ProMarkerPage() {
       initStarted = true;
 
       try {
-      // 初期ロード: 全未選択、リストのみ取得
-      console.log('[ProMarker] Initial suggest (empty)...');
-      await fetchSuggestData('*', '*', '*', false);
+        // 初期ロード: 全未選択、リストのみ取得
+        console.log('[ProMarker] Initial suggest (empty)...');
+        await fetchSuggestData('*', '*', '*', false);
         if (!cancelled) {
           console.log('[ProMarker] Initial data fetch complete');
         }
@@ -213,7 +213,7 @@ export function ProMarkerPage() {
     }
   };
 
-  const handleClearAll = async () => {
+  const handleClearAll = async ({ silent = false }: { silent?: boolean } = {}) => {
     // Reset all selections and values
     setCategories({ items: categories.items, selected: '' });
     setStencils({ items: [], selected: '' });
@@ -228,10 +228,14 @@ export function ProMarkerPage() {
     setSerialNoSelected(true);
     
     parameterForm.clearAll();
-    
+
     // Refresh data
     await fetchSuggestData('*', '*', '*', false);
-    toast.success('全てクリアしました');
+    if (!silent) {
+      toast({
+        ...toastMessages.clearAll,
+      });
+    }
   };
 
   const handleClearStencil = async () => {
@@ -242,7 +246,9 @@ export function ProMarkerPage() {
     
     // Re-fetch current stencil data
     await fetchSuggestData(categories.selected, stencils.selected, serials.selected, false);
-    toast.success('ステンシル定義を再取得しました');
+    toast({
+      ...toastMessages.clearStencil,
+    });
   };
 
   const handleReloadStencilMaster = async () => {
@@ -267,7 +273,7 @@ export function ProMarkerPage() {
   }) => {
     try {
       // Clear all first
-      await handleClearAll();
+      await handleClearAll({ silent: true });
       
       // Set selections step by step (explicit, no auto-select except where needed)
       setCategories(prev => ({ ...prev, selected: data.stencilCategory }));
@@ -290,109 +296,104 @@ export function ProMarkerPage() {
         parameterForm.setValue(elem.id, elem.value);
       });
       
-      toast.success('JSONを適用しました');
     } catch (error) {
-      toast.error('JSON適用中にエラーが発生しました');
       console.error('JSON apply error:', error);
+      throw error instanceof Error ? error : new Error('JSON適用中にエラーが発生しました');
     }
   };
 
-  const isGenerateDisabled = 
-    !serials.selected || 
+  const isGenerateDisabled =
+    !serials.selected ||
     parameters.length === 0 ||
     !parameterForm.isValid ||
     suggestMutation.isPending ||
     generateMutation.isPending;
 
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="container_title text-4xl font-bold text-foreground">
-          ProMarker 払出画面
-        </h1>
-        <p className="text-muted-foreground">
-          ステンシルテンプレートからコードを自動生成
-        </p>
-      </div>
+  const stepIndicatorSteps = useMemo(() => {
+    const selectionComplete = Boolean(categories.selected && stencils.selected && serials.selected);
+    const parametersReady = selectionComplete && parameters.length > 0;
+    return [
+      {
+        id: 'select',
+        title: 'ステンシル選択',
+        description: 'カテゴリ・ステンシル・シリアルを選びます。',
+        state: selectionComplete ? 'complete' : 'current',
+      },
+      {
+        id: 'details',
+        title: 'パラメータ入力',
+        description: '必須項目と入力ルールを確認しながら値を設定します。',
+        state: parametersReady ? (parameterForm.isValid ? 'complete' : 'current') : selectionComplete ? 'current' : 'upcoming',
+      },
+      {
+        id: 'execute',
+        title: '生成',
+        description: '入力内容でコード生成を実行します。',
+        state: generateMutation.isSuccess ? 'complete' : parametersReady ? 'current' : 'upcoming',
+      },
+    ];
+  }, [categories.selected, stencils.selected, serials.selected, parameters.length, parameterForm.isValid, generateMutation.isSuccess]);
 
-      {/* Loading Indicator */}
-      {(suggestMutation.isPending || generateMutation.isPending) && (
-        <div 
-          className="flex items-center justify-center p-4 bg-muted/50 rounded-lg"
+  const isLoading = suggestMutation.isPending || generateMutation.isPending;
+
+  return (
+    <div className="space-y-8">
+      <SectionHeading
+        eyebrow="ProMarker"
+        title="ProMarker ワークスペース"
+        description="ステンシルを選択し、業務アプリケーション向けのコードを生成します。"
+      />
+
+      <StepIndicator steps={stepIndicatorSteps} />
+
+      {isLoading ? (
+        <div
+          className="flex items-center gap-3 rounded-xl border border-outline/60 bg-surface-subtle px-4 py-3 text-sm text-muted-foreground"
           data-testid="loading-indicator"
         >
-          <svg
-            className="mr-2 h-5 w-5 animate-spin text-primary"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <span className="text-sm text-muted-foreground">
-            {generateMutation.isPending ? 'コード生成中...' : suggestMutation.isPending ? 'データ読み込み中...' : 'ローディング中...'}
-          </span>
+          <Badge variant="info">処理中</Badge>
+          {generateMutation.isPending ? 'コード生成中です…' : 'データを取得しています…'}
         </div>
-      )}
+      ) : null}
 
-      {/* Stencil Selection Section */}
-      <div className="border rounded-lg p-6 space-y-4">
-        <h2 className="text-xl font-semibold">ステンシル選択</h2>
-        <StencilSelector
-          categories={categories}
-          stencils={stencils}
-          serials={serials}
-          onCategoryChange={handleCategoryChange}
-          onStencilChange={handleStencilChange}
-          onSerialChange={handleSerialChange}
-          disabled={selectorsDisabled}
-        />
-      </div>
-
-      {/* Stencil Information */}
-      {stencilConfig && (
+      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
+        <Card>
+          <CardHeader className="space-y-2">
+            <CardTitle>ステンシル選択</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              カテゴリ → ステンシル → シリアルの順で選択してください。
+            </p>
+          </CardHeader>
+          <CardContent>
+            <StencilSelector
+              categories={categories}
+              stencils={stencils}
+              serials={serials}
+              onCategoryChange={handleCategoryChange}
+              onStencilChange={handleStencilChange}
+              onSerialChange={handleSerialChange}
+              disabled={selectorsDisabled}
+            />
+          </CardContent>
+        </Card>
         <StencilInfo config={stencilConfig} />
-      )}
-
-      {/* Parameter Input Section */}
-      {parameters.length > 0 && (
-        <div className="border rounded-lg p-6">
-          <ParameterFields
-            parameters={parameters}
-            form={parameterForm}
-            disabled={inputFieldsDisabled}
-          />
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="border rounded-lg p-6">
-        <ActionButtons
-          onGenerate={handleGenerate}
-          onClearAll={handleClearAll}
-          onClearStencil={handleClearStencil}
-          onReloadStencilMaster={handleReloadStencilMaster}
-          onJsonEdit={() => setJsonEditorOpen(true)}
-          generateDisabled={isGenerateDisabled}
-          generateLoading={generateMutation.isPending}
-          reloadLoading={reloadMutation.isPending}
-        />
       </div>
 
-      {/* JSON Editor Dialog */}
+      {parameters.length > 0 ? (
+        <ParameterFields parameters={parameters} form={parameterForm} disabled={inputFieldsDisabled} />
+      ) : null}
+
+      <ActionButtons
+        onGenerate={handleGenerate}
+        onClearAll={handleClearAll}
+        onClearStencil={handleClearStencil}
+        onReloadStencilMaster={handleReloadStencilMaster}
+        onJsonEdit={() => setJsonEditorOpen(true)}
+        generateDisabled={isGenerateDisabled}
+        generateLoading={generateMutation.isPending}
+        reloadLoading={reloadMutation.isPending}
+      />
+
       <JsonEditor
         open={jsonEditorOpen}
         onOpenChange={setJsonEditorOpen}
@@ -402,8 +403,6 @@ export function ProMarkerPage() {
         parameters={parameters}
         onApply={handleJsonApply}
       />
-
-      <Toaster />
     </div>
   );
 }

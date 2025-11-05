@@ -1,6 +1,8 @@
+import { toast } from '@mirel/ui'
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
+import { toastMessages } from '../constants/toastMessages'
+import { formatError } from '@/lib/utils/error'
 
 /**
  * コード生成Hook
@@ -42,8 +44,8 @@ export const useGenerate = () => {
     onSuccess: (data) => {
       console.log('Generation successful:', data);
       
-      toast.success('コードが正常に生成されました！', {
-        description: 'ダウンロードを開始しています...',
+      toast({
+        ...toastMessages.generateSuccess,
       });
 
       // Handle file download
@@ -73,8 +75,9 @@ export const useGenerate = () => {
     },
     onError: (error) => {
       console.error('Generation failed:', error);
-      toast.error('コード生成に失敗しました', {
-        description: error.message || 'エラーが発生しました',
+      toast({
+        ...toastMessages.generateError,
+        description: formatError(error),
       });
       
       // Ensure UI state is ready for retry after error

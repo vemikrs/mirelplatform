@@ -4,12 +4,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  Button,
+  toast,
 } from '@mirel/ui'
-import { Button } from '@mirel/ui'
-import { toast } from 'sonner'
 import { parametersToJson, jsonToParameters } from '../utils/parameter'
 import type { DataElement } from '../types/api'
+import { toastMessages } from '../constants/toastMessages'
 
 interface JsonEditorProps {
   open: boolean
@@ -23,7 +24,7 @@ interface JsonEditorProps {
     stencilCd: string
     serialNo: string
     dataElements: Array<{id: string; value: string}>
-  }) => void
+  }) => Promise<void> | void
 }
 
 export function JsonEditor({
@@ -50,17 +51,29 @@ export function JsonEditor({
   }, [open, category, stencil, serial, parameters])
   
   // JSON適用処理
-  const handleApply = () => {
+  const handleApply = async () => {
     const parsed = jsonToParameters(jsonText)
-    
+
     if (parsed) {
-      onApply(parsed)
-      onOpenChange(false)
-      toast.success('JSONを適用しました')
+      try {
+        await onApply(parsed)
+        onOpenChange(false)
+        toast({
+          ...toastMessages.jsonApplySuccess,
+        })
+      } catch (error) {
+        toast({
+          ...toastMessages.jsonApplyError,
+          description: error instanceof Error ? error.message : toastMessages.jsonApplyError.description,
+        })
+      }
     } else {
       setIsValid(false)
       setErrorMessage('JSONフォーマットが不正です。stencilCategory, stencilCd, serialNo, dataElements が必要です。')
-      toast.error('JSONフォーマットが不正です')
+      toast({
+        ...toastMessages.jsonApplyError,
+        description: 'JSONフォーマットが不正です。stencilCategory, stencilCd, serialNo, dataElements が必要です。',
+      })
     }
   }
   
@@ -88,23 +101,22 @@ export function JsonEditor({
         </DialogHeader>
         
         <div className="space-y-2 flex-1 overflow-auto">
-          <label className="text-sm text-muted-foreground block">
+          <label className="block text-sm text-muted-foreground">
             JSON形式で実行条件を編集できます。編集後、Applyボタンで反映してください。
           </label>
-          
+
           <textarea
             value={jsonText}
             onChange={(e) => handleTextChange(e.target.value)}
-            className={`w-full h-96 p-4 font-mono text-sm border rounded-md resize-none
-              ${!isValid ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}
-              focus:outline-none focus:ring-2 focus:ring-offset-2`}
+            className={`h-96 w-full resize-none rounded-xl border bg-surface-subtle px-4 py-3 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-focus-ring
+              ${!isValid ? 'border-destructive/60 focus:ring-destructive' : 'border-outline/50'}`}
             placeholder='{"stencilCategory": "/samples", "stencilCd": "/samples/hello-world", ...}'
             data-testid="json-textarea"
             spellCheck={false}
           />
-          
+
           {!isValid && errorMessage && (
-            <p className="text-sm text-red-500" data-testid="json-error-message">
+            <p className="text-sm text-destructive" data-testid="json-error-message">
               {errorMessage}
             </p>
           )}

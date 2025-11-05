@@ -1,0 +1,135 @@
+@layer base {
+  :root {
+    color-scheme: light;
+    --font-sans: 'Inter', 'Noto Sans JP', 'Helvetica Neue', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    --background: 220 33% 99%;
+    --foreground: 220 27% 12%;
+    --surface: 220 25% 98%;
+    --surface-subtle: 220 30% 99%;
+    --surface-raised: 220 20% 96%;
+    --surface-overlay: 220 27% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 27% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 27% 12%;
+
+    --primary: 229 95% 63%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 26% 92%;
+    --secondary-foreground: 220 27% 18%;
+    --muted: 220 22% 95%;
+    --muted-foreground: 220 15% 40%;
+    --accent: 226 58% 93%;
+    --accent-foreground: 229 80% 25%;
+    --destructive: 4 82% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 212 95% 68%;
+    --info-foreground: 218 60% 16%;
+    --success: 146 72% 34%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 92% 55%;
+    --warning-foreground: 24 70% 18%;
+
+    --border: 219 23% 88%;
+    --outline: 220 22% 82%;
+    --input: 220 23% 86%;
+    --ring: 229 95% 63%;
+    --focus-ring: 228 96% 70%;
+    --focus-inner: 0 0% 100%;
+    --radius: 0.75rem;
+
+    --shadow-sm: 0px 1px 2px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0px 8px 16px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0px 12px 32px rgba(15, 23, 42, 0.12);
+    --shadow-xl: 0px 20px 45px rgba(15, 23, 42, 0.16);
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 222 46% 6%;
+    --foreground: 212 27% 94%;
+    --surface: 220 40% 10%;
+    --surface-subtle: 220 35% 12%;
+    --surface-raised: 220 28% 16%;
+    --surface-overlay: 220 70% 4%;
+
+    --card: 220 40% 12%;
+    --card-foreground: 212 27% 94%;
+    --popover: 220 40% 12%;
+    --popover-foreground: 212 27% 94%;
+
+    --primary: 229 95% 72%;
+    --primary-foreground: 226 40% 16%;
+    --secondary: 220 28% 18%;
+    --secondary-foreground: 212 27% 94%;
+    --muted: 220 26% 22%;
+    --muted-foreground: 214 12% 70%;
+    --accent: 227 35% 26%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 358 82% 63%;
+    --destructive-foreground: 0 0% 0%;
+    --info: 210 92% 66%;
+    --info-foreground: 220 100% 12%;
+    --success: 143 70% 36%;
+    --success-foreground: 140 36% 92%;
+    --warning: 40 96% 60%;
+    --warning-foreground: 25 85% 15%;
+
+    --border: 220 28% 22%;
+    --outline: 220 24% 28%;
+    --input: 220 24% 28%;
+    --ring: 229 95% 72%;
+    --focus-ring: 228 96% 70%;
+    --focus-inner: 222 46% 6%;
+    --radius: 0.75rem;
+
+    --shadow-sm: 0px 1px 2px rgba(9, 14, 25, 0.5);
+    --shadow-md: 0px 8px 16px rgba(9, 14, 25, 0.45);
+    --shadow-lg: 0px 12px 32px rgba(9, 14, 25, 0.5);
+    --shadow-xl: 0px 20px 45px rgba(9, 14, 25, 0.6);
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: hsl(var(--foreground));
+  }
+
+  p {
+    color: hsl(var(--muted-foreground));
+  }
+
+  a {
+    color: hsl(var(--primary));
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: hsl(var(--primary-foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--focus-ring));
+    outline-offset: 2px;
+  }
+}

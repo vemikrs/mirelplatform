@@ -19,7 +19,7 @@
 export function handleApiError(errors: string[] | undefined): void {
   if (!errors || errors.length === 0) return
 
-  // TODO: Integrate with toast notification library (@mirel/ui or sonner)
+  // TODO: Integrate with toast notification library (@mirel/ui)
   // For now, log to console and use alert
   errors.forEach((error) => {
     console.error('API Error:', error)

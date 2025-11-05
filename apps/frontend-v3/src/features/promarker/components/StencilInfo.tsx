@@ -1,3 +1,5 @@
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mirel/ui';
+import { CalendarClock, FolderTree, Hash, UserRound } from 'lucide-react';
 import type { StencilConfig } from '../types/api';
 
 interface StencilInfoProps {
@@ -6,7 +8,7 @@ interface StencilInfoProps {
 
 /**
  * StencilInfo Component
- * 
+ *
  * Displays selected stencil configuration information
  */
 export function StencilInfo({ config }: StencilInfoProps) {
@@ -15,41 +17,36 @@ export function StencilInfo({ config }: StencilInfoProps) {
   }
 
   return (
-    <div 
-      className="rounded-lg border border-border bg-card p-4 space-y-3"
-      data-testid="stencil-info"
-    >
-      <h3 className="text-lg font-semibold">ステンシル情報</h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-        <div>
-          <span className="font-medium text-muted-foreground">カテゴリ:</span>
-          <span className="ml-2">{config.categoryName}</span>
+    <Card data-testid="stencil-info">
+      <CardHeader className="space-y-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl text-foreground">{config.name}</CardTitle>
+          <Badge variant="neutral">{config.categoryName}</Badge>
         </div>
-        
-        <div>
-          <span className="font-medium text-muted-foreground">名前:</span>
-          <span className="ml-2">{config.name}</span>
+        <p className="text-sm text-muted-foreground">{config.description || 'このステンシルには説明が設定されていません。'}</p>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-sm md:grid-cols-2">
+        <div className="flex items-center gap-2">
+          <FolderTree className="size-4 text-primary" />
+          <span className="text-muted-foreground">カテゴリ ID:</span>
+          <span className="font-medium">{config.categoryId}</span>
         </div>
-        
-        <div>
-          <span className="font-medium text-muted-foreground">シリアル:</span>
-          <span className="ml-2">{config.serial}</span>
+        <div className="flex items-center gap-2">
+          <Hash className="size-4 text-primary" />
+          <span className="text-muted-foreground">シリアル:</span>
+          <span className="font-medium">{config.serial}</span>
         </div>
-        
-        <div>
-          <span className="font-medium text-muted-foreground">最終更新:</span>
-          <span className="ml-2">{config.lastUpdate}</span>
+        <div className="flex items-center gap-2">
+          <CalendarClock className="size-4 text-primary" />
+          <span className="text-muted-foreground">最終更新:</span>
+          <span className="font-medium">{config.lastUpdate}</span>
         </div>
-      </div>
-
-      {config.description && (
-        <div className="pt-2 border-t">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {config.description}
-          </p>
+        <div className="flex items-center gap-2">
+          <UserRound className="size-4 text-primary" />
+          <span className="text-muted-foreground">更新者:</span>
+          <span className="font-medium">{config.lastUpdateUser}</span>
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

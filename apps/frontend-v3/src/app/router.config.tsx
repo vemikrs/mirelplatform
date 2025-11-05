@@ -1,7 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
+import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
+import { SiteMapPage } from '@/features/sitemap/pages/SiteMapPage';
 import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarkerPage';
+import { loadNavigationConfig } from './navigation.schema';
 
 /**
  * React Router v7 configuration
@@ -9,8 +12,10 @@ import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarker
  */
 export const router = createBrowserRouter([
   {
+    id: 'app-root',
     path: '/',
     element: <RootLayout />,
+    loader: loadNavigationConfig,
     children: [
       {
         index: true,
@@ -19,6 +24,14 @@ export const router = createBrowserRouter([
       {
         path: 'promarker',
         element: <ProMarkerPageWithErrorBoundary />,
+      },
+      {
+        path: 'catalog',
+        element: <UiCatalogPage />,
+      },
+      {
+        path: 'sitemap',
+        element: <SiteMapPage />,
       },
       // Backward compatibility route for E2E tests
       {
