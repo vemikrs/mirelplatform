@@ -40,7 +40,7 @@ test.describe('ProMarker v3 File Upload', () => {
     // This test verifies the FileUploadButton component exists
     // Even if current stencils don't have file-type parameters
     
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     // Check if parameter section exists
@@ -63,13 +63,13 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should handle text-type parameters correctly', async ({ page }) => {
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
-    await promarkerPage.selectStencilByIndex(1)
+    await page.selectOption('[data-testid="stencil-select"]', { index: 1 })
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
-    await promarkerPage.selectSerialByIndex(1)
+    await page.selectOption('[data-testid="serial-select"]', { index: 1 })
     
     // Fill a text parameter (clear existing value first)
     const messageInput = page.locator('[data-testid="param-message"]')
@@ -86,7 +86,7 @@ test.describe('ProMarker v3 File Upload', () => {
     // Note: Need to check if sample stencils have file parameters
     // This test might be skipped if no file-type parameters exist
     
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     // Check if any file upload buttons exist
@@ -105,7 +105,7 @@ test.describe('ProMarker v3 File Upload', () => {
   test('should upload file and set fileId to parameter', async ({ page }) => {
     // This test requires a stencil with file-type parameters
     // Skip if not available
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
@@ -158,7 +158,7 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should display error if file upload fails', async ({ page }) => {
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
@@ -197,7 +197,7 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should allow file replacement', async ({ page }) => {
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
@@ -238,7 +238,7 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should include uploaded fileId in generate request', async ({ page }) => {
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
@@ -250,9 +250,9 @@ test.describe('ProMarker v3 File Upload', () => {
     }
     
     // Select stencil and serial
-    await promarkerPage.selectStencilByIndex(1)
+    await page.selectOption('[data-testid="stencil-select"]', { index: 1 })
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
-    await promarkerPage.selectSerialByIndex(1)
+    await page.selectOption('[data-testid="serial-select"]', { index: 1 })
     
     // Upload file
     const firstButton = fileUploadButtons.first()

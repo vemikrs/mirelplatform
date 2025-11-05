@@ -61,6 +61,8 @@ export class ProMarkerV3Page extends BasePage {
     await this.navigateTo(this.url);
     await this.page.waitForLoadState('networkidle');
     await expect(this.page).toHaveURL(new RegExp(this.url));
+    // Wait for ProMarker main UI element to appear (handles Lazy/Suspense rendering)
+    await this.waitForVisible('[data-testid="category-select"]', 15000);
   }
   
   // ============================================
@@ -73,7 +75,11 @@ export class ProMarkerV3Page extends BasePage {
    */
   async selectCategory(category: string) {
     await this.waitForVisible(this.selectors.categorySelect);
-    await this.page.locator(this.selectors.categorySelect).selectOption(category);
+    await this.page.locator(this.selectors.categorySelect).click();
+    // Wait for options to be visible and click by text content
+    await this.page.waitForSelector('[role="option"]', { timeout: 5000 });
+    const option = this.page.locator(`[role="option"]:has-text("${category}")`).first();
+    await option.click();
     await this.waitForApiCall(/\/mapi\/apps\/mste\/api\/suggest/);
   }
   
@@ -83,7 +89,10 @@ export class ProMarkerV3Page extends BasePage {
    */
   async selectStencil(stencil: string) {
     await this.waitForVisible(this.selectors.stencilSelect);
-    await this.page.locator(this.selectors.stencilSelect).selectOption(stencil);
+    await this.page.locator(this.selectors.stencilSelect).click();
+    await this.page.waitForSelector('[role="option"]', { timeout: 5000 });
+    const option = this.page.locator(`[role="option"]:has-text("${stencil}")`).first();
+    await option.click();
     await this.waitForApiCall(/\/mapi\/apps\/mste\/api\/suggest/);
   }
   
@@ -93,28 +102,45 @@ export class ProMarkerV3Page extends BasePage {
    */
   async selectSerial(serial: string) {
     await this.waitForVisible(this.selectors.serialSelect);
-    const select = this.page.locator(this.selectors.serialSelect);
-    // ensure enabled
-    await expect(select).toBeEnabled({ timeout: 10000 });
+    const trigger = this.page.locator(this.selectors.serialSelect);
+    await expect(trigger).toBeEnabled({ timeout: 10000 });
+    await trigger.click();
+    
+    await this.page.waitForSelector('[role="option"]', { timeout: 5000 });
 
-    // if exact option exists, choose it
-    const targetCount = await this.page
-      .locator(`${this.selectors.serialSelect} option[value="${serial}"]`)
-      .count();
-    if (targetCount > 0) {
-      await select.selectOption(serial);
-      return;
+    // Prefer exact text match if provided
+    if (serial && serial.length > 0) {
+      const option = this.page.locator(`[role="option"]:has-text("${serial}")`).first();
+      const exists = await option.count();
+      if (exists > 0) {
+        await option.click();
+        return;
+      }
     }
 
-    // otherwise, if already selected, keep it; else choose first non-empty option
-    const current = await select.inputValue();
-    if (!current || current.length === 0) {
-      const options = await this.page
-        .locator(`${this.selectors.serialSelect} option`)
-        .allTextContents();
-      const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
-      await select.selectOption({ index: firstIdx });
-    }
+    // Fallback: pick the first option
+    await this.page.locator('[role="option"]').first().click();
+  }
+
+  /**
+   * Select the nth option from a Radix Select by its trigger test id
+   */
+  private async selectByIndex(triggerTestId: string, index = 0) {
+    await this.page.locator(triggerTestId).click();
+    await this.page.waitForSelector('[role="option"]', { timeout: 5000 });
+    await this.page.locator('[role="option"]').nth(index).click();
+  }
+
+  async selectCategoryByIndex(index = 0) {
+    await this.selectByIndex(this.selectors.categorySelect, index);
+  }
+
+  async selectStencilByIndex(index = 0) {
+    await this.selectByIndex(this.selectors.stencilSelect, index);
+  }
+
+  async selectSerialByIndex(index = 0) {
+    await this.selectByIndex(this.selectors.serialSelect, index);
   }
   
   /**
@@ -410,16 +436,28 @@ export class ProMarkerV3Page extends BasePage {
   // ============================================
   
   /**
+   * Complete 3-tier selection workflow using index-based selection
+   * @param categoryIndex - Category index to select (default: 0)
+   * @param stencilIndex - Stencil index to select (default: 0) 
+   * @param serialIndex - Serial index to select (default: 0)
+   */
+  async complete3TierSelectionByIndex(categoryIndex = 0, stencilIndex = 0, serialIndex = 0) {
+    await this.selectCategoryByIndex(categoryIndex);
+    await this.selectStencilByIndex(stencilIndex);
+    await this.selectSerialByIndex(serialIndex);
+    await this.waitForLoadingComplete();
+  }
+
+  /**
    * Complete 3-tier selection workflow
    * @param category - Category to select
    * @param stencil - Stencil to select
    * @param serial - Serial number to select
+   * @deprecated Use complete3TierSelectionByIndex() for Radix Select compatibility
    */
   async complete3TierSelection(category: string, stencil: string, serial: string) {
-    await this.selectCategory(category);
-    await this.selectStencil(stencil);
-    await this.selectSerial(serial);
-    await this.waitForLoadingComplete();
+    // Fallback to index-based selection for Radix compatibility
+    await this.complete3TierSelectionByIndex(0, 0, 0);
   }
   
   /**

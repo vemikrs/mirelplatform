@@ -123,12 +123,12 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled();
     
     // Change stencil
-    await promarkerPage.selectStencilByIndex(2);
+    await page.selectOption('[data-testid="stencil-select"]', { index: 2 });
     // Fixed: Wait for UI element state instead of specific response
     await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify serial is reset
-    const serialValue = await page.locator('[data-testid="serial-select"]').textContent();
+    const serialValue = await page.inputValue('[data-testid="serial-select"]');
     expect(serialValue).toBe(''); // Should be reset to empty
   });
   

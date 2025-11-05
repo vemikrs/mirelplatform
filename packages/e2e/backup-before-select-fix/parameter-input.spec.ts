@@ -37,7 +37,7 @@ test.describe('ProMarker v3 Parameter Input', () => {
     // Initial suggest API call is triggered on mount
     
     // Complete 3-tier selection to display parameters
-    await promarkerPage.complete3TierSelectionByIndex(0, 0, 0);
+    await promarkerPage.complete3TierSelection('/samples', '/samples/hello-world', '250913A');
     
     // Wait for parameters to load
     await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
@@ -93,11 +93,11 @@ test.describe('ProMarker v3 Parameter Input', () => {
     const paramId = await firstParam.getAttribute('data-testid');
     
     // Switch to different serial
-    await promarkerPage.selectSerialByIndex(2);
+    await page.selectOption('[data-testid="serial-select"]', { index: 2 });
     await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
     
     // Switch back
-    await promarkerPage.selectSerialByIndex(1);
+    await page.selectOption('[data-testid="serial-select"]', { index: 1 });
     await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
     
     // Verify value is cleared (new selection resets form)

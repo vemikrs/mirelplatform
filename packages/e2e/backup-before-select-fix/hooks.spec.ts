@@ -156,10 +156,10 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
   // Issue #XX で追跡予定
   test.skip('useGenerate - エラーハンドリング', async ({ page }) => {
     // カテゴリ・ステンシル・シリアル選択
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // シリアル選択（オプション待機＋フォールバック）
@@ -167,9 +167,9 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     await expect(serialSelect2).toBeEnabled({ timeout: 10000 });
     const hasTarget2 = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (hasTarget2 > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
-      const current2 = await page.locator('[data-testid="serial-select"]').textContent();
+      const current2 = await page.inputValue('[data-testid="serial-select"]');
       if (!current2 || current2.length === 0) {
         const optionsText2 = await page.locator('[data-testid="serial-select"] option').allTextContents();
         const firstIdx2 = optionsText2[0]?.trim() === '' && optionsText2.length > 1 ? 1 : 0;

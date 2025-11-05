@@ -37,7 +37,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   
   test('Complete workflow: Select → Fill → Generate → Download', async ({ page }) => {
     // 1. 3段階選択
-    await promarkerPage.complete3TierSelectionByIndex(0, 0, 0)
+    await promarkerPage.complete3TierSelection('/samples', '/samples/hello-world', '250913A')
     await page.waitForTimeout(500)
     
     // 2. 必須パラメータ入力
@@ -73,10 +73,10 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   
   test('Generate with validation errors shows inline errors', async ({ page }) => {
     // 3段階選択完了
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // Wait for serial options and select with fallback
@@ -84,7 +84,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
       const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {
@@ -106,10 +106,10 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   
   test('Generate API error displays error toast', async ({ page }) => {
     // 3段階選択完了
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // Wait for serial options and select with fallback
@@ -117,7 +117,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
       const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {
@@ -150,10 +150,10 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   
   test('Generate returns empty files array shows warning', async ({ page }) => {
     // 3段階選択完了
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // Wait for serial options and select with fallback
@@ -161,7 +161,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
       const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {
@@ -194,10 +194,10 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
   
   test('Multiple generate executions work correctly', async ({ page }) => {
     // 3段階選択完了
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // Wait for serial options and select with fallback
@@ -205,7 +205,7 @@ test.describe('ProMarker v3 - Complete Workflow', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
       const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {

@@ -43,10 +43,10 @@ test.describe('ProMarker v3 - JSON Editor', () => {
   
   test('現在のパラメータがJSON形式で表示される', async ({ page }) => {
     // 選択完了
-    await promarkerPage.selectCategoryByIndex(0)
+    await page.selectOption('[data-testid="category-select"]', '/samples')
     await page.waitForTimeout(500)
     
-    await promarkerPage.selectStencilByIndex(0)
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
     await page.waitForTimeout(500)
     
     // Wait for serial options and select with fallback
@@ -54,9 +54,9 @@ test.describe('ProMarker v3 - JSON Editor', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
-      const current = await serialSelect.textContent();
+      const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {
         const options = await page.locator('[data-testid="serial-select"] option').allTextContents();
         const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
@@ -103,9 +103,8 @@ test.describe('ProMarker v3 - JSON Editor', () => {
     // 適用結果確認（時間をおく）
     await page.waitForTimeout(3000)
     
-    // Radix Select: Check if category was set to expected value
-    // Instead of checking the display text, verify that the expected option is selectable
-    await expect(page.locator('[data-testid="category-select"]')).toContainText('Sample')
+    const categoryValue = await page.locator('[data-testid="category-select"]').inputValue()
+    expect(categoryValue).toBe('/samples')
     
     const messageValue = await page.locator('input[name="message"]').inputValue()
     expect(messageValue).toBe('Modified via JSON')

@@ -128,7 +128,7 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify serial is reset
-    const serialValue = await page.locator('[data-testid="serial-select"]').textContent();
+    const serialValue = await page.inputValue('[data-testid="serial-select"]');
     expect(serialValue).toBe(''); // Should be reset to empty
   });
   

@@ -54,9 +54,9 @@ test.describe.skip('ProMarker v3 Form Validation', () => {
     await page.waitForTimeout(1000);
     
     // Complete 3-tier selection to display parameters
-    await promarkerPage.selectCategoryByIndex(0);
+    await page.selectOption('[data-testid="category-select"]', '/samples');
     await page.waitForTimeout(500);
-    await promarkerPage.selectStencilByIndex(0);
+    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world');
     await page.waitForTimeout(500);
     
     // Wait for serial options and select
@@ -64,7 +64,7 @@ test.describe.skip('ProMarker v3 Form Validation', () => {
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
     const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
     if (targetCount > 0) {
-      await promarkerPage.selectSerialByIndex(0);
+      await page.selectOption('[data-testid="serial-select"]', '250913A');
     } else {
       const current = await serialSelect.inputValue();
       if (!current || current.length === 0) {

@@ -169,7 +169,7 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     if (hasTarget2 > 0) {
       await promarkerPage.selectSerialByIndex(0);
     } else {
-      const current2 = await page.locator('[data-testid="serial-select"]').textContent();
+      const current2 = await page.inputValue('[data-testid="serial-select"]');
       if (!current2 || current2.length === 0) {
         const optionsText2 = await page.locator('[data-testid="serial-select"] option').allTextContents();
         const firstIdx2 = optionsText2[0]?.trim() === '' && optionsText2.length > 1 ? 1 : 0;
