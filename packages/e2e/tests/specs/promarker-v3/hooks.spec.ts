@@ -109,8 +109,16 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     if (await langField.count()) {
       const tagName = await langField.evaluate(el => el.tagName.toLowerCase());
       if (tagName === 'select') {
+        // For native select, use selectOption
         await page.selectOption('[data-testid="param-language"]', 'ja');
+      } else if (tagName === 'button' || await langField.getAttribute('role') === 'combobox') {
+        // For Radix Select, use click + option selection
+        await langField.click();
+        await page.waitForSelector('[role="option"]', { timeout: 5000 });
+        const option = page.locator('[role="option"]:has-text("ja")').first();
+        await option.click();
       } else {
+        // For input fields
         await page.locator('[data-testid="param-language"]').fill('ja');
       }
     }
@@ -162,20 +170,10 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
     await promarkerPage.selectStencilByIndex(0)
     await page.waitForTimeout(500)
     
-    // シリアル選択（オプション待機＋フォールバック）
+    // シリアル選択
     const serialSelect2 = page.locator('[data-testid="serial-select"]');
     await expect(serialSelect2).toBeEnabled({ timeout: 10000 });
-    const hasTarget2 = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    if (hasTarget2 > 0) {
-      await promarkerPage.selectSerialByIndex(0);
-    } else {
-      const current2 = await page.locator('[data-testid="serial-select"]').textContent();
-      if (!current2 || current2.length === 0) {
-        const optionsText2 = await page.locator('[data-testid="serial-select"] option').allTextContents();
-        const firstIdx2 = optionsText2[0]?.trim() === '' && optionsText2.length > 1 ? 1 : 0;
-        await page.selectOption('[data-testid="serial-select"]', { index: firstIdx2 });
-      }
-    }
+    await promarkerPage.selectSerialByIndex(0);
     await page.waitForTimeout(500)
     
     // パラメータセクションが表示されるまで待機
