@@ -1,5 +1,7 @@
 # ProMarker Platform - GitHub Copilot Instructions
 
+**Allways answer in Japanese.**
+
 ## Project Overview
 
 ProMarker is a comprehensive code generation and template management platform built on the mirelplatform framework. This application provides automated development scaffolding, template processing, and code generation capabilities for rapid application development.
