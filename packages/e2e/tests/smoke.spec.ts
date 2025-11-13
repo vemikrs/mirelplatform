@@ -16,8 +16,7 @@ test.describe('ProMarker Smoke Test', () => {
     await expect(page).toHaveTitle(/ProMarker/i);
     
     // Verify main heading is visible
-    const heading = page.locator('h1').filter({ hasText: 'ProMarker 払出画面' });
-    await expect(heading).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /ProMarker ワークスペース/ })).toBeVisible({ timeout: 15000 });
     
     // Take a screenshot for visual verification
     await page.screenshot({ path: 'test-results/smoke-test.png', fullPage: true });

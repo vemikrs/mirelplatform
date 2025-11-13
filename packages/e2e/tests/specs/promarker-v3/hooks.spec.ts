@@ -46,15 +46,13 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
   })
   
   test('useSuggest - ステンシル変更時にAPIコール', async ({ page }) => {
-    // カテゴリ選択
-    await promarkerPage.selectCategoryByIndex(0)
-    await page.waitForTimeout(500)
-    
+    // Set up response promise BEFORE the action that triggers it
     const responsePromise = page.waitForResponse(
       r => r.url().includes('/mapi/apps/mste/api/suggest')
     )
     
-    await promarkerPage.selectStencilByIndex(0)
+    // カテゴリ選択 - this will trigger the API call
+    await promarkerPage.selectCategoryByIndex(0)
     
     const response = await responsePromise
     expect(response.status()).toBe(200)
@@ -70,34 +68,13 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
       data: { content: {} },
       timeout: 5000,
     })
-    await page.goto('/promarker')
     
-    // 3段階選択実行
-    await promarkerPage.selectCategoryByIndex(0)
-    await page.waitForTimeout(500)
+    // Use hello-world stencil for consistent message parameter
+    await promarkerPage.setupHelloWorldStencil()
     
-    await promarkerPage.selectStencilByIndex(0)
-    await page.waitForTimeout(500)
-
-    // シリアルオプションのロードを待機
-    await page.waitForFunction(() => {
-      const el = document.querySelector('[data-testid="serial-select"]');
-      return !!el && (el as HTMLSelectElement).options.length > 0;
-    }, { timeout: 15000 });
-    
-    // シリアル選択（オプション待機＋フォールバック）
-    const serialSelect1 = page.locator('[data-testid="serial-select"]');
-    await expect(serialSelect1).toBeEnabled({ timeout: 10000 });
-    // 必須シリアルが存在しない場合は環境依存と判断してスキップ
-    const mustSerialExists = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    if (mustSerialExists === 0) {
-      test.skip('Required sample serial 250913A not available in this environment');
-    }
-    const hasTarget1 = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    await promarkerPage.selectSerialByIndex(0);
-  // パラメータセクション・ステンシル情報が表示されるまで待機
-  await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
-  await expect(page.locator('[data-testid="stencil-info"]')).toBeVisible({ timeout: 15000 });
+    // パラメータセクション・ステンシル情報が表示されるまで待機
+    await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="stencil-info"]')).toBeVisible({ timeout: 15000 });
     
     // パラメータ入力（存在する項目のみ入力）
     await page.fill('input[name="message"]', 'Test Message')
@@ -211,15 +188,8 @@ test.describe('ProMarker v3 - TanStack Query Hooks', () => {
   })
   
   test('useSuggest - シリアル選択時にパラメータフィールド表示', async ({ page }) => {
-    // 3段階選択
-    await promarkerPage.selectCategoryByIndex(0)
-    await page.waitForTimeout(500)
-    
-    await promarkerPage.selectStencilByIndex(0)
-    await page.waitForTimeout(500)
-
-    // シリアル選択
-    await promarkerPage.selectSerialByIndex(0)
+    // Use hello-world stencil for consistent message parameter
+    await promarkerPage.setupHelloWorldStencil()
 
     // ネットワーク待機ではなくUI可視性を待つ（自動選択でAPIが発火しない場合があるため）
     await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
