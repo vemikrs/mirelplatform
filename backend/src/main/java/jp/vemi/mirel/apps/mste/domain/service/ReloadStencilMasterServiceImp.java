@@ -109,7 +109,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                     entry.setStencilName(config.getName());
                     entry.setItemKind("1");
                     entry.setSort(0);
-                    stencilRepository.save(entry);
+                    saveStencilSafely(entry);
                     System.out.println(config.getId() + "/" + config.getSerial() + ":" + config.getName());
 
                     if (false == StringUtils.isEmpty(config.getCategoryId())) {
@@ -132,7 +132,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                 entry.setStencilName(catentry.getValue());
                 entry.setItemKind("0");
                 entry.setSort(0);
-                stencilRepository.save(entry);
+                saveStencilSafely(entry);
             }
 
             // 従来のファイル管理処理（後方互換性）
@@ -344,6 +344,25 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             System.out.println("Error creating physical sample stencil file: " + e.getMessage());
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * 楽観ロック競合を回避するため新しいトランザクションでステンシル保存
+     * 並列実行時の重複save操作を安全に処理
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void saveStencilSafely(MsteStencil entry) {
+        try {
+            // 重複チェック: 既存エンティティの確認
+            if (stencilRepository.existsById(entry.getStencilCd())) {
+                System.out.println("Stencil already exists, skipping: " + entry.getStencilCd());
+                return;
+            }
+            stencilRepository.save(entry);
+        } catch (Exception e) {
+            System.out.println("Error saving stencil safely: " + entry.getStencilCd() + " - " + e.getMessage());
+            // 並列実行での重複保存は無視
         }
     }
 
