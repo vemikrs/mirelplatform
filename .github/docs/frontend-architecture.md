@@ -1,4 +1,4 @@
-# Frontend Architecture - ProMarker Platform
+# Frontend Architecture - mirelplatform
 
 ## Overview
 

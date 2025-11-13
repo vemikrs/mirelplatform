@@ -1,6 +1,6 @@
 # ProMarker E2E Testing
 
-This workspace contains end-to-end tests for the ProMarker platform using Playwright.
+This workspace contains end-to-end tests for the mirelplatform using Playwright.
 
 ## Prerequisites
 

@@ -1,7 +1,7 @@
 {
   "name": "@mirelplatform/e2e",
   "version": "1.0.0",
-  "description": "E2E testing infrastructure for ProMarker platform",
+  "description": "E2E testing infrastructure for mirelplatform",
   "private": true,
   "scripts": {
     "test": "playwright test",

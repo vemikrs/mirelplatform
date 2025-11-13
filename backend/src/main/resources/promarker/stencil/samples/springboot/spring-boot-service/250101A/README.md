@@ -24,7 +24,7 @@ ProMarkerのvalidation機能の包括的なテスト用途として使用でき�
 | `eventId` | イベントID | `get` | 必須、ローワーキャメルケース |
 | `eventName` | イベント名 | `取得` | 必須、1-50文字 |
 | `version` | バージョン | `1.0` | 任意、バージョン形式 |
-| `author` | 作成者 | `ProMarker Platform` | 任意、最大100文字 |
+| `author` | 作成者 | `mirelplatform` | 任意、最大100文字 |
 | `vendor` | ベンダー | `Open Source Community` | 任意、最大100文字 |
 
 ### Validation定義の詳細
@@ -155,7 +155,7 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/generate \
       "eventId": "get",
       "eventName": "取得",
       "version": "1.0",
-      "author": "ProMarker Platform",
+      "author": "mirelplatform",
       "vendor": "Open Source Community"
     }
   }'
@@ -191,4 +191,4 @@ validation-improvement-plan.md の以下のセクションで参照：
 
 - `/docs/issue/#33/validation-improvement-plan.md` - Validation機能改善計画
 - `/.github/docs/api-reference.md` - API仕様書
-- `/README.md` - ProMarker Platform概要
+- `/README.md` - mirelplatform概要

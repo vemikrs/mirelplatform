@@ -126,9 +126,9 @@ stencil:
 
     - id: author
       name: 作成者
-      value: ProMarker Platform
+      value: mirelplatform
       type: text
-      placeholder: ProMarker Platform
+      placeholder: mirelplatform
       note: 作成者名（コメントに使用）
       validation:
         required: false
@@ -145,7 +145,7 @@ stencil:
         maxLength: 100
 
   codeInfo:
-    copyright: Copyright (c) 2025 ProMarker Platform
+    copyright: Copyright (c) 2025 mirelplatform
     versionNo: "1.0"
-    author: ProMarker Platform
+    author: mirelplatform
     vendor: Open Source Community

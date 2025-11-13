@@ -1,4 +1,4 @@
-# ProMarker Platform - GitHub Copilot Instructions
+# mirelplatform - GitHub Copilot Instructions
 
 **Allways answer in Japanese.**
 
@@ -349,4 +349,4 @@ pnpm --filter e2e test tests/specs/promarker-v3/form-validation.spec.ts
 
 ---
 
-This document provides the foundation for working with the ProMarker platform. Refer to the detailed documentation in the `docs/` directory for specific implementation guidance.
+This document provides the foundation for working with the mirelplatform. Refer to the detailed documentation in the `docs/` directory for specific implementation guidance.
