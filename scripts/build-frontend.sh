@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Mirel Platform Frontend ビルドスクリプト
+# mirelplatform Frontend ビルドスクリプト
 # frontend-v3 (Vite + React) のビルド
 
 set -e

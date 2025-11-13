@@ -14,7 +14,7 @@ vi.mock('react-router-dom', async () => {
 
 const mockNavigation: NavigationConfig = {
   brand: {
-    name: 'Mirel Platform',
+    name: 'mirelplatform',
     shortName: 'Mirel',
   },
   primary: [

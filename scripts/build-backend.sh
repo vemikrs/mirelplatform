@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Mirel Platform Backend ビルドスクリプト
+# mirelplatform Backend ビルドスクリプト
 # Spring Boot アプリケーションのビルド
 
 set -e

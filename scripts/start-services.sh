@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Mirel Platform 一括起動スクリプト
+# mirelplatform 一括起動スクリプト
 # Backend (Spring Boot) と Frontend v3 (Vite) を同時起動
 
-echo "🚀 Mirel Platform サービス起動中..."
+echo "🚀 mirelplatform サービス起動中..."
 echo "======================================"
 
 # プロジェクトルートに移動（scriptsフォルダから実行されることを想定）

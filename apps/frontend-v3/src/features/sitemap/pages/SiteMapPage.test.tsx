@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigation: NavigationConfig = {
-  brand: { name: 'Mirel Platform' },
+  brand: { name: 'mirelplatform' },
   primary: [
     { id: 'home', label: 'ホーム', path: '/' },
     { id: 'promarker', label: 'ProMarker', path: '/promarker' },

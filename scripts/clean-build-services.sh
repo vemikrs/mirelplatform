@@ -3,7 +3,7 @@
 PROJECT_ROOT="$(dirname "$0")"/..
 cd "$PROJECT_ROOT"
 
-echo "🧩 Mirel Platform クリーンビルド開始..."
+echo "🧩 mirelplatform クリーンビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成
@@ -12,7 +12,7 @@ mkdir -p logs
 
 set -e
 
-echo "🧹 Mirel Platform クリーンビルド開始..."
+echo "🧹 mirelplatform クリーンビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Mirel Platform サービス停止スクリプト
+# mirelplatform サービス停止スクリプト
 
 # プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
 PROJECT_ROOT="$(dirname "$0")"/.. 
 cd "$PROJECT_ROOT"
 
-echo "🛑 Mirel Platform サービス停止中..."
+echo "🛑 mirelplatform サービス停止中..."
 echo "======================================"
 
 # PIDファイルから停止

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Mirel Platform ビルドスクリプト
+# mirelplatform ビルドスクリプト
 # Backend (Spring Boot) と Frontend v3 (Vite) をビルド
 
 set -e
@@ -9,7 +9,7 @@ set -e
 PROJECT_ROOT="$(dirname "$0")"/.. 
 cd "$PROJECT_ROOT"
 
-echo "🔨 Mirel Platform ビルド開始..."
+echo "🔨 mirelplatform ビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成

@@ -44,9 +44,9 @@ export function HomePage() {
   return (
     <div className="space-y-12">
       <SectionHeading
-        eyebrow="Mirel Platform"
+        eyebrow="mirelplatform"
         title="業務アプリ基盤ポータル"
-        description="ProMarker を中心とした業務アプリケーション開発基盤の状況と、近日拡張予定のモジュールをご確認いただけます。"
+        description="業務アプリケーション基盤と、近日拡張予定のモジュールをご確認いただけます。"
         actions={
           <div className="flex flex-wrap gap-2">
             <Button asChild size="lg">

@@ -199,7 +199,7 @@ export function RootLayout() {
       <footer className="mt-auto border-t border-outline/40 bg-surface-subtle/60">
         <div className="container flex flex-col gap-2 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div>
-            © 2016-2025 Mirel Platform. All rights reserved.
+            © 2016-2025 mirelplatform. All rights reserved.
           </div>
           <div className="flex items-center gap-3">
             {navigation.secondary.map((link) => (

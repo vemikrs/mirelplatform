@@ -56,7 +56,7 @@ export function SiteMapPage() {
       <SectionHeading
         eyebrow="Navigation"
         title="サイトマップ"
-        description="Mirel Platform の画面構造と主要モジュールを一覧で確認できます。"
+        description="mirelplatform の画面構造と主要モジュールを一覧で確認できます。"
       />
       <div className="grid gap-6 md:grid-cols-2">
         <LinkList title="主要機能" description="ヘッダーに表示される主要メニュー" links={navigation.primary} />
