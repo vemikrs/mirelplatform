@@ -4,6 +4,43 @@
     --font-sans: 'Inter', 'Noto Sans JP', 'Helvetica Neue', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
+    /* === CONTAINER PADDING (Tailwind v4 CSS-based configuration) === */
+    --container-padding: 1rem;        /* 16px - デフォルト（モバイル） */
+  }
+
+  /* Container padding responsive overrides */
+  @media (min-width: 640px) {
+    :root {
+      --container-padding: 1.5rem;    /* 24px - sm */
+    }
+  }
+  
+  @media (min-width: 768px) {
+    :root {
+      --container-padding: 2rem;      /* 32px - md */
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    :root {
+      --container-padding: 3rem;      /* 48px - lg */
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    :root {
+      --container-padding: 4rem;      /* 64px - xl */
+    }
+  }
+  
+  @media (min-width: 1536px) {
+    :root {
+      --container-padding: 6rem;      /* 96px - 2xl */
+    }
+  }
+
+  :root {
+
     /* === NEUTRAL SYSTEM (Warm Gray - 2025 Standard) === */
     --background: 225 8% 97%;
     --foreground: 225 12% 28%;
@@ -156,5 +193,11 @@
     backdrop-filter: blur(8px);
     border-radius: 16px;
     border: 1px solid hsl(var(--outline) / 0.15);
+  }
+
+  /* === Container Padding Override (Tailwind v4 compatible) === */
+  .container {
+    padding-left: var(--container-padding);
+    padding-right: var(--container-padding);
   }
 }
