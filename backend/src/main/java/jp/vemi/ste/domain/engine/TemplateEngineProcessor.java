@@ -5,6 +5,7 @@ package jp.vemi.ste.domain.engine;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -1199,13 +1200,152 @@ public class TemplateEngineProcessor {
      * @return StencilSettingsYml、または null
      */
     private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
+        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
+            fw.write("[LOAD] Loading stencil settings from: " + resource.getDescription() + "\n");
+            fw.flush();
+        } catch (Exception ignore) {}
+        
         try (InputStream inputStream = resource.getInputStream()) {
             LoaderOptions loaderOptions = new LoaderOptions();
             Yaml yaml = new Yaml(loaderOptions);
-            return yaml.loadAs(inputStream, StencilSettingsYml.class);
+            StencilSettingsYml settings = yaml.loadAs(inputStream, StencilSettingsYml.class);
+            
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
+                fw.write("[LOAD] Settings loaded, calling mergeParentStencilSettings\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
+            // 親ディレクトリの設定ファイルを読み込んでマージ
+            if (settings != null) {
+                mergeParentStencilSettings(resource, settings);
+            }
+            
+            return settings;
         } catch (Exception e) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
+                fw.write("[LOAD] Error loading stencil settings: " + e.getMessage() + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
             logger.info("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * 親ディレクトリのstencil-settings.ymlを読み込んでマージする
+     * @param childResource 子ステンシルのリソース
+     * @param childSettings 子ステンシルの設定
+     */
+    public static void mergeParentStencilSettings(Resource childResource, StencilSettingsYml childSettings) {
+        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
+            fw.write("[MERGE] START: mergeParentStencilSettings called\n");
+            fw.flush();
+        } catch (Exception ignore) {}
+        
+        try {
+            // リソースのURIからパスを取得
+            String resourcePath = childResource.getURI().toString();
+            
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
+                fw.write("[MERGE] Child resource path: " + resourcePath + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
+            System.out.println("[MERGE] Child resource path: " + resourcePath);
+            logger.info("Child resource path: " + resourcePath);
+            
+            // URIからファイルパスを抽出（file: プレフィックスを除去）
+            String filePath = resourcePath.replace("file:", "");
+            File childFile = new File(filePath);
+            
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
+                fw.write("[MERGE] File path: " + filePath + ", exists: " + childFile.exists() + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
+            if (!childFile.exists()) {
+                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
+                    fw.write("[MERGE] Child resource file does not exist: " + filePath + "\n");
+                    fw.flush();
+                } catch (Exception ignore) {}
+                System.out.println("[MERGE] Child resource file does not exist: " + filePath);
+                logger.info("Child resource file does not exist: " + filePath);
+                return;
+            }
+            
+            // ProMarkerストレージのstencilフォルダをベースとして取得
+            String stencilBaseDir = getStencilMasterStorageDir();
+            File stencilBaseDirFile = new File(stencilBaseDir);
+            
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
+                fw.write("[MERGE] Stencil base directory: " + stencilBaseDir + ", exists: " + stencilBaseDirFile.exists() + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
+            if (!stencilBaseDirFile.exists()) {
+                System.out.println("[MERGE] Stencil base directory does not exist: " + stencilBaseDir);
+                logger.info("Stencil base directory does not exist: " + stencilBaseDir);
+                return;
+            }
+            
+            System.out.println("[MERGE] Stencil base directory: " + stencilBaseDir);
+            logger.info("Stencil base directory: " + stencilBaseDir);
+            
+            // 子ファイルから親ディレクトリへ再帰的にマージ（stencilフォルダまで）
+            File currentDir = childFile.getParentFile(); // stencil-settings.ymlの親ディレクトリ（シリアル番号ディレクトリ）
+            
+            while (currentDir != null && !currentDir.equals(stencilBaseDirFile)) {
+                // 1階層上へ
+                currentDir = currentDir.getParentFile();
+                
+                if (currentDir == null || !currentDir.exists()) {
+                    break;
+                }
+                
+                // stencilフォルダに到達したら停止
+                if (currentDir.equals(stencilBaseDirFile)) {
+                    System.out.println("[MERGE] Reached stencil base directory, stopping merge");
+                    logger.info("Reached stencil base directory, stopping merge");
+                    break;
+                }
+                
+                System.out.println("[MERGE] Checking parent directory: " + currentDir.getAbsolutePath());
+                logger.info("Checking parent directory: " + currentDir.getAbsolutePath());
+                
+                // 親ディレクトリで *_stencil-settings.yml を探す
+                File[] parentSettingsFiles = currentDir.listFiles((dir, name) -> 
+                    name.endsWith("_stencil-settings.yml"));
+                
+                if (parentSettingsFiles != null && parentSettingsFiles.length > 0) {
+                    // 最初に見つかった親設定ファイルを読み込んでマージ
+                    File parentSettingsFile = parentSettingsFiles[0];
+                    System.out.println("[MERGE] Found parent stencil settings: " + parentSettingsFile.getAbsolutePath());
+                    logger.info("Found parent stencil settings: " + parentSettingsFile.getAbsolutePath());
+                    
+                    try (InputStream parentStream = new FileInputStream(parentSettingsFile)) {
+                        LoaderOptions loaderOptions = new LoaderOptions();
+                        Yaml yaml = new Yaml(loaderOptions);
+                        StencilSettingsYml parentSettings = yaml.loadAs(parentStream, StencilSettingsYml.class);
+                        
+                        if (parentSettings != null && parentSettings.getStencil() != null 
+                            && parentSettings.getStencil().getDataDomain() != null) {
+                            // 親のdataDomainを子にマージ（子の定義が優先される）
+                            childSettings.appendDataElementSublist(parentSettings.getStencil().getDataDomain());
+                            System.out.println("[MERGE] Merged parent dataDomain from: " + parentSettingsFile.getName());
+                            logger.info("Merged parent dataDomain from: " + parentSettingsFile.getName());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[MERGE] Failed to load parent settings from " + parentSettingsFile.getName() + ": " + e.getMessage());
+                        logger.warning("Failed to load parent settings from " + parentSettingsFile.getName() + ": " + e.getMessage());
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            System.out.println("[MERGE] Error merging parent stencil settings: " + e.getMessage());
+            e.printStackTrace();
+            logger.warning("Error merging parent stencil settings: " + e.getMessage());
+            // エラーは無視して続行（親設定がなくても動作する）
         }
     }
 

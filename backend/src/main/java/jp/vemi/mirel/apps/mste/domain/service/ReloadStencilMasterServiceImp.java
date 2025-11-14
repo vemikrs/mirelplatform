@@ -264,7 +264,14 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
      */
     private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
         try (InputStream inputStream = resource.getInputStream()) {
-            return new Yaml().loadAs(inputStream, StencilSettingsYml.class);
+            StencilSettingsYml settings = new Yaml().loadAs(inputStream, StencilSettingsYml.class);
+            
+            // 親ディレクトリの設定ファイルを読み込んでマージ
+            if (settings != null) {
+                jp.vemi.ste.domain.engine.TemplateEngineProcessor.mergeParentStencilSettings(resource, settings);
+            }
+            
+            return settings;
         } catch (Exception e) {
             System.out.println("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
             return null;
@@ -459,6 +466,12 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
         StencilSettingsYml settings = null;
         try (InputStream stream = new FileSystemResource(file).getInputStream()) {
             settings = new Yaml().loadAs(stream, StencilSettingsYml.class);
+            
+            // 親ディレクトリの設定ファイルを読み込んでマージ
+            if (settings != null) {
+                FileSystemResource resource = new FileSystemResource(file);
+                jp.vemi.ste.domain.engine.TemplateEngineProcessor.mergeParentStencilSettings(resource, settings);
+            }
         } catch (final ConstructorException e) {
             e.printStackTrace();
             String msg = "yamlの読込でエラーが発生しました。";
