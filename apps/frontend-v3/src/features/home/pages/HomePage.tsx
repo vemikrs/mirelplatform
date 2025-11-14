@@ -211,27 +211,14 @@ export function HomePage() {
               {/* Action Button with Liquid Interactive Effect */}
               <Button 
                 variant="ghost" 
-                size="sm" 
-                className="mt-4 w-full justify-between text-primary/80 hover:text-primary group/btn"
-                style={{
-                  background: 'hsl(var(--primary) / 0)',
-                  transitionDuration: 'var(--liquid-duration-fast)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'hsl(var(--primary) / 0)';
-                }}
+                size="default"
+                className="mt-4 w-full justify-between text-primary/80 hover:text-primary/90 hover:bg-primary/8 rounded-lg group/btn"
                 asChild
               >
                 <Link to={module.link || '/sitemap'}>
                   <span>詳細を見る</span>
                   <ArrowRight 
                     className="size-4 transition-transform group-hover/btn:translate-x-1" 
-                    style={{
-                      transitionDuration: 'var(--liquid-duration-fast)'
-                    }}
                   />
                 </Link>
               </Button>
