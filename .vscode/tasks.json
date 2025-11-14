@@ -108,6 +108,42 @@
       }
     },
     {
+      "label": "Backend: Start WITHOUT Devtools",
+      "type": "shell",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Starting MiplaApplication.*$",
+          "endsPattern": "^.*Started MiplaApplication in.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "Frontend-v3: Start Vite",
       "type": "shell",
       "command": "fuser -k 5173/tcp 2>/dev/null || true; pnpm --filter frontend-v3 dev",
