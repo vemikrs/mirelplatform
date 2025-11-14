@@ -41,7 +41,7 @@ export const useGenerate = () => {
 
       return response.data.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Generation successful:', data);
       
       toast({
@@ -57,17 +57,48 @@ export const useGenerate = () => {
         
         console.log(`Downloading file: ${fileName} (ID: ${fileId})`);
         
-        // Create download link and trigger download
-        const downloadUrl = `/commons/dlsite/${fileId}`;
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = fileName;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log('Download triggered successfully');
+        try {
+          // Download file using axios with blob responseType (matching Vue.js implementation)
+          const response = await apiClient.post(
+            '/commons/download',
+            {
+              content: [{ fileId }],
+            },
+            {
+              responseType: 'blob',
+            }
+          );
+
+          // Extract filename from Content-Disposition header
+          const contentDisposition = response.headers['content-disposition'];
+          const downloadFileName = contentDisposition 
+            ? decodeURIComponent(contentDisposition.split('=')[1])
+            : fileName;
+
+          // Create blob and trigger download
+          const blob = new Blob([response.data], { type: response.headers['content-type'] });
+          const url = (window.URL || (window as any).webkitURL).createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = downloadFileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Cleanup
+          URL.revokeObjectURL(url);
+          
+          console.log('Download completed successfully');
+        } catch (error) {
+          console.error('Download failed:', error);
+          toast({
+            variant: 'destructive',
+            title: 'ダウンロードエラー',
+            description: 'ファイルのダウンロードに失敗しました。',
+          });
+        }
       }
       
       // Ensure mutation state is properly reset for next execution
