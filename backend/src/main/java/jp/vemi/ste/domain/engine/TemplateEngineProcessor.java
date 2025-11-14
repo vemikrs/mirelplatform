@@ -712,6 +712,11 @@ public class TemplateEngineProcessor {
 
     protected StencilSettingsYml getSsYmlRecurive(final File file) {
 
+        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/get-ss-yml.log", true)) {
+            fw.write("[GET_SS_YML] Called with file: " + file.getAbsolutePath() + "\n");
+            fw.flush();
+        } catch (Exception ignore) {}
+
         if(false == file.exists()) {
             throw new MirelSystemException("ステンシル定義が見つかりません。ファイル：" + context.getStencilCanonicalName() + "/" + file.getName() , null);
         }
@@ -734,6 +739,11 @@ public class TemplateEngineProcessor {
             throw new MirelSystemException("yamlの読込で入出力エラーが発生しました。", e);
         }
 
+        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/get-ss-yml.log", true)) {
+            fw.write("[GET_SS_YML] Loaded settings, calling merge\n");
+            fw.flush();
+        } catch (Exception ignore) {}
+
         // 親ディレクトリの設定ファイルを読み込んでマージ（FileSystemResource経由）
         if (settings != null) {
             try {
@@ -741,6 +751,11 @@ public class TemplateEngineProcessor {
                 mergeParentStencilSettings(resource, settings);
             } catch (Exception e) {
                 logger.warn("Failed to merge parent stencil settings for file {}: {}", file.getName(), e.getMessage());
+                
+                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/get-ss-yml.log", true)) {
+                    fw.write("[GET_SS_YML] Merge failed: " + e.getMessage() + "\n");
+                    fw.flush();
+                } catch (Exception ignore) {}
             }
         }
 
@@ -1004,6 +1019,11 @@ public class TemplateEngineProcessor {
             logger.debug("layerDir: {}", layerDir);
             logger.debug("stencilCanonicalName: {}", context.getStencilCanonicalName());
             
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/find-fs.log", true)) {
+                fw.write("[FIND_FS] layerDir=" + layerDir + ", stencilCanonicalName=" + context.getStencilCanonicalName() + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
             // パス構築の改善
             String stencilPath;
             if (layerDir.endsWith("/")) {
@@ -1021,8 +1041,19 @@ public class TemplateEngineProcessor {
             File settingsFile = new File(stencilPath + "/stencil-settings.yml");
             logger.debug("Searching settings file: {}", settingsFile.getAbsolutePath());
             
+            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/find-fs.log", true)) {
+                fw.write("[FIND_FS] settingsFile=" + settingsFile.getAbsolutePath() + ", exists=" + settingsFile.exists() + "\n");
+                fw.flush();
+            } catch (Exception ignore) {}
+            
             if (settingsFile.exists() && settingsFile.isFile()) {
                 logger.debug("Found stencil-settings.yml: {}", settingsFile.getAbsolutePath());
+                
+                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/find-fs.log", true)) {
+                    fw.write("[FIND_FS] Calling getSsYmlRecurive\n");
+                    fw.flush();
+                } catch (Exception ignore) {}
+                
                 return getSsYmlRecurive(settingsFile);
             } else {
                 logger.debug("Settings file not found: {}", settingsFile.getAbsolutePath());
