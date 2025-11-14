@@ -245,19 +245,19 @@ public class TemplateEngineProcessor {
             // FreeMarkerのMultiTemplateLoaderを使用してファイルシステムとクラスパスの両方をサポート
             List<TemplateLoader> loaders = new ArrayList<>();
             
-            // Layer 1: ファイルシステムローダー（files/ ディレクトリ配下を基準）
-            File filesDir = new File(getStencilAndSerialStorageDir(), "files");
-            if (filesDir.exists() && filesDir.isDirectory()) {
-                loaders.add(new FileTemplateLoader(filesDir));
-                System.out.println("Added filesystem template loader: " + filesDir.getAbsolutePath());
+            // Layer 1: ファイルシステムローダー（serialNoディレクトリ全体を基準）
+            File serialDir = new File(getStencilAndSerialStorageDir());
+            if (serialDir.exists() && serialDir.isDirectory()) {
+                loaders.add(new FileTemplateLoader(serialDir));
+                System.out.println("Added filesystem template loader: " + serialDir.getAbsolutePath());
             } else {
-                System.out.println("Filesystem files directory not found: " + filesDir.getAbsolutePath());
+                System.out.println("Filesystem serial directory not found: " + serialDir.getAbsolutePath());
             }
             
-            // Layer 2: クラスパスローダー（files/ ディレクトリ配下を基準）
+            // Layer 2: クラスパスローダー（serialNoディレクトリ全体を基準）
             if (resourcePatternResolver != null) {
-                // files/ ディレクトリを基準パスとする
-                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/files";
+                // serialNoディレクトリを基準パスとする
+                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
                 ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
                 loaders.add(classpathLoader);
                 System.out.println("Added classpath template loader: " + stencilPath);
@@ -1199,33 +1199,44 @@ public class TemplateEngineProcessor {
     private void searchFilesystemTemplates(List<String> templateFiles, Set<String> foundFileNames,
                                           String stencilCanonicalName, String serialNo) {
         try {
-            String basePath = getStencilAndSerialStorageDir();
-            // 標準構成: files/ ディレクトリ配下を検索対象とする
-            File filesDir = new File(basePath, "files");
-            System.out.println("Searching filesystem layer: " + filesDir.getAbsolutePath());
+            String serialDirPath = getStencilAndSerialStorageDir();
+            File serialDir = new File(serialDirPath);
+            System.out.println("Searching filesystem layer: " + serialDir.getAbsolutePath());
             
-            if (filesDir.exists() && filesDir.isDirectory()) {
-                List<File> files = FileUtil.getFiles(filesDir);
+            if (serialDir.exists() && serialDir.isDirectory()) {
+                // serialNoディレクトリ配下の全ファイルを再帰的に取得（絶対パスで）
+                List<File> files = FileUtil.getFiles(serialDir);
                 
                 for (File file : files) {
                     String fileName = file.getName();
                     
-                    if (!fileName.equals("stencil-settings.yml") && 
-                        !foundFileNames.contains(fileName)) {
-                        try {
+                    // stencil-settings.ymlは除外
+                    if (fileName.equals("stencil-settings.yml")) {
+                        continue;
+                    }
+                    
+                    try {
+                        // 相対パスを計算（serialNoディレクトリからの相対パス）
+                        String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
+                        // Windows パス区切りをUnix形式に統一
+                        relativePath = relativePath.replace('\\', '/');
+                        
+                        // 重複チェックは相対パスで行う（同名ファイルが異なるディレクトリにある場合を考慮）
+                        if (!foundFileNames.contains(relativePath)) {
                             templateFiles.add(file.getCanonicalPath());
-                            foundFileNames.add(fileName);
-                            System.out.println("FILESYSTEM found: " + fileName);
-                        } catch (IOException e) {
-                            System.out.println("Error getting canonical path: " + e.getMessage());
+                            foundFileNames.add(relativePath);
+                            System.out.println("FILESYSTEM found: " + relativePath + " -> " + file.getCanonicalPath());
                         }
+                    } catch (IOException e) {
+                        System.out.println("Error processing file " + file.getAbsolutePath() + ": " + e.getMessage());
                     }
                 }
             } else {
-                System.out.println("FILESYSTEM files directory not found: " + filesDir.getAbsolutePath());
+                System.out.println("FILESYSTEM serial directory not found: " + serialDir.getAbsolutePath());
             }
         } catch (Exception e) {
             System.out.println("Error searching filesystem layer: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -1237,8 +1248,8 @@ public class TemplateEngineProcessor {
                 return;
             }
             
-            // 標準構成: files/ ディレクトリ配下を検索対象とする
-            String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/files/**";
+            // serialNoディレクトリ配下の全ファイルを検索（**で再帰検索）
+            String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/**";
             System.out.println("Searching CLASSPATH layer: " + searchPattern);
             
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
@@ -1247,25 +1258,42 @@ public class TemplateEngineProcessor {
             for (Resource resource : resources) {
                 try {
                     String filename = resource.getFilename();
-                    if (filename != null && 
-                        !filename.equals("stencil-settings.yml") && 
-                        !resource.getURI().toString().endsWith("/") &&
-                        !foundFileNames.contains(filename)) {
-                        
+                    if (filename == null || 
+                        filename.equals("stencil-settings.yml") || 
+                        resource.getURI().toString().endsWith("/")) {
+                        continue;
+                    }
+                    
+                    // リソースURIから相対パスを抽出
+                    String uri = resource.getURI().toString();
+                    String basePath = "promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/";
+                    int baseIndex = uri.indexOf(basePath);
+                    String relativePath = filename; // デフォルトはファイル名のみ
+                    
+                    if (baseIndex >= 0) {
+                        relativePath = uri.substring(baseIndex + basePath.length());
+                        // URLエンコードされている場合はデコード
+                        relativePath = java.net.URLDecoder.decode(relativePath, "UTF-8");
+                    }
+                    
+                    // 重複チェックは相対パスで行う
+                    if (!foundFileNames.contains(relativePath)) {
                         // classpath resourceを一時ファイルに展開
-                        File tempFile = extractResourceToTempFile(resource, filename);
+                        File tempFile = extractResourceToTempFile(resource, relativePath);
                         if (tempFile != null) {
                             templateFiles.add(tempFile.getAbsolutePath());
-                            foundFileNames.add(filename);
-                            System.out.println("CLASSPATH found: " + filename + " -> " + tempFile.getAbsolutePath());
+                            foundFileNames.add(relativePath);
+                            System.out.println("CLASSPATH found: " + relativePath + " -> " + tempFile.getAbsolutePath());
                         }
                     }
                 } catch (Exception e) {
                     System.out.println("Error processing classpath resource: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
         } catch (Exception e) {
             System.out.println("Error searching classpath layer: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -1299,35 +1327,49 @@ public class TemplateEngineProcessor {
     /**
      * ファイルパスからテンプレートファイル名を抽出（cname用）
      * @param fullPath 完全なファイルパス
-     * @return テンプレートファイル名
+     * @return テンプレートファイル名（serialNoディレクトリからの相対パス）
      */
     private String extractTemplateFileName(String fullPath) {
         if (StringUtils.isEmpty(fullPath)) {
             return "";
         }
         
+        File file = new File(fullPath);
+        String fileName = file.getName();
+        
         // 一時ファイル名から元のテンプレートファイル名を取得
-        String fileName = new File(fullPath).getName();
         if (tempFileToOriginalMap.containsKey(fileName)) {
             String originalFileName = tempFileToOriginalMap.get(fileName);
             System.out.println("Mapped temp file: " + fileName + " -> " + originalFileName);
             return originalFileName;
         }
         
-        String baseDirPath = StorageUtil.getBaseDir();
-        String stencilAndSerialDir = getStencilAndSerialStorageDir();
+        // 一時ファイルの完全パスがマップにある場合（相対パス付き）
+        if (tempFileToOriginalMap.containsKey(fullPath)) {
+            String originalPath = tempFileToOriginalMap.get(fullPath);
+            System.out.println("Mapped temp file path: " + fullPath + " -> " + originalPath);
+            return originalPath;
+        }
         
-        // ファイルシステムパスの場合
-        if (fullPath.startsWith(baseDirPath)) {
+        String serialDirPath = getStencilAndSerialStorageDir();
+        File serialDir = new File(serialDirPath);
+        
+        // ファイルシステムパスの場合：serialNoディレクトリからの相対パスを計算
+        if (fullPath.startsWith(serialDirPath)) {
             try {
-                return fullPath.substring(baseDirPath.length() + stencilAndSerialDir.length());
-            } catch (StringIndexOutOfBoundsException e) {
-                // fallback: ファイル名のみ
+                String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
+                // Windowsパス区切りをUnix形式に統一
+                relativePath = relativePath.replace('\\', '/');
+                System.out.println("Extracted relative path: " + relativePath + " from " + fullPath);
+                return relativePath;
+            } catch (Exception e) {
+                System.out.println("Error extracting relative path: " + e.getMessage());
                 return fileName;
             }
         }
         
         // クラスパスから展開された一時ファイルの場合（マッピングが見つからない場合）
+        System.out.println("Using filename only for: " + fullPath);
         return fileName;
     }
 }
