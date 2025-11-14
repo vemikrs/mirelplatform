@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jp.vemi.mirel.apps.mste.domain.dao.entity.MsteStencil;
 import jp.vemi.mirel.apps.mste.domain.dao.repository.MsteStencilRepository;
@@ -44,6 +46,8 @@ import jp.vemi.ste.domain.engine.TemplateEngineProcessor;
 @Service
 @Transactional
 public class SuggestServiceImp implements SuggestService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SuggestServiceImp.class);
 
     /** {@link MsteStencilRepository} */
     @Autowired
@@ -110,7 +114,7 @@ public class SuggestServiceImp implements SuggestService {
                     SteContext.standard(resultModel.fltStrStencilCd.selected, isWildcard(requestedSerial)?"":requestedSerial),
                     resourcePatternResolver);
             } catch (Throwable e) {
-                System.out.println("ERROR in TemplateEngineProcessor.create: " + e.getMessage());
+                logger.error("ERROR in TemplateEngineProcessor.create: {}", e.getMessage(), e);
                 return createFallbackResponse(resultModel.fltStrStencilCd.selected, requestedSerial, resultModel);
             }
 
@@ -458,9 +462,9 @@ public class SuggestServiceImp implements SuggestService {
      */
     private ApiResponse<SuggestResult> createFallbackResponse(String stencilCd, String serialNo, SuggestResult resultModel) {
         try {
-            System.out.println("=== FALLBACK: Creating response using database information ===");
-            System.out.println("stencilCd: " + stencilCd);
-            System.out.println("serialNo: " + serialNo);
+            logger.info("=== FALLBACK: Creating response using database information ===");
+            logger.debug("stencilCd: {}", stencilCd);
+            logger.debug("serialNo: {}", serialNo);
             
             // 基本情報：既存のresultModelを使用（カテゴリ・ステンシル選択肢は既に設定済み）
             
@@ -525,11 +529,11 @@ public class SuggestServiceImp implements SuggestService {
             ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) 
                 ApiResponse.builder().data(wrapper).build();
             
-            System.out.println("Fallback response created successfully");
+            logger.info("Fallback response created successfully");
             return response;
             
         } catch (Exception fallbackError) {
-            System.out.println("ERROR: Fallback also failed: " + fallbackError.getMessage());
+            logger.error("ERROR: Fallback also failed: {}", fallbackError.getMessage(), fallbackError);
             fallbackError.printStackTrace();
             
             // 最終的なフォールバック：エラーレスポンス

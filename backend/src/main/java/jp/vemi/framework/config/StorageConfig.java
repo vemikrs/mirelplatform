@@ -2,6 +2,8 @@ package jp.vemi.framework.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 
@@ -11,6 +13,8 @@ import jakarta.annotation.PostConstruct;
  */
 @Component
 public class StorageConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(StorageConfig.class);
     
     // Static initialization flag
     private static boolean initialized = false;
@@ -43,13 +47,13 @@ public class StorageConfig {
 
     @PostConstruct
     public void init() {
-        System.out.println("=== StorageConfig PostConstruct Debug ===");
-        System.out.println("Raw storageDir from @Value: " + storageDir);
-        System.out.println("Raw ProMarkerAppDir from @Value: " + proMarkerAppDir);
-        System.out.println("Raw userStencilDir from @Value: " + userStencilDir);
-        System.out.println("Raw standardStencilDir from @Value: " + standardStencilDir);
-        System.out.println("Raw samplesStencilDir from @Value: " + samplesStencilDir);
-        System.out.println("Raw autoDeploySamples from @Value: " + autoDeploySamples);
+        logger.info("=== StorageConfig PostConstruct Debug ===");
+        logger.debug("Raw storageDir from @Value: {}", storageDir);
+        logger.debug("Raw ProMarkerAppDir from @Value: {}", proMarkerAppDir);
+        logger.debug("Raw userStencilDir from @Value: {}", userStencilDir);
+        logger.debug("Raw standardStencilDir from @Value: {}", standardStencilDir);
+        logger.debug("Raw samplesStencilDir from @Value: {}", samplesStencilDir);
+        logger.debug("Raw autoDeploySamples from @Value: {}", autoDeploySamples);
         
         configuredStorageDir = storageDir;
         configuredUserStencilDir = userStencilDir.replace("${mirel.storage-dir}", storageDir);
@@ -59,11 +63,11 @@ public class StorageConfig {
         
         initialized = true;  // 初期化完了フラグをセット
         
-        System.out.println("Processed configuredStorageDir: " + configuredStorageDir);
-        System.out.println("Processed configuredUserStencilDir: " + configuredUserStencilDir);
-        System.out.println("Processed configuredStandardStencilDir: " + configuredStandardStencilDir);
-        System.out.println("Processed configuredSamplesStencilDir: " + configuredSamplesStencilDir);
-        System.out.println("Processed configuredAutoDeploySamples: " + configuredAutoDeploySamples);
+        logger.info("Processed configuredStorageDir: {}", configuredStorageDir);
+        logger.info("Processed configuredUserStencilDir: {}", configuredUserStencilDir);
+        logger.info("Processed configuredStandardStencilDir: {}", configuredStandardStencilDir);
+        logger.info("Processed configuredSamplesStencilDir: {}", configuredSamplesStencilDir);
+        logger.info("Processed configuredAutoDeploySamples: {}", configuredAutoDeploySamples);
     }
 
     /**
@@ -72,11 +76,11 @@ public class StorageConfig {
      */
     public static String getStorageDir() {
         if (!initialized) {
-            System.out.println("WARNING: StorageConfig not initialized, using default value");
+            logger.warn("StorageConfig not initialized, using default value");
             return "./data/storage";  // フォールバック値
         }
         if (configuredStorageDir == null) {
-            System.out.println("WARNING: StorageConfig.configuredStorageDir is null, using default value");
+            logger.warn("StorageConfig.configuredStorageDir is null, using default value");
             return "./data/storage";  // フォールバック値
         }
         return configuredStorageDir;
@@ -121,7 +125,7 @@ public class StorageConfig {
      */
     public static boolean isAutoDeploySamples() {
         if (!initialized) {
-            System.out.println("WARNING: StorageConfig not initialized, auto-deploy-samples defaults to false");
+            logger.warn("StorageConfig not initialized, auto-deploy-samples defaults to false");
             return false;  // 初期化されていない場合はfalse
         }
         return configuredAutoDeploySamples;  // booleanのデフォルトはfalseなのでnullチェック不要

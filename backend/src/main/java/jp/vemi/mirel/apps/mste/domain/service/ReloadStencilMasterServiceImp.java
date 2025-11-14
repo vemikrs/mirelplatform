@@ -16,6 +16,8 @@ import com.google.common.collect.Maps;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -49,6 +51,8 @@ import jp.vemi.ste.domain.engine.TemplateEngineProcessor;
 @Service
 @Transactional
 public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReloadStencilMasterServiceImp.class);
 
     /** {@link MsteStencilRepository ステンシルマスタ} */
     @Autowired
@@ -91,14 +95,14 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             Map<String, String> categories = Maps.newLinkedHashMap();
             List<String> allFiles = collectStencilSettingsFromLayers();
             
-            System.out.println("Found " + allFiles.size() + " stencil-settings.yml files");
+            logger.info("Found {} stencil-settings.yml files", allFiles.size());
 
             // save stencil record.
             for (String fileName : allFiles) {
                 try {
                     StencilSettingsYml settings = readYaml(new File(fileName));
                     if (settings == null || settings.getStencil() == null || settings.getStencil().getConfig() == null) {
-                        System.out.println("Warning: Invalid stencil settings in " + fileName);
+                        logger.warn("Invalid stencil settings in {}", fileName);
                         continue;
                     }
                     
@@ -110,7 +114,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                     entry.setItemKind("1");
                     entry.setSort(0);
                     saveStencilSafely(entry);
-                    System.out.println(config.getId() + "/" + config.getSerial() + ":" + config.getName());
+                    logger.info("{}/{}: {}", config.getId(), config.getSerial(), config.getName());
 
                     if (false == StringUtils.isEmpty(config.getCategoryId())) {
                         if (false == categories.containsKey(config.getCategoryId())) {
@@ -120,8 +124,8 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                         }
                     }
                 } catch (Exception e) {
-                    System.out.println("Error processing stencil settings file: " + fileName + " - " + e.getMessage());
-                    e.printStackTrace();
+                    logger.error("Error processing stencil settings file: {} - {}", fileName, e.getMessage(), e);
+                    
                 }
             }
 
@@ -139,8 +143,8 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             readFileManagementLegacy();
             
         } catch (Exception e) {
-            System.out.println("Error in read() method: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error in read() method: {}", e.getMessage(), e);
+            
             throw e;
         }
     }
@@ -153,7 +157,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
         List<String> allFiles = new ArrayList<>();
         
         try {
-            System.out.println("=== Layered Stencil Collection Using StorageConfig ===");
+            logger.info("=== Layered Stencil Collection Using StorageConfig ===");
             
             // StorageConfigから新しいレイヤーディレクトリを取得
             String[] layerDirs = {
@@ -162,13 +166,13 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             };
             
             for (String layerDir : layerDirs) {
-                System.out.println("Searching layer directory: " + layerDir);
+                logger.debug("Searching layer directory: {}", layerDir);
                 if (new File(layerDir).exists()) {
                     List<String> layerFiles = FileUtil.findByFileName(layerDir, "stencil-settings.yml");
                     allFiles.addAll(layerFiles);
-                    System.out.println("Found " + layerFiles.size() + " stencil files in layer: " + layerDir);
+                    logger.info("Found {} stencil files in layer: {}", layerFiles.size(), layerDir);
                 } else {
-                    System.out.println("Layer directory does not exist: " + layerDir);
+                    logger.debug("Layer directory does not exist: {}", layerDir);
                 }
             }
             
@@ -176,8 +180,8 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             collectKnownSampleStencilsUsingTemplateEngine(allFiles);
             
         } catch (Exception e) {
-            System.out.println("Error in collectStencilSettingsFromLayers: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error in collectStencilSettingsFromLayers: {}", e.getMessage(), e);
+            
             
             // フォールバック: 最低限の既存ディレクトリ検索
             try {
@@ -187,11 +191,11 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                     allFiles.addAll(legacyFiles);
                 }
             } catch (Exception fallbackException) {
-                System.out.println("Fallback search also failed: " + fallbackException.getMessage());
+                logger.debug("Fallback search also failed: {}", fallbackException.getMessage());
             }
         }
         
-        System.out.println("Total files collected: " + allFiles.size());
+        logger.info("Total files collected: {}", allFiles.size());
         return allFiles;
     }
 
@@ -203,11 +207,11 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
         try {
             // auto-deploy-samples が有効な場合のみ実行
             if (!StorageConfig.isAutoDeploySamples()) {
-                System.out.println("Auto-deploy samples is disabled, skipping sample collection");
+                logger.info("Auto-deploy samples is disabled, skipping sample collection");
                 return;
             }
             
-            System.out.println("Collecting sample stencils using ResourcePatternResolver...");
+            logger.info("Collecting sample stencils using ResourcePatternResolver...");
             
             // サンプルステンシルディレクトリを取得
             String samplesDir = StorageConfig.getSamplesStencilDir();
@@ -215,11 +219,11 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             if (samplesDir.startsWith("classpath:")) {
                 // classpathリソース検索パターンを構築（再帰的に全てのstencil-settings.ymlを検索）
                 String searchPattern = samplesDir + "/**/stencil-settings.yml";
-                System.out.println("Searching for resources with pattern: " + searchPattern);
+                logger.debug("Searching for resources with pattern: {}", searchPattern);
                 
                 // ResourcePatternResolverでclasspathリソースを検索
                 Resource[] resources = resourcePatternResolver.getResources(searchPattern);
-                System.out.println("Found " + resources.length + " sample stencil-settings.yml resources");
+                logger.info("Found {} sample stencil-settings.yml resources", resources.length);
                 
                 // 見つかったリソースを処理
                 for (Resource resource : resources) {
@@ -236,24 +240,24 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                             File samplesLayerFile = createPhysicalSampleStencilFile(stencilId, serialNo, settings);
                             if (samplesLayerFile != null) {
                                 allFiles.add(samplesLayerFile.getAbsolutePath());
-                                System.out.println("Sample stencil expanded to physical file: " + resource.getURI() + " -> " + samplesLayerFile.getAbsolutePath());
+                                logger.debug("Sample stencil expanded to physical file: {} -> {}", resource.getURI(), samplesLayerFile.getAbsolutePath());
                             }
                         }
                     } catch (Exception resourceException) {
-                        System.out.println("Could not process sample stencil resource " + resource.getURI() + ": " + resourceException.getMessage());
+                        logger.debug("Could not process sample stencil resource {}: {}", resource.getURI(), resourceException.getMessage());
                     }
                 }
             } else {
                 // ファイルシステムの場合は従来通りFileUtil.findByFileNameを使用
-                System.out.println("Using filesystem search for samples directory: " + samplesDir);
+                logger.debug("Using filesystem search for samples directory: {}", samplesDir);
                 List<String> foundFiles = FileUtil.findByFileName(samplesDir, "stencil-settings.yml");
                 allFiles.addAll(foundFiles);
-                System.out.println("Found " + foundFiles.size() + " filesystem sample stencil files");
+                logger.info("Found {} filesystem sample stencil files", foundFiles.size());
             }
             
         } catch (Exception e) {
-            System.out.println("Error collecting sample stencils: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error collecting sample stencils: {}", e.getMessage(), e);
+            
         }
     }
 
@@ -273,7 +277,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             
             return settings;
         } catch (Exception e) {
-            System.out.println("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
+            logger.debug("Error loading stencil settings from resource {}: {}", resource.getDescription(), e.getMessage());
             return null;
         }
     }
@@ -348,8 +352,8 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             return stencilFile;
             
         } catch (Exception e) {
-            System.out.println("Error creating physical sample stencil file: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error creating physical sample stencil file: {}", e.getMessage(), e);
+            
             return null;
         }
     }
@@ -363,12 +367,12 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
         try {
             // 重複チェック: 既存エンティティの確認
             if (stencilRepository.existsById(entry.getStencilCd())) {
-                System.out.println("Stencil already exists, skipping: " + entry.getStencilCd());
+                logger.debug("Stencil already exists, skipping: {}", entry.getStencilCd());
                 return;
             }
             stencilRepository.save(entry);
         } catch (Exception e) {
-            System.out.println("Error saving stencil safely: " + entry.getStencilCd() + " - " + e.getMessage());
+            logger.warn("Error saving stencil safely: {} - {}", entry.getStencilCd(), e.getMessage());
             // 並列実行での重複保存は無視
         }
     }
@@ -403,7 +407,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             
             // 重複チェック: 既存のFileManagementレコードがあるかチェック
             if (fileManagementRepository.existsById(fileId)) {
-                System.out.println("FileManagement already exists, skipping: " + fileId);
+                logger.debug("FileManagement already exists, skipping: {}", fileId);
                 continue;
             }
 
@@ -441,15 +445,15 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             // 既存の動作しているreadYamlメソッドを使用
             settings = readYaml(tempYamlFile);
             
-            System.out.println("Successfully loaded stencil settings from stream using readYaml method");
+            logger.info("Successfully loaded stencil settings from stream using readYaml method");
         } catch (final ConstructorException e) {
-            System.out.println("ConstructorException details: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("ConstructorException details: {}", e.getMessage(), e);
+            
             String msg = "classpathリソースのyaml読込でエラーが発生しました: " + e.getMessage();
             throw new MirelApplicationException(msg, e);
         } catch (final Exception e) {
-            System.out.println("General exception during YAML loading: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("General exception during YAML loading: {}", e.getMessage(), e);
+            
             throw new MirelSystemException("yamlの読込で予期しないエラーが発生しました: " + e.getMessage(), e);
         }
         return settings;
@@ -473,11 +477,11 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
                 jp.vemi.ste.domain.engine.TemplateEngineProcessor.mergeParentStencilSettings(resource, settings);
             }
         } catch (final ConstructorException e) {
-            e.printStackTrace();
+            
             String msg = "yamlの読込でエラーが発生しました。";
             throw new MirelApplicationException(msg, e);
         } catch (final IOException e) {
-            e.printStackTrace();
+            
             throw new MirelSystemException("yamlの読込で入出力エラーが発生しました。", e);
         }
         return settings;
