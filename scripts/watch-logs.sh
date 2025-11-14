@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Mirel Platform ログ監視スクリプト
+# mirelplatform ログ監視スクリプト
 
 # プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
 PROJECT_ROOT="$(dirname "$0")"/.. 
 cd "$PROJECT_ROOT"
 
-echo "📊 Mirel Platform ログ監視"
+echo "📊 mirelplatform ログ監視"
 echo "======================================"
 echo "Ctrl+C で監視終了"
 echo ""

@@ -1,7 +1,21 @@
+import { useMemo, useState } from 'react';
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  FormError,
+  FormField,
+  FormHelper,
+  FormLabel,
+  FormRequiredMark,
+  Input,
+} from '@mirel/ui';
 import type { DataElement } from '../types/api';
 import type { UseParameterFormReturn } from '../hooks/useParameterForm';
 import { FileUploadButton } from './FileUploadButton';
-import { useState } from 'react';
 
 interface ParameterFieldsProps {
   parameters: DataElement[];
@@ -34,91 +48,96 @@ export function ParameterFields({
     return null;
   }
 
+  const parameterCountLabel = useMemo(() => `${parameters.length} 項目`, [parameters.length]);
+
   return (
-    <div className="space-y-4" data-testid="parameter-section">
+    <div className="space-y-6" data-testid="parameter-section">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">パラメータ入力</h3>
-        <span className="text-sm text-muted-foreground">
-          {parameters.length} 項目
-        </span>
+        <Badge variant="neutral">{parameterCountLabel}</Badge>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-2">
         {parameters.map((param) => {
           const error = errors[param.id];
           const hasError = !!error;
 
+          const validationHints: string[] = [];
+          if (param.validation?.minLength) {
+            validationHints.push(`最小${param.validation.minLength}文字`);
+          }
+          if (param.validation?.maxLength) {
+            validationHints.push(`最大${param.validation.maxLength}文字`);
+          }
+          if (param.validation?.pattern) {
+            validationHints.push(param.validation.errorMessage ?? `正規表現: ${param.validation.pattern}`);
+          }
+
           return (
-            <div key={param.id} className="space-y-2" data-testid={`param-field-${param.id}`}>
-              <label 
-                htmlFor={`param-${param.id}`}
-                className="block text-sm font-medium"
-              >
-                {param.name}
-                {param.note && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {param.note}
-                  </span>
-                )}
-              </label>
-
-              {param.valueType === 'file' ? (
-                <div className="space-y-2">
-                  <input
-                    type="hidden"
-                    id={`param-${param.id}`}
-                    data-testid={`param-${param.id}`}
-                    {...register(param.id)}
-                  />
-                  <FileUploadButton
-                    parameterId={param.id}
-                    value={(getValue(param.id) as string) || ''}
-                    onFileUploaded={handleFileUploaded}
-                    disabled={disabled}
-                  />
-                  {fileNames[param.id] && (
-                    <p 
-                      className="text-xs text-muted-foreground"
-                      data-testid={`file-name-${param.id}`}
-                    >
-                      📎 {fileNames[param.id]}
-                    </p>
-                  )}
+            <Card key={param.id} data-testid={`param-field-${param.id}`}>
+              <CardHeader className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="text-base text-foreground">{param.name}</CardTitle>
+                  <Badge variant={param.validation?.required ? 'warning' : 'neutral'}>
+                    {param.validation?.required ? '必須' : '任意'}
+                  </Badge>
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  id={`param-${param.id}`}
-                  data-testid={`param-${param.id}`}
-                  className={`w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
-                    hasError 
-                      ? 'border-red-500 bg-red-50' 
-                      : 'border-input bg-background'
-                  }`}
-                  placeholder={param.placeholder || ''}
-                  disabled={disabled}
-                  {...register(param.id)}
-                />
-              )}
+                {param.note ? (
+                  <CardDescription data-testid={`param-${param.id}-description`}>
+                    {param.note}
+                  </CardDescription>
+                ) : null}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <FormField>
+                  <FormLabel htmlFor={`param-${param.id}`} requiredMark={param.validation?.required ? <FormRequiredMark /> : undefined}>
+                    入力値
+                  </FormLabel>
+                  {param.valueType === 'file' ? (
+                    <div className="space-y-3">
+                      <input
+                        type="hidden"
+                        id={`param-${param.id}`}
+                        data-testid={`param-${param.id}`}
+                        {...register(param.id)}
+                      />
+                      <FileUploadButton
+                        parameterId={param.id}
+                        value={(getValue(param.id) as string) || ''}
+                        onFileUploaded={handleFileUploaded}
+                        disabled={disabled}
+                      />
+                      {fileNames[param.id] && (
+                        <FormHelper data-testid={`file-name-${param.id}`}>
+                          選択中: {fileNames[param.id]}
+                        </FormHelper>
+                      )}
+                    </div>
+                  ) : (
+                    <Input
+                      id={`param-${param.id}`}
+                      data-testid={`param-${param.id}`}
+                      placeholder={param.placeholder || ''}
+                      disabled={disabled}
+                      aria-invalid={hasError}
+                      {...register(param.id)}
+                    />
+                  )}
+                </FormField>
 
-              {hasError && (
-                <p 
-                  className="text-xs text-red-600" 
-                  data-testid={`error-${param.id}`}
-                >
-                  {error.message as string}
-                </p>
-              )}
+                {hasError ? (
+                  <FormError data-testid={`error-${param.id}`}>
+                    {error.message as string}
+                  </FormError>
+                ) : null}
 
-              {param.note && !hasError && (
-                <p 
-                  className="text-xs text-muted-foreground" 
-                  data-testid={`param-${param.id}-description`}
-                >
-                  {param.note}
-                </p>
-              )}
-            </div>
+                {validationHints.length > 0 ? (
+                  <FormHelper>
+                    入力条件: {validationHints.join(' / ')}
+                  </FormHelper>
+                ) : null}
+              </CardContent>
+            </Card>
           );
         })}
       </div>

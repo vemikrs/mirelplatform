@@ -6,7 +6,7 @@ echo "🧩 Backend (Spring Boot) クリーンビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成
-mkdir -p logsMirel Platform Backend クリーンビルドスクリプト
+mkdir -p logsmirelplatform Backend クリーンビルドスクリプト
 # Spring Boot アプリケーションのクリーン＆ビルド
 
 set -e

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Mirel Platform npm utility functions
+# mirelplatform npm utility functions
 # npm install の共通処理とエラーハンドリング
 
 # 色付きメッセージ関数
@@ -165,7 +165,7 @@ run_npm_script() {
 
 # 使用例とヘルプ
 show_usage() {
-    echo "npm-utils.sh - Mirel Platform npm utility functions"
+    echo "npm-utils.sh - mirelplatform npm utility functions"
     echo ""
     echo "使用可能な関数:"
     echo "  check_node_environment        - Node.js環境チェック"

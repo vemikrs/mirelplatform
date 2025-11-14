@@ -1,4 +1,6 @@
-# ProMarker Platform - GitHub Copilot Instructions
+# mirelplatform - GitHub Copilot Instructions
+
+**Allways answer in Japanese.**
 
 ## Project Overview
 
@@ -6,9 +8,12 @@ ProMarker is a comprehensive code generation and template management platform bu
 
 ### Architecture
 - **Backend**: Spring Boot 3.3 with Java 21, mirelplatform framework
-- **Frontend**: React 18+ with Vite, Tailwind CSS, Radix UI, shadcn/ui components
+- **Frontend**: React 19+ with Vite, Tailwind CSS 4, Radix UI, shadcn/ui components (@mirel/ui)
+- **State Management**: Zustand + TanStack Query (React Query) for server state
 - **Database**: H2 (development), MySQL (production)
 - **Template Engine**: FreeMarker with custom function resolvers
+- **Monorepo**: pnpm workspace with packages (ui, e2e) + apps (frontend-v3)
+- **Testing**: Playwright E2E, Vitest for unit tests
 - **Container**: DevContainer support for Codespaces and local development
 
 ## Copilot Workflow（作業報告ルール）
@@ -151,6 +156,27 @@ pnpm --filter frontend-v3 dev  # または: cd apps/frontend-v3 && npm run dev
 - `settings.gradle` - Multi-project Gradle configuration
 - `.devcontainer/devcontainer.json` - Development container setup
 
+### API Proxy Configuration
+Frontend development server (Vite) proxies API calls:
+```typescript
+// vite.config.ts proxy configuration
+server: {
+  proxy: {
+    '/mapi': {
+      target: 'http://localhost:3000/mipla2',
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/mapi/, ''),
+    },
+  },
+}
+```
+
+**Critical Pattern**: 
+- Frontend API calls: `POST /mapi/apps/mste/api/suggest`
+- Backend receives: `POST /mipla2/apps/mste/api/suggest`
+- Spring Boot context path: `/mipla2`
+- Always use `/mapi/` prefix in frontend code for proxy routing
+
 ## Core Components
 
 ### Backend Structure
@@ -227,7 +253,7 @@ apps/frontend-v3/
 For detailed information on specific aspects, refer to:
 
 - **[API Reference](./docs/api-reference.md)** - Complete API endpoint documentation
-- **[Frontend Architecture](./docs/frontend-architecture.md)** - Vue.js implementation details
+- **[Frontend Architecture](./docs/frontend-architecture.md)** - React implementation details (Note: Some content may reference legacy Vue.js)
 - **[Development Guide](./docs/development-guide.md)** - Advanced development patterns
 - **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
 
@@ -240,16 +266,71 @@ For detailed information on specific aspects, refer to:
 4. Register with Spring's component scanning
 
 ### Frontend Component Development
-1. Follow React functional component patterns with TypeScript
-2. Use @mirel/ui components for design system consistency
-3. Implement proper error handling with Toast notifications (sonner)
-4. Use TanStack Query for server state, React hooks for local state
+1. Follow React functional component patterns with TypeScript strict mode
+2. Use @mirel/ui components (shadcn/ui + Radix UI wrapper) for design system consistency
+3. Use Tailwind CSS 4 for styling with class-variance-authority for component variants
+4. Implement proper error handling with Radix Toast notifications
+5. Use TanStack Query for server state, Zustand for client state
+6. Follow feature-based architecture: `apps/frontend-v3/src/features/{feature}/`
 
 ### Template Development
 1. Create YAML configuration in `stencil-samples/`
 2. Implement FreeMarker templates (.ftl files)
 3. Test with ProMarker UI workflow
 4. Ensure proper parameter validation
+
+## Monorepo Workspace Structure
+
+### Packages Organization
+```
+packages/
+├── ui/              # @mirel/ui design system (shadcn/ui wrapper)
+├── e2e/             # Playwright E2E tests
+└── configs/         # Shared configurations
+
+apps/
+└── frontend-v3/     # React app with Vite
+```
+
+### Package Management Commands
+```bash
+# Install dependencies for all packages
+pnpm install
+
+# Run command in specific package
+pnpm --filter frontend-v3 dev
+pnpm --filter e2e test
+
+# Run command in all packages
+pnpm -r build
+pnpm -r typecheck
+```
+
+## Testing Strategy
+
+### E2E Testing with Playwright
+- **Location**: `packages/e2e/tests/`
+- **Configuration**: `packages/e2e/playwright.config.ts`
+- **Auto-start**: Configured to start backend + frontend automatically
+- **Parallel execution**: Limited to 2 workers (local) / 1 worker (CI) for stability
+- **Localization**: Japanese locale (ja-JP), Asia/Tokyo timezone
+
+### Key E2E Test Commands
+```bash
+# Run all E2E tests
+pnpm test:e2e
+
+# Run with UI mode (interactive)
+pnpm test:e2e:ui
+
+# Run specific test file
+pnpm --filter e2e test tests/specs/promarker-v3/form-validation.spec.ts
+```
+
+### Test Organization
+- **Archived tests**: `tests/specs/_archived-vue-frontend/` (ignored in config)
+- **Active tests**: Focus on `tests/specs/promarker-v3/` (React frontend)
+- **Page Objects**: Organized by feature in `tests/page-objects/`
 
 ## Security Considerations
 
@@ -259,12 +340,13 @@ For detailed information on specific aspects, refer to:
 - **Database**: Development debug access restricted to localhost only
 - **Template Security**: Proper input validation for template parameters
 
-## Performance Guidelines
+### Performance Guidelines
 
-- **Frontend**: Use proper Vue.js reactivity patterns, avoid unnecessary API calls
+- **Frontend**: Use React.memo, useMemo, useCallback appropriately; leverage TanStack Query caching
 - **Backend**: Implement proper caching for template metadata, use efficient database queries
 - **File Operations**: Stream large files, implement proper cleanup for temporary files
+- **E2E Testing**: Use Playwright with resource-aware parallelization (workers: 2 local, 1 CI)
 
 ---
 
-This document provides the foundation for working with the ProMarker platform. Refer to the detailed documentation in the `docs/` directory for specific implementation guidance.
+This document provides the foundation for working with the mirelplatform. Refer to the detailed documentation in the `docs/` directory for specific implementation guidance.

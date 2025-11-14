@@ -37,25 +37,7 @@ test.describe('ProMarker v3 Parameter Input', () => {
     // Initial suggest API call is triggered on mount
     
     // Complete 3-tier selection to display parameters
-    await page.selectOption('[data-testid="category-select"]', '/samples');
-    await page.waitForTimeout(500);
-    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world');
-    await page.waitForTimeout(500);
-    
-    // Wait for serial options and select
-    const serialSelect = page.locator('[data-testid="serial-select"]');
-    await expect(serialSelect).toBeEnabled({ timeout: 10000 });
-    const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    if (targetCount > 0) {
-      await page.selectOption('[data-testid="serial-select"]', '250913A');
-    } else {
-      const current = await serialSelect.inputValue();
-      if (!current || current.length === 0) {
-        const options = await page.locator('[data-testid="serial-select"] option').allTextContents();
-        const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
-        await page.selectOption('[data-testid="serial-select"]', { index: firstIdx });
-      }
-    }
+    await promarkerPage.complete3TierSelectionByIndex(0, 0, 0);
     
     // Wait for parameters to load
     await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
@@ -111,11 +93,11 @@ test.describe('ProMarker v3 Parameter Input', () => {
     const paramId = await firstParam.getAttribute('data-testid');
     
     // Switch to different serial
-    await page.selectOption('[data-testid="serial-select"]', { index: 2 });
+    await promarkerPage.selectSerialByIndex(2);
     await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
     
     // Switch back
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 });
+    await promarkerPage.selectSerialByIndex(1);
     await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
     
     // Verify value is cleared (new selection resets form)

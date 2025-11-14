@@ -1,6 +1,6 @@
-# ProMarker Platform Documentation Index
+# mirelplatform Documentation Index
 
-This directory contains comprehensive documentation for the ProMarker Platform, structured according to GitHub Copilot best practices for optimal AI assistance and developer experience.
+This directory contains comprehensive documentation for the mirelplatform, structured according to GitHub Copilot best practices for optimal AI assistance and developer experience.
 
 ## Document Structure
 

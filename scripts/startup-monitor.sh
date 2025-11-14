@@ -7,7 +7,7 @@ PROJECT_ROOT="$(dirname "$0")"/..
 cd "$PROJECT_ROOT"
 
 echo "=========================================="
-echo "🚀 Mirel Platform モノレポ起動状況監視"
+echo "🚀 mirelplatform モノレポ起動状況監視"
 echo "=========================================="
 echo "📅 $(date)"
 echo ""

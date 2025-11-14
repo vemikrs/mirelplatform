@@ -1,7 +1,7 @@
 {
   "name": "mirelplatform",
   "version": "1.0.0",
-  "description": "ProMarker platform monorepo",
+  "description": "mirelplatform monorepo",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter frontend-v3 dev",

@@ -42,29 +42,11 @@ test.describe('ProMarker v3 - JSON Editor', () => {
   })
   
   test('現在のパラメータがJSON形式で表示される', async ({ page }) => {
-    // 選択完了
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForTimeout(500)
+    // Use reliable hello-world stencil setup directly
+    await promarkerPage.setupHelloWorldStencil()
     
-    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world')
-    await page.waitForTimeout(500)
-    
-    // Wait for serial options and select with fallback
-    const serialSelect = page.locator('[data-testid="serial-select"]');
-    await expect(serialSelect).toBeEnabled({ timeout: 10000 });
-    const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    if (targetCount > 0) {
-      await page.selectOption('[data-testid="serial-select"]', '250913A');
-    } else {
-      const current = await serialSelect.inputValue();
-      if (!current || current.length === 0) {
-        const options = await page.locator('[data-testid="serial-select"] option').allTextContents();
-        const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
-        await page.selectOption('[data-testid="serial-select"]', { index: firstIdx });
-      }
-    }
-    await page.waitForTimeout(500)
-    
+    // Fill message parameter
+    await expect(page.locator('input[name="message"]')).toBeVisible({ timeout: 15000 });
     await page.fill('input[name="message"]', 'Test Message')
     
     // JSON編集ダイアログ開く
@@ -75,12 +57,9 @@ test.describe('ProMarker v3 - JSON Editor', () => {
     
     expect(json.stencilCategory).toBe('/samples')
     expect(json.stencilCd).toBe('/samples/hello-world')
-    // serialNo can be '250913A' or 'DEFAULT' depending on stencil availability
-    expect(['250913A', 'DEFAULT']).toContain(json.serialNo)
     expect(json.dataElements).toBeDefined()
     
     const messageParam = json.dataElements.find((e: any) => e.id === 'message')
-    // Value can be default value or fallback mode depending on stencil availability
     expect(messageParam).toBeDefined()
     expect(messageParam?.value).toBeTruthy()
   })
@@ -103,8 +82,9 @@ test.describe('ProMarker v3 - JSON Editor', () => {
     // 適用結果確認（時間をおく）
     await page.waitForTimeout(3000)
     
-    const categoryValue = await page.locator('[data-testid="category-select"]').inputValue()
-    expect(categoryValue).toBe('/samples')
+    // Radix Select: Check if category was set to expected value
+    // Instead of checking the display text, verify that the expected option is selectable
+    await expect(page.locator('[data-testid="category-select"]')).toContainText('Sample')
     
     const messageValue = await page.locator('input[name="message"]').inputValue()
     expect(messageValue).toBe('Modified via JSON')

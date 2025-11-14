@@ -47,18 +47,19 @@ test.describe('ProMarker v3 Stencil Selection', () => {
   
   test('should display category dropdown on page load', async ({ page }) => {
     // Assert: Verify category select is visible
-    const categorySelect = page.locator('[data-testid="category-select"]');
-    await expect(categorySelect).toBeVisible();
-    
-    // Verify it has options
-    const optionCount = await categorySelect.locator('option').count();
-    expect(optionCount).toBeGreaterThan(1); // At least "選択してください" + categories
+    const categoryTrigger = page.locator('[data-testid="category-select"]');
+    await expect(categoryTrigger).toBeVisible();
+    // Open and ensure options render
+    await categoryTrigger.click();
+    const options = page.getByRole('option');
+    await expect(options.first()).toBeVisible();
+    // Close the dropdown
+    await page.keyboard.press('Escape');
   });
   
   test('should auto-complete stencil & serial after category selection', async ({ page }) => {
     // Select Category (triggers two cascading suggest calls)
-    // Fixed: Wait for UI elements instead of Promise.all to prevent WSL2 crash
-    await page.selectOption('[data-testid="category-select"]', { index: 1 });
+    await promarkerPage.selectCategoryByIndex(0);
     
     // Wait for both dropdowns to be enabled (indicates API calls completed)
     const stencilSelect = page.locator('[data-testid="stencil-select"]');
@@ -67,9 +68,9 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     await expect(stencilSelect).toBeEnabled({ timeout: 10000 });
     await expect(serialSelect).toBeEnabled({ timeout: 10000 });
 
-    // Values should already be auto-selected (non-empty)
-    await expect(stencilSelect).not.toHaveValue('');
-    await expect(serialSelect).not.toHaveValue('');
+    // Values should already be auto-selected (non-empty) - check trigger text
+    await expect(stencilSelect).not.toHaveText(/選択|ロード中/);
+    await expect(serialSelect).not.toHaveText(/選択|ロード中/);
 
     // Parameter section should be visible because serial resolved
     const parameterSection = page.locator('[data-testid="parameter-section"]');
@@ -84,25 +85,23 @@ test.describe('ProMarker v3 Stencil Selection', () => {
   // TODO: Enable when multiple categories are available
   test.skip('should clear stencil and serial when category changes', async ({ page }) => {
     // Complete initial selection
-    await page.selectOption('[data-testid="category-select"]', { index: 1 });
+    await promarkerPage.selectCategoryByIndex(0);
     // Fixed: Wait for UI element state instead of specific response
     await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
     
-    await page.selectOption('[data-testid="stencil-select"]', { index: 1 });
+    await promarkerPage.selectStencilByIndex(0);
     await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 });
+    await promarkerPage.selectSerialByIndex(0);
     
     // Change category
-    await page.selectOption('[data-testid="category-select"]', { index: 2 });
+    await promarkerPage.selectCategoryByIndex(1);
     await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify stencil and serial are reset
-    const stencilValue = await page.locator('[data-testid="stencil-select"]').inputValue();
-    const serialValue = await page.locator('[data-testid="serial-select"]').inputValue();
-    
-    expect(stencilValue).toBe('');
-    expect(serialValue).toBe('');
+    // For design-system Select, verify placeholder text appears again
+    await expect(page.locator('[data-testid="stencil-select"]').getByText(/選択|カテゴリを選択/)).toBeVisible();
+    await expect(page.locator('[data-testid="serial-select"]').getByText(/選択|ステンシルを選択/)).toBeVisible();
     
     // Verify generate button is disabled
     const generateBtn = page.locator('[data-testid="generate-btn"]');
@@ -124,12 +123,12 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled();
     
     // Change stencil
-    await page.selectOption('[data-testid="stencil-select"]', { index: 2 });
+    await promarkerPage.selectStencilByIndex(2);
     // Fixed: Wait for UI element state instead of specific response
     await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
     
     // Verify serial is reset
-    const serialValue = await page.inputValue('[data-testid="serial-select"]');
+    const serialValue = await page.locator('[data-testid="serial-select"]').textContent();
     expect(serialValue).toBe(''); // Should be reset to empty
   });
   
@@ -145,24 +144,28 @@ test.describe('ProMarker v3 Stencil Selection', () => {
   });
   
   test('should show loading state during API calls', async ({ page }) => {
-    // Select category and check for loading indicator
-    const categorySelect = page.locator('[data-testid="category-select"]');
-    await categorySelect.selectOption({ index: 1 });
+    // Navigate to page first
+    await promarkerPage.navigate();
     
-    // Check if loading indicator appears
+    // Check if loading indicator appears during manual trigger
     const loadingIndicator = page.locator('[data-testid="loading-indicator"]');
     
-    // Loading should appear briefly (use timeout to catch it)
+    // Manually trigger refresh to generate API call
+    await page.click('[data-testid="reload-stencil-btn"]');
+    
+    // Check for brief loading state (may be too fast to catch)
     const isLoadingVisible = await loadingIndicator.isVisible().catch(() => false);
     
-    // Loading should disappear after API completes
-    await page.waitForResponse(r => r.url().includes('/mapi/apps/mste/api/suggest'));
+    // Wait for reload completion
+    await page.waitForTimeout(1000);
+    
+    // Verify loading indicator is not visible after operation
     await expect(loadingIndicator).not.toBeVisible();
   });
   
   test('should display stencil information after serial selection', async ({ page }) => {
     // Complete full selection
-    await page.selectOption('[data-testid="category-select"]', { index: 1 });
+    await promarkerPage.selectCategoryByIndex(0);
     // Fixed: Wait for UI elements instead of API responses
     await expect(page.locator('[data-testid="stencil-select"]')).toBeEnabled({ timeout: 10000 });
     await expect(page.locator('[data-testid="serial-select"]')).toBeEnabled({ timeout: 10000 });
@@ -194,7 +197,7 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     });
     
     // Try to select category
-    await page.selectOption('[data-testid="category-select"]', { index: 1 });
+    await promarkerPage.selectCategoryByIndex(0);
     
     // Wait a bit for error handling
     await page.waitForTimeout(1000);

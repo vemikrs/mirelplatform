@@ -54,25 +54,13 @@ test.describe.skip('ProMarker v3 Form Validation', () => {
     await page.waitForTimeout(1000);
     
     // Complete 3-tier selection to display parameters
-    await page.selectOption('[data-testid="category-select"]', '/samples');
+    await promarkerPage.selectCategoryByIndex(0);
     await page.waitForTimeout(500);
-    await page.selectOption('[data-testid="stencil-select"]', '/samples/hello-world');
+    await promarkerPage.selectStencilByIndex(0);
     await page.waitForTimeout(500);
     
-    // Wait for serial options and select
-    const serialSelect = page.locator('[data-testid="serial-select"]');
-    await expect(serialSelect).toBeEnabled({ timeout: 10000 });
-    const targetCount = await page.locator('[data-testid="serial-select"] option[value="250913A"]').count();
-    if (targetCount > 0) {
-      await page.selectOption('[data-testid="serial-select"]', '250913A');
-    } else {
-      const current = await serialSelect.inputValue();
-      if (!current || current.length === 0) {
-        const options = await page.locator('[data-testid="serial-select"] option').allTextContents();
-        const firstIdx = options[0]?.trim() === '' && options.length > 1 ? 1 : 0;
-        await page.selectOption('[data-testid="serial-select"]', { index: firstIdx });
-      }
-    }
+    // Select serial using POM method
+    await promarkerPage.selectSerialByIndex(0);
     
     // Wait for parameters to load
     await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });

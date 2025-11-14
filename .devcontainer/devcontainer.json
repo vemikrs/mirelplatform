@@ -1,5 +1,5 @@
 {
-  "name": "Mirel Platform Dev",
+  "name": "mirelplatform Dev",
   "image": "mcr.microsoft.com/devcontainers/java:21",
   // Phase 3: Frontend + Backend simultaneous auto-startup
   // Backend: Spring Boot (port 3000) + H2 dev database

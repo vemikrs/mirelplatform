@@ -38,13 +38,17 @@ test.describe('ProMarker v3 File Upload', () => {
 
   test('should verify FileUploadButton component is available', async ({ page }) => {
     // This test verifies the FileUploadButton component exists
-    // Even if current stencils don't have file-type parameters
+    // Use setupHelloWorldStencil for reliable stencil selection
     
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    await promarkerPage.setupHelloWorldStencil();
+    
+    // Verify input field is ready after setup
+    const messageInput = page.locator('input[name="message"]');
+    await expect(messageInput).toBeVisible({ timeout: 15000 });
+    await expect(messageInput).toBeEnabled({ timeout: 10000 });
     
     // Check if parameter section exists
-    const paramSection = page.locator('[data-testid="parameter-section"]')
+    const paramSection = page.locator('[data-testid="parameter-section"]');
     if (await paramSection.count() > 0) {
       // Parameters exist - check types
       const params = await page.locator('[data-testid^="param-field-"]').all()
@@ -63,13 +67,11 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should handle text-type parameters correctly', async ({ page }) => {
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    // Use hello-world stencil specifically for message parameter
+    await promarkerPage.setupHelloWorldStencil()
     
-    await page.selectOption('[data-testid="stencil-select"]', { index: 1 })
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
-    
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 })
+    // Wait for parameter section to be visible
+    await expect(page.locator('[data-testid="parameter-section"]')).toBeVisible({ timeout: 15000 });
     
     // Fill a text parameter (clear existing value first)
     const messageInput = page.locator('[data-testid="param-message"]')
@@ -86,7 +88,7 @@ test.describe('ProMarker v3 File Upload', () => {
     // Note: Need to check if sample stencils have file parameters
     // This test might be skipped if no file-type parameters exist
     
-    await page.selectOption('[data-testid="category-select"]', '/samples')
+    await promarkerPage.selectCategoryByIndex(0)
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
     
     // Check if any file upload buttons exist
@@ -103,10 +105,8 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should upload file and set fileId to parameter', async ({ page }) => {
-    // This test requires a stencil with file-type parameters
-    // Skip if not available
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    // Use hello-world stencil for consistent testing
+    await promarkerPage.setupHelloWorldStencil()
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
     const count = await fileUploadButtons.count()
@@ -158,8 +158,12 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should display error if file upload fails', async ({ page }) => {
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    await promarkerPage.setupHelloWorldStencil()
+    
+    // Verify input field is ready after setup
+    const messageInput = page.locator('input[name="message"]');
+    await expect(messageInput).toBeVisible({ timeout: 15000 });
+    await expect(messageInput).toBeEnabled({ timeout: 10000 });
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
     const count = await fileUploadButtons.count()
@@ -197,8 +201,7 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should allow file replacement', async ({ page }) => {
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    await promarkerPage.setupHelloWorldStencil()
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
     const count = await fileUploadButtons.count()
@@ -238,8 +241,7 @@ test.describe('ProMarker v3 File Upload', () => {
   })
 
   test('should include uploaded fileId in generate request', async ({ page }) => {
-    await page.selectOption('[data-testid="category-select"]', '/samples')
-    await page.waitForResponse('**/mapi/apps/mste/api/suggest')
+    await promarkerPage.setupHelloWorldStencil()
     
     const fileUploadButtons = page.locator('[data-testid^="file-upload-btn-"]')
     const count = await fileUploadButtons.count()
@@ -250,9 +252,9 @@ test.describe('ProMarker v3 File Upload', () => {
     }
     
     // Select stencil and serial
-    await page.selectOption('[data-testid="stencil-select"]', { index: 1 })
+    await promarkerPage.selectStencilByIndex(1)
     await page.waitForResponse('**/mapi/apps/mste/api/suggest')
-    await page.selectOption('[data-testid="serial-select"]', { index: 1 })
+    await promarkerPage.selectSerialByIndex(1)
     
     // Upload file
     const firstButton = fileUploadButtons.first()

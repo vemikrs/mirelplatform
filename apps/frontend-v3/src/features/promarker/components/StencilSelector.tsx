@@ -1,3 +1,15 @@
+import {
+  FormField,
+  FormHelper,
+  FormLabel,
+  FormRequiredMark,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@mirel/ui';
+
 export interface ValueTextItem {
   value: string;
   text: string;
@@ -20,13 +32,8 @@ interface StencilSelectorProps {
 
 /**
  * StencilSelector Component
- * 
- * Provides 3-tier cascading selection:
- * 1. Category (カテゴリ)
- * 2. Stencil (ステンシル)
- * 3. Serial Number (シリアル番号)
- * 
- * Each selection triggers API call to fetch next tier options.
+ *
+ * Provides 3-tier cascading selection with design-system components.
  */
 export function StencilSelector({
   categories,
@@ -42,82 +49,79 @@ export function StencilSelector({
   const hasSerials = serials.items.length > 0 && stencils.selected;
 
   return (
-    <div className="space-y-4" data-testid="stencil-selector">
-      {/* Category Selection */}
-      <div className="space-y-2">
-        <label htmlFor="category-select" className="block text-sm font-medium">
-          カテゴリ <span className="text-destructive">*</span>
-        </label>
-        <select
-          id="category-select"
-          data-testid="category-select"
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="grid gap-5 md:grid-cols-3" data-testid="stencil-selector">
+      <FormField>
+        <FormLabel requiredMark={<FormRequiredMark />} htmlFor="category-select">
+          カテゴリ
+        </FormLabel>
+        <Select
           value={categories.selected}
-          onChange={(e) => onCategoryChange(e.target.value)}
+          onValueChange={onCategoryChange}
           disabled={disabled || !hasCategories}
         >
-          <option value="">選択してください</option>
-          {categories.items.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.text}
-            </option>
-          ))}
-        </select>
-      </div>
+          <SelectTrigger id="category-select" data-testid="category-select">
+            <SelectValue placeholder={hasCategories ? 'カテゴリを選択' : 'ロード中...'} />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.items.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.text}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormHelper>カテゴリを選択すると利用可能なステンシルが表示されます。</FormHelper>
+      </FormField>
 
-      {/* Stencil Selection */}
-      <div className="space-y-2">
-        <label htmlFor="stencil-select" className="block text-sm font-medium">
-          ステンシル <span className="text-destructive">*</span>
-        </label>
-        <select
-          id="stencil-select"
-          data-testid="stencil-select"
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      <FormField>
+        <FormLabel requiredMark={<FormRequiredMark />} htmlFor="stencil-select">
+          ステンシル
+        </FormLabel>
+        <Select
           value={stencils.selected}
-          onChange={(e) => onStencilChange(e.target.value)}
+          onValueChange={onStencilChange}
           disabled={disabled || !hasStencils}
         >
-          <option value="">選択してください</option>
-          {stencils.items.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.text}
-            </option>
-          ))}
-        </select>
-        {!hasStencils && categories.selected && (
-          <p className="text-xs text-muted-foreground">
-            カテゴリを選択後、ステンシルが表示されます
-          </p>
-        )}
-      </div>
+          <SelectTrigger id="stencil-select" data-testid="stencil-select">
+            <SelectValue placeholder={hasStencils ? 'ステンシルを選択' : 'カテゴリを選択してください'} />
+          </SelectTrigger>
+          <SelectContent>
+            {stencils.items.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.text}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {!hasStencils && categories.selected ? (
+          <FormHelper>カテゴリ選択後に利用可能なステンシルが展開されます。</FormHelper>
+        ) : null}
+      </FormField>
 
-      {/* Serial Number Selection */}
-      <div className="space-y-2">
-        <label htmlFor="serial-select" className="block text-sm font-medium">
-          シリアル番号 <span className="text-destructive">*</span>
-        </label>
-        <select
-          id="serial-select"
-          data-testid="serial-select"
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      <FormField>
+        <FormLabel requiredMark={<FormRequiredMark />} htmlFor="serial-select">
+          シリアル番号
+        </FormLabel>
+        <Select
           value={serials.selected}
-          onChange={(e) => onSerialChange(e.target.value)}
+          onValueChange={onSerialChange}
           disabled={disabled || !hasSerials}
         >
-          <option value="">選択してください</option>
-          {serials.items.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.text}
-            </option>
-          ))}
-        </select>
-        {!hasSerials && stencils.selected && (
-          <p className="text-xs text-muted-foreground">
-            ステンシルを選択後、シリアル番号が表示されます
-          </p>
-        )}
-      </div>
+          <SelectTrigger id="serial-select" data-testid="serial-select">
+            <SelectValue placeholder={hasSerials ? 'シリアル番号を選択' : 'ステンシルを選択してください'} />
+          </SelectTrigger>
+          <SelectContent>
+            {serials.items.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.text}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {!hasSerials && stencils.selected ? (
+          <FormHelper>ステンシル選択後にシリアル番号候補が表示されます。</FormHelper>
+        ) : null}
+      </FormField>
     </div>
   );
 }

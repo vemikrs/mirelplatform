@@ -1,9 +1,8 @@
-# API Reference - ProMarker Platform
+# API Reference - ProMarker Toolkit
 
 ## Overview
 
-ProMarker Platform provides RESTful APIs for template management, code generation, and file operations. This document covers all available endpoints, request/response structures, and implementation details.
-
+ProMarker Toolkit provides RESTful APIs for template management, code generation, and file operations. This document covers all available endpoints, request/response structures, and implementation details.
 ## Base Configuration
 
 ### URLs

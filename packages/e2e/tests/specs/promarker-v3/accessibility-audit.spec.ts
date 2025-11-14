@@ -30,7 +30,7 @@ test.describe('ProMarker v3 Accessibility Audit', () => {
 
     await page.goto(`${baseURL}/promarker`)
     // Wait for the page title heading to be visible (React SPA)
-    await expect(page.locator('h1').filter({ hasText: '払出画面' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: /ProMarker ワークスペース/ })).toBeVisible({ timeout: 15000 })
 
     // Run AXE scan with common ProMarker exclusions/tags
     await AccessibilityUtils.runProMarkerAccessibilityScan(page)
@@ -41,7 +41,7 @@ test.describe('ProMarker v3 Accessibility Audit', () => {
     test.setTimeout(30000)
 
     await page.goto(`${baseURL}/promarker`)
-    await expect(page.locator('h1').filter({ hasText: '払出画面' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: /ProMarker ワークスペース/ })).toBeVisible({ timeout: 15000 })
 
     // Open JSON editor
     await page.getByTestId('json-edit-btn').click()

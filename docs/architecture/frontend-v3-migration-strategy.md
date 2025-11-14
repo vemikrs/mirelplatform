@@ -3,7 +3,7 @@
 ## 概要
 
 **目的**: Vue2/Nuxt2 EOL スタックから、保守可能な React SPA への完全移行  
-**対象**: ProMarker Platform 管理UI (frontend → frontend-v3)  
+**対象**: mirelplatform 管理UI (frontend → frontend-v3)  
 **方針**: SSR/SSG 不要。シンプル・高速・最小構成の**クライアントサイド SPA**
 
 **関連 Issue**: [#28 frontend-v3: React + Vite + Tailwind + Radix + shadcn/ui SPA構築方針](https://github.com/vemikrs/mirelplatform/issues/28)
@@ -1056,7 +1056,7 @@ npx shadcn@latest add button input select dialog dropdown-menu toast table
 ```json
 // .devcontainer/devcontainer.json
 {
-  "name": "ProMarker Platform",
+  "name": "mirelplatform",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
   "features": {
     "ghcr.io/devcontainers-contrib/features/pnpm:2": {

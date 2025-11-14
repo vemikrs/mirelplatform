@@ -1383,7 +1383,7 @@ test.describe('ProMarker Validation - Dynamic from Stencil', () => {
       await page.locator('input[name="eventId"]').fill('get');
       await page.locator('input[name="eventName"]').fill('取得');
       await page.locator('input[name="version"]').fill('1.0');
-      await page.locator('input[name="author"]').fill('ProMarker Platform');
+      await page.locator('input[name="author"]').fill('mirelplatform');
       await page.locator('input[name="vendor"]').fill('Open Source Community');
       
       // Generateボタンをクリック

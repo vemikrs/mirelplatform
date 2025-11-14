@@ -57,7 +57,11 @@ test.describe('ProMarker v3 API Integration', () => {
   });
   
   test('should handle API errors gracefully', async ({ page }) => {
-    // Setup: Mock API error
+    // Action: Navigate to ProMarker page first
+    await page.goto('/promarker');
+    await page.waitForLoadState('networkidle');
+    
+    // Setup: Mock API error for manual action
     await page.route('**/mapi/apps/mste/api/suggest', route => {
       route.fulfill({
         status: 500,
@@ -66,13 +70,14 @@ test.describe('ProMarker v3 API Integration', () => {
       });
     });
     
-    // Action: Navigate to ProMarker page
-    await promarkerPage.navigate();
+    // Action: Trigger API call manually (e.g., by clicking category select)
+    await expect(page.locator('[data-testid="category-select"]')).toBeVisible({ timeout: 15000 });
+    await page.locator('[data-testid="category-select"]').click();
     
     // Wait for error handling
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
-    // Assert: Verify error toast appears
+    // Assert: Verify error toast appears or page shows error state
     const hasToast = await promarkerPage.isToastVisible();
     if (hasToast) {
       const toastMessage = await promarkerPage.getToastMessage();
@@ -122,34 +127,42 @@ test.describe('ProMarker v3 API Integration', () => {
   });
   
   test('should handle network errors', async ({ page }) => {
-    // Setup: Simulate network failure
+    // Use reliable navigation to ensure page loads properly
+    await promarkerPage.navigate();
+    
+    // Wait for page to be fully loaded - use more general selector
+    await expect(page.locator('[data-testid="category-select"]')).toBeVisible({ timeout: 15000 });
+    
+    // Setup: Simulate network failure for manual action
     await page.route('**/mapi/apps/mste/api/suggest', route => {
       route.abort('failed');
     });
     
-    // Action: Navigate to ProMarker page
-    await promarkerPage.navigate();
+    // Action: Trigger API call manually
+    await page.locator('[data-testid="category-select"]').click();
     
     // Wait for error handling
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
-    // Assert: Page should not crash and show error indication
-    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
+    // Assert: Page should still be functional - check for core elements instead of specific heading
+    await expect(page.locator('[data-testid="category-select"]')).toBeVisible();
+    await expect(page.locator('[data-testid="generate-btn"]')).toBeVisible();
   });
   
   test('should handle API timeout', async ({ page }) => {
-    // Setup: Simulate slow API response
+    // Setup: Simulate slow API response that eventually succeeds
     await page.route('**/mapi/apps/mste/api/suggest', async route => {
-      // Delay response by 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Delay response by 3 seconds but then succeed
+      await new Promise(resolve => setTimeout(resolve, 3000));
       await route.continue();
     });
     
-    // Action: Navigate and verify loading state appears
-    await promarkerPage.navigate();
+    // Action: Navigate to ProMarker page
+    await page.goto('/promarker');
+    await page.waitForLoadState('networkidle');
     
     // Assert: Page should eventually load
-    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /ProMarker ワークスペース/ })).toBeVisible({ timeout: 15000 });
   });
   
   test('should retry failed requests on transient errors', async ({ page }) => {
@@ -172,7 +185,7 @@ test.describe('ProMarker v3 API Integration', () => {
     
     // Note: This test depends on retry logic implementation in Step 2
     // For now, just verify page loads eventually
-    await expect(page.getByRole('heading', { name: /ProMarker 払出画面/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /ProMarker ワークスペース/ })).toBeVisible();
   });
   
   test('should handle CORS preflight requests', async ({ page }) => {

@@ -18,7 +18,7 @@ Error: expect(locator).toBeEnabled() failed
 Locator: locator('.container_title, h1')
 Expected: enabled
 Error: strict mode violation: locator('.container_title, h1') resolved to 2 elements:
-  1) <h1 class="text-2xl font-bold text-foreground">ProMarker Platform</h1> aka getByRole('heading', { name: 'ProMarker Platform' })
+  1) <h1 class="text-2xl font-bold text-foreground">mirelplatform</h1> aka getByRole('heading', { name: 'mirelplatform' })
   2) <h1 class="container_title text-4xl font-bold text-foreground">ProMarker 払出画面</h1> aka getByRole('heading', { name: 'ProMarker 払出画面' })
 ```
 
@@ -50,7 +50,7 @@ pageTitle: '.container_title, h1', // Support both old and new structure
 
 **問題点:**
 - セレクタが2つのh1要素にマッチ
-  - ヘッダーの `ProMarker Platform`
+  - ヘッダーの `mirelplatform`
   - ページタイトルの `ProMarker 払出画面`
 - Playwrightのstrict modeでは複数要素マッチ時にエラー
 
