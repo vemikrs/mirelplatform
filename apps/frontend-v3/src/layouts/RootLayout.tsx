@@ -103,7 +103,7 @@ export function RootLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
-      <header className="sticky top-0 z-40 border-b border-outline/40 bg-surface/80 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-outline/15 bg-surface/60 backdrop-blur-xl">
         <div className="container flex h-20 items-center justify-between gap-6">
           <div className="flex flex-1 items-center gap-6">
             <Link to="/" className="group flex items-center gap-3 text-left">
