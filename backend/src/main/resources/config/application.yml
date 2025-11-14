@@ -30,6 +30,7 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     jp.vemi.mirel: DEBUG
+    jp.vemi.ste: DEBUG
 mipla2:
   security:
     api:
