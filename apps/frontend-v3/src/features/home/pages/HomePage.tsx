@@ -1,6 +1,6 @@
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from '@mirel/ui'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Users2, Workflow, Paintbrush, Building2, LayoutGrid, Code, Palette } from 'lucide-react'
+import { ArrowRight, Users2, Workflow, Paintbrush, Building2, LayoutGrid, Code, Palette, Sparkles } from 'lucide-react'
 
 const modules = [
   {
@@ -73,59 +73,134 @@ const modules = [
 
 export function HomePage() {
   return (
-    <div className="space-y-12">
-      <SectionHeading
-        eyebrow="mirelplatform"
-        title="業務アプリ基盤ポータル"
-        description="業務アプリケーション基盤と、拡張予定のモジュールをご確認いただけます。"
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button asChild size="lg">
-              <Link to="/promarker">
-                ProMarker を開く
-                <ArrowRight className="ml-2 size-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="subtle" size="lg">
-              <Link to="/catalog">UI カタログを見る</Link>
-            </Button>
-          </div>
-        }
-      />
+    <div className="space-y-12 pb-16">
+      {/* Hero Section with Liquid Glass Effect */}
+      <div className="relative overflow-hidden">
+        {/* Background Gradient Orb */}
+        <div 
+          className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-30 blur-3xl pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)'
+          }}
+        />
+        
+        <SectionHeading
+          eyebrow={
+            <span className="inline-flex items-center gap-2">
+              <Sparkles className="size-4" />
+              mirelplatform
+            </span>
+          }
+          title="業務アプリ基盤ポータル"
+          description="業務アプリケーション基盤と、拡張予定のモジュールをご確認いただけます。"
+          actions={
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                asChild 
+                size="lg"
+                className="shadow-lg hover:shadow-xl transition-shadow duration-300"
+              >
+                <Link to="/promarker">
+                  ProMarker を開く
+                  <ArrowRight className="ml-2 size-4" />
+                </Link>
+              </Button>
+              <Button 
+                asChild 
+                variant="subtle" 
+                size="lg"
+                className="backdrop-blur-sm"
+              >
+                <Link to="/catalog">UI カタログを見る</Link>
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
-      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr">
+      {/* Module Cards Grid with Liquid Design */}
+      <div 
+        className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr"
+        style={{
+          gridAutoRows: 'minmax(280px, auto)'
+        }}
+      >
         {modules.map((module) => (
           <Card 
             key={module.id} 
             data-testid="home-module-card" 
-            className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/8 border-outline/20 bg-surface/60 backdrop-blur-sm"
+            className="group relative overflow-hidden transition-all border-outline/15"
+            style={{
+              background: 'hsl(var(--surface) / 0.5)',
+              backdropFilter: 'blur(12px) saturate(1.8)',
+              boxShadow: 'var(--liquid-elevation-floating)',
+              borderRadius: 'var(--liquid-radius-xl)',
+              transitionDuration: 'var(--liquid-duration-normal)',
+              transitionTimingFunction: 'var(--liquid-ease-smooth)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = 'var(--liquid-elevation-raised)';
+              e.currentTarget.style.background = 'hsl(var(--surface) / 0.7)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--liquid-elevation-floating)';
+              e.currentTarget.style.background = 'hsl(var(--surface) / 0.5)';
+            }}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/8 to-primary/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            {/* Gradient Overlay on Hover */}
+            <div 
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{
+                background: 'radial-gradient(circle at top right, hsl(var(--primary) / 0.08) 0%, transparent 70%)',
+                transitionDuration: 'var(--liquid-duration-normal)',
+                borderRadius: 'inherit'
+              }}
+            />
             
             <CardHeader className="relative z-10 pb-4">
               <div className="flex items-center justify-between">
-                <div className="rounded-xl bg-primary/8 p-3 group-hover:bg-primary/12 transition-colors">
+                {/* Icon Container with Liquid Glass Effect */}
+                <div 
+                  className="rounded-xl p-3 transition-all group-hover:scale-105"
+                  style={{
+                    background: 'hsl(var(--primary) / 0.08)',
+                    backdropFilter: 'blur(8px)',
+                    transitionDuration: 'var(--liquid-duration-fast)',
+                    transitionTimingFunction: 'var(--liquid-ease-bounce)'
+                  }}
+                >
                   {module.icon}
                 </div>
+                
+                {/* Status Badge */}
                 <Badge 
                   variant={module.status === '稼働中' ? 'success' : 'neutral'}
-                  className="border-primary/20 bg-primary/5 text-primary/80"
+                  className="border-primary/15 text-xs font-medium"
+                  style={{
+                    background: 'hsl(var(--primary) / 0.06)',
+                    backdropFilter: 'blur(8px)'
+                  }}
                 >
                   {module.status}
                 </Badge>
               </div>
-              <div className="space-y-1 pt-4">
-                <CardTitle className="text-lg font-semibold text-foreground/90">
+              
+              <div className="space-y-1.5 pt-4">
+                <CardTitle className="text-lg font-semibold text-foreground/90 tracking-tight">
                   {module.title}
                 </CardTitle>
                 {module.subtitle && (
-                  <p className="text-xs text-muted-foreground/70">{module.subtitle}</p>
+                  <p className="text-xs text-muted-foreground/70 font-medium">
+                    {module.subtitle}
+                  </p>
                 )}
               </div>
             </CardHeader>
             
-            <CardContent className="relative z-10 space-y-3">
-              <CardDescription className="text-sm text-muted-foreground/80">
+            <CardContent className="relative z-10 space-y-4">
+              <CardDescription className="text-sm text-muted-foreground/80 leading-relaxed">
                 {module.description}
               </CardDescription>
               
@@ -133,19 +208,57 @@ export function HomePage() {
                 {module.detailDescription}
               </p>
               
+              {/* Action Button with Liquid Interactive Effect */}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="mt-4 w-full justify-between text-primary/80 hover:text-primary hover:bg-primary/8"
+                className="mt-4 w-full justify-between text-primary/80 hover:text-primary group/btn"
+                style={{
+                  background: 'hsl(var(--primary) / 0)',
+                  transitionDuration: 'var(--liquid-duration-fast)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'hsl(var(--primary) / 0)';
+                }}
                 asChild
               >
                 <Link to={module.link || '/sitemap'}>
-                  詳細を見る <ArrowRight className="size-4" />
+                  <span>詳細を見る</span>
+                  <ArrowRight 
+                    className="size-4 transition-transform group-hover/btn:translate-x-1" 
+                    style={{
+                      transitionDuration: 'var(--liquid-duration-fast)'
+                    }}
+                  />
                 </Link>
               </Button>
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Bottom Info Section */}
+      <div 
+        className="relative mt-16 p-8 rounded-2xl border"
+        style={{
+          background: 'hsl(var(--surface) / 0.4)',
+          backdropFilter: 'blur(16px) saturate(1.8)',
+          borderColor: 'hsl(var(--outline) / 0.15)',
+          boxShadow: 'var(--liquid-elevation-floating)'
+        }}
+      >
+        <div className="max-w-3xl mx-auto text-center space-y-4">
+          <h3 className="text-xl font-semibold text-foreground/90">
+            モダンで拡張性の高い業務基盤
+          </h3>
+          <p className="text-muted-foreground/80 leading-relaxed">
+            Liquid Design Systemの原則に基づいた、透明性と流動性を重視したUIデザイン。
+            各モジュールは段階的に機能を拡張し、エンタープライズグレードのアプリケーション構築を支援します。
+          </p>
+        </div>
       </div>
     </div>
   )
