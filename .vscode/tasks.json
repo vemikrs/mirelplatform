@@ -74,7 +74,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -110,7 +110,7 @@
     {
       "label": "Frontend-v3: Start Vite",
       "type": "shell",
-      "command": "pnpm --filter frontend-v3 dev",
+      "command": "fuser -k 5173/tcp 2>/dev/null || true; pnpm --filter frontend-v3 dev",
       "options": {
         "cwd": "${workspaceFolder}"
       },
