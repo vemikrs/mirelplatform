@@ -34,7 +34,7 @@ const StepIndicator = React.forwardRef<HTMLOListElement, StepIndicatorProps>(
       <ol
         ref={ref}
         className={cn(
-          'grid gap-3 rounded-xl border border-outline/60 bg-surface-subtle p-4 shadow-sm sm:grid-cols-3',
+          'grid grid-cols-3 gap-3 rounded-xl border border-outline/60 bg-surface-subtle p-4 shadow-sm',
           className
         )}
         {...props}
@@ -46,19 +46,19 @@ const StepIndicator = React.forwardRef<HTMLOListElement, StepIndicatorProps>(
             <li
               key={step.id}
               className={cn(
-                'flex flex-col gap-2 rounded-lg border p-4 transition-colors',
+                'rounded-lg border p-4 transition-colors',
                 stateStyles[state]
               )}
               data-state={state}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-semibold tracking-wide text-foreground">
                   {step.title}
                 </span>
                 {stateBadge[state]}
               </div>
               {step.description ? (
-                <p className="text-xs text-muted-foreground">{step.description}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{step.description}</p>
               ) : null}
             </li>
           )
