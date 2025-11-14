@@ -8,19 +8,25 @@ export default {
     container: {
       center: true,
       padding: {
-        DEFAULT: "1rem",
-        xs: "1.25rem",
-        sm: "1.5rem",
-        md: "2.5rem",
-        lg: "4rem",
-        xl: "6rem",
-        "2xl": "8rem",
+        DEFAULT: "1rem",      // 16px - スマートフォン
+        sm: "1.5rem",         // 24px - 大スマートフォン
+        md: "2rem",           // 32px - タブレット
+        lg: "3rem",           // 48px - デスクトップ
+        xl: "4rem",           // 64px - 大画面
+        "2xl": "6rem",        // 96px - ワイドモニター
       },
       screens: {
-        "2xl": "1440px",
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
       },
     },
     extend: {
+      screens: {
+        xs: "475px",          // 追加ブレークポイント（小スマートフォン対応）
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
