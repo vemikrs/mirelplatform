@@ -1,3 +1,6 @@
+/* Import Liquid Design System inspired tokens */
+@import "./liquid-tokens.css";
+
 @layer base {
   :root {
     color-scheme: light;
