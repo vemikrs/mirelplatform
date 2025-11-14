@@ -1,6 +1,19 @@
 import { z } from 'zod'
 
-const navigationLinkSchema = z.object({
+const navigationLinkSchema: z.ZodType<{
+  id: string
+  label: string
+  path: string
+  icon?: string
+  badge?: {
+    label: string
+    tone: 'info' | 'success' | 'warning' | 'neutral'
+  }
+  external?: boolean
+  description?: string
+  children?: Array<any>
+  permissions?: string[]
+}> = z.object({
   id: z.string(),
   label: z.string(),
   path: z.string(),

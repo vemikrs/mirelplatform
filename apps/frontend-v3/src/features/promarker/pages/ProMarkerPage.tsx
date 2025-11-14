@@ -317,19 +317,19 @@ export function ProMarkerPage() {
         id: 'select',
         title: 'ステンシル選択',
         description: 'カテゴリ・ステンシル・シリアルを選びます。',
-        state: selectionComplete ? 'complete' : 'current',
+        state: (selectionComplete ? 'complete' : 'current') as 'complete' | 'current' | 'upcoming',
       },
       {
         id: 'details',
         title: 'パラメータ入力',
         description: '必須項目と入力ルールを確認しながら値を設定します。',
-        state: parametersReady ? (parameterForm.isValid ? 'complete' : 'current') : selectionComplete ? 'current' : 'upcoming',
+        state: (parametersReady ? (parameterForm.isValid ? 'complete' : 'current') : selectionComplete ? 'current' : 'upcoming') as 'complete' | 'current' | 'upcoming',
       },
       {
         id: 'execute',
         title: '生成',
         description: '入力内容でコード生成を実行します。',
-        state: generateMutation.isSuccess ? 'complete' : parametersReady ? 'current' : 'upcoming',
+        state: (generateMutation.isSuccess ? 'complete' : parametersReady ? 'current' : 'upcoming') as 'complete' | 'current' | 'upcoming',
       },
     ];
   }, [categories.selected, stencils.selected, serials.selected, parameters.length, parameterForm.isValid, generateMutation.isSuccess]);
