@@ -25,7 +25,7 @@ export function StencilInfo({ config }: StencilInfoProps) {
         </div>
         <p className="text-sm text-muted-foreground">{config.description || 'このステンシルには説明が設定されていません。'}</p>
       </CardHeader>
-      <CardContent className="grid gap-3 text-sm md:grid-cols-2">
+      <CardContent className="grid grid-cols-1 gap-3 text-sm">
         <div className="flex items-center gap-2">
           <FolderTree className="size-4 text-primary" />
           <span className="text-muted-foreground">カテゴリ ID:</span>

@@ -356,32 +356,39 @@ export function ProMarkerPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle>ステンシル選択</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              カテゴリ → ステンシル → シリアルの順で選択してください。
-            </p>
-          </CardHeader>
-          <CardContent>
-            <StencilSelector
-              categories={categories}
-              stencils={stencils}
-              serials={serials}
-              onCategoryChange={handleCategoryChange}
-              onStencilChange={handleStencilChange}
-              onSerialChange={handleSerialChange}
-              disabled={selectorsDisabled}
-            />
-          </CardContent>
-        </Card>
-        <StencilInfo config={stencilConfig} />
-      </div>
+      {/* ステンシル選択・説明 と パラメータ入力の2カラムレイアウト */}
+      <div className={`grid grid-cols-1 gap-6 ${parameters.length > 0 ? 'md:grid-cols-2' : ''}`}>
+        {/* 左側: ステンシル選択 + ステンシル説明 (縦並び) */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="space-y-2">
+              <CardTitle>ステンシル選択</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                カテゴリ → ステンシル → シリアルの順で選択してください。
+              </p>
+            </CardHeader>
+            <CardContent>
+              <StencilSelector
+                categories={categories}
+                stencils={stencils}
+                serials={serials}
+                onCategoryChange={handleCategoryChange}
+                onStencilChange={handleStencilChange}
+                onSerialChange={handleSerialChange}
+                disabled={selectorsDisabled}
+              />
+            </CardContent>
+          </Card>
+          <StencilInfo config={stencilConfig} />
+        </div>
 
-      {parameters.length > 0 ? (
-        <ParameterFields parameters={parameters} form={parameterForm} disabled={inputFieldsDisabled} />
-      ) : null}
+        {/* 右側: パラメータ入力 (スティッキー) - パラメータがある場合のみ表示 */}
+        {parameters.length > 0 ? (
+          <div className="md:sticky md:top-6 md:self-start md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
+            <ParameterFields parameters={parameters} form={parameterForm} disabled={inputFieldsDisabled} />
+          </div>
+        ) : null}
+      </div>
 
       <ActionButtons
         onGenerate={handleGenerate}

@@ -49,7 +49,7 @@ export function StencilSelector({
   const hasSerials = serials.items.length > 0 && stencils.selected;
 
   return (
-    <div className="grid gap-5 md:grid-cols-3" data-testid="stencil-selector">
+    <div className="grid grid-cols-1 gap-5" data-testid="stencil-selector">
       <FormField>
         <FormLabel requiredMark={<FormRequiredMark />} htmlFor="category-select">
           カテゴリ
