@@ -61,6 +61,11 @@ export function SiteMapPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <LinkList title="主要機能" description="ヘッダーに表示される主要メニュー" links={navigation.primary} />
         <LinkList title="クイックリンク" description="管理者向けのショートカット" links={navigation.quickLinks} />
+        {navigation.inDevelopment && navigation.inDevelopment.length > 0 ? (
+          <div className="md:col-span-2">
+            <LinkList title="開発中の機能" description="今後リリース予定のモジュール" links={navigation.inDevelopment} />
+          </div>
+        ) : null}
         {navigation.secondary.length > 0 ? (
           <LinkList title="補助リンク" description="ドキュメントや外部サイト" links={navigation.secondary} />
         ) : null}

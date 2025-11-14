@@ -68,6 +68,7 @@ export const navigationConfigSchema = z.object({
   primary: navigationLinkSchema.array(),
   secondary: navigationLinkSchema.array().default([]),
   quickLinks: navigationLinkSchema.array().default([]),
+  inDevelopment: navigationLinkSchema.array().default([]),
   globalActions: navigationActionSchema.array().default([]),
 })
 
