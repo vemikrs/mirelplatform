@@ -98,7 +98,7 @@ export function HomePage() {
               <Button 
                 asChild 
                 size="lg"
-                className="shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
                 <Link to="/promarker">
                   ProMarker を開く
@@ -107,9 +107,9 @@ export function HomePage() {
               </Button>
               <Button 
                 asChild 
-                variant="subtle" 
+                variant="outline" 
                 size="lg"
-                className="backdrop-blur-sm"
+                className="rounded-xl backdrop-blur-sm border-2 hover:bg-accent/50 transition-all duration-300"
               >
                 <Link to="/catalog">UI カタログを見る</Link>
               </Button>
