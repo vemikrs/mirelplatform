@@ -41,6 +41,7 @@ import org.yaml.snakeyaml.constructor.ConstructorException;
 
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
+import jp.vemi.framework.util.FileUtil;
 import freemarker.cache.MultiTemplateLoader;
 import freemarker.cache.TemplateLoader;
 import freemarker.core.ParseException;
@@ -244,19 +245,19 @@ public class TemplateEngineProcessor {
             // FreeMarkerのMultiTemplateLoaderを使用してファイルシステムとクラスパスの両方をサポート
             List<TemplateLoader> loaders = new ArrayList<>();
             
-            // Layer 1: ファイルシステムローダー（既存の機能）
-            File stencilDir = new File(StorageUtil.getBaseDir() + getStencilAndSerialStorageDir());
-            if (stencilDir.exists()) {
-                loaders.add(new FileTemplateLoader(stencilDir));
-                System.out.println("Added filesystem template loader: " + stencilDir.getAbsolutePath());
+            // Layer 1: ファイルシステムローダー（files/ ディレクトリ配下を基準）
+            File filesDir = new File(getStencilAndSerialStorageDir(), "files");
+            if (filesDir.exists() && filesDir.isDirectory()) {
+                loaders.add(new FileTemplateLoader(filesDir));
+                System.out.println("Added filesystem template loader: " + filesDir.getAbsolutePath());
             } else {
-                System.out.println("Filesystem stencil directory not found: " + stencilDir.getAbsolutePath());
+                System.out.println("Filesystem files directory not found: " + filesDir.getAbsolutePath());
             }
             
-            // Layer 2: クラスパスローダー（新機能）
+            // Layer 2: クラスパスローダー（files/ ディレクトリ配下を基準）
             if (resourcePatternResolver != null) {
-                // SpringClasspathローダーは複数のクラスパスパスをサポートできる
-                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
+                // files/ ディレクトリを基準パスとする
+                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/files";
                 ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
                 loaders.add(classpathLoader);
                 System.out.println("Added classpath template loader: " + stencilPath);
@@ -1198,25 +1199,30 @@ public class TemplateEngineProcessor {
     private void searchFilesystemTemplates(List<String> templateFiles, Set<String> foundFileNames,
                                           String stencilCanonicalName, String serialNo) {
         try {
-            String fullPath = getStencilAndSerialStorageDir();
-            System.out.println("Searching filesystem layer: " + StorageUtil.getBaseDir() + fullPath);
+            String basePath = getStencilAndSerialStorageDir();
+            // 標準構成: files/ ディレクトリ配下を検索対象とする
+            File filesDir = new File(basePath, "files");
+            System.out.println("Searching filesystem layer: " + filesDir.getAbsolutePath());
             
-            if (new File(StorageUtil.getBaseDir() + fullPath).exists()) {
-                List<String> files = StorageUtil.getFiles(fullPath);
+            if (filesDir.exists() && filesDir.isDirectory()) {
+                List<File> files = FileUtil.getFiles(filesDir);
                 
-                for (String filePath : files) {
-                    File file = new File(filePath);
+                for (File file : files) {
                     String fileName = file.getName();
                     
                     if (!fileName.equals("stencil-settings.yml") && 
                         !foundFileNames.contains(fileName)) {
-                        templateFiles.add(filePath);
-                        foundFileNames.add(fileName);
-                        System.out.println("FILESYSTEM found: " + fileName);
+                        try {
+                            templateFiles.add(file.getCanonicalPath());
+                            foundFileNames.add(fileName);
+                            System.out.println("FILESYSTEM found: " + fileName);
+                        } catch (IOException e) {
+                            System.out.println("Error getting canonical path: " + e.getMessage());
+                        }
                     }
                 }
             } else {
-                System.out.println("FILESYSTEM directory not found: " + StorageUtil.getBaseDir() + fullPath);
+                System.out.println("FILESYSTEM files directory not found: " + filesDir.getAbsolutePath());
             }
         } catch (Exception e) {
             System.out.println("Error searching filesystem layer: " + e.getMessage());
@@ -1231,7 +1237,8 @@ public class TemplateEngineProcessor {
                 return;
             }
             
-            String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/**";
+            // 標準構成: files/ ディレクトリ配下を検索対象とする
+            String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/files/**";
             System.out.println("Searching CLASSPATH layer: " + searchPattern);
             
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
