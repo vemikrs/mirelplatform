@@ -42,7 +42,7 @@ export {
   DialogDescription,
 } from './components/Dialog'
 export { SectionHeading } from './components/SectionHeading'
-export { StepIndicator } from './components/StepIndicator'
+export { StepIndicator, type StepState, type StepIndicatorStep } from './components/StepIndicator'
 export { Skeleton } from './components/Skeleton'
 export {
   Toast,
