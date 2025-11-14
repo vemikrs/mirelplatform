@@ -1,0 +1,292 @@
+/**
+ * Liquid Design System Inspired Tokens
+ * Modern CSS Variables for glassmorphic and fluid design patterns
+ * Based on Liquid Design System by Merck KGaA principles
+ */
+
+@layer tokens {
+  :root {
+    /* ========================================
+     * LIQUID DESIGN: GLASS & TRANSPARENCY
+     * ======================================== */
+    
+    /* Glass Surface Tokens */
+    --liquid-glass-blur-sm: 8px;
+    --liquid-glass-blur-md: 12px;
+    --liquid-glass-blur-lg: 16px;
+    --liquid-glass-blur-xl: 24px;
+    
+    --liquid-glass-opacity-subtle: 0.4;
+    --liquid-glass-opacity-medium: 0.6;
+    --liquid-glass-opacity-strong: 0.8;
+    
+    /* Surface Materials */
+    --liquid-surface-glass: hsl(var(--surface) / var(--liquid-glass-opacity-medium));
+    --liquid-surface-glass-subtle: hsl(var(--surface) / var(--liquid-glass-opacity-subtle));
+    --liquid-surface-glass-strong: hsl(var(--surface) / var(--liquid-glass-opacity-strong));
+    
+    /* Backdrop Filters (Pre-defined combinations) */
+    --liquid-backdrop-glass: blur(var(--liquid-glass-blur-md)) saturate(1.8);
+    --liquid-backdrop-glass-strong: blur(var(--liquid-glass-blur-lg)) saturate(2.0);
+    --liquid-backdrop-glass-subtle: blur(var(--liquid-glass-blur-sm)) saturate(1.5);
+    
+    /* ========================================
+     * LIQUID DESIGN: ELEVATION & DEPTH
+     * ======================================== */
+    
+    /* Layering Tokens */
+    --liquid-elevation-floating: 0px 4px 12px rgba(15, 23, 42, 0.06),
+                                 0px 2px 4px rgba(15, 23, 42, 0.04);
+    --liquid-elevation-raised: 0px 8px 20px rgba(15, 23, 42, 0.08),
+                               0px 3px 6px rgba(15, 23, 42, 0.05);
+    --liquid-elevation-overlay: 0px 12px 32px rgba(15, 23, 42, 0.12),
+                                0px 4px 8px rgba(15, 23, 42, 0.08);
+    --liquid-elevation-modal: 0px 20px 48px rgba(15, 23, 42, 0.16),
+                              0px 6px 12px rgba(15, 23, 42, 0.10);
+    
+    /* Inner Shadows for depth */
+    --liquid-depth-inset-sm: inset 0px 1px 2px rgba(15, 23, 42, 0.06);
+    --liquid-depth-inset-md: inset 0px 2px 4px rgba(15, 23, 42, 0.08);
+    
+    /* ========================================
+     * LIQUID DESIGN: BORDERS & OUTLINES
+     * ======================================== */
+    
+    /* Glass Borders */
+    --liquid-border-glass: 1px solid hsl(var(--outline) / 0.15);
+    --liquid-border-glass-strong: 1px solid hsl(var(--outline) / 0.25);
+    --liquid-border-glass-subtle: 1px solid hsl(var(--outline) / 0.08);
+    
+    /* Gradient Borders */
+    --liquid-border-gradient-primary: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.3) 0%, 
+      hsl(var(--primary) / 0.1) 100%);
+    --liquid-border-gradient-accent: linear-gradient(135deg,
+      hsl(var(--accent-foreground) / 0.2) 0%,
+      hsl(var(--accent-foreground) / 0.05) 100%);
+    
+    /* ========================================
+     * LIQUID DESIGN: GRADIENTS
+     * ======================================== */
+    
+    /* Surface Gradients */
+    --liquid-gradient-glass-light: linear-gradient(135deg,
+      hsl(var(--surface) / 0.8) 0%,
+      hsl(var(--surface) / 0.4) 100%);
+    --liquid-gradient-glass-radial: radial-gradient(circle at top right,
+      hsl(var(--primary) / 0.06) 0%,
+      transparent 70%);
+    
+    /* Interactive Gradients */
+    --liquid-gradient-hover: linear-gradient(135deg,
+      hsl(var(--primary) / 0.08) 0%,
+      hsl(var(--primary) / 0.02) 100%);
+    --liquid-gradient-active: linear-gradient(135deg,
+      hsl(var(--primary) / 0.12) 0%,
+      hsl(var(--primary) / 0.04) 100%);
+    
+    /* ========================================
+     * LIQUID DESIGN: SPACING & RHYTHM
+     * ======================================== */
+    
+    /* Fluid Spacing Scale (8px base) */
+    --liquid-space-xs: 0.5rem;    /* 8px */
+    --liquid-space-sm: 0.75rem;   /* 12px */
+    --liquid-space-md: 1rem;      /* 16px */
+    --liquid-space-lg: 1.5rem;    /* 24px */
+    --liquid-space-xl: 2rem;      /* 32px */
+    --liquid-space-2xl: 3rem;     /* 48px */
+    --liquid-space-3xl: 4rem;     /* 64px */
+    
+    /* Container Spacing */
+    --liquid-container-padding-sm: var(--liquid-space-md);
+    --liquid-container-padding-md: var(--liquid-space-lg);
+    --liquid-container-padding-lg: var(--liquid-space-2xl);
+    
+    /* ========================================
+     * LIQUID DESIGN: RADIUS & SHAPES
+     * ======================================== */
+    
+    /* Fluid Border Radius */
+    --liquid-radius-xs: 0.375rem;  /* 6px */
+    --liquid-radius-sm: 0.5rem;    /* 8px */
+    --liquid-radius-md: 0.75rem;   /* 12px */
+    --liquid-radius-lg: 1rem;      /* 16px */
+    --liquid-radius-xl: 1.5rem;    /* 24px */
+    --liquid-radius-2xl: 2rem;     /* 32px */
+    --liquid-radius-full: 9999px;
+    
+    /* ========================================
+     * LIQUID DESIGN: ANIMATION & TRANSITIONS
+     * ======================================== */
+    
+    /* Fluid Timing Functions */
+    --liquid-ease-fluid: cubic-bezier(0.4, 0, 0.2, 1);
+    --liquid-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --liquid-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    
+    /* Duration Tokens */
+    --liquid-duration-instant: 100ms;
+    --liquid-duration-fast: 200ms;
+    --liquid-duration-normal: 300ms;
+    --liquid-duration-slow: 500ms;
+    
+    /* Transition Presets */
+    --liquid-transition-base: all var(--liquid-duration-normal) var(--liquid-ease-fluid);
+    --liquid-transition-color: color var(--liquid-duration-fast) var(--liquid-ease-fluid),
+                               background-color var(--liquid-duration-fast) var(--liquid-ease-fluid),
+                               border-color var(--liquid-duration-fast) var(--liquid-ease-fluid);
+    --liquid-transition-transform: transform var(--liquid-duration-normal) var(--liquid-ease-smooth);
+    
+    /* ========================================
+     * LIQUID DESIGN: INTERACTIVE STATES
+     * ======================================== */
+    
+    /* Hover Effects */
+    --liquid-hover-lift: translateY(-2px);
+    --liquid-hover-scale: scale(1.02);
+    --liquid-hover-brightness: brightness(1.05);
+    
+    /* Active/Press Effects */
+    --liquid-active-scale: scale(0.98);
+    --liquid-active-brightness: brightness(0.95);
+    
+    /* Focus Effects */
+    --liquid-focus-ring-width: 2px;
+    --liquid-focus-ring-offset: 2px;
+    --liquid-focus-ring-color: hsl(var(--focus-ring) / 0.5);
+    
+    /* ========================================
+     * LIQUID DESIGN: TYPOGRAPHY ENHANCEMENT
+     * ======================================== */
+    
+    /* Font Weight Tokens */
+    --liquid-font-weight-normal: 400;
+    --liquid-font-weight-medium: 500;
+    --liquid-font-weight-semibold: 600;
+    --liquid-font-weight-bold: 700;
+    
+    /* Line Height Tokens */
+    --liquid-line-height-tight: 1.25;
+    --liquid-line-height-normal: 1.5;
+    --liquid-line-height-relaxed: 1.75;
+    
+    /* Letter Spacing */
+    --liquid-letter-spacing-tight: -0.02em;
+    --liquid-letter-spacing-normal: 0em;
+    --liquid-letter-spacing-wide: 0.02em;
+  }
+  
+  /* ========================================
+   * DARK MODE OVERRIDES
+   * ======================================== */
+  .dark {
+    /* Adjusted shadows for dark mode */
+    --liquid-elevation-floating: 0px 4px 12px rgba(0, 0, 0, 0.3),
+                                 0px 2px 4px rgba(0, 0, 0, 0.2);
+    --liquid-elevation-raised: 0px 8px 20px rgba(0, 0, 0, 0.4),
+                               0px 3px 6px rgba(0, 0, 0, 0.25);
+    --liquid-elevation-overlay: 0px 12px 32px rgba(0, 0, 0, 0.5),
+                                0px 4px 8px rgba(0, 0, 0, 0.35);
+    --liquid-elevation-modal: 0px 20px 48px rgba(0, 0, 0, 0.6),
+                              0px 6px 12px rgba(0, 0, 0, 0.45);
+    
+    /* Enhanced glass effect in dark mode */
+    --liquid-glass-blur-md: 16px;
+    --liquid-glass-blur-lg: 20px;
+    
+    /* Adjusted gradients for dark mode */
+    --liquid-gradient-glass-radial: radial-gradient(circle at top right,
+      hsl(var(--primary) / 0.12) 0%,
+      transparent 70%);
+  }
+}
+
+/* ========================================
+ * UTILITY CLASSES FOR LIQUID DESIGN
+ * ======================================== */
+
+@layer utilities {
+  /* Glass Surface Utilities */
+  .liquid-glass {
+    background: var(--liquid-surface-glass);
+    backdrop-filter: var(--liquid-backdrop-glass);
+    border: var(--liquid-border-glass);
+  }
+  
+  .liquid-glass-strong {
+    background: var(--liquid-surface-glass-strong);
+    backdrop-filter: var(--liquid-backdrop-glass-strong);
+    border: var(--liquid-border-glass-strong);
+  }
+  
+  .liquid-glass-subtle {
+    background: var(--liquid-surface-glass-subtle);
+    backdrop-filter: var(--liquid-backdrop-glass-subtle);
+    border: var(--liquid-border-glass-subtle);
+  }
+  
+  /* Elevation Utilities */
+  .liquid-floating {
+    box-shadow: var(--liquid-elevation-floating);
+  }
+  
+  .liquid-raised {
+    box-shadow: var(--liquid-elevation-raised);
+  }
+  
+  .liquid-overlay {
+    box-shadow: var(--liquid-elevation-overlay);
+  }
+  
+  /* Interactive States */
+  .liquid-interactive {
+    transition: var(--liquid-transition-base);
+    cursor: pointer;
+  }
+  
+  .liquid-interactive:hover {
+    transform: var(--liquid-hover-lift);
+    box-shadow: var(--liquid-elevation-raised);
+  }
+  
+  .liquid-interactive:active {
+    transform: var(--liquid-active-scale);
+  }
+  
+  /* Card with Liquid Design */
+  .liquid-card {
+    background: var(--liquid-surface-glass);
+    backdrop-filter: var(--liquid-backdrop-glass);
+    border: var(--liquid-border-glass);
+    border-radius: var(--liquid-radius-xl);
+    box-shadow: var(--liquid-elevation-floating);
+    transition: var(--liquid-transition-base);
+  }
+  
+  .liquid-card:hover {
+    transform: var(--liquid-hover-lift);
+    box-shadow: var(--liquid-elevation-raised);
+    background: var(--liquid-surface-glass-strong);
+  }
+  
+  /* Gradient Overlay */
+  .liquid-gradient-overlay {
+    position: relative;
+  }
+  
+  .liquid-gradient-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--liquid-gradient-glass-radial);
+    opacity: 0;
+    transition: opacity var(--liquid-duration-normal) var(--liquid-ease-fluid);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  
+  .liquid-gradient-overlay:hover::before {
+    opacity: 1;
+  }
+}
