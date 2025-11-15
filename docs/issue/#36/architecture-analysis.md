@@ -84,7 +84,7 @@ MSTE_STENCIL テーブル (メタデータのみ)
 
 ```
 Frontend: POST /mapi/apps/mste/api/suggest
-  ↓ {"content":{"stencilCategoy":"*","stencilCanonicalName":"/user/imart/spring_service","serialNo":"201221A"}}
+  ↓ {"content":{"stencilCategoy":"*","stencilCanonicalName":"/user/project/module_service","serialNo":"201221A"}}
   ↓
 ApiController.index() → SuggestApi.service()
   ↓
@@ -113,7 +113,7 @@ findStencilSettingsInLayer(layerDir)
   ↓ else
   ↓   → findStencilSettingsInFileSystem(layerDir)
   ↓       ↓ File settingsFile = new File(layerDir + stencilCanonicalName + "/" + serialNo + "/stencil-settings.yml")
-  ↓       ↓   例: "./data/storage/apps/promarker/stencil/user/imart/spring_service/201221A/stencil-settings.yml"
+  ↓       ↓   例: "./data/storage/apps/promarker/stencil/user/project/module_service/201221A/stencil-settings.yml"
   ↓       ↓ getSsYmlRecurive(settingsFile)
   ↓       ↓   ↓ yaml.loadAs(stream, StencilSettingsYml.class)
   ↓       ↓   ↓ ✅ mergeParentStencilSettings(resource, settings) 呼び出し追加済み
@@ -151,8 +151,8 @@ Frontend: パラメータは表示されるが、入力フィールドが生成�
 
 2. **実際のファイル配置**:
    ```bash
-   ./backend/data/storage/apps/promarker/stencil/user/imart/imart_stencil-settings.yml
-   ./backend/data/storage/apps/promarker/stencil/user/imart/spring_service/201221A/stencil-settings.yml
+   ./backend/data/storage/apps/promarker/stencil/user/project/project_stencil-settings.yml
+   ./backend/data/storage/apps/promarker/stencil/user/project/module_service/201221A/stencil-settings.yml
    ```
 
 3. **ワークスペースルートディレクトリ確認**:
@@ -359,7 +359,7 @@ getSamplesStencilDir()  → "classpath:/promarker/stencil/samples"
 **推測される問題**:
 - `findStencilSettingsInLayer()` の `layerDir.startsWith("classpath:")` 判定は正しく動作するはず
 - 問題は別の箇所にある可能性が高い:
-  - `context.getStencilCanonicalName()` が `/user/imart/spring_service` になっているか？
+  - `context.getStencilCanonicalName()` が `/user/project/module_service` になっているか？
   - `findStencilSettingsInFileSystem()` の `settingsFile` パス構築が正しいか？
 
 ## 4. 推奨される設計改善案

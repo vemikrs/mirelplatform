@@ -81,8 +81,8 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -H "Content-Type: application/json" \
   -d '{
     "content": {
-      "stencilCategoy": "/imart",
-      "stencilCanonicalName": "/imart/spring_service",
+      "stencilCategoy": "/category1",
+      "stencilCanonicalName": "/category1/test_service",
       "serialNo": "201221A"
     }
   }'
@@ -100,9 +100,9 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
 ### ログ出力
 ```
 2025-11-15 19:31:46.798 [http-nio-3000-exec-1] DEBUG - [SUGGEST] === invoke() called ===
-2025-11-15 19:31:46.798 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Parameter: stencilCategory=/imart, stencilCd=/imart/spring_service, serialNo=201221A
-2025-11-15 19:31:46.817 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Category: selected=/imart, items=13
-2025-11-15 19:31:46.835 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Stencil: selected=/imart/spring_service, items=3
+2025-11-15 19:31:46.798 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Parameter: stencilCategory=/category1, stencilCd=/category1/test_service, serialNo=201221A
+2025-11-15 19:31:46.817 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Category: selected=/category1, items=13
+2025-11-15 19:31:46.835 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Stencil: selected=/category1/test_service, items=3
 2025-11-15 19:31:46.841 [http-nio-3000-exec-1] DEBUG - [SUGGEST] engine.getSerialNos() returned: size=1, values=[201221A]
 2025-11-15 19:31:46.842 [http-nio-3000-exec-1] DEBUG - [SUGGEST] Using requested serial: 201221A
 2025-11-15 19:31:46.843 [http-nio-3000-exec-1] DEBUG - [SUGGEST] fltStrSerialNo: selected='201221A', items=1
@@ -157,8 +157,8 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
         "nodeType": "ROOT"
       },
       "stencil": { ... },
-      "fltStrStencilCategory": { "selected": "/imart", "items": 13 },
-      "fltStrStencilCd": { "selected": "/imart/spring_service", "items": 3 },
+      "fltStrStencilCategory": { "selected": "/category1", "items": 13 },
+      "fltStrStencilCd": { "selected": "/category1/test_service", "items": 3 },
       "fltStrSerialNo": { "selected": "201221A", "items": 1 }
     }
   },

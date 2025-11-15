@@ -386,7 +386,7 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -d '{
     "content": {
       "stencilCategoy": "/user",
-      "stencilCanonicalName": "/user/imart/spring_service",
+      "stencilCanonicalName": "/user/project/module_service",
       "serialNo": "201221A"
     }
   }' | jq '.data.data.model.params.childs | length'
@@ -401,7 +401,7 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -d '{
     "content": {
       "stencilCategoy": "/user",
-      "stencilCanonicalName": "/user/imart/spring_service",
+      "stencilCanonicalName": "/user/project/module_service",
       "serialNo": "201221A"
     }
   }' | jq '.data.data.model.params.childs[0]'

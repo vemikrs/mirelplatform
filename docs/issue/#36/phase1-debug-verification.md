@@ -48,8 +48,8 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -H "Content-Type: application/json" \
   -d '{
     "content": {
-      "stencilCategoy": "/imart",
-      "stencilCanonicalName": "/imart/spring_service",
+      "stencilCategoy": "/category1",
+      "stencilCanonicalName": "/category1/test_service",
       "serialNo": "201221A"
     }
   }'
@@ -59,19 +59,19 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
 
 ```
 2025-11-15 19:14:47.963 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] === invoke() called ===
-2025-11-15 19:14:47.963 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Parameter: stencilCategory=/imart, stencilCd=/imart/spring_service, serialNo=201221A
-2025-11-15 19:14:47.966 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Category: selected=/imart, items=13
-2025-11-15 19:14:47.966 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] validateSelectedExists: selected=/imart, exists=true
-2025-11-15 19:14:47.969 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Stencil: selected=/imart/spring_service, items=3
-2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] validateSelectedExists: selected=/imart/spring_service, exists=true
+2025-11-15 19:14:47.963 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Parameter: stencilCategory=/category1, stencilCd=/category1/test_service, serialNo=201221A
+2025-11-15 19:14:47.966 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Category: selected=/category1, items=13
+2025-11-15 19:14:47.966 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] validateSelectedExists: selected=/category1, exists=true
+2025-11-15 19:14:47.969 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Stencil: selected=/category1/test_service, items=3
+2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] validateSelectedExists: selected=/category1/test_service, exists=true
 2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Serial decision: requestedSerial=201221A, needAutoSelectSerial=false, serialSpecified=true
 2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST] Creating TemplateEngineProcessor:
-2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST]   stencilCd: /imart/spring_service
+2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST]   stencilCd: /category1/test_service
 2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST]   requestedSerial: 201221A
 2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST]   isWildcard: false
 2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.v.m.a.m.d.s.SuggestServiceImp - [SUGGEST]   effectiveSerial: 201221A
-2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.vemi.ste.domain.context.SteContext - [STE_CONTEXT] Creating context: stencilName=/imart/spring_service, serialNo=201221A
-2025-11-15 19:14:47.989 [http-nio-3000-exec-9] DEBUG j.v.s.d.e.TemplateEngineProcessor - [GET_SETTINGS] Called with stencilCanonicalName=/imart/spring_service, serialNo=201221A
+2025-11-15 19:14:47.976 [http-nio-3000-exec-9] DEBUG j.vemi.ste.domain.context.SteContext - [STE_CONTEXT] Creating context: stencilName=/category1/test_service, serialNo=201221A
+2025-11-15 19:14:47.989 [http-nio-3000-exec-9] DEBUG j.v.s.d.e.TemplateEngineProcessor - [GET_SETTINGS] Called with stencilCanonicalName=/category1/test_service, serialNo=201221A
 2025-11-15 19:14:48.078 [http-nio-3000-exec-9] DEBUG j.v.s.d.e.TemplateEngineProcessor - [GET_SETTINGS] Found settings, dataDomain size: 19
 ```
 
@@ -133,7 +133,7 @@ API Response
 ### 4.1 データベースのカテゴリー
 
 **存在しないカテゴリー**: `/user`  
-**正しいカテゴリー**: `/imart`
+**正しいカテゴリー**: `/category1`
 
 **利用可能なカテゴリー一覧**:
 ```
@@ -145,7 +145,7 @@ API Response
 /bizsms - Biz∫販売
 /imm - intra-mart マスタメンテナンス
 /springboot - Spring Boot
-/imart - intra-mart ✅ 使用可能
+/category1 - Category Name 1 ✅ 使用可能
 /tbzam - TBZアカウントマネジメント
 /test-user - Test User Stencils
 /samples - Sample Stencils
@@ -166,7 +166,7 @@ private void validateSelectedExists(ValueTextItems items){
 
 **動作確認**:
 - `/user` → `exists=false` → `selected=""` → 早期return ❌
-- `/imart` → `exists=true` → 処理続行 ✅
+- `/category1` → `exists=true` → 処理続行 ✅
 
 ## 5. logback設定確認
 
@@ -215,8 +215,8 @@ private void validateSelectedExists(ValueTextItems items){
 stencilCategoy: "/user"  
 
 # ✅ 正しいカテゴリー
-stencilCategoy: "/imart"
-stencilCanonicalName: "/imart/spring_service"
+stencilCategoy: "/category1"
+stencilCanonicalName: "/category1/test_service"
 serialNo: "201221A"
 ```
 

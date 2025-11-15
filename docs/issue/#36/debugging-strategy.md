@@ -10,8 +10,8 @@
    - Spring Bootの作業ディレクトリが`./backend`のため、正しく解決される
 
 2. **ファイルの存在**: 確認済み
-   - `./backend/data/storage/apps/promarker/stencil/user/imart/imart_stencil-settings.yml` ✅
-   - `./backend/data/storage/apps/promarker/stencil/user/imart/spring_service/201221A/stencil-settings.yml` ✅
+   - `./backend/data/storage/apps/promarker/stencil/user/project/project_stencil-settings.yml` ✅
+   - `./backend/data/storage/apps/promarker/stencil/user/project/module_service/201221A/stencil-settings.yml` ✅
 
 3. **ReloadStencilMaster経路**: 正常動作
    - マージログ確認済み: "Successfully merged 19 dataDomain entries"
@@ -56,7 +56,7 @@
 **方法**: `SteContext.standard()` にログ追加
 
 **期待される値**:
-- `stencilCanonicalName`: `/user/imart/spring_service`
+- `stencilCanonicalName`: `/user/project/module_service`
 - `serialNo`: `201221A`
 
 **確認コマンド**:
@@ -217,7 +217,7 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -d '{
     "content": {
       "stencilCategoy": "/user",
-      "stencilCanonicalName": "/user/imart/spring_service",
+      "stencilCanonicalName": "/user/project/module_service",
       "serialNo": "201221A"
     }
   }'

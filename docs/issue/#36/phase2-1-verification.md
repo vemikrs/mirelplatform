@@ -165,7 +165,7 @@ $ cat /tmp/phase2_1_response.json | jq '.data.model.params.childs | length'
 
 | 検証項目 | 期待値 | 実際の値 | 結果 |
 |---------|--------|---------|------|
-| 親設定ファイル検出 | imart_stencil-settings.yml | imart_stencil-settings.yml | ✅ |
+| 親設定ファイル検出 | project_stencil-settings.yml | project_stencil-settings.yml | ✅ |
 | 親dataDomain entries | 19 | 19 | ✅ |
 | dataDomain size (before) | 19 | 19 | ✅ |
 | dataDomain size (after) | 19 | 19 | ✅ |
@@ -181,8 +181,8 @@ $ cat /tmp/phase2_1_response.json | jq '.data.model.params.childs | length'
 
 ### マージアルゴリズム
 
-1. **パス分解**: `/imart/spring_service` → `["imart", "spring_service"]`
-2. **親階層検索**: 下から上へ（`spring_service` → `imart`）
+1. **パス分解**: `/project/module_service` → `["project", "module_service"]`
+2. **親階層検索**: 下から上へ（`module_service` → `project`）
 3. **レイヤード検索**: user → standard の順（samplesはskip）
 4. **親設定検出**: `*_stencil-settings.yml` をlistFiles()で検索
 5. **YAMLロード**: SnakeYAMLで親設定をロード
