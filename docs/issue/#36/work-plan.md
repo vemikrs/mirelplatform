@@ -131,8 +131,8 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
   -d '{
     "content": {
       "stencilCategoy": "/user",
-      "stencilCanonicalName": "/user/imart/spring_service",
-      "serialNo": "201221A"
+      "stencilCanonicalName": "/user/project/module_service",
+      "serialNo": "201221A",
     }
   }' | jq .
 
@@ -178,13 +178,13 @@ private void mergeParentStencilSettingsUnified(StencilSettingsYml childSettings)
         return;
     }
     
-    // パス分解: /user/imart/spring_service → ["user", "imart", "spring_service"]
+    // パス分解: /user/project/module_service → ["user", "project", "module_service"]
     String[] pathSegments = stencilCanonicalName.split("/");
     List<String> segments = Arrays.stream(pathSegments)
         .filter(s -> !StringUtils.isEmpty(s))
         .collect(Collectors.toList());
     
-    // 親階層を下から上へ検索（spring_service → imart → user）
+    // 親階層を下から上へ検索（module_service → project → user）
     for (int i = segments.size() - 1; i >= 1; i--) {
         String parentPath = "/" + String.join("/", segments.subList(0, i));
         
@@ -206,7 +206,7 @@ private void mergeParentStencilSettingsUnified(StencilSettingsYml childSettings)
 /**
  * 親ステンシル設定を検索
  * 
- * @param parentPath 親パス（例: "/user/imart"）
+ * @param parentPath 親パス（例: "/user/project"）
  * @return 見つかった親設定、またはnull
  */
 private StencilSettingsYml findParentStencilSettings(String parentPath) {
@@ -409,7 +409,7 @@ curl -X POST http://localhost:3000/mipla2/apps/mste/api/suggest \
 
 **期待結果**: 
 - `id`, `name`, `value`, `type`, `placeholder`, `note` がすべて含まれる
-- `name`, `type`, `placeholder`, `note` が親の`imart_stencil-settings.yml`から取得されている
+- `name`, `type`, `placeholder`, `note` が親の`project_stencil-settings.yml`から取得されている
 
 **テストケース3**: フロントエンドUI確認
 ```bash
@@ -444,7 +444,7 @@ test.describe('Parent Stencil Settings Merge', () => {
     await page.waitForTimeout(500);
 
     // Stencil選択
-    await page.getByLabel('Stencil').selectOption('/user/imart/spring_service');
+    await page.getByLabel('Stencil').selectOption('/user/project/module_service');
     await page.waitForTimeout(500);
 
     // Serial No選択

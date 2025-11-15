@@ -778,7 +778,14 @@ public class TemplateEngineProcessor {
                 "ステンシル定義が見つかりません。ステンシル：" + context.getStencilCanonicalName(), null);
         }
         
-        logger.debug("[GET_SETTINGS] Found settings, dataDomain size: {}", 
+        logger.debug("[GET_SETTINGS] Found settings, dataDomain size (before merge): {}", 
+            settings.getStencil() != null && settings.getStencil().getDataDomain() != null 
+                ? settings.getStencil().getDataDomain().size() : 0);
+        
+        // ✅ Phase 2-1: 親設定を統一的にマージ（filesystem/classpath両対応）
+        mergeParentStencilSettingsUnified(settings);
+        
+        logger.debug("[GET_SETTINGS] dataDomain size (after merge): {}", 
             settings.getStencil() != null && settings.getStencil().getDataDomain() != null 
                 ? settings.getStencil().getDataDomain().size() : 0);
         
@@ -1076,6 +1083,141 @@ public class TemplateEngineProcessor {
             logger.warn("ファイルシステム検索でエラーが発生: {}", layerDir, e);
         }
         
+        return null;
+    }
+
+    /**
+     * 統一された親ステンシル設定マージロジック（Phase 2-1）
+     * filesystem/classpath両対応
+     * 
+     * @param childSettings マージ対象の子ステンシル設定
+     */
+    private void mergeParentStencilSettingsUnified(StencilSettingsYml childSettings) {
+        if (childSettings == null || childSettings.getStencil() == null) {
+            logger.debug("[MERGE_UNIFIED] childSettings is null or has no stencil config");
+            return;
+        }
+        
+        String stencilCanonicalName = context.getStencilCanonicalName();
+        if (StringUtils.isEmpty(stencilCanonicalName)) {
+            logger.debug("[MERGE_UNIFIED] stencilCanonicalName is empty");
+            return;
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Starting parent merge for: {}", stencilCanonicalName);
+        
+        // パス分解: /user/project/module_service → ["user", "project", "module_service"]
+        String[] pathSegments = stencilCanonicalName.split("/");
+        List<String> segments = new ArrayList<>();
+        for (String segment : pathSegments) {
+            if (!StringUtils.isEmpty(segment)) {
+                segments.add(segment);
+            }
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Path segments: {}", segments);
+        
+        // 親階層を下から上へ検索（module_service → project → user）
+        for (int i = segments.size() - 1; i >= 1; i--) {
+            List<String> parentSegments = segments.subList(0, i);
+            String parentPath = "/" + String.join("/", parentSegments);
+            
+            logger.debug("[MERGE_UNIFIED] Searching parent settings at: {}", parentPath);
+            
+            // 親設定を検索（レイヤード検索）
+            StencilSettingsYml parentSettings = findParentStencilSettings(parentPath);
+            
+            if (parentSettings != null && 
+                parentSettings.getStencil() != null && 
+                parentSettings.getStencil().getDataDomain() != null) {
+                
+                int parentDataDomainSize = parentSettings.getStencil().getDataDomain().size();
+                logger.info("[MERGE_UNIFIED] Merging {} dataDomain entries from parent: {}", 
+                    parentDataDomainSize, parentPath);
+                
+                // 親のdataDomainを子にマージ（子の定義が優先される）
+                childSettings.appendDataElementSublist(parentSettings.getStencil().getDataDomain());
+                
+                logger.debug("[MERGE_UNIFIED] Successfully merged parent dataDomain from: {}", parentPath);
+            } else {
+                logger.debug("[MERGE_UNIFIED] No parent settings found at: {}", parentPath);
+            }
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Parent merge completed");
+    }
+
+    /**
+     * 親ステンシル設定を検索（Phase 2-1）
+     * レイヤード検索: user → standard の順（samplesは親検索スキップ）
+     * 
+     * @param parentPath 親パス（例: "/user/project"）
+     * @return 見つかった親設定、またはnull
+     */
+    private StencilSettingsYml findParentStencilSettings(String parentPath) {
+        logger.debug("[FIND_PARENT] Searching for parent: {}", parentPath);
+        
+        // レイヤー検索: user → standard の順（samplesはclasspathなのでスキップ）
+        String[] searchLayers = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir()
+        };
+        
+        for (String layerDir : searchLayers) {
+            if (layerDir.startsWith("classpath:")) {
+                // classpathレイヤーは親検索スキップ（ディレクトリ構造が異なる）
+                logger.debug("[FIND_PARENT] Skipping classpath layer: {}", layerDir);
+                continue;
+            }
+            
+            logger.debug("[FIND_PARENT] Searching in layer: {}", layerDir);
+            
+            // 親ディレクトリのパス構築
+            String parentDirPath;
+            if (layerDir.endsWith("/")) {
+                parentDirPath = layerDir + parentPath.substring(1); // 先頭の"/"を除去
+            } else {
+                parentDirPath = layerDir + parentPath;
+            }
+            
+            File parentDir = new File(parentDirPath);
+            logger.debug("[FIND_PARENT] Checking directory: {}, exists: {}", 
+                parentDirPath, parentDir.exists());
+            
+            if (!parentDir.exists() || !parentDir.isDirectory()) {
+                logger.debug("[FIND_PARENT] Directory not found: {}", parentDirPath);
+                continue;
+            }
+            
+            // *_stencil-settings.yml を検索
+            File[] parentSettingsFiles = parentDir.listFiles((dir, name) -> 
+                name.endsWith("_stencil-settings.yml"));
+            
+            if (parentSettingsFiles != null && parentSettingsFiles.length > 0) {
+                // 最初に見つかった親設定を使用
+                File parentSettingsFile = parentSettingsFiles[0];
+                logger.debug("[FIND_PARENT] Found parent settings file: {}", 
+                    parentSettingsFile.getName());
+                
+                try (InputStream stream = new FileInputStream(parentSettingsFile)) {
+                    LoaderOptions options = new LoaderOptions();
+                    Yaml yaml = new Yaml(options);
+                    StencilSettingsYml parentSettings = yaml.loadAs(stream, StencilSettingsYml.class);
+                    
+                    logger.info("[FIND_PARENT] Loaded parent settings from: {}", 
+                        parentSettingsFile.getName());
+                    return parentSettings;
+                    
+                } catch (Exception e) {
+                    logger.warn("[FIND_PARENT] Failed to load parent settings from {}: {}", 
+                        parentSettingsFile.getName(), e.getMessage());
+                }
+            } else {
+                logger.debug("[FIND_PARENT] No *_stencil-settings.yml found in: {}", parentDirPath);
+            }
+        }
+        
+        logger.debug("[FIND_PARENT] No parent settings found for: {}", parentPath);
         return null;
     }
 
