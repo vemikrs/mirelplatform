@@ -137,7 +137,8 @@ public class StencilSettingsYml {
    * @param list2pm
    * @return
    */
-  protected static List<Map<String, Object>> mergeMapList(List<Map<String, Object>> list1pm,
+  @SuppressWarnings("null")
+protected static List<Map<String, Object>> mergeMapList(List<Map<String, Object>> list1pm,
       List<Map<String, Object>> list2pm) {
 
     if(null == list1pm) {
@@ -167,7 +168,7 @@ public class StencilSettingsYml {
 
     for (Map<String, Object> list1item : list1pm) {
 
-      Map<String, Object> mergedMap = Maps.newLinkedHashMap(list1item);
+      Map<String, Object> mergedMap = list1item != null ? Maps.newLinkedHashMap(list1item) : Maps.newLinkedHashMap();
       final String id = (String) mergedMap.get("id");
       if (list2map.containsKey(id)) {
         list2map.get(id).entrySet().forEach(entry -> {

@@ -222,7 +222,10 @@ public class RunTestServiceImp implements RunTestService {
                             SelenideConfig selConfig = new SelenideConfig();
                             selConfig.baseUrl(server.getUrl());
                             selDriver = new SelenideDriver(selConfig);
-                            selDriver.open(page.getContextPath());
+                            String contextPath = page.getContextPath();
+                            if (contextPath != null) {
+                                selDriver.open(contextPath);
+                            }
                             selDriverTable.put(page.getContextPath(), selDriver);
                         }
 
@@ -235,10 +238,22 @@ public class RunTestServiceImp implements RunTestService {
                             SelenideElement sement = null;
                             switch (function.getFunctionName()) {
                                 case "url":
-                                    selDriver.open(function.getArgs().get("0").toString());
+                                    Object urlArg = function.getArgs().get("0");
+                                    if (urlArg != null) {
+                                        String url = urlArg.toString();
+                                        if (url != null) {
+                                            selDriver.open(url);
+                                        }
+                                    }
                                     break;
                                 case "xpath":
-                                    sement = selDriver.$x((String) function.getArgs().get("0"));
+                                    Object xpathArg = function.getArgs().get("0");
+                                    if (xpathArg != null) {
+                                        String xpath = xpathArg.toString();
+                                        if (xpath != null) {
+                                            sement = selDriver.$x(xpath);
+                                        }
+                                    }
                                     break;
                                 default:
                                     break;
@@ -289,6 +304,8 @@ public class RunTestServiceImp implements RunTestService {
                                         + "/apps/apprunner/testrun/" + run + "/evidence/component/"));
                             }
                         }
+
+                        @SuppressWarnings("null")
                         File stepScreenshot = selDriver.screenshot(OutputType.FILE);
                         eManager.append(evidence, ImageFile.as(stepScreenshot,
                                 StorageUtil.getBaseDir() + "/apps/apprunner/testrun/" + run + "/evidence/"));

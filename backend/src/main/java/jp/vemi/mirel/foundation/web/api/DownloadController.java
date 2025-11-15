@@ -225,6 +225,9 @@ public class DownloadController {
      */
     protected FileDownloadParameter createParameter(final Map<String, Object> requestMap) {
         List<Map<String, Object>> files = InstanceUtil.forceCast(requestMap.get("content"));
+        if (files == null) {
+            files = Lists.newArrayList();
+        }
         List<String> fileIds = Lists.transform(files, new Function<Map<String, Object>, String>() {
             /**
              * {@inheritDoc}

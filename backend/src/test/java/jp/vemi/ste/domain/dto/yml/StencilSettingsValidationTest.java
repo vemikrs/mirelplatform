@@ -5,7 +5,6 @@ package jp.vemi.ste.domain.dto.yml;
 
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.InputStream;
 import java.util.Map;

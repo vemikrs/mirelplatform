@@ -19,7 +19,7 @@ public class Evidence {
      *            エビデンス名
      */
     private Evidence(Object... headers) {
-        this.headers = Lists.newArrayList(headers);
+        this.headers = headers != null ? Lists.newArrayList(headers) : Lists.newArrayList();
         this.data = Lists.newArrayList();
         this.footers = Lists.newArrayList();
     }
