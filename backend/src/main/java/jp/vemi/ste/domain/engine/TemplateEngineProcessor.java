@@ -1430,24 +1430,19 @@ public class TemplateEngineProcessor {
 
     /**
      * 親ディレクトリのstencil-settings.ymlを読み込んでマージする
+     * 
+     * @deprecated Use mergeParentStencilSettingsUnified() instead.
+     *             This method is kept for backward compatibility with ReloadStencilMaster flow,
+     *             but new code should use the unified merge logic in getStencilSettings().
      * @param childResource 子ステンシルのリソース
      * @param childSettings 子ステンシルの設定
      */
+    @Deprecated
     public static void mergeParentStencilSettings(Resource childResource, StencilSettingsYml childSettings) {
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
-            fw.write("[MERGE] START: mergeParentStencilSettings called\n");
-            fw.flush();
-        } catch (Exception ignore) {}
         
         try {
             // リソースのURIからパスを取得
             String resourcePath = childResource.getURI().toString();
-            
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
-                fw.write("[MERGE] Child resource path: " + resourcePath + "\n");
-                fw.flush();
-            } catch (Exception ignore) {}
-            
             logger.debug("[MERGE] Child resource path: {}", resourcePath);
             logger.debug("Child resource path: {}", resourcePath);
             
@@ -1455,16 +1450,7 @@ public class TemplateEngineProcessor {
             String filePath = resourcePath.replace("file:", "");
             File childFile = new File(filePath);
             
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
-                fw.write("[MERGE] File path: " + filePath + ", exists: " + childFile.exists() + "\n");
-                fw.flush();
-            } catch (Exception ignore) {}
-            
             if (!childFile.exists()) {
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
-                    fw.write("[MERGE] Child resource file does not exist: " + filePath + "\n");
-                    fw.flush();
-                } catch (Exception ignore) {}
                 logger.debug("[MERGE] Child resource file does not exist: {}", filePath);
                 logger.debug("Child resource file does not exist: {}", filePath);
                 return;
@@ -1473,11 +1459,6 @@ public class TemplateEngineProcessor {
             // ProMarkerストレージのstencilフォルダをベースとして取得
             String stencilBaseDir = getStencilMasterStorageDir();
             File stencilBaseDirFile = new File(stencilBaseDir);
-            
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/merge-parent.log", true)) {
-                fw.write("[MERGE] Stencil base directory: " + stencilBaseDir + ", exists: " + stencilBaseDirFile.exists() + "\n");
-                fw.flush();
-            } catch (Exception ignore) {}
             
             if (!stencilBaseDirFile.exists()) {
                 logger.debug("[MERGE] Stencil base directory does not exist: {}", stencilBaseDir);
@@ -1488,26 +1469,10 @@ public class TemplateEngineProcessor {
             logger.debug("[MERGE] Stencil base directory: {}", stencilBaseDir);
             logger.debug("Stencil base directory: {}", stencilBaseDir);
             
-            try (FileWriter debugWriter2 = new FileWriter("/tmp/merge-parent.log", true)) {
-                debugWriter2.write("Loop entry - currentDir: " + childFile.getParentFile().getAbsolutePath() + "\n");
-                debugWriter2.write("Loop entry - stencilBaseDir: " + stencilBaseDirFile.getAbsolutePath() + "\n");
-                debugWriter2.write("Loop entry - equals check: " + childFile.getParentFile().equals(stencilBaseDirFile) + "\n");
-                debugWriter2.write("Loop entry - canonical currentDir: " + childFile.getParentFile().getCanonicalPath() + "\n");
-                debugWriter2.write("Loop entry - canonical stencilBaseDir: " + stencilBaseDirFile.getCanonicalPath() + "\n");
-            } catch (IOException ioe) {
-                logger.error("Failed to write debug log", ioe);
-            }
-            
             // 子ファイルから親ディレクトリへ再帰的にマージ（stencilフォルダまで）
             File currentDir = childFile.getParentFile(); // stencil-settings.ymlの親ディレクトリ（シリアル番号ディレクトリ）
             
             while (currentDir != null && !currentDir.equals(stencilBaseDirFile)) {
-                try (FileWriter loopWriter = new FileWriter("/tmp/merge-parent.log", true)) {
-                    loopWriter.write("[LOOP] Checking directory: " + currentDir.getAbsolutePath() + "\n");
-                } catch (IOException ioe) {
-                    logger.error("Failed to write loop debug", ioe);
-                }
-                
                 logger.debug("[MERGE] Checking parent directory: {}", currentDir.getAbsolutePath());
                 logger.info("Checking parent directory: " + currentDir.getAbsolutePath());
                 
@@ -1515,31 +1480,11 @@ public class TemplateEngineProcessor {
                 File[] parentSettingsFiles = currentDir.listFiles((dir, name) -> 
                     name.endsWith("_stencil-settings.yml"));
                 
-                try (FileWriter listWriter = new FileWriter("/tmp/merge-parent.log", true)) {
-                    listWriter.write("[LOOP] Files searched in: " + currentDir.getAbsolutePath() + "\n");
-                    if (parentSettingsFiles != null) {
-                        listWriter.write("[LOOP] Found " + parentSettingsFiles.length + " parent settings files\n");
-                        for (File f : parentSettingsFiles) {
-                            listWriter.write("[LOOP]   - " + f.getName() + "\n");
-                        }
-                    } else {
-                        listWriter.write("[LOOP] No parent settings files (null)\n");
-                    }
-                } catch (IOException ioe) {
-                    logger.error("Failed to write file list debug", ioe);
-                }
-                
                 if (parentSettingsFiles != null && parentSettingsFiles.length > 0) {
                     // 最初に見つかった親設定ファイルを読み込んでマージ
                     File parentSettingsFile = parentSettingsFiles[0];
                     logger.debug("[MERGE] Found parent stencil settings: {}", parentSettingsFile.getAbsolutePath());
                     logger.info("Found parent stencil settings: " + parentSettingsFile.getAbsolutePath());
-                    
-                    try (FileWriter mergeWriter = new FileWriter("/tmp/merge-parent.log", true)) {
-                        mergeWriter.write("[MERGE] Loading parent file: " + parentSettingsFile.getName() + "\n");
-                    } catch (IOException ioe) {
-                        logger.error("Failed to write merge debug", ioe);
-                    }
                     
                     try (InputStream parentStream = new FileInputStream(parentSettingsFile)) {
                         LoaderOptions loaderOptions = new LoaderOptions();
@@ -1551,24 +1496,10 @@ public class TemplateEngineProcessor {
                             // 親のdataDomainを子にマージ（子の定義が優先される）
                             childSettings.appendDataElementSublist(parentSettings.getStencil().getDataDomain());
                             logger.debug("[MERGE] Merged parent dataDomain from: {}", parentSettingsFile.getName());
-                            
-                            try (FileWriter successWriter = new FileWriter("/tmp/merge-parent.log", true)) {
-                                successWriter.write("[MERGE] Successfully merged " + 
-                                    parentSettings.getStencil().getDataDomain().size() + 
-                                    " dataDomain entries from " + parentSettingsFile.getName() + "\n");
-                            } catch (IOException ioe) {
-                                logger.error("Failed to write success debug", ioe);
-                            }
                         }
                     } catch (Exception e) {
                         logger.warn("[MERGE] Failed to load parent settings from {}: {}", parentSettingsFile.getName(), e.getMessage());
                         logger.warn("Failed to load parent settings from {}: {}", parentSettingsFile.getName(), e.getMessage());
-                        
-                        try (FileWriter errorWriter = new FileWriter("/tmp/merge-parent.log", true)) {
-                            errorWriter.write("[ERROR] Failed to load parent: " + e.getMessage() + "\n");
-                        } catch (IOException ioe) {
-                            logger.error("Failed to write error debug", ioe);
-                        }
                     }
                 }
                 
