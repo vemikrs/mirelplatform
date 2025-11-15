@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -13,11 +14,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
 @ActiveProfiles("test")
 public class TemplateEngineProcessorTest {
 
-    @Autowired
+    @Autowired(required = false)
     private ResourcePatternResolver resourcePatternResolver;
 
     private TemplateEngineProcessor processor;
@@ -30,10 +31,12 @@ public class TemplateEngineProcessorTest {
         context.put("message", "Test Message");
 
         // TemplateEngineProcessorを作成
-        processor = TemplateEngineProcessor.create(context);
+        // ResourcePatternResolverが注入されていない場合はデフォルトを使用
+        if (resourcePatternResolver == null) {
+            resourcePatternResolver = new PathMatchingResourcePatternResolver();
+        }
         
-        // ResourcePatternResolverを注入
-        processor.setResourcePatternResolver(resourcePatternResolver);
+        processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
     }
 
     @Test
@@ -47,21 +50,18 @@ public class TemplateEngineProcessorTest {
         @SuppressWarnings("unchecked")
         List<String> templateFiles = (List<String>) method.invoke(processor);
         
-        // 結果をファイルに出力
-        java.io.FileWriter writer = new java.io.FileWriter("/workspaces/mirelplatform/test-result.txt");
-        writer.write("=== Layered Template Search Test Results ===\n");
-        writer.write("Found " + templateFiles.size() + " template files:\n");
+        // ログ出力
+        System.out.println("=== Layered Template Search Test Results ===");
+        System.out.println("Found " + templateFiles.size() + " template files:");
         
         for (String file : templateFiles) {
-            writer.write("  - " + file + "\n");
             System.out.println("  - " + file);
         }
-        writer.close();
         
         // アサーション
         assertNotNull(templateFiles, "Template files should not be null");
         assertTrue(templateFiles.size() >= 0, "Template files list should be valid");
         
-        System.out.println("Test completed! Results saved to test-result.txt");
+        System.out.println("Test completed!");
     }
 }

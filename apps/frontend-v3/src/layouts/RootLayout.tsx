@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
 import { Badge, Button, Toaster } from '@mirel/ui';
-import type { NavigationAction, NavigationConfig } from '@/app/navigation.schema';
+import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Bell, HelpCircle, Menu, SunMedium, MoonStar, UserRound } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'mirel-theme';
@@ -103,8 +103,8 @@ export function RootLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
-      <header className="sticky top-0 z-40 border-b border-outline/40 bg-surface/80 backdrop-blur">
-        <div className="container flex h-20 items-center justify-between gap-6">
+      <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl">
+        <div className="container flex h-16 items-center justify-between gap-4 md:h-20 md:gap-6">
           <div className="flex flex-1 items-center gap-6">
             <Link to="/" className="group flex items-center gap-3 text-left">
               <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
@@ -120,7 +120,7 @@ export function RootLayout() {
               </div>
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
-              {primaryLinks.map((item) => (
+              {primaryLinks.map((item: NavigationLink) => (
                 <NavLink
                   key={item.id}
                   to={item.path}
@@ -151,7 +151,7 @@ export function RootLayout() {
           </div>
         </div>
         <nav className="container flex items-center gap-2 overflow-x-auto pb-3 pt-2 md:hidden">
-          {primaryLinks.map((item) => (
+          {primaryLinks.map((item: NavigationLink) => (
             <NavLink
               key={item.id}
               to={item.path}
@@ -175,7 +175,7 @@ export function RootLayout() {
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Quick Links
             </span>
-            {navigation.quickLinks.map((link) => (
+            {navigation.quickLinks.map((link: NavigationLink) => (
               <Badge key={link.id} variant="neutral">
                 <Link
                   to={link.path}
@@ -202,7 +202,7 @@ export function RootLayout() {
             © 2016-2025 mirelplatform. All rights reserved.
           </div>
           <div className="flex items-center gap-3">
-            {navigation.secondary.map((link) => (
+            {navigation.secondary.map((link: NavigationLink) => (
               <Link
                 key={link.id}
                 to={link.path}

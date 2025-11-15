@@ -9,10 +9,11 @@ import java.util.List;
 
 // import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.logging.Logger;
 
 import org.apache.commons.compress.utils.Lists;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -22,7 +23,7 @@ import jp.vemi.ste.domain.EngineBinds;
 
 public class ListResourceCommandTest {
 
-    protected Logger logger = Logger.getLogger(this.getClass().getName());
+    protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
 
     @Test
     void testParse() {

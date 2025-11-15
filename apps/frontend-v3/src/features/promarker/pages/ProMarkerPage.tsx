@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toast, Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator } from '@mirel/ui';
+import { toast, Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator, type StepState } from '@mirel/ui';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
 import { useReloadStencilMaster } from '../hooks/useReloadStencilMaster';
@@ -317,19 +317,19 @@ export function ProMarkerPage() {
         id: 'select',
         title: 'ステンシル選択',
         description: 'カテゴリ・ステンシル・シリアルを選びます。',
-        state: selectionComplete ? 'complete' : 'current',
+        state: (selectionComplete ? 'complete' : 'current') as StepState,
       },
       {
         id: 'details',
         title: 'パラメータ入力',
         description: '必須項目と入力ルールを確認しながら値を設定します。',
-        state: parametersReady ? (parameterForm.isValid ? 'complete' : 'current') : selectionComplete ? 'current' : 'upcoming',
+        state: (parametersReady ? (parameterForm.isValid ? 'complete' : 'current') : selectionComplete ? 'current' : 'upcoming') as StepState,
       },
       {
         id: 'execute',
         title: '生成',
         description: '入力内容でコード生成を実行します。',
-        state: generateMutation.isSuccess ? 'complete' : parametersReady ? 'current' : 'upcoming',
+        state: (generateMutation.isSuccess ? 'complete' : parametersReady ? 'current' : 'upcoming') as StepState,
       },
     ];
   }, [categories.selected, stencils.selected, serials.selected, parameters.length, parameterForm.isValid, generateMutation.isSuccess]);
@@ -356,32 +356,39 @@ export function ProMarkerPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle>ステンシル選択</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              カテゴリ → ステンシル → シリアルの順で選択してください。
-            </p>
-          </CardHeader>
-          <CardContent>
-            <StencilSelector
-              categories={categories}
-              stencils={stencils}
-              serials={serials}
-              onCategoryChange={handleCategoryChange}
-              onStencilChange={handleStencilChange}
-              onSerialChange={handleSerialChange}
-              disabled={selectorsDisabled}
-            />
-          </CardContent>
-        </Card>
-        <StencilInfo config={stencilConfig} />
-      </div>
+      {/* ステンシル選択・説明 と パラメータ入力の2カラムレイアウト */}
+      <div className={`grid grid-cols-1 gap-6 ${parameters.length > 0 ? 'md:grid-cols-2' : ''}`}>
+        {/* 左側: ステンシル選択 + ステンシル説明 (縦並び) */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="space-y-2">
+              <CardTitle>ステンシル選択</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                カテゴリ → ステンシル → シリアルの順で選択してください。
+              </p>
+            </CardHeader>
+            <CardContent>
+              <StencilSelector
+                categories={categories}
+                stencils={stencils}
+                serials={serials}
+                onCategoryChange={handleCategoryChange}
+                onStencilChange={handleStencilChange}
+                onSerialChange={handleSerialChange}
+                disabled={selectorsDisabled}
+              />
+            </CardContent>
+          </Card>
+          <StencilInfo config={stencilConfig} />
+        </div>
 
-      {parameters.length > 0 ? (
-        <ParameterFields parameters={parameters} form={parameterForm} disabled={inputFieldsDisabled} />
-      ) : null}
+        {/* 右側: パラメータ入力 (スティッキー) - パラメータがある場合のみ表示 */}
+        {parameters.length > 0 ? (
+          <div className="md:sticky md:top-6 md:self-start md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
+            <ParameterFields parameters={parameters} form={parameterForm} disabled={inputFieldsDisabled} />
+          </div>
+        ) : null}
+      </div>
 
       <ActionButtons
         onGenerate={handleGenerate}

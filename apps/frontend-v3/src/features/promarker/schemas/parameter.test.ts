@@ -144,7 +144,7 @@ describe('Parameter Validation Schema - Dynamic from API', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('必須');
+        expect(result.error.issues[0]!.message).toContain('必須');
       }
     });
 
@@ -213,7 +213,7 @@ describe('Parameter Validation Schema - Dynamic from API', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('3');
+        expect(result.error.issues[0]!.message).toContain('3');
       }
     });
 
@@ -283,7 +283,7 @@ describe('Parameter Validation Schema - Dynamic from API', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('5');
+        expect(result.error.issues[0]!.message).toContain('5');
       }
     });
   });
@@ -311,7 +311,7 @@ describe('Parameter Validation Schema - Dynamic from API', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('半角英数字のみ使用できます');
+        expect(result.error.issues[0]!.message).toBe('半角英数字のみ使用できます');
       }
     });
 

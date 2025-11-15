@@ -24,6 +24,43 @@
     { "id": "workflow", "label": "ワークフロー", "path": "/workflow" },
     { "id": "tenants", "label": "テナント管理", "path": "/tenants" }
   ],
+  "inDevelopment": [
+    {
+      "id": "ui-system",
+      "label": "@mirel/ui",
+      "path": "/catalog",
+      "description": "デザインシステム - shadcn/ui + Radix UI ベースコンポーネント",
+      "badge": { "label": "稼働中", "tone": "success" }
+    },
+    {
+      "id": "users-tenants",
+      "label": "ユーザ & テナント管理",
+      "path": "/users",
+      "description": "認証・権限・テナントスコープを統合的に設定",
+      "badge": { "label": "準備中", "tone": "info" }
+    },
+    {
+      "id": "themes",
+      "label": "テーマスイッチャ",
+      "path": "/themes",
+      "description": "ブランド毎のテーマ・配色を切り替え",
+      "badge": { "label": "実装中", "tone": "warning" }
+    },
+    {
+      "id": "menu-nav",
+      "label": "メニュー / ナビ集中管理",
+      "path": "/menu",
+      "description": "メニューを集中管理",
+      "badge": { "label": "計画中", "tone": "neutral" }
+    },
+    {
+      "id": "context",
+      "label": "コンテキスト管理",
+      "path": "/context",
+      "description": "利用者・テナント・業務文脈の状態共有",
+      "badge": { "label": "研究中", "tone": "neutral" }
+    }
+  ],
   "globalActions": [
     { "id": "theme-toggle", "type": "theme" },
     { "id": "notifications", "type": "notifications" },

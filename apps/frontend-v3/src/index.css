@@ -1,5 +1,7 @@
 @import "@mirel/ui/theme/index.css";
-@import "tailwindcss";
+@import "tailwindcss" source(".");
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 @layer base {
   body {
