@@ -146,25 +146,38 @@ public class SuggestServiceImp implements SuggestService {
             }
 
             List<String> serials = engine.getSerialNos();
+            logger.debug("[SUGGEST] engine.getSerialNos() returned: size={}, values={}", serials.size(), serials);
             if (serials.isEmpty()) {
                 StencilSettingsYml tempSettings = engine.getStencilSettings();
                 if (tempSettings != null && tempSettings.getStencil()!=null && tempSettings.getStencil().getConfig()!=null && tempSettings.getStencil().getConfig().getSerial()!=null) {
                     serials = Arrays.asList(tempSettings.getStencil().getConfig().getSerial());
+                    logger.debug("[SUGGEST] Fallback serial from settings: {}", serials);
                 }
             }
             if (needAutoSelectSerial) {
                 effectiveSerial = serials.isEmpty()?"":serials.get(0);
+                logger.debug("[SUGGEST] Auto-selected serial: {}", effectiveSerial);
             } else if (serialSpecified) {
                 effectiveSerial = requestedSerial;
+                logger.debug("[SUGGEST] Using requested serial: {}", effectiveSerial);
             }
             resultModel.fltStrSerialNo = new ValueTextItems(convertSerialNosToValueTexts(serials), effectiveSerial==null?"":effectiveSerial);
+            logger.debug("[SUGGEST] fltStrSerialNo: selected='{}', items={}", resultModel.fltStrSerialNo.selected, resultModel.fltStrSerialNo.items.size());
+            
             if (StringUtils.isEmpty(resultModel.fltStrSerialNo.selected)) {
+                logger.warn("[SUGGEST] EARLY RETURN: fltStrSerialNo.selected is empty!");
                 return wrap(resultModel); // serial 未確定 → params なし
             }
+            
             // 完全確定 → settings & params
+            logger.debug("[SUGGEST] Fetching final stencil settings and params...");
             StencilSettingsYml settingsYaml = engine.getStencilSettings();
+            logger.debug("[SUGGEST] Got settingsYaml: {}", settingsYaml != null ? "not null" : "NULL");
             resultModel.stencil = settingsYaml.getStencil();
+            logger.debug("[SUGGEST] Set stencil: {}", resultModel.stencil != null ? "not null" : "NULL");
             resultModel.params = itemsToNode(settingsYaml);
+            logger.debug("[SUGGEST] Set params: {}", resultModel.params != null ? "not null" : "NULL");
+            logger.debug("[SUGGEST] === invoke() returning with complete result ===");
             return wrap(resultModel);
         } else {
             // Serial まだ不要 → 空の serial list
@@ -203,11 +216,26 @@ public class SuggestServiceImp implements SuggestService {
         }
     }
     private ApiResponse<SuggestResult> wrap(SuggestResult model){
+        logger.debug("[WRAP] Input model: {}", model != null ? "not null" : "NULL");
+        if (model != null) {
+            logger.debug("[WRAP]   model.params: {}", model.params != null ? "not null" : "NULL");
+            logger.debug("[WRAP]   model.stencil: {}", model.stencil != null ? "not null" : "NULL");
+            logger.debug("[WRAP]   model.fltStrSerialNo: selected='{}'", model.fltStrSerialNo != null ? model.fltStrSerialNo.selected : "NULL");
+        }
+        
         class ModelWrapper { @SuppressWarnings("unused") public SuggestResult model; }
         ModelWrapper w = new ModelWrapper();
         w.model = model;
+        
+        logger.debug("[WRAP] Created ModelWrapper: {}", w != null ? "not null" : "NULL");
+        logger.debug("[WRAP]   ModelWrapper.model: {}", w.model != null ? "not null" : "NULL");
+        
         @SuppressWarnings("unchecked")
         ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(w).build();
+        
+        logger.debug("[WRAP] Created ApiResponse: {}", response != null ? "not null" : "NULL");
+        logger.debug("[WRAP]   response.data: {}", response.getData() != null ? "not null" : "NULL");
+        
         return response;
     }
 
@@ -312,16 +340,27 @@ public class SuggestServiceImp implements SuggestService {
 
         if(null == settings ||
             null == settings.getStencil()){
+            logger.debug("[ITEMS_TO_NODE] settings or stencil is null");
             return root;
         }
 
-        List<Map<String, Object>> elems = mergeStencilDeAndDd(
-                settings.getStencil().getDataElement(),
-                settings.getStencil().getDataDomain());
+        logger.debug("[ITEMS_TO_NODE] Processing stencil settings:");
+        logger.debug("[ITEMS_TO_NODE]   dataElement size: {}", 
+            settings.getStencil().getDataElement() != null ? settings.getStencil().getDataElement().size() : 0);
+        logger.debug("[ITEMS_TO_NODE]   dataDomain size: {}", 
+            settings.getStencil().getDataDomain() != null ? settings.getStencil().getDataDomain().size() : 0);
 
-        elems.forEach(entry -> {
-            root.addChild(convertItemToNodeItem(entry));
-        });
+        // ✅ Phase 2-0 FIX: dataDomainを直接使用（マージ不要）
+        // dataDomainには親から継承された定義と子の値が含まれている
+        List<Map<String, Object>> elems = settings.getStencil().getDataDomain();
+        
+        logger.debug("[ITEMS_TO_NODE]   final elems size: {}", elems != null ? elems.size() : 0);
+
+        if (elems != null) {
+            elems.forEach(entry -> {
+                root.addChild(convertItemToNodeItem(entry));
+            });
+        }
 
         return root;
     }
