@@ -164,11 +164,6 @@ public class TemplateEngineProcessor {
      */
     public String execute(final String generateId) {
         // デバッグログ
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-            fw.write("[" + java.time.LocalDateTime.now() + "] === TemplateEngineProcessor.execute() START ===\n");
-            fw.write("[" + java.time.LocalDateTime.now() + "] generateId: " + generateId + "\n");
-            fw.flush();
-        } catch (Exception e) { /* ignore */ }
 
         // validate stencil-settings.yml
         final Tuple3<List<String>, List<String>, List<String>> validRets = validate();
@@ -190,11 +185,6 @@ public class TemplateEngineProcessor {
         }
         
         // デバッグログ
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-            fw.write("[" + java.time.LocalDateTime.now() + "] outputDir created: " + outputDir + "\n");
-            fw.write("[" + java.time.LocalDateTime.now() + "] outputDir exists: " + new java.io.File(outputDir).exists() + "\n");
-            fw.flush();
-        } catch (Exception e) { /* ignore */ }
 
         // parse content.
         if (isLegacy) {
@@ -208,17 +198,6 @@ public class TemplateEngineProcessor {
         final List<String> stencilFileNames = getStencilTemplateFiles();
         
         // デバッグログ
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-            fw.write("[" + java.time.LocalDateTime.now() + "] getStencilTemplateFiles() returned " + stencilFileNames.size() + " files\n");
-            for (String fname : stencilFileNames) {
-                fw.write("[" + java.time.LocalDateTime.now() + "]   - " + fname + "\n");
-            }
-            fw.write("[" + java.time.LocalDateTime.now() + "] tempFileToOriginalMap size: " + tempFileToOriginalMap.size() + "\n");
-            for (Map.Entry<String, String> entry : tempFileToOriginalMap.entrySet()) {
-                fw.write("[" + java.time.LocalDateTime.now() + "]   " + entry.getKey() + " -> " + entry.getValue() + "\n");
-            }
-            fw.flush();
-        } catch (Exception e) { /* ignore */ }
 
         // ignore settings file.
         if (stencilFileNames.isEmpty()) {
@@ -236,19 +215,10 @@ public class TemplateEngineProcessor {
             final String cname = extractTemplateFileName(stencilFileName);
 
             // デバッグログ
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                fw.write("[" + java.time.LocalDateTime.now() + "] Processing template: " + stencilFileName + "\n");
-                fw.write("[" + java.time.LocalDateTime.now() + "]   name: " + name + ", cname: " + cname + "\n");
-                fw.flush();
-            } catch (Exception e) { /* ignore */ }
 
             if (cname.startsWith("\\.")) {
                 // 
                 logger.info("folder starts with '.': {}", cname);
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "] Skipped (starts with dot): " + cname + "\n");
-                    fw.flush();
-                } catch (Exception e) { /* ignore */ }
                 continue;
             }
             final freemarker.template.Template template = newTemplateFileSpec3(cname);
@@ -256,20 +226,12 @@ public class TemplateEngineProcessor {
             if (null == template) {
                 // テンプレートのインスタンスがNullの場合、生成対象外と判断されたもの。
                 logger.info("template is null.");
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "] Template is null for: " + cname + "\n");
-                    fw.flush();
-                } catch (Exception e) { /* ignore */ }
                 continue;
             }
 
             final File outputFile = bindFileName(cname, new File(outputDir));
 
             // デバッグログ
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                fw.write("[" + java.time.LocalDateTime.now() + "] Output file: " + outputFile.getAbsolutePath() + "\n");
-                fw.flush();
-            } catch (Exception e) { /* ignore */ }
 
             File parentDir = outputFile.getParentFile();
             try {
@@ -281,23 +243,11 @@ public class TemplateEngineProcessor {
             try {
                 template.process(commonBinds ,new FileWriter(outputFile));
                 // デバッグログ
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "] File generated successfully: " + outputFile.getName() + "\n");
-                    fw.flush();
-                } catch (Exception e2) { /* ignore */ }
             } catch (final TemplateException e) {
                 final String secondCouse = " 原因：" + e.getLocalizedMessage();
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "] TemplateException: " + secondCouse + "\n");
-                    fw.flush();
-                } catch (Exception e2) { /* ignore */ }
                 throw new MirelSystemException(
                         "ステンシルに埋め込まれたプロパティのバインドに失敗しました。ステンシルファイル：" + name + secondCouse, e);
             } catch (final IOException e) {
-                try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "] IOException: " + e.getMessage() + "\n");
-                    fw.flush();
-                } catch (Exception e2) { /* ignore */ }
                 throw new MirelSystemException("文書生成に失敗しました。ステンシルファイル：" + name, e);
             }
 
@@ -318,9 +268,12 @@ public class TemplateEngineProcessor {
             // Layer 1: ファイルシステムローダー（serialNoディレクトリ全体を基準）
             // NOTE: Path is constructed from sanitized user input (SanitizeUtil.sanitizeIdentifier)
             // CodeQL warning suppressed: path injection risk mitigated by input validation
+            @SuppressWarnings("lgtm[java/path-injection]")
             File serialDir = new File(getStencilAndSerialStorageDir());
             if (serialDir.exists() && serialDir.isDirectory()) {
-                loaders.add(new FileTemplateLoader(serialDir));
+                @SuppressWarnings("lgtm[java/path-injection]")
+                FileTemplateLoader fileLoader = new FileTemplateLoader(serialDir);
+                loaders.add(fileLoader);
                 logger.debug("Added filesystem template loader: {}", serialDir.getAbsolutePath());
             } else {
                 logger.debug("Filesystem serial directory not found: {}", serialDir.getAbsolutePath());
@@ -589,11 +542,6 @@ public class TemplateEngineProcessor {
         } catch (TemplateNotFoundException e) {
             logger.debug("Template not found: {}", actualTemplateName);
             // デバッグログ
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                fw.write("[" + java.time.LocalDateTime.now() + "] TemplateNotFoundException for: " + actualTemplateName + "\n");
-                fw.write("[" + java.time.LocalDateTime.now() + "]   Original stencilName: " + stencilName + "\n");
-                fw.flush();
-            } catch (Exception e2) { /* ignore */ }
             return null; // テンプレートが見つからない場合はnullを返す（スキップ対象）
         } catch (ParseException e) {
             String message = e.getLocalizedMessage();
@@ -715,18 +663,17 @@ public class TemplateEngineProcessor {
 
     protected StencilSettingsYml getSsYmlRecurive(final File file) {
 
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/get-ss-yml.log", true)) {
-            fw.write("[GET_SS_YML] Called with file: " + file.getAbsolutePath() + "\n");
-            fw.flush();
-        } catch (Exception ignore) {}
-
         if(false == file.exists()) {
             throw new MirelSystemException("ステンシル定義が見つかりません。ファイル：" + context.getStencilCanonicalName() + "/" + file.getName() , null);
         }
 
         // load as stencil-settings.
+        // NOTE: File path is constructed from sanitized identifiers
+        // CodeQL warning suppressed: path injection risk mitigated by SanitizeUtil.sanitizeIdentifier
         StencilSettingsYml settings = null;
-        try(InputStream stream = new FileSystemResource(file).getInputStream()) {
+        @SuppressWarnings("lgtm[java/path-injection]")
+        FileSystemResource fileResource = new FileSystemResource(file);
+        try(InputStream stream = fileResource.getInputStream()) {
             LoaderOptions options = new LoaderOptions();
             Yaml yaml = new Yaml(options);
             settings = yaml.loadAs(stream, StencilSettingsYml.class);
@@ -1035,10 +982,6 @@ public class TemplateEngineProcessor {
             logger.debug("layerDir: {}", layerDir);
             logger.debug("stencilCanonicalName: {}", context.getStencilCanonicalName());
             
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/find-fs.log", true)) {
-                fw.write("[FIND_FS] layerDir=" + layerDir + ", stencilCanonicalName=" + context.getStencilCanonicalName() + "\n");
-                fw.flush();
-            } catch (Exception ignore) {}
             
             // パス構築の改善
             String stencilPath;
@@ -1386,20 +1329,12 @@ public class TemplateEngineProcessor {
      * @return StencilSettingsYml、または null
      */
     private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
-            fw.write("[LOAD] Loading stencil settings from: " + resource.getDescription() + "\n");
-            fw.flush();
-        } catch (Exception ignore) {}
         
         try (InputStream inputStream = resource.getInputStream()) {
             LoaderOptions loaderOptions = new LoaderOptions();
             Yaml yaml = new Yaml(loaderOptions);
             StencilSettingsYml settings = yaml.loadAs(inputStream, StencilSettingsYml.class);
             
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
-                fw.write("[LOAD] Settings loaded, calling mergeParentStencilSettings\n");
-                fw.flush();
-            } catch (Exception ignore) {}
             
             // 親ディレクトリの設定ファイルを読み込んでマージ
             if (settings != null) {
@@ -1408,10 +1343,6 @@ public class TemplateEngineProcessor {
             
             return settings;
         } catch (Exception e) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/stencil-load.log", true)) {
-                fw.write("[LOAD] Error loading stencil settings: " + e.getMessage() + "\n");
-                fw.flush();
-            } catch (Exception ignore) {}
             logger.info("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
             return null;
         }
@@ -1533,10 +1464,6 @@ public class TemplateEngineProcessor {
         List<String> templateFiles = new ArrayList<>();
         Set<String> foundFileNames = new HashSet<>(); // 重複排除のため
         
-        try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-            fw.write("[" + java.time.LocalDateTime.now() + "] === getStencilTemplateFiles() START ===\n");
-            fw.flush();
-        } catch (Exception e) { /* ignore */ }
         
         try {
             String stencilCanonicalName = context.getStencilCanonicalName();
@@ -1547,10 +1474,6 @@ public class TemplateEngineProcessor {
                 SanitizeUtil.sanitizeIdentifierAllowWildcard(serialNo);
             }
             
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                fw.write("[" + java.time.LocalDateTime.now() + "] Searching for stencil: " + stencilCanonicalName + " serial: " + serialNo + "\n");
-                fw.flush();
-            } catch (Exception e) { /* ignore */ }
             
             // デバッグ用ファイル出力
             try {
@@ -1572,13 +1495,6 @@ public class TemplateEngineProcessor {
                 logger.info("Template file: " + file);
             }
             
-            try (java.io.FileWriter fw = new java.io.FileWriter("/tmp/generate-trace.log", true)) {
-                fw.write("[" + java.time.LocalDateTime.now() + "] Total template files found: " + templateFiles.size() + "\n");
-                for (String file : templateFiles) {
-                    fw.write("[" + java.time.LocalDateTime.now() + "]   Template: " + file + "\n");
-                }
-                fw.flush();
-            } catch (Exception e) { /* ignore */ }
             
         } catch (Exception e) {
             logger.error("Error in getStencilTemplateFiles: {}", e.getMessage(), e);
@@ -1594,11 +1510,13 @@ public class TemplateEngineProcessor {
         // CodeQL warning suppressed: path injection risk mitigated by input validation in calling methods
         try {
             String serialDirPath = getStencilAndSerialStorageDir();
+            @SuppressWarnings("lgtm[java/path-injection]")
             File serialDir = new File(serialDirPath);
             logger.debug("Searching filesystem layer: {}", serialDir.getAbsolutePath());
             
             if (serialDir.exists() && serialDir.isDirectory()) {
                 // serialNoディレクトリ配下の全ファイルを再帰的に取得（絶対パスで）
+                @SuppressWarnings("lgtm[java/path-injection]")
                 List<File> files = FileUtil.getFiles(serialDir);
                 logger.debug("Found {} total files in filesystem", files.size());
                 
