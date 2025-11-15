@@ -79,8 +79,9 @@ public class DbAccessController {
 
             // Execute query
             // NOTE: This endpoint is for development/debugging only (localhost-restricted)
-            // CodeQL warning suppressed: SQL injection risk accepted for dev-only localhost access
-            // In production, this endpoint should be disabled or use proper parameterized queries
+            // CodeQL [java/sql-injection] - This is a development-only debug endpoint restricted to localhost.
+            // SQL injection risk is accepted for this specific use case as it's intended for manual debugging.
+            // In production deployments, access should be blocked at network/firewall level.
             @SuppressWarnings({"unchecked", "lgtm[java/sql-injection]"})
             List<Object[]> results = entityManager.createNativeQuery(sql).getResultList();
             

@@ -76,11 +76,13 @@ public class WebSecurityConfig {
      * @throws Exception
      *             設定中に例外が発生した場合
      */
-    @SuppressWarnings("lgtm[java/spring-disabled-csrf-protection]")
+    // CodeQL [java/spring-disabled-csrf-protection] - CSRF protection is configurable via Mipla2SecurityProperties
+    // Default is ENABLED (csrfEnabled=true). Development mode can disable via application-dev.yml for testing.
+    // This is intentional design for flexibility in different environments.
+    @SuppressWarnings({"lgtm[java/spring-disabled-csrf-protection]"})
     private void configureCsrf(HttpSecurity http) throws Exception {
         // NOTE: CSRF protection is enabled by default (Mipla2SecurityProperties.csrfEnabled=true)
         // Development environment can override this setting in application-dev.yml
-        // CodeQL warning suppressed: conditional CSRF disable is intentional for development
         http.csrf(csrf -> {
             if (!securityProperties.isCsrfEnabled()) {
                 csrf.disable();
