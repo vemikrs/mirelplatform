@@ -173,6 +173,12 @@ public class SuggestServiceImp implements SuggestService {
             logger.debug("[SUGGEST] Fetching final stencil settings and params...");
             StencilSettingsYml settingsYaml = engine.getStencilSettings();
             logger.debug("[SUGGEST] Got settingsYaml: {}", settingsYaml != null ? "not null" : "NULL");
+
+            if (settingsYaml == null) {
+                logger.error("[SUGGEST] settingsYaml is null, cannot proceed");
+                return createFallbackResponse(resultModel.fltStrStencilCd.selected, effectiveSerial, resultModel);
+            }
+
             resultModel.stencil = settingsYaml.getStencil();
             logger.debug("[SUGGEST] Set stencil: {}", resultModel.stencil != null ? "not null" : "NULL");
             resultModel.params = itemsToNode(settingsYaml);
@@ -223,23 +229,27 @@ public class SuggestServiceImp implements SuggestService {
             logger.debug("[WRAP]   model.fltStrSerialNo: selected='{}'", model.fltStrSerialNo != null ? model.fltStrSerialNo.selected : "NULL");
         }
         
-        class ModelWrapper { @SuppressWarnings("unused") public SuggestResult model; }
+        class ModelWrapper { public SuggestResult model; }
         ModelWrapper w = new ModelWrapper();
         w.model = model;
         
         logger.debug("[WRAP] Created ModelWrapper: {}", w != null ? "not null" : "NULL");
         logger.debug("[WRAP]   ModelWrapper.model: {}", w.model != null ? "not null" : "NULL");
         
-        @SuppressWarnings("unchecked")
         ApiResponse<SuggestResult> response = (ApiResponse<SuggestResult>)(ApiResponse<?>) ApiResponse.builder().data(w).build();
         
         logger.debug("[WRAP] Created ApiResponse: {}", response != null ? "not null" : "NULL");
-        logger.debug("[WRAP]   response.data: {}", response.getData() != null ? "not null" : "NULL");
+        if (response != null) {
+            logger.debug("[WRAP]   response.data: {}", response.getData() != null ? "not null" : "NULL");
+        }
         
         return response;
     }
 
     private List<ValueText> convertSerialNosToValueTexts(List<String> serials) {
+        if (serials == null) {
+            return new ArrayList<>();
+        }
         return Lists.transform(serials, new Function<String,ValueText>() {
             @Override
             public ValueText apply(String input) {
@@ -393,7 +403,7 @@ public class SuggestServiceImp implements SuggestService {
 
         list1.forEach(dataElement -> {
 
-            Map<String, Object> target = Maps.newLinkedHashMap(dataElement);
+            Map<String, Object> target = dataElement != null ? Maps.newLinkedHashMap(dataElement) : Maps.newLinkedHashMap();
             final String id = (String) target.get("id");
 
             list2.forEach(list2item -> {
