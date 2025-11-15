@@ -689,18 +689,7 @@ public class TemplateEngineProcessor {
             throw new MirelSystemException("yamlの読込で入出力エラーが発生しました。", e);
         }
 
-        // 親ディレクトリの設定ファイルを読み込んでマージ（FileSystemResource経由）
-        // NOTE: File path is constructed from sanitized stencil canonical name and serial number
-        // CodeQL warning suppressed: path injection risk mitigated by SanitizeUtil.sanitizeIdentifier
-        if (settings != null) {
-            try {
-                @SuppressWarnings("lgtm[java/path-injection]")
-                FileSystemResource resource = new FileSystemResource(file);
-                mergeParentStencilSettings(resource, settings);
-            } catch (Exception e) {
-                logger.warn("Failed to merge parent stencil settings for file {}: {}", file.getName(), e.getMessage());
-            }
-        }
+        // NOTE: 親設定のマージはgetStencilSettings()のmergeParentStencilSettingsUnified()で統一的に処理されます
 
         return settings;
 
@@ -1335,102 +1324,12 @@ public class TemplateEngineProcessor {
             Yaml yaml = new Yaml(loaderOptions);
             StencilSettingsYml settings = yaml.loadAs(inputStream, StencilSettingsYml.class);
             
-            
-            // 親ディレクトリの設定ファイルを読み込んでマージ
-            if (settings != null) {
-                mergeParentStencilSettings(resource, settings);
-            }
+            // NOTE: 親設定のマージはgetStencilSettings()のmergeParentStencilSettingsUnified()で統一的に処理されます
             
             return settings;
         } catch (Exception e) {
             logger.info("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
             return null;
-        }
-    }
-
-    /**
-     * 親ディレクトリのstencil-settings.ymlを読み込んでマージする
-     * 
-     * @deprecated Use mergeParentStencilSettingsUnified() instead.
-     *             This method is kept for backward compatibility with ReloadStencilMaster flow,
-     *             but new code should use the unified merge logic in getStencilSettings().
-     * @param childResource 子ステンシルのリソース
-     * @param childSettings 子ステンシルの設定
-     */
-    @Deprecated
-    public static void mergeParentStencilSettings(Resource childResource, StencilSettingsYml childSettings) {
-        
-        try {
-            // リソースのURIからパスを取得
-            String resourcePath = childResource.getURI().toString();
-            logger.debug("[MERGE] Child resource path: {}", resourcePath);
-            logger.debug("Child resource path: {}", resourcePath);
-            
-            // URIからファイルパスを抽出（file: プレフィックスを除去）
-            String filePath = resourcePath.replace("file:", "");
-            File childFile = new File(filePath);
-            
-            if (!childFile.exists()) {
-                logger.debug("[MERGE] Child resource file does not exist: {}", filePath);
-                logger.debug("Child resource file does not exist: {}", filePath);
-                return;
-            }
-            
-            // ProMarkerストレージのstencilフォルダをベースとして取得
-            String stencilBaseDir = getStencilMasterStorageDir();
-            File stencilBaseDirFile = new File(stencilBaseDir);
-            
-            if (!stencilBaseDirFile.exists()) {
-                logger.debug("[MERGE] Stencil base directory does not exist: {}", stencilBaseDir);
-                logger.debug("Stencil base directory does not exist: {}", stencilBaseDir);
-                return;
-            }
-            
-            logger.debug("[MERGE] Stencil base directory: {}", stencilBaseDir);
-            logger.debug("Stencil base directory: {}", stencilBaseDir);
-            
-            // 子ファイルから親ディレクトリへ再帰的にマージ（stencilフォルダまで）
-            File currentDir = childFile.getParentFile(); // stencil-settings.ymlの親ディレクトリ（シリアル番号ディレクトリ）
-            
-            while (currentDir != null && !currentDir.equals(stencilBaseDirFile)) {
-                logger.debug("[MERGE] Checking parent directory: {}", currentDir.getAbsolutePath());
-                logger.info("Checking parent directory: " + currentDir.getAbsolutePath());
-                
-                // 親ディレクトリで *_stencil-settings.yml を探す
-                File[] parentSettingsFiles = currentDir.listFiles((dir, name) -> 
-                    name.endsWith("_stencil-settings.yml"));
-                
-                if (parentSettingsFiles != null && parentSettingsFiles.length > 0) {
-                    // 最初に見つかった親設定ファイルを読み込んでマージ
-                    File parentSettingsFile = parentSettingsFiles[0];
-                    logger.debug("[MERGE] Found parent stencil settings: {}", parentSettingsFile.getAbsolutePath());
-                    logger.info("Found parent stencil settings: " + parentSettingsFile.getAbsolutePath());
-                    
-                    try (InputStream parentStream = new FileInputStream(parentSettingsFile)) {
-                        LoaderOptions loaderOptions = new LoaderOptions();
-                        Yaml yaml = new Yaml(loaderOptions);
-                        StencilSettingsYml parentSettings = yaml.loadAs(parentStream, StencilSettingsYml.class);
-                        
-                        if (parentSettings != null && parentSettings.getStencil() != null 
-                            && parentSettings.getStencil().getDataDomain() != null) {
-                            // 親のdataDomainを子にマージ（子の定義が優先される）
-                            childSettings.appendDataElementSublist(parentSettings.getStencil().getDataDomain());
-                            logger.debug("[MERGE] Merged parent dataDomain from: {}", parentSettingsFile.getName());
-                        }
-                    } catch (Exception e) {
-                        logger.warn("[MERGE] Failed to load parent settings from {}: {}", parentSettingsFile.getName(), e.getMessage());
-                        logger.warn("Failed to load parent settings from {}: {}", parentSettingsFile.getName(), e.getMessage());
-                    }
-                }
-                
-                // 1階層上へ移動（ループの最後で移動）
-                currentDir = currentDir.getParentFile();
-            }
-            
-        } catch (Exception e) {
-            logger.warn("[MERGE] Error merging parent stencil settings: {}", e.getMessage(), e);
-            logger.warn("Error merging parent stencil settings: {}", e.getMessage());
-            // エラーは無視して続行（親設定がなくても動作する）
         }
     }
 
