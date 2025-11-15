@@ -68,6 +68,11 @@ public class SuggestServiceImp implements SuggestService {
     /** {@inheritDoc} */
     @Override
     public ApiResponse<SuggestResult> invoke(ApiRequest<SuggestParameter> parameter) {
+        logger.debug("[SUGGEST] === invoke() called ===");
+        logger.debug("[SUGGEST] Parameter: stencilCategory={}, stencilCd={}, serialNo={}", 
+            parameter.getModel().stencilCategory, 
+            parameter.getModel().stencilCd, 
+            parameter.getModel().serialNo);
 
         // FIXME: 応急処置 - ModelWrapperは型安全性を損なう hack
         // 根本的な問題: ApiResponse<T>とFrontend期待値の構造不整合
@@ -78,6 +83,11 @@ public class SuggestServiceImp implements SuggestService {
 
         // 1) Category list
         resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, p.stencilCategory);
+        
+        logger.debug("[SUGGEST] Category: selected={}, items={}", 
+            resultModel.fltStrStencilCategory.selected, 
+            resultModel.fltStrStencilCategory.items.size());
+        
         if (isWildcard(resultModel.fltStrStencilCategory.selected) && p.selectFirstIfWildcard) {
             autoSelectFirst(resultModel.fltStrStencilCategory);
         } else {
@@ -86,12 +96,18 @@ public class SuggestServiceImp implements SuggestService {
 
         // If category not fixed yet → return early (no stencil/serial)
         if (StringUtils.isEmpty(resultModel.fltStrStencilCategory.selected)) {
+            logger.debug("[SUGGEST] Category not selected, returning early");
             return wrap(resultModel);
         }
 
         // 2) Stencil list (depends on category)
         List<MsteStencil> stencils = stencilRepository.findByStencilCd(resultModel.fltStrStencilCategory.selected, Const.STENCIL_ITEM_KIND_ITEM);
         resultModel.fltStrStencilCd = new ValueTextItems(convertStencilToValueTexts(stencils), p.stencilCd);
+        
+        logger.debug("[SUGGEST] Stencil: selected={}, items={}", 
+            resultModel.fltStrStencilCd.selected, 
+            resultModel.fltStrStencilCd.items.size());
+        
         if (isWildcard(resultModel.fltStrStencilCd.selected) && p.selectFirstIfWildcard) {
             autoSelectFirst(resultModel.fltStrStencilCd);
         } else {
@@ -99,6 +115,7 @@ public class SuggestServiceImp implements SuggestService {
         }
 
         if (StringUtils.isEmpty(resultModel.fltStrStencilCd.selected)) {
+            logger.debug("[SUGGEST] Stencil not selected, returning early");
             return wrap(resultModel);
         }
 
@@ -106,10 +123,20 @@ public class SuggestServiceImp implements SuggestService {
         String requestedSerial = p.serialNo;
         boolean needAutoSelectSerial = isWildcard(requestedSerial) && p.selectFirstIfWildcard;
         boolean serialSpecified = !isWildcard(requestedSerial);
+        
+        logger.debug("[SUGGEST] Serial decision: requestedSerial={}, needAutoSelectSerial={}, serialSpecified={}", 
+            requestedSerial, needAutoSelectSerial, serialSpecified);
+        
         String effectiveSerial = null;
         TemplateEngineProcessor engine = null;
         if (needAutoSelectSerial || serialSpecified) {
             try {
+                logger.debug("[SUGGEST] Creating TemplateEngineProcessor:");
+                logger.debug("[SUGGEST]   stencilCd: {}", resultModel.fltStrStencilCd.selected);
+                logger.debug("[SUGGEST]   requestedSerial: {}", requestedSerial);
+                logger.debug("[SUGGEST]   isWildcard: {}", isWildcard(requestedSerial));
+                logger.debug("[SUGGEST]   effectiveSerial: {}", isWildcard(requestedSerial)?"":requestedSerial);
+                
                 engine = TemplateEngineProcessor.create(
                     SteContext.standard(resultModel.fltStrStencilCd.selected, isWildcard(requestedSerial)?"":requestedSerial),
                     resourcePatternResolver);
@@ -167,7 +194,10 @@ public class SuggestServiceImp implements SuggestService {
         if(items==null){return;}
         if(StringUtils.isEmpty(items.selected)){return;}
         boolean exists = items.items.stream().anyMatch(i->i.value.equals(items.selected));
+        
+        logger.debug("[SUGGEST] validateSelectedExists: selected={}, exists={}", items.selected, exists);
         if(!exists){
+            logger.warn("[SUGGEST] Selected value '{}' not found in items, clearing selection", items.selected);
             // 不正指定はクリアして上位へ早期リターン可能にする
             items.selected = "";
         }

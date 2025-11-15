@@ -768,12 +768,20 @@ public class TemplateEngineProcessor {
     }
 
     public StencilSettingsYml getStencilSettings() {
+        logger.debug("[GET_SETTINGS] Called with stencilCanonicalName={}, serialNo={}", 
+            context.getStencilCanonicalName(), context.getSerialNo());
+        
         // レイヤード検索: ユーザー → 標準 → サンプル の順で検索
         StencilSettingsYml settings = findStencilSettingsInLayers();
         if (settings == null) {
             throw new MirelSystemException(
                 "ステンシル定義が見つかりません。ステンシル：" + context.getStencilCanonicalName(), null);
         }
+        
+        logger.debug("[GET_SETTINGS] Found settings, dataDomain size: {}", 
+            settings.getStencil() != null && settings.getStencil().getDataDomain() != null 
+                ? settings.getStencil().getDataDomain().size() : 0);
+        
         return settings;
     }
 
@@ -815,12 +823,17 @@ public class TemplateEngineProcessor {
             return null;
         }
         
+        logger.debug("[FIND_LAYER] Searching in layerDir: {}", layerDir);
+        logger.debug("[FIND_LAYER] Is classpath resource: {}", layerDir.startsWith("classpath:"));
+        
         // classpath: プレフィックスの場合はclasspath検索
         if (layerDir.startsWith("classpath:")) {
+            logger.debug("[FIND_LAYER] Using classpath search");
             return findStencilSettingsInClasspath(layerDir);
         }
         
         // ファイルシステム検索
+        logger.debug("[FIND_LAYER] Using filesystem search");
         return findStencilSettingsInFileSystem(layerDir);
     }
 
