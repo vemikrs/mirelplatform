@@ -266,12 +266,14 @@ public class TemplateEngineProcessor {
             List<TemplateLoader> loaders = new ArrayList<>();
             
             // Layer 1: ファイルシステムローダー（serialNoディレクトリ全体を基準）
-            // NOTE: Path is constructed from sanitized user input (SanitizeUtil.sanitizeIdentifier)
-            // CodeQL warning suppressed: path injection risk mitigated by input validation
-            @SuppressWarnings("lgtm[java/path-injection]")
-            File serialDir = new File(getStencilAndSerialStorageDir());
+            // NOTE: Path is validated through constructSecurePath to prevent path traversal
+            String stencilStorageBase = getStencilMasterStorageDir();
+            String stencilPath = context.getStencilCanonicalName();
+            if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                stencilPath = stencilPath + "/" + context.getSerialNo();
+            }
+            File serialDir = constructSecurePath(stencilStorageBase, stencilPath);
             if (serialDir.exists() && serialDir.isDirectory()) {
-                @SuppressWarnings("lgtm[java/path-injection]")
                 FileTemplateLoader fileLoader = new FileTemplateLoader(serialDir);
                 loaders.add(fileLoader);
                 logger.debug("Added filesystem template loader: {}", serialDir.getAbsolutePath());
@@ -282,10 +284,10 @@ public class TemplateEngineProcessor {
             // Layer 2: クラスパスローダー（serialNoディレクトリ全体を基準）
             if (resourcePatternResolver != null) {
                 // serialNoディレクトリを基準パスとする
-                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
-                ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
+                String classpathStencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
+                ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), classpathStencilPath);
                 loaders.add(classpathLoader);
-                logger.debug("Added classpath template loader: {}", stencilPath);
+                logger.debug("Added classpath template loader: {}", classpathStencilPath);
             }
             
             // Layer 3: 一時ファイル用テンプレートローダー
@@ -668,10 +670,9 @@ public class TemplateEngineProcessor {
         }
 
         // load as stencil-settings.
-        // NOTE: File path is constructed from sanitized identifiers
-        // CodeQL warning suppressed: path injection risk mitigated by SanitizeUtil.sanitizeIdentifier
+        // NOTE: File path validation is performed by caller (constructSecurePath or sanitization)
+        // The file parameter comes from validated sources within the stencil storage directory
         StencilSettingsYml settings = null;
-        @SuppressWarnings("lgtm[java/path-injection]")
         FileSystemResource fileResource = new FileSystemResource(file);
         try(InputStream stream = fileResource.getInputStream()) {
             LoaderOptions options = new LoaderOptions();
@@ -1405,17 +1406,18 @@ public class TemplateEngineProcessor {
     @SuppressWarnings("lgtm[java/path-injection]")
     private void searchFilesystemTemplates(List<String> templateFiles, Set<String> foundFileNames,
                                           String stencilCanonicalName, String serialNo) {
-        // NOTE: Paths are constructed from sanitized identifiers (SanitizeUtil.sanitizeIdentifier)
-        // CodeQL warning suppressed: path injection risk mitigated by input validation in calling methods
+        // NOTE: Paths are validated through constructSecurePath to prevent path traversal
         try {
-            String serialDirPath = getStencilAndSerialStorageDir();
-            @SuppressWarnings("lgtm[java/path-injection]")
-            File serialDir = new File(serialDirPath);
+            String stencilStorageBase = getStencilMasterStorageDir();
+            String stencilPath = stencilCanonicalName;
+            if (!StringUtils.isEmpty(serialNo) && !"*".equals(serialNo)) {
+                stencilPath = stencilPath + "/" + serialNo;
+            }
+            File serialDir = constructSecurePath(stencilStorageBase, stencilPath);
             logger.debug("Searching filesystem layer: {}", serialDir.getAbsolutePath());
             
             if (serialDir.exists() && serialDir.isDirectory()) {
                 // serialNoディレクトリ配下の全ファイルを再帰的に取得（絶対パスで）
-                @SuppressWarnings("lgtm[java/path-injection]")
                 List<File> files = FileUtil.getFiles(serialDir);
                 logger.debug("Found {} total files in filesystem", files.size());
                 
