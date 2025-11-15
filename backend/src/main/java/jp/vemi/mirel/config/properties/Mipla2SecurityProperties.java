@@ -18,6 +18,8 @@ public class Mipla2SecurityProperties {
     private boolean enabled = true;
     /**
      * CSRF保護の有効/無効
+     * デフォルトはtrue（本番環境推奨）
+     * 開発環境でのみapplication-dev.ymlでfalseに設定可能
      */
-    private boolean csrfEnabled = false;
+    private boolean csrfEnabled = true;
 }
