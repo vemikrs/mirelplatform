@@ -1,0 +1,15 @@
+@import "@mirel/ui/theme/index.css";
+@import "tailwindcss" source(".");
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+@layer base {
+  body {
+    min-height: 100vh;
+    background: hsl(var(--background));
+  }
+
+  main {
+    min-height: 100%;
+  }
+}

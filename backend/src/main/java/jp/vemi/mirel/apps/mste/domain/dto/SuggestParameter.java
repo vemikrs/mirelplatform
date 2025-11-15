@@ -3,6 +3,10 @@
  */
 package jp.vemi.mirel.apps.mste.domain.dto;
 
+@lombok.Data
+@lombok.AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
+@lombok.NoArgsConstructor
+@lombok.Builder
 public class SuggestParameter {
 
     /** ステンシル種類 */
@@ -13,4 +17,7 @@ public class SuggestParameter {
 
     /** シリアル */
     public String serialNo;
+
+    /** ワイルドカード(*)指定時に最初の要素を自動選択するか */
+    public boolean selectFirstIfWildcard;
 }

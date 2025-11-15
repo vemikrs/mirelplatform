@@ -1,9 +1,8 @@
-# API Reference - ProMarker Platform
+# API Reference - ProMarker Toolkit
 
 ## Overview
 
-ProMarker Platform provides RESTful APIs for template management, code generation, and file operations. This document covers all available endpoints, request/response structures, and implementation details.
-
+ProMarker Toolkit provides RESTful APIs for template management, code generation, and file operations. This document covers all available endpoints, request/response structures, and implementation details.
 ## Base Configuration
 
 ### URLs
@@ -520,7 +519,7 @@ curl -X POST http://localhost:3000/mipla2/commons/upload \
 
 ### ProMarker UI Workflow
 
-**Access URL**: http://localhost:8080/mirel/mste/
+**Access URL**: http://localhost:5173/promarker
 
 #### Typical Code Generation Workflow
 
@@ -672,7 +671,7 @@ methods: {
 
 ### Frontend Testing
 
-- [ ] **ProMarker UI Access**: http://localhost:8080/mirel/mste/ loads successfully
+- [ ] **ProMarker UI Access**: http://localhost:5173/promarker loads successfully
 - [ ] **Category Selection**: Dropdown populates with available categories
 - [ ] **Stencil Selection**: Stencil dropdown updates based on selected category
 - [ ] **Parameter Display**: Input fields appear based on stencil configuration

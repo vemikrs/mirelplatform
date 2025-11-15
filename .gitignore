@@ -40,3 +40,25 @@ out/
 
 ### Build ###
 /backend/bin/
+
+### E2E Testing ###
+node_modules/
+packages/e2e/test-results/
+packages/e2e/playwright-report/
+packages/e2e/playwright/.cache/
+packages/e2e/screenshots/
+packages/e2e/videos/
+packages/e2e/traces/
+
+### Playwright ###
+/test-results/
+/playwright-report/
+
+### pnpm ###
+.pnpm-store/
+
+### VSCode Counter ###
+.VSCodeCounter/
+
+### History Files ###
+.history/

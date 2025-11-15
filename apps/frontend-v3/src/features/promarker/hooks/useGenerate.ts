@@ -1,0 +1,122 @@
+import { toast } from '@mirel/ui'
+import { useMutation } from '@tanstack/react-query'
+import { apiClient } from '@/lib/api/client'
+import { toastMessages } from '../constants/toastMessages'
+import { formatError } from '@/lib/utils/error'
+
+/**
+ * コード生成Hook
+ * 
+ * ステンシルとパラメータを元にコードを生成し、
+ * 生成されたZIPファイルを自動ダウンロードする
+ * 
+ * @example
+ * ```tsx
+ * const generateMutation = useGenerate()
+ * 
+ * const handleGenerate = async () => {
+ *   await generateMutation.mutateAsync({
+ *     stencilCategoy: selectedCategory,
+ *     stencilCanonicalName: selectedStencil,
+ *     serialNo: selectedSerial,
+ *     // ... dynamic parameters
+ *     packageName: 'com.example',
+ *     className: 'Sample'
+ *   })
+ *   // File download starts automatically on success
+ * }
+ * ```
+ */
+export const useGenerate = () => {
+  return useMutation({
+    mutationFn: async (params: Record<string, unknown>) => {
+      console.log('Generating code with params:', params);
+      const response = await apiClient.post('/apps/mste/api/generate', {
+        content: params,
+      });
+
+      if (response.data.errors?.length > 0) {
+        throw new Error(response.data.errors.join(', '));
+      }
+
+      return response.data.data;
+    },
+    onSuccess: async (data) => {
+      console.log('Generation successful:', data);
+      
+      toast({
+        ...toastMessages.generateSuccess,
+      });
+
+      // Handle file download
+      if (data?.files?.length > 0) {
+        // Extract fileId from the response
+        const fileEntry = data.files[0];
+        const fileId = Object.keys(fileEntry)[0];
+        const fileName = fileEntry[fileId as keyof typeof fileEntry];
+        
+        console.log(`Downloading file: ${fileName} (ID: ${fileId})`);
+        
+        try {
+          // Download file using axios with blob responseType (matching Vue.js implementation)
+          const response = await apiClient.post(
+            '/commons/download',
+            {
+              content: [{ fileId }],
+            },
+            {
+              responseType: 'blob',
+            }
+          );
+
+          // Extract filename from Content-Disposition header
+          const contentDisposition = response.headers['content-disposition'];
+          const downloadFileName = contentDisposition 
+            ? decodeURIComponent(contentDisposition.split('=')[1])
+            : fileName;
+
+          // Create blob and trigger download
+          const blob = new Blob([response.data], { type: response.headers['content-type'] });
+          const url = (window.URL || (window as any).webkitURL).createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = downloadFileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Cleanup
+          URL.revokeObjectURL(url);
+          
+          console.log('Download completed successfully');
+        } catch (error) {
+          console.error('Download failed:', error);
+          toast({
+            variant: 'destructive',
+            title: 'ダウンロードエラー',
+            description: 'ファイルのダウンロードに失敗しました。',
+          });
+        }
+      }
+      
+      // Ensure mutation state is properly reset for next execution
+      console.log('Generate mutation completed - ready for next execution');
+    },
+    onError: (error) => {
+      console.error('Generation failed:', error);
+      toast({
+        ...toastMessages.generateError,
+        description: formatError(error),
+      });
+      
+      // Ensure UI state is ready for retry after error
+      console.log('Generate mutation failed - ready for retry');
+    },
+    onSettled: () => {
+      // Called after both success and error
+      console.log('Generate mutation settled - state should be reset');
+    },
+  });
+};

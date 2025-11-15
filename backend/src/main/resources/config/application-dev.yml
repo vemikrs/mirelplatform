@@ -11,7 +11,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         hbm2ddl:
@@ -39,3 +39,10 @@ mirel:
       standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
       samples: classpath:/promarker/stencil/samples
     auto-deploy-samples: true
+
+# Development-only: Disable CSRF protection for easier API testing
+# CSRF is enabled by default in production (Mipla2SecurityProperties.csrfEnabled=true)
+mipla2:
+  security:
+    api:
+      csrf-enabled: false

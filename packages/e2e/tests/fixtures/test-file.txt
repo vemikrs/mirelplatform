@@ -1,0 +1,5 @@
+This is a test file for E2E testing.
+Line 2: Test content
+Line 3: More test content
+Line 4: Additional data
+Line 5: End of test file

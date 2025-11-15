@@ -1,4 +1,4 @@
-# Troubleshooting Guide - ProMarker Platform
+# Troubleshooting Guide - mirelplatform
 
 ## Common Issues and Solutions
 

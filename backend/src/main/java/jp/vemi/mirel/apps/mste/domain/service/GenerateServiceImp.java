@@ -54,9 +54,6 @@ public class GenerateServiceImp implements GenerateService {
      */
     @Override
     public ApiResponse<GenerateResult> invoke(ApiRequest<GenerateParameter> parameter) {
-        System.out.println("=== DEBUG GenerateServiceImp.invoke ===");
-        System.out.println("parameter.getModel(): " + parameter.getModel());
-        System.out.println("resourcePatternResolver: " + resourcePatternResolver);
 
         ApiResponse<GenerateResult> resp = ApiResponse.<GenerateResult>builder().build();
 
@@ -72,12 +69,8 @@ public class GenerateServiceImp implements GenerateService {
             }
 
             // prepare.
-            System.out.println("=== Creating TemplateEngineProcessor ===");
-            System.out.println("SteContext: " + SteContext.newSteContext(once));
-            System.out.println("resourcePatternResolver: " + resourcePatternResolver);
             TemplateEngineProcessor engine = TemplateEngineProcessor.create(
                     SteContext.newSteContext(once), resourcePatternResolver);
-            System.out.println("TemplateEngineProcessor created, getting stencil settings...");
             List<Map<String, Object>> delements = engine.getStencilSettings().getStencilDeAndDd();
             for (Map<String, Object> delement : delements) {
                 Object typeObject = delement.get("type");
@@ -110,6 +103,7 @@ public class GenerateServiceImp implements GenerateService {
             String filePath;
             try {
                 filePath = engine.execute();
+                
             } catch (MessagingException e) {
                 e.printStackTrace();
                 resp.addErrors(e.messages);

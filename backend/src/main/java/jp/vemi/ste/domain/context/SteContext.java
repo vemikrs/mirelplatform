@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jp.vemi.framework.exeption.MirelApplicationException;
 import jp.vemi.framework.util.InstanceUtil;
@@ -17,6 +19,8 @@ import jp.vemi.ste.domain.engine.TemplateEngineProcessor;
  *
  */
 public abstract class SteContext extends LinkedHashMap<String, Object> {
+
+    private static final Logger logger = LoggerFactory.getLogger(SteContext.class);
 
     /**
      * serialVersionUID
@@ -56,6 +60,7 @@ public abstract class SteContext extends LinkedHashMap<String, Object> {
     }
 
     public static SteContext standard(String stencilName, String serialNo) {
+        logger.debug("[STE_CONTEXT] Creating context: stencilName={}, serialNo={}", stencilName, serialNo);
 
         SteContext ctx = standard(stencilName);
         ctx.put("serialNo", serialNo);

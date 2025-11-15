@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Mirel Platform サービス停止スクリプト
+# mirelplatform サービス停止スクリプト
 
 # プロジェクトルートに移動（scriptsフォルダから実行されることを想定）
 PROJECT_ROOT="$(dirname "$0")"/.. 
 cd "$PROJECT_ROOT"
 
-echo "🛑 Mirel Platform サービス停止中..."
+echo "🛑 mirelplatform サービス停止中..."
 echo "======================================"
 
 # PIDファイルから停止
@@ -31,7 +31,8 @@ fi
 # 確実にプロセスを停止
 echo "📋 関連プロセスの確認・停止中..."
 pkill -f "gradlew.*bootRun" 2>/dev/null || true
-pkill -f "npm run dev" 2>/dev/null || true
+pkill -f "pnpm --filter frontend-v3 dev" 2>/dev/null || true
+pkill -f "vite" 2>/dev/null || true
 pkill -f "nuxt" 2>/dev/null || true
 
 # 起動状態ファイルを削除

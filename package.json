@@ -1,0 +1,25 @@
+{
+  "name": "mirelplatform",
+  "version": "1.0.0",
+  "description": "mirelplatform monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter frontend-v3 dev",
+    "build": "pnpm --filter frontend-v3 build",
+    "preview": "pnpm --filter frontend-v3 preview",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter e2e test",
+    "test:e2e:ui": "pnpm --filter e2e test:ui",
+    "test:e2e:report": "pnpm --filter e2e test:report"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.19.0",
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}

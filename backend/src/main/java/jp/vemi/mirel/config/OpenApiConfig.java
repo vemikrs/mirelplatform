@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * OpenAPI (Swagger) configuration for ProMarker Platform API.
+ * OpenAPI (Swagger) configuration for ProMarker Toolkit API.
  * 
  * <p>This configuration provides metadata for the API documentation including:
  * <ul>
@@ -35,7 +35,7 @@ public class OpenApiConfig {
     private String serverPort;
     
     /**
-     * Configures OpenAPI metadata for the ProMarker Platform API.
+     * Configures OpenAPI metadata for the ProMarker Toolkit API.
      * 
      * @return OpenAPI configuration object
      */
@@ -43,7 +43,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
             .info(new Info()
-                .title("ProMarker Platform API")
+                .title("ProMarker Toolkit API")
                 .version("1.0.0")
                 .description(buildDescription())
                 .contact(new Contact()
@@ -69,7 +69,7 @@ public class OpenApiConfig {
      */
     private String buildDescription() {
         return """
-            ProMarker Platform は、テンプレートベースのコード生成と開発支援を提供する統合プラットフォームです。
+            ProMarker Toolkit は、テンプレートベースのコード生成と開発支援を提供する統合プラットフォームです。
             
             ## 主な機能
             

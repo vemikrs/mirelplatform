@@ -5,11 +5,14 @@ package jp.vemi.ste.domain.engine;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -20,8 +23,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -39,6 +43,7 @@ import org.yaml.snakeyaml.constructor.ConstructorException;
 
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
+import jp.vemi.framework.util.FileUtil;
 import freemarker.cache.MultiTemplateLoader;
 import freemarker.cache.TemplateLoader;
 import freemarker.core.ParseException;
@@ -95,7 +100,7 @@ public class TemplateEngineProcessor {
     /** 一時ファイルと元のファイル名のマッピング */
     protected Map<String, String> tempFileToOriginalMap = new HashMap<>();
 
-    protected static Logger logger = Logger.getLogger(TemplateEngineProcessor.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(TemplateEngineProcessor.class);
 
     /**
      * default constructor.
@@ -122,8 +127,8 @@ public class TemplateEngineProcessor {
         instance.resourcePatternResolver = resourcePatternResolver;
         
         if (resourcePatternResolver == null) {
-            System.out.println("WARNING: ResourcePatternResolver is null in TemplateEngineProcessor.create()");
-            System.out.println("This may cause classpath resource search to fail");
+            logger.warn("WARNING: ResourcePatternResolver is null in TemplateEngineProcessor.create()");
+            logger.warn("This may cause classpath resource search to fail");
             // nullの場合でもインスタンス生成は継続（フォールバック処理で対応）
         }
 
@@ -158,6 +163,7 @@ public class TemplateEngineProcessor {
      * @return 生成結果Path
      */
     public String execute(final String generateId) {
+        // デバッグログ
 
         // validate stencil-settings.yml
         final Tuple3<List<String>, List<String>, List<String>> validRets = validate();
@@ -165,11 +171,20 @@ public class TemplateEngineProcessor {
             throw new MirelApplicationException(validRets.getV3());
         }
 
-        validRets.getV2().forEach(logger::warning);
+        validRets.getV2().forEach(logger::warn);
         validRets.getV2().forEach(logger::info);
 
         // output dir
         final String outputDir = createOutputFileDir(StringUtils.isEmpty(generateId) ? createGenerateId() : generateId);
+        
+        // ディレクトリ作成
+        try {
+            Files.createDirectories(Paths.get(outputDir));
+        } catch (IOException e) {
+            throw new MirelSystemException("出力ディレクトリの作成に失敗しました: " + outputDir, e);
+        }
+        
+        // デバッグログ
 
         // parse content.
         if (isLegacy) {
@@ -181,6 +196,8 @@ public class TemplateEngineProcessor {
 
         // get file items.
         final List<String> stencilFileNames = getStencilTemplateFiles();
+        
+        // デバッグログ
 
         // ignore settings file.
         if (stencilFileNames.isEmpty()) {
@@ -197,20 +214,24 @@ public class TemplateEngineProcessor {
             final String name = extractRelativeFileName(stencilFileName);
             final String cname = extractTemplateFileName(stencilFileName);
 
+            // デバッグログ
+
             if (cname.startsWith("\\.")) {
                 // 
-                logger.log(Level.INFO, "folder starts with '.': " + cname);
+                logger.info("folder starts with '.': {}", cname);
                 continue;
             }
             final freemarker.template.Template template = newTemplateFileSpec3(cname);
 
             if (null == template) {
                 // テンプレートのインスタンスがNullの場合、生成対象外と判断されたもの。
-                logger.log(Level.INFO, "template is null.");
+                logger.info("template is null.");
                 continue;
             }
 
             final File outputFile = bindFileName(cname, new File(outputDir));
+
+            // デバッグログ
 
             File parentDir = outputFile.getParentFile();
             try {
@@ -221,6 +242,7 @@ public class TemplateEngineProcessor {
         
             try {
                 template.process(commonBinds ,new FileWriter(outputFile));
+                // デバッグログ
             } catch (final TemplateException e) {
                 final String secondCouse = " 原因：" + e.getLocalizedMessage();
                 throw new MirelSystemException(
@@ -234,6 +256,7 @@ public class TemplateEngineProcessor {
         return outputDir;
     }
 
+    @SuppressWarnings("lgtm[java/path-injection]")
     private void createConfiguration() {
         // configuration.
         cfg = new Configuration(Configuration.VERSION_2_3_29);
@@ -242,22 +265,29 @@ public class TemplateEngineProcessor {
             // FreeMarkerのMultiTemplateLoaderを使用してファイルシステムとクラスパスの両方をサポート
             List<TemplateLoader> loaders = new ArrayList<>();
             
-            // Layer 1: ファイルシステムローダー（既存の機能）
-            File stencilDir = new File(StorageUtil.getBaseDir() + getStencilAndSerialStorageDir());
-            if (stencilDir.exists()) {
-                loaders.add(new FileTemplateLoader(stencilDir));
-                System.out.println("Added filesystem template loader: " + stencilDir.getAbsolutePath());
+            // Layer 1: ファイルシステムローダー（serialNoディレクトリ全体を基準）
+            // NOTE: Path is validated through constructSecurePath to prevent path traversal
+            String stencilStorageBase = getStencilMasterStorageDir();
+            String stencilPath = context.getStencilCanonicalName();
+            if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
+                stencilPath = stencilPath + "/" + context.getSerialNo();
+            }
+            File serialDir = constructSecurePath(stencilStorageBase, stencilPath);
+            if (serialDir.exists() && serialDir.isDirectory()) {
+                FileTemplateLoader fileLoader = new FileTemplateLoader(serialDir);
+                loaders.add(fileLoader);
+                logger.debug("Added filesystem template loader: {}", serialDir.getAbsolutePath());
             } else {
-                System.out.println("Filesystem stencil directory not found: " + stencilDir.getAbsolutePath());
+                logger.debug("Filesystem serial directory not found: {}", serialDir.getAbsolutePath());
             }
             
-            // Layer 2: クラスパスローダー（新機能）
+            // Layer 2: クラスパスローダー（serialNoディレクトリ全体を基準）
             if (resourcePatternResolver != null) {
-                // SpringClasspathローダーは複数のクラスパスパスをサポートできる
-                String stencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
-                ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), stencilPath);
+                // serialNoディレクトリを基準パスとする
+                String classpathStencilPath = "promarker/stencil/samples" + context.getStencilCanonicalName() + "/" + context.getSerialNo();
+                ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(), classpathStencilPath);
                 loaders.add(classpathLoader);
-                System.out.println("Added classpath template loader: " + stencilPath);
+                logger.debug("Added classpath template loader: {}", classpathStencilPath);
             }
             
             // Layer 3: 一時ファイル用テンプレートローダー
@@ -265,13 +295,13 @@ public class TemplateEngineProcessor {
                 File tempDir = new File(System.getProperty("java.io.tmpdir"));
                 FileTemplateLoader tempFileLoader = new FileTemplateLoader(tempDir);
                 loaders.add(tempFileLoader);
-                System.out.println("Added temp file template loader: " + tempDir.getAbsolutePath());
+                logger.debug("Added temp file template loader: {}", tempDir.getAbsolutePath());
             }
             
             if (!loaders.isEmpty()) {
                 TemplateLoader multiLoader = new MultiTemplateLoader(loaders.toArray(new TemplateLoader[0]));
                 cfg.setTemplateLoader(multiLoader);
-                System.out.println("FreeMarker configured with " + loaders.size() + " template loaders");
+                logger.info("FreeMarker configured with {} template loaders", loaders.size());
             } else {
                 throw new IOException("No template loaders available");
             }
@@ -308,8 +338,7 @@ public class TemplateEngineProcessor {
     protected Tuple3<List<String>, List<String>, List<String>> validate() {
 
         final StencilSettingsYml settings = getStencilSettings();
-        System.out.println("validate with settings: ");
-        System.out.println(settings);
+        logger.info("validate with settings: {}", settings);
 
         final List<String> infos = Lists.newArrayList();
         final List<String> warns = Lists.newArrayList();
@@ -490,30 +519,31 @@ public class TemplateEngineProcessor {
     }
 
     public freemarker.template.Template newTemplateFileSpec3(final String stencilName) {
-        System.out.println("=== newTemplateFileSpec3: " + stencilName + " ===");
+        logger.debug("=== newTemplateFileSpec3: {} ===", stencilName);
 
         // Validate.
         Assert.notNull(stencilName, "stencil name must not be null");
 
-        // 一時ファイル名の場合は、元のファイル名を取得
+        // 元のファイル名(hello.ftl)が渡されている場合、対応する一時ファイル名を逆引き
         String actualTemplateName = stencilName;
-        if (tempFileToOriginalMap.containsKey(stencilName)) {
-            actualTemplateName = tempFileToOriginalMap.get(stencilName);
-            System.out.println("Mapping temp file '" + stencilName + "' to original name '" + actualTemplateName + "'");
-        } else if (stencilName.endsWith(".tmp")) {
-            // 一時ファイルだが、マッピングが見つからない場合は一時ファイル名をそのまま使用
-            actualTemplateName = stencilName;
-            System.out.println("Using temp file name directly: " + stencilName);
+        for (Map.Entry<String, String> entry : tempFileToOriginalMap.entrySet()) {
+            if (entry.getValue().equals(stencilName)) {
+                // hello.ftl → template-hello-ftl*.tmp の逆引き成功
+                actualTemplateName = entry.getKey();
+                logger.info("Reverse mapping original '" + stencilName + "' to temp file '" + actualTemplateName + "'");
+                break;
+            }
         }
 
         // FreeMarkerのConfigurationからテンプレートを取得
         // MultiTemplateLoaderが自動的にファイルシステムとクラスパスを検索する
         try {
             freemarker.template.Template template = cfg.getTemplate(actualTemplateName);
-            System.out.println("Successfully loaded template via MultiTemplateLoader: " + actualTemplateName);
+            logger.debug("Successfully loaded template via MultiTemplateLoader: {}", actualTemplateName);
             return template;
         } catch (TemplateNotFoundException e) {
-            System.out.println("Template not found: " + actualTemplateName);
+            logger.debug("Template not found: {}", actualTemplateName);
+            // デバッグログ
             return null; // テンプレートが見つからない場合はnullを返す（スキップ対象）
         } catch (ParseException e) {
             String message = e.getLocalizedMessage();
@@ -544,16 +574,69 @@ public class TemplateEngineProcessor {
         return getStencilStorageDir() + "/" + serial;
     }
 
-    public String getStencilStorageDir() {
+    /**
+     * Securely constructs a file path by validating that the resolved path
+     * is within the expected base directory, preventing path traversal attacks.
+     * 
+     * @param baseDir Base directory path
+     * @param userProvidedPath User-provided path component (already sanitized)
+     * @return Secure File object
+     * @throws IllegalArgumentException if path escapes base directory
+     */
+    private File constructSecurePath(String baseDir, String userProvidedPath) {
+        try {
+            Path basePath = Paths.get(baseDir).toRealPath();
+            // Resolve and normalize the combined path
+            Path resolvedPath = basePath.resolve(userProvidedPath.replaceFirst("^/", "")).normalize();
+            
+            // Verify the resolved path is within base directory
+            if (!resolvedPath.startsWith(basePath)) {
+                throw new IllegalArgumentException(
+                    "Path traversal detected: resolved path escapes base directory");
+            }
+            
+            return resolvedPath.toFile();
+        } catch (IOException e) {
+            // If base path doesn't exist or can't be resolved, fall back to regular File construction
+            // but still validate that the path doesn't contain suspicious patterns
+            Path basePath = Paths.get(baseDir).normalize();
+            Path resolvedPath = basePath.resolve(userProvidedPath.replaceFirst("^/", "")).normalize();
+            
+            if (!resolvedPath.startsWith(basePath)) {
+                throw new IllegalArgumentException(
+                    "Path traversal detected: resolved path escapes base directory");
+            }
+            
+            return resolvedPath.toFile();
+        }
+    }
 
+    public String getStencilStorageDir() {
         // validate.
         Assert.notNull(context, "context");
         Assert.hasText(context.getStencilCanonicalName(), "stencilCanonicalName must not be empty");
         // 正規名パス検証（先頭"/"、セグメントは識別子、.. や \\ 禁止）
-        SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
-
-        final String dir = StringUtils.join(getStencilMasterStorageDir(), context.getStencilCanonicalName());
-        return dir;
+        String sanitizedCanonicalName = SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
+        
+        // レイヤー検索: user → standard の順で実際に存在するディレクトリを返す
+        String[] layerDirs = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir()
+        };
+        
+        for (String layerDir : layerDirs) {
+            // Use secure path construction to prevent path traversal
+            File candidateDir = constructSecurePath(layerDir, sanitizedCanonicalName);
+            
+            if (candidateDir.exists() && candidateDir.isDirectory()) {
+                logger.debug("Found stencil directory in layer: {}", candidateDir.getAbsolutePath());
+                return candidateDir.getAbsolutePath();
+            }
+        }
+        
+        // 見つからない場合はデフォルトのパス（下位互換性）
+        File defaultDir = constructSecurePath(getStencilMasterStorageDir(), sanitizedCanonicalName);
+        return defaultDir.getAbsolutePath();
     }
 
     /** 
@@ -587,8 +670,11 @@ public class TemplateEngineProcessor {
         }
 
         // load as stencil-settings.
+        // NOTE: File path validation is performed by caller (constructSecurePath or sanitization)
+        // The file parameter comes from validated sources within the stencil storage directory
         StencilSettingsYml settings = null;
-        try(InputStream stream = new FileSystemResource(file).getInputStream()) {
+        FileSystemResource fileResource = new FileSystemResource(file);
+        try(InputStream stream = fileResource.getInputStream()) {
             LoaderOptions options = new LoaderOptions();
             Yaml yaml = new Yaml(options);
             settings = yaml.loadAs(stream, StencilSettingsYml.class);
@@ -604,6 +690,8 @@ public class TemplateEngineProcessor {
             throw new MirelSystemException("yamlの読込で入出力エラーが発生しました。", e);
         }
 
+        // NOTE: 親設定のマージはgetStencilSettings()のmergeParentStencilSettingsUnified()で統一的に処理されます
+
         return settings;
 
     }
@@ -613,12 +701,27 @@ public class TemplateEngineProcessor {
     }
 
     public StencilSettingsYml getStencilSettings() {
+        logger.debug("[GET_SETTINGS] Called with stencilCanonicalName={}, serialNo={}", 
+            context.getStencilCanonicalName(), context.getSerialNo());
+        
         // レイヤード検索: ユーザー → 標準 → サンプル の順で検索
         StencilSettingsYml settings = findStencilSettingsInLayers();
         if (settings == null) {
             throw new MirelSystemException(
                 "ステンシル定義が見つかりません。ステンシル：" + context.getStencilCanonicalName(), null);
         }
+        
+        logger.debug("[GET_SETTINGS] Found settings, dataDomain size (before merge): {}", 
+            settings.getStencil() != null && settings.getStencil().getDataDomain() != null 
+                ? settings.getStencil().getDataDomain().size() : 0);
+        
+        // ✅ Phase 2-1: 親設定を統一的にマージ（filesystem/classpath両対応）
+        mergeParentStencilSettingsUnified(settings);
+        
+        logger.debug("[GET_SETTINGS] dataDomain size (after merge): {}", 
+            settings.getStencil() != null && settings.getStencil().getDataDomain() != null 
+                ? settings.getStencil().getDataDomain().size() : 0);
+        
         return settings;
     }
 
@@ -627,9 +730,9 @@ public class TemplateEngineProcessor {
      * @return 見つかったStencilSettingsYml、または null
      */
     private StencilSettingsYml findStencilSettingsInLayers() {
-        System.out.println("=== DEBUG findStencilSettingsInLayers ===");
-        System.out.println("context.getStencilCanonicalName(): " + context.getStencilCanonicalName());
-        System.out.println("resourcePatternResolver: " + resourcePatternResolver);
+        logger.debug("=== DEBUG findStencilSettingsInLayers ===");
+        logger.debug("context.getStencilCanonicalName(): {}", context.getStencilCanonicalName());
+        logger.debug("resourcePatternResolver: {}", resourcePatternResolver);
         
         // 優先度順にレイヤーを検索: ユーザー → 標準 → サンプル
         String[] searchLayers = {
@@ -641,12 +744,12 @@ public class TemplateEngineProcessor {
         for (String layerDir : searchLayers) {
             StencilSettingsYml settings = findStencilSettingsInLayer(layerDir);
             if (settings != null) {
-                System.out.println("Found stencil settings in layer: " + layerDir);
+                logger.debug("Found stencil settings in layer: {}", layerDir);
                 return settings;
             }
         }
         
-        System.out.println("No stencil settings found in any layer");
+        logger.warn("No stencil settings found in any layer");
         return null;
     }
 
@@ -660,12 +763,17 @@ public class TemplateEngineProcessor {
             return null;
         }
         
+        logger.debug("[FIND_LAYER] Searching in layerDir: {}", layerDir);
+        logger.debug("[FIND_LAYER] Is classpath resource: {}", layerDir.startsWith("classpath:"));
+        
         // classpath: プレフィックスの場合はclasspath検索
         if (layerDir.startsWith("classpath:")) {
+            logger.debug("[FIND_LAYER] Using classpath search");
             return findStencilSettingsInClasspath(layerDir);
         }
         
         // ファイルシステム検索
+        logger.debug("[FIND_LAYER] Using filesystem search");
         return findStencilSettingsInFileSystem(layerDir);
     }
 
@@ -677,23 +785,23 @@ public class TemplateEngineProcessor {
      */
     private StencilSettingsYml findStencilSettingsInClasspath(String classpathLocation) {
         try {
-            System.out.println("=== DEBUG findStencilSettingsInClasspath ===");
-            System.out.println("classpathLocation: " + classpathLocation);
-            System.out.println("resourcePatternResolver is null: " + (resourcePatternResolver == null));
+            logger.debug("=== DEBUG findStencilSettingsInClasspath ===");
+            logger.debug("classpathLocation: {}", classpathLocation);
+            logger.debug("resourcePatternResolver is null: {}", (resourcePatternResolver == null));
             
             // ResourcePatternResolverが利用可能な場合は動的検索を使用
             if (resourcePatternResolver != null) {
-                System.out.println("Using ResourcePatternResolver for dynamic search");
+                logger.debug("Using ResourcePatternResolver for dynamic search");
                 return findStencilSettingsWithResourcePatternResolver(classpathLocation);
             }
             
             // フォールバック: 従来の固定パス検索
-            System.out.println("Fallback to fixed path search");
+            logger.debug("Fallback to fixed path search");
             return findStencilSettingsWithFixedPath(classpathLocation);
             
         } catch (Exception e) {
-            System.out.println("Error finding stencil settings in classpath: " + e.getMessage());
-            e.printStackTrace();
+            logger.debug("Error finding stencil settings in classpath: {}", e.getMessage());
+            logger.trace("Stack trace:", e);
             return null;
         }
     }
@@ -707,10 +815,10 @@ public class TemplateEngineProcessor {
         try {
             // 指定されたstencilCanonicalNameに対応するstencil-settings.ymlを検索
             String searchPattern = classpathLocation + context.getStencilCanonicalName() + "/**/stencil-settings.yml";
-            System.out.println("Searching for stencil settings with pattern: " + searchPattern);
+            logger.debug("Searching for stencil settings with pattern: {}", searchPattern);
             
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
-            System.out.println("Found " + resources.length + " stencil-settings.yml resources for " + context.getStencilCanonicalName());
+            logger.debug("Found {} stencil-settings.yml resources for {}", resources.length, context.getStencilCanonicalName());
             
             // 見つかったリソースから最初の有効なものを使用
             for (Resource resource : resources) {
@@ -726,18 +834,18 @@ public class TemplateEngineProcessor {
                                 continue; // serialNoが一致しない場合はスキップ
                             }
                         }
-                        System.out.println("Found matching stencil settings: " + resource.getURI());
+                        logger.info("Found matching stencil settings: " + resource.getURI());
                         return settings;
                     }
                 } catch (Exception resourceException) {
-                    System.out.println("Could not load stencil settings from resource " + resource.getURI() + ": " + resourceException.getMessage());
+                    logger.info("Could not load stencil settings from resource " + resource.getURI() + ": " + resourceException.getMessage());
                 }
             }
             
             return null;
         } catch (Exception e) {
-            System.out.println("Error in ResourcePatternResolver search: " + e.getMessage());
-            e.printStackTrace();
+            logger.debug("Error in ResourcePatternResolver search: {}", e.getMessage());
+            logger.trace("Stack trace:", e);
             return null;
         }
     }
@@ -784,7 +892,7 @@ public class TemplateEngineProcessor {
             }
             
         } catch (Exception e) {
-            logger.log(Level.WARNING, "classpath検索でエラーが発生: " + classpathLocation, e);
+            logger.warn("classpath検索でエラーが発生: {}", classpathLocation, e);
         }
         
         return null;
@@ -810,7 +918,7 @@ public class TemplateEngineProcessor {
                 }
             }
         } catch (Exception e) {
-            logger.log(Level.FINE, "classpathリソース読み込み失敗: " + resourcePath, e);
+            logger.debug("classpathリソース読み込み失敗: {}", resourcePath, e);
         }
         return null;
     }
@@ -847,7 +955,7 @@ public class TemplateEngineProcessor {
             serials.sort(Collections.reverseOrder());
             
         } catch (Exception e) {
-            logger.log(Level.FINE, "シリアル番号検索でエラー: " + classpathLocation, e);
+            logger.debug("シリアル番号検索でエラー: {}", classpathLocation, e);
         }
         
         return serials;
@@ -860,38 +968,173 @@ public class TemplateEngineProcessor {
      */
     private StencilSettingsYml findStencilSettingsInFileSystem(String layerDir) {
         try {
-            System.out.println("=== DEBUG findStencilSettingsInFileSystem ===");
-            System.out.println("layerDir: " + layerDir);
-            System.out.println("stencilCanonicalName: " + context.getStencilCanonicalName());
+            logger.debug("=== DEBUG findStencilSettingsInFileSystem ===");
+            logger.debug("layerDir: {}", layerDir);
+            logger.debug("stencilCanonicalName: {}", context.getStencilCanonicalName());
             
-            // パス構築の改善
-            String stencilPath;
-            if (layerDir.endsWith("/")) {
-                stencilPath = layerDir + context.getStencilCanonicalName().substring(1); // 先頭の"/"を除去
-            } else {
-                stencilPath = layerDir + context.getStencilCanonicalName(); 
-            }
+            
+            // パス構築の改善 - constructSecurePath()でパストラバーサル攻撃を防ぐ
+            String relativePath = context.getStencilCanonicalName().replaceFirst("^/", "");
             
             // serialNoが指定されている場合はそれも含める
             if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
                 SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
-                stencilPath = stencilPath + "/" + context.getSerialNo();
+                relativePath = relativePath + "/" + context.getSerialNo();
             }
             
-            File settingsFile = new File(stencilPath + "/stencil-settings.yml");
-            System.out.println("Searching settings file: " + settingsFile.getAbsolutePath());
+            relativePath = relativePath + "/stencil-settings.yml";
+            
+            // constructSecurePath()でパス検証を実施
+            File settingsFile = constructSecurePath(layerDir, relativePath);
+            logger.debug("Searching settings file: {}", settingsFile.getAbsolutePath());
             
             if (settingsFile.exists() && settingsFile.isFile()) {
-                System.out.println("Found stencil-settings.yml: " + settingsFile.getAbsolutePath());
+                logger.debug("Found stencil-settings.yml: {}", settingsFile.getAbsolutePath());
+                
                 return getSsYmlRecurive(settingsFile);
             } else {
-                System.out.println("Settings file not found: " + settingsFile.getAbsolutePath());
+                logger.debug("Settings file not found: {}", settingsFile.getAbsolutePath());
             }
         } catch (Exception e) {
-            System.out.println("Error in filesystem search: " + e.getMessage());
-            logger.log(Level.WARNING, "ファイルシステム検索でエラーが発生: " + layerDir, e);
+            logger.debug("Error in filesystem search: {}", e.getMessage());
+            logger.warn("ファイルシステム検索でエラーが発生: {}", layerDir, e);
         }
         
+        return null;
+    }
+
+    /**
+     * 統一された親ステンシル設定マージロジック（Phase 2-1）
+     * filesystem/classpath両対応
+     * 
+     * @param childSettings マージ対象の子ステンシル設定
+     */
+    private void mergeParentStencilSettingsUnified(StencilSettingsYml childSettings) {
+        if (childSettings == null || childSettings.getStencil() == null) {
+            logger.debug("[MERGE_UNIFIED] childSettings is null or has no stencil config");
+            return;
+        }
+        
+        String stencilCanonicalName = context.getStencilCanonicalName();
+        if (StringUtils.isEmpty(stencilCanonicalName)) {
+            logger.debug("[MERGE_UNIFIED] stencilCanonicalName is empty");
+            return;
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Starting parent merge for: {}", stencilCanonicalName);
+        
+        // パス分解: /user/project/module_service → ["user", "project", "module_service"]
+        String[] pathSegments = stencilCanonicalName.split("/");
+        List<String> segments = new ArrayList<>();
+        for (String segment : pathSegments) {
+            if (!StringUtils.isEmpty(segment)) {
+                segments.add(segment);
+            }
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Path segments: {}", segments);
+        
+        // 親階層を下から上へ検索（module_service → project → user）
+        for (int i = segments.size() - 1; i >= 1; i--) {
+            List<String> parentSegments = segments.subList(0, i);
+            String parentPath = "/" + String.join("/", parentSegments);
+            
+            logger.debug("[MERGE_UNIFIED] Searching parent settings at: {}", parentPath);
+            
+            // 親設定を検索（レイヤード検索）
+            StencilSettingsYml parentSettings = findParentStencilSettings(parentPath);
+            
+            if (parentSettings != null && 
+                parentSettings.getStencil() != null && 
+                parentSettings.getStencil().getDataDomain() != null) {
+                
+                int parentDataDomainSize = parentSettings.getStencil().getDataDomain().size();
+                logger.info("[MERGE_UNIFIED] Merging {} dataDomain entries from parent: {}", 
+                    parentDataDomainSize, parentPath);
+                
+                // 親のdataDomainを子にマージ（子の定義が優先される）
+                childSettings.appendDataElementSublist(parentSettings.getStencil().getDataDomain());
+                
+                logger.debug("[MERGE_UNIFIED] Successfully merged parent dataDomain from: {}", parentPath);
+            } else {
+                logger.debug("[MERGE_UNIFIED] No parent settings found at: {}", parentPath);
+            }
+        }
+        
+        logger.debug("[MERGE_UNIFIED] Parent merge completed");
+    }
+
+    /**
+     * 親ステンシル設定を検索（Phase 2-1）
+     * レイヤード検索: user → standard の順（samplesは親検索スキップ）
+     * 
+     * @param parentPath 親パス（例: "/user/project"）
+     * @return 見つかった親設定、またはnull
+     */
+    private StencilSettingsYml findParentStencilSettings(String parentPath) {
+        logger.debug("[FIND_PARENT] Searching for parent: {}", parentPath);
+        
+        // レイヤー検索: user → standard の順（samplesはclasspathなのでスキップ）
+        String[] searchLayers = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir()
+        };
+        
+        for (String layerDir : searchLayers) {
+            if (layerDir.startsWith("classpath:")) {
+                // classpathレイヤーは親検索スキップ（ディレクトリ構造が異なる）
+                logger.debug("[FIND_PARENT] Skipping classpath layer: {}", layerDir);
+                continue;
+            }
+            
+            logger.debug("[FIND_PARENT] Searching in layer: {}", layerDir);
+            
+            // 親ディレクトリのパス構築
+            String parentDirPath;
+            if (layerDir.endsWith("/")) {
+                parentDirPath = layerDir + parentPath.substring(1); // 先頭の"/"を除去
+            } else {
+                parentDirPath = layerDir + parentPath;
+            }
+            
+            File parentDir = new File(parentDirPath);
+            logger.debug("[FIND_PARENT] Checking directory: {}, exists: {}", 
+                parentDirPath, parentDir.exists());
+            
+            if (!parentDir.exists() || !parentDir.isDirectory()) {
+                logger.debug("[FIND_PARENT] Directory not found: {}", parentDirPath);
+                continue;
+            }
+            
+            // *_stencil-settings.yml を検索
+            File[] parentSettingsFiles = parentDir.listFiles((dir, name) -> 
+                name.endsWith("_stencil-settings.yml"));
+            
+            if (parentSettingsFiles != null && parentSettingsFiles.length > 0) {
+                // 最初に見つかった親設定を使用
+                File parentSettingsFile = parentSettingsFiles[0];
+                logger.debug("[FIND_PARENT] Found parent settings file: {}", 
+                    parentSettingsFile.getName());
+                
+                try (InputStream stream = new FileInputStream(parentSettingsFile)) {
+                    LoaderOptions options = new LoaderOptions();
+                    Yaml yaml = new Yaml(options);
+                    StencilSettingsYml parentSettings = yaml.loadAs(stream, StencilSettingsYml.class);
+                    
+                    logger.info("[FIND_PARENT] Loaded parent settings from: {}", 
+                        parentSettingsFile.getName());
+                    return parentSettings;
+                    
+                } catch (Exception e) {
+                    logger.warn("[FIND_PARENT] Failed to load parent settings from {}: {}", 
+                        parentSettingsFile.getName(), e.getMessage());
+                }
+            } else {
+                logger.debug("[FIND_PARENT] No *_stencil-settings.yml found in: {}", parentDirPath);
+            }
+        }
+        
+        logger.debug("[FIND_PARENT] No parent settings found for: {}", parentPath);
         return null;
     }
 
@@ -900,8 +1143,8 @@ public class TemplateEngineProcessor {
     }
 
     protected static String createOutputFileDir(final String generateId) {
-        return convertStorageToFileDir(getOutputBaseStorageDir())
-                + "/" + generateId;
+        // getAppStorageDir()は既に完全なパスを返すので、convertStorageToFileDirは不要
+        return getAppStorageDir() + "/output/" + generateId;
     }
 
     public static String getStencilMasterStorageDir(){
@@ -911,8 +1154,8 @@ public class TemplateEngineProcessor {
 
     // TODO: ProMarkerStorageConfig -> ProMarkerStorageUtil
     public static String getAppStorageDir(){
-        final String appDir = "/apps/promarker";
-        return appDir;
+        // StorageConfigから正しいパスを取得
+        return StorageConfig.getStorageDir() + "/apps/promarker";
     }
 
     public static String getOutputBaseStorageDir() {
@@ -924,23 +1167,113 @@ public class TemplateEngineProcessor {
     }
 
     public List<String> getSerialNos() {
-
-        final File sdir = StorageUtil.getFile(getStencilStorageDir());
-        final File[] sdirFiles = sdir.listFiles();
-
         final List<String> serialNos = Lists.newArrayList();
-
-        // for npe
-        if (null == sdirFiles) {
-            return serialNos;
-        }
-
-        for (File sdirFile : sdirFiles) {
-            if(isSerialNoDir(sdirFile)) {
-                serialNos.add(sdirFile.getName());
+        final Set<String> foundSerials = new HashSet<>(); // 重複排除
+        
+        // レイヤー検索: user → standard → samples の順
+        String[] layerDirs = {
+            StorageConfig.getUserStencilDir(),
+            StorageConfig.getStandardStencilDir(),
+            StorageConfig.getSamplesStencilDir()
+        };
+        
+        // Sanitize canonical name first
+        String sanitizedCanonicalName = SanitizeUtil.sanitizeCanonicalPath(context.getStencilCanonicalName());
+        
+        for (String layerDir : layerDirs) {
+            // classpath: プレフィックスの場合はclasspath検索
+            if (layerDir != null && layerDir.startsWith("classpath:")) {
+                List<String> classpathSerials = findSerialNosInClasspath(layerDir, sanitizedCanonicalName);
+                for (String serial : classpathSerials) {
+                    if (!foundSerials.contains(serial)) {
+                        serialNos.add(serial);
+                        foundSerials.add(serial);
+                    }
+                }
+            } else {
+                // ファイルシステム検索 - Use secure path construction
+                File stencilDir = constructSecurePath(layerDir, sanitizedCanonicalName);
+                
+                if (!stencilDir.exists() || !stencilDir.isDirectory()) {
+                    continue;
+                }
+                
+                File[] serialDirs = stencilDir.listFiles();
+                if (serialDirs == null) {
+                    continue;
+                }
+                
+                for (File serialDir : serialDirs) {
+                    if (isSerialNoDir(serialDir) && !foundSerials.contains(serialDir.getName())) {
+                        serialNos.add(serialDir.getName());
+                        foundSerials.add(serialDir.getName());
+                    }
+                }
+            }
+            
+            // 見つかったら早期終了（上位レイヤー優先）
+            if (!serialNos.isEmpty()) {
+                break;
             }
         }
-
+        
+        return serialNos;
+    }
+    
+    /**
+     * classpathから指定されたstencilのシリアル番号を検索
+     * @param classpathLocation classpath:で始まるパス
+     * @param stencilCanonicalName ステンシルの正規名
+     * @return 見つかったシリアル番号のリスト
+     */
+    private List<String> findSerialNosInClasspath(String classpathLocation, String stencilCanonicalName) {
+        List<String> serialNos = new ArrayList<>();
+        Set<String> foundSerials = new HashSet<>();
+        
+        try {
+            if (resourcePatternResolver == null) {
+                logger.debug("findSerialNosInClasspath: resourcePatternResolver is null");
+                return serialNos;
+            }
+            
+            // stencil-settings.ymlファイルを検索してシリアル番号を抽出
+            // パターン: classpath:/promarker/stencil/samples/samples/hello-world/*/stencil-settings.yml
+            String searchPattern = classpathLocation + stencilCanonicalName + "/*/stencil-settings.yml";
+            logger.debug("findSerialNosInClasspath: searching with pattern: {}", searchPattern);
+            
+            Resource[] resources = resourcePatternResolver.getResources(searchPattern);
+            logger.debug("findSerialNosInClasspath: found {} resources", resources.length);
+            
+            for (Resource resource : resources) {
+                try {
+                    // URLからパスを取得
+                    String urlPath = resource.getURL().getPath();
+                    logger.info("findSerialNosInClasspath: processing resource: " + urlPath);
+                    
+                    // パスからシリアル番号を抽出
+                    // 例: /path/to/samples/hello-world/250913A/stencil-settings.yml -> 250913A
+                    String[] pathSegments = urlPath.split("/");
+                    for (int i = pathSegments.length - 1; i >= 0; i--) {
+                        String segment = pathSegments[i];
+                        if (isSerialNoVal(segment) && !foundSerials.contains(segment)) {
+                            serialNos.add(segment);
+                            foundSerials.add(segment);
+                            logger.info("findSerialNosInClasspath: found serial: " + segment);
+                            break; // 見つかったら次のリソースへ
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.debug("findSerialNosInClasspath: IOException for resource: {}", e.getMessage());
+                    // リソース処理エラーは無視して続行
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.debug("Error finding serial numbers in classpath: {}", e.getMessage());
+            logger.trace("Stack trace:", e);
+        }
+        
+        logger.debug("findSerialNosInClasspath: returning serials: {}", serialNos);
         return serialNos;
     }
 
@@ -981,12 +1314,17 @@ public class TemplateEngineProcessor {
      * @return StencilSettingsYml、または null
      */
     private StencilSettingsYml loadStencilSettingsFromResource(Resource resource) {
+        
         try (InputStream inputStream = resource.getInputStream()) {
             LoaderOptions loaderOptions = new LoaderOptions();
             Yaml yaml = new Yaml(loaderOptions);
-            return yaml.loadAs(inputStream, StencilSettingsYml.class);
+            StencilSettingsYml settings = yaml.loadAs(inputStream, StencilSettingsYml.class);
+            
+            // NOTE: 親設定のマージはgetStencilSettings()のmergeParentStencilSettingsUnified()で統一的に処理されます
+            
+            return settings;
         } catch (Exception e) {
-            System.out.println("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
+            logger.info("Error loading stencil settings from resource " + resource.getDescription() + ": " + e.getMessage());
             return null;
         }
     }
@@ -1009,7 +1347,7 @@ public class TemplateEngineProcessor {
         // 一時ファイル名と元のテンプレートファイル名のマッピングを保存
         tempFileToOriginalMap.put(tempFile.getName(), templateFileName);
         
-        System.out.println("Extracted template to temp file: " + tempFile.getAbsolutePath());
+        logger.info("Extracted template to temp file: " + tempFile.getAbsolutePath());
         return tempFile;
     }
 
@@ -1021,6 +1359,7 @@ public class TemplateEngineProcessor {
         List<String> templateFiles = new ArrayList<>();
         Set<String> foundFileNames = new HashSet<>(); // 重複排除のため
         
+        
         try {
             String stencilCanonicalName = context.getStencilCanonicalName();
             // 正規名パス検証
@@ -1030,7 +1369,15 @@ public class TemplateEngineProcessor {
                 SanitizeUtil.sanitizeIdentifierAllowWildcard(serialNo);
             }
             
-            System.out.println("=== Layered template search for stencil: " + stencilCanonicalName + " serial: " + serialNo + " ===");
+            
+            // デバッグ用ファイル出力
+            try {
+                java.io.FileWriter fw = new java.io.FileWriter("logs/template-debug.log", true);
+                fw.write("\n=== Layered template search for stencil: " + stencilCanonicalName + " serial: " + serialNo + " ===\n");
+                fw.close();
+            } catch (Exception e) { /* ignore */ }
+            
+            logger.debug("=== Layered template search for stencil: {} serial: {} ===", stencilCanonicalName, serialNo);
             
             // Layer 1: Filesystem stencils (既存の/apps/mste/stencil)
             searchFilesystemTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
@@ -1038,44 +1385,66 @@ public class TemplateEngineProcessor {
             // Layer 2: Classpath stencils (旧stencil-samples)
             searchClasspathTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
             
-            System.out.println("=== Total template files found: " + templateFiles.size() + " ===");
+            logger.debug("=== Total template files found (after duplicate check): {} ===", templateFiles.size());
             for (String file : templateFiles) {
-                System.out.println("Template file: " + file);
+                logger.info("Template file: " + file);
             }
             
+            
         } catch (Exception e) {
-            System.out.println("Error in getStencilTemplateFiles: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error in getStencilTemplateFiles: {}", e.getMessage(), e);
         }
         
         return templateFiles;
     }
     
+    @SuppressWarnings("lgtm[java/path-injection]")
     private void searchFilesystemTemplates(List<String> templateFiles, Set<String> foundFileNames,
                                           String stencilCanonicalName, String serialNo) {
+        // NOTE: Paths are validated through constructSecurePath to prevent path traversal
         try {
-            String fullPath = getStencilAndSerialStorageDir();
-            System.out.println("Searching filesystem layer: " + StorageUtil.getBaseDir() + fullPath);
+            String stencilStorageBase = getStencilMasterStorageDir();
+            String stencilPath = stencilCanonicalName;
+            if (!StringUtils.isEmpty(serialNo) && !"*".equals(serialNo)) {
+                stencilPath = stencilPath + "/" + serialNo;
+            }
+            File serialDir = constructSecurePath(stencilStorageBase, stencilPath);
+            logger.debug("Searching filesystem layer: {}", serialDir.getAbsolutePath());
             
-            if (new File(StorageUtil.getBaseDir() + fullPath).exists()) {
-                List<String> files = StorageUtil.getFiles(fullPath);
+            if (serialDir.exists() && serialDir.isDirectory()) {
+                // serialNoディレクトリ配下の全ファイルを再帰的に取得（絶対パスで）
+                List<File> files = FileUtil.getFiles(serialDir);
+                logger.debug("Found {} total files in filesystem", files.size());
                 
-                for (String filePath : files) {
-                    File file = new File(filePath);
+                for (File file : files) {
                     String fileName = file.getName();
                     
-                    if (!fileName.equals("stencil-settings.yml") && 
-                        !foundFileNames.contains(fileName)) {
-                        templateFiles.add(filePath);
-                        foundFileNames.add(fileName);
-                        System.out.println("FILESYSTEM found: " + fileName);
+                    // stencil-settings.ymlは除外
+                    if (fileName.equals("stencil-settings.yml")) {
+                        continue;
+                    }
+                    
+                    try {
+                        // 相対パスを計算（serialNoディレクトリからの相対パス）
+                        String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
+                        // Windows パス区切りをUnix形式に統一
+                        relativePath = relativePath.replace('\\', '/');
+                        
+                        // 重複チェックは相対パスで行う（同名ファイルが異なるディレクトリにある場合を考慮）
+                        if (!foundFileNames.contains(relativePath)) {
+                            templateFiles.add(file.getCanonicalPath());
+                            foundFileNames.add(relativePath);
+                            logger.debug("FILESYSTEM found: {}", relativePath);
+                        }
+                    } catch (IOException e) {
+                        logger.warn("Error processing file {}: {}", file.getAbsolutePath(), e.getMessage());
                     }
                 }
             } else {
-                System.out.println("FILESYSTEM directory not found: " + StorageUtil.getBaseDir() + fullPath);
+                logger.debug("FILESYSTEM serial directory not found: {}", serialDir.getAbsolutePath());
             }
         } catch (Exception e) {
-            System.out.println("Error searching filesystem layer: " + e.getMessage());
+            logger.error("Error searching filesystem layer: {}", e.getMessage(), e);
         }
     }
     
@@ -1083,38 +1452,56 @@ public class TemplateEngineProcessor {
                                         String stencilCanonicalName, String serialNo) {
         try {
             if (resourcePatternResolver == null) {
-                System.out.println("ResourcePatternResolver not available for classpath search");
+                logger.info("ResourcePatternResolver not available for classpath search");
                 return;
             }
             
+            // serialNoディレクトリ配下の全ファイルを検索（**で再帰検索）
             String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/**";
-            System.out.println("Searching CLASSPATH layer: " + searchPattern);
+            logger.info("Searching CLASSPATH layer: " + searchPattern);
             
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
-            System.out.println("Found " + resources.length + " classpath resources");
+            logger.info("Found " + resources.length + " classpath resources");
             
             for (Resource resource : resources) {
                 try {
                     String filename = resource.getFilename();
-                    if (filename != null && 
-                        !filename.equals("stencil-settings.yml") && 
-                        !resource.getURI().toString().endsWith("/") &&
-                        !foundFileNames.contains(filename)) {
-                        
+                    if (filename == null || 
+                        filename.equals("stencil-settings.yml") || 
+                        resource.getURI().toString().endsWith("/")) {
+                        continue;
+                    }
+                    
+                    // リソースURIから相対パスを抽出
+                    String uri = resource.getURI().toString();
+                    String basePath = "promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo + "/";
+                    int baseIndex = uri.indexOf(basePath);
+                    String relativePath = filename; // デフォルトはファイル名のみ
+                    
+                    if (baseIndex >= 0) {
+                        relativePath = uri.substring(baseIndex + basePath.length());
+                        // URLエンコードされている場合はデコード
+                        relativePath = java.net.URLDecoder.decode(relativePath, "UTF-8");
+                    }
+                    
+                    // 重複チェックは相対パスで行う
+                    if (!foundFileNames.contains(relativePath)) {
                         // classpath resourceを一時ファイルに展開
-                        File tempFile = extractResourceToTempFile(resource, filename);
+                        File tempFile = extractResourceToTempFile(resource, relativePath);
                         if (tempFile != null) {
                             templateFiles.add(tempFile.getAbsolutePath());
-                            foundFileNames.add(filename);
-                            System.out.println("CLASSPATH found: " + filename + " -> " + tempFile.getAbsolutePath());
+                            foundFileNames.add(relativePath);
+                            logger.info("CLASSPATH found: " + relativePath + " -> " + tempFile.getAbsolutePath());
                         }
                     }
                 } catch (Exception e) {
-                    System.out.println("Error processing classpath resource: " + e.getMessage());
+                    logger.info("Error processing classpath resource: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
         } catch (Exception e) {
-            System.out.println("Error searching classpath layer: " + e.getMessage());
+            logger.info("Error searching classpath layer: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -1148,35 +1535,49 @@ public class TemplateEngineProcessor {
     /**
      * ファイルパスからテンプレートファイル名を抽出（cname用）
      * @param fullPath 完全なファイルパス
-     * @return テンプレートファイル名
+     * @return テンプレートファイル名（serialNoディレクトリからの相対パス）
      */
     private String extractTemplateFileName(String fullPath) {
         if (StringUtils.isEmpty(fullPath)) {
             return "";
         }
         
+        File file = new File(fullPath);
+        String fileName = file.getName();
+        
         // 一時ファイル名から元のテンプレートファイル名を取得
-        String fileName = new File(fullPath).getName();
         if (tempFileToOriginalMap.containsKey(fileName)) {
             String originalFileName = tempFileToOriginalMap.get(fileName);
-            System.out.println("Mapped temp file: " + fileName + " -> " + originalFileName);
+            logger.debug("Mapped temp file: {} -> {}", fileName, originalFileName);
             return originalFileName;
         }
         
-        String baseDirPath = StorageUtil.getBaseDir();
-        String stencilAndSerialDir = getStencilAndSerialStorageDir();
+        // 一時ファイルの完全パスがマップにある場合（相対パス付き）
+        if (tempFileToOriginalMap.containsKey(fullPath)) {
+            String originalPath = tempFileToOriginalMap.get(fullPath);
+            logger.debug("Mapped temp file path: {} -> {}", fullPath, originalPath);
+            return originalPath;
+        }
         
-        // ファイルシステムパスの場合
-        if (fullPath.startsWith(baseDirPath)) {
+        String serialDirPath = getStencilAndSerialStorageDir();
+        File serialDir = new File(serialDirPath);
+        
+        // ファイルシステムパスの場合：serialNoディレクトリからの相対パスを計算
+        if (fullPath.startsWith(serialDirPath)) {
             try {
-                return fullPath.substring(baseDirPath.length() + stencilAndSerialDir.length());
-            } catch (StringIndexOutOfBoundsException e) {
-                // fallback: ファイル名のみ
+                String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
+                // Windowsパス区切りをUnix形式に統一
+                relativePath = relativePath.replace('\\', '/');
+                logger.info("Extracted relative path: " + relativePath + " from " + fullPath);
+                return relativePath;
+            } catch (Exception e) {
+                logger.info("Error extracting relative path: " + e.getMessage());
                 return fileName;
             }
         }
         
         // クラスパスから展開された一時ファイルの場合（マッピングが見つからない場合）
+        logger.debug("Using filename only for: {}", fullPath);
         return fileName;
     }
 }

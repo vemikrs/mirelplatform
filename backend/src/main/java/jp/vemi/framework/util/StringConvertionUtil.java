@@ -10,6 +10,9 @@ public class StringConvertionUtil {
      * @return
      */
     public static String toUpperCamelCase(String str) {
+        if (str == null) {
+            return null;
+        }
         return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, str);
     }
 
@@ -19,6 +22,9 @@ public class StringConvertionUtil {
      * @return
      */
     public static String toLowerCamelCase(String str) {
+        if (str == null) {
+            return null;
+        }
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, str);
     }
 }

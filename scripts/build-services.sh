@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Mirel Platform ビルドスクリプト
-# Backend (Spring Boot) と Frontend (Nuxt.js) をビルド
+# mirelplatform ビルドスクリプト
+# Backend (Spring Boot) と Frontend v3 (Vite) をビルド
 
 set -e
 
@@ -9,7 +9,7 @@ set -e
 PROJECT_ROOT="$(dirname "$0")"/.. 
 cd "$PROJECT_ROOT"
 
-echo "🔨 Mirel Platform ビルド開始..."
+echo "🔨 mirelplatform ビルド開始..."
 echo "======================================"
 
 # ログディレクトリの作成
@@ -37,52 +37,67 @@ fi
 
 # Frontend ビルド
 echo ""
-echo "🎨 Frontend (Nuxt.js) ビルド中..."
-echo "   作業ディレクトリ: frontend/"
+echo "🎨 Frontend v3 (Vite) ビルド中..."
+echo "   作業ディレクトリ: apps/frontend-v3/"
 echo "   ログ: logs/build-frontend.log"
 
-cd frontend
+cd apps/frontend-v3
 
-# npm依存関係の確認・インストール
+# 依存関係の確認・インストール（pnpm 優先、無ければ npm）
 if [ ! -d "node_modules" ]; then
-    echo "   📦 npm依存関係をインストール中..."
-    if npm install --legacy-peer-deps > ../logs/build-frontend-install.log 2>&1; then
-        echo "   ✅ npm install 成功"
+    echo "   📦 依存関係をインストール中..."
+    if command -v pnpm >/dev/null 2>&1; then
+        if pnpm install > ../../logs/build-frontend-install.log 2>&1; then
+            echo "   ✅ pnpm install 成功"
+        else
+            echo "   ❌ pnpm install 失敗"
+            echo "   エラーログ: logs/build-frontend-install.log"
+            cd ../..
+            exit 1
+        fi
     else
-        echo "   ❌ npm install 失敗"
-        echo "   エラーログ: logs/build-frontend-install.log"
-        cd ..
-        exit 1
+        if npm ci --no-audit > ../../logs/build-frontend-install.log 2>&1; then
+            echo "   ✅ npm ci 成功"
+        else
+            echo "   ❌ npm ci 失敗"
+            echo "   エラーログ: logs/build-frontend-install.log"
+            cd ../..
+            exit 1
+        fi
     fi
 fi
 
-echo "   タスク: npm run build"
-if npm run build > ../logs/build-frontend.log 2>&1; then
+echo "   タスク: build"
+if command -v pnpm >/dev/null 2>&1; then
+    BUILD_CMD="pnpm build"
+else
+    BUILD_CMD="npm run build"
+fi
+
+if bash -lc "$BUILD_CMD" > ../../logs/build-frontend.log 2>&1; then
     echo "✅ Frontend ビルド成功"
     
     # ビルド結果の情報を表示
     if [ -d "dist" ]; then
-        echo "   生成されたディストリビューション: frontend/dist"
+        echo "   生成されたディストリビューション: apps/frontend-v3/dist"
         echo "   サイズ: $(du -sh dist 2>/dev/null | cut -f1 || echo 'N/A')"
         echo "   ファイル数: $(find dist -type f 2>/dev/null | wc -l || echo '0')"
-    elif [ -d ".nuxt" ]; then
-        echo "   Nuxtビルド成果物: frontend/.nuxt"
     fi
 else
     echo "❌ Frontend ビルド失敗"
     echo "   エラーログ: logs/build-frontend.log"
-    cd ..
+    cd ../..
     exit 1
 fi
 
-cd ..
+cd ../..
 
 echo ""
 echo "✅ 全ビルド完了!"
 echo "======================================"
 echo "📊 ビルド結果:"
 echo "   Backend JAR: $(find backend/build/libs -name "*.jar" -not -name "*-plain.jar" | head -1)"
-echo "   Frontend Dist: frontend/dist"
+echo "   Frontend Dist: apps/frontend-v3/dist"
 echo ""
 echo "📋 ビルドログ:"
 echo "   Backend:  logs/build-backend.log"
@@ -90,4 +105,4 @@ echo "   Frontend: logs/build-frontend.log"
 echo ""
 echo "🚀 本番実行方法:"
 echo "   Backend:  java -jar $(find backend/build/libs -name "*.jar" -not -name "*-plain.jar" | head -1)"
-echo "   Frontend: npm run start (frontend/dist から配信)"
+echo "   Frontend: 任意の静的サーバで apps/frontend-v3/dist を配信 (例: npx serve apps/frontend-v3/dist)"

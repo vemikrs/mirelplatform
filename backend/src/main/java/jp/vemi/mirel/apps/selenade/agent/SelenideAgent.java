@@ -27,7 +27,8 @@ public class SelenideAgent {
 
         suite.sort();
 
-        SelenideDriver driver = new SelenideDriver(suite.config);
+        SelenideConfig config = suite.config != null ? suite.config : new SelenideConfig();
+        SelenideDriver driver = new SelenideDriver(config);
 
         for (Map.Entry<String, SelenideSuite.Scenario> scenarioEntry : suite.getScenarios().entrySet()) {
             SelenideSuite.Scenario scenario = scenarioEntry.getValue(); 

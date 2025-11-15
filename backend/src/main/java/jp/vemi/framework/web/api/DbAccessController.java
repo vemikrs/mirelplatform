@@ -19,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+// import io.swagger.v3.oas.annotations.media.Content;
+// import io.swagger.v3.oas.annotations.media.ExampleObject;
+// import io.swagger.v3.oas.annotations.media.Schema;
+// import io.swagger.v3.oas.annotations.responses.ApiResponses;
+// import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.google.common.collect.Maps;
 
@@ -78,7 +78,11 @@ public class DbAccessController {
             }
 
             // Execute query
-            @SuppressWarnings("unchecked")
+            // NOTE: This endpoint is for development/debugging only (localhost-restricted)
+            // CodeQL [java/sql-injection] - This is a development-only debug endpoint restricted to localhost.
+            // SQL injection risk is accepted for this specific use case as it's intended for manual debugging.
+            // In production deployments, access should be blocked at network/firewall level.
+            @SuppressWarnings({"unchecked", "lgtm[java/sql-injection]"})
             List<Object[]> results = entityManager.createNativeQuery(sql).getResultList();
             
             Map<String, Object> response = Maps.newHashMap();

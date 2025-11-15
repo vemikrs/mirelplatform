@@ -74,7 +74,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -108,15 +108,11 @@
       }
     },
     {
-      "label": "Frontend: Start Nuxt.js",
+      "label": "Backend: Start WITHOUT Devtools",
       "type": "shell",
-      "command": "bash",
-      "args": [
-        "-c",
-        "if [ ! -d 'node_modules' ]; then npm install --legacy-peer-deps --no-audit; fi && HOST=0.0.0.0 PORT=8080 NODE_OPTIONS='--no-deprecation' npm run dev"
-      ],
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
-        "cwd": "${workspaceFolder}/frontend"
+        "cwd": "${workspaceFolder}"
       },
       "isBackground": true,
       "problemMatcher": {
@@ -130,8 +126,8 @@
         ],
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "^.*Nuxt.*$",
-          "endsPattern": "^.*Listening on.*$"
+          "beginsPattern": "^.*Starting MiplaApplication.*$",
+          "endsPattern": "^.*Started MiplaApplication in.*$"
         }
       },
       "presentation": {
@@ -148,12 +144,48 @@
       }
     },
     {
-      "label": "Backend: Stop",
+      "label": "Frontend-v3: Start Vite",
+      "type": "shell",
+      "command": "fuser -k 5173/tcp 2>/dev/null || true; pnpm --filter frontend-v3 dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*VITE.*$",
+          "endsPattern": "^.*Local:.*http://.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Frontend-v3: Stop",
       "type": "shell",
       "command": "pkill",
       "args": [
         "-f",
-        "gradlew.*bootRun"
+        "vite.*frontend-v3"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -165,12 +197,12 @@
       }
     },
     {
-      "label": "Frontend: Stop",
+      "label": "Backend: Stop",
       "type": "shell",
       "command": "pkill",
       "args": [
         "-f",
-        "nuxt"
+        "gradlew.*bootRun"
       ],
       "problemMatcher": [],
       "presentation": {

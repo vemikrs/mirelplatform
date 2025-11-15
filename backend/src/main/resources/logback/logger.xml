@@ -6,6 +6,7 @@
 
     <!-- アプリケーションのログレベル設定 -->
     <logger name="jp.vemi.mirel" level="INFO" />
+    <logger name="jp.vemi.ste" level="DEBUG" />
     
     <!-- リクエストログ設定 -->
     <logger name="request" level="DEBUG" additivity="false">
