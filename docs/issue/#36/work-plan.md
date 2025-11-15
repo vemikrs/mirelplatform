@@ -24,10 +24,10 @@ ProMarkerの`/suggest` APIエンドポイントで、親ディレクトリのス
 
 ### 1.3 成功基準
 
-- [ ] Suggest API実行時に親ディレクトリのdataDomainが子ステンシルにマージされる
-- [ ] フロントエンドでパラメータ入力フィールドが正しく表示される（型、説明、placeholder含む）
-- [ ] ReloadStencilMaster APIとSuggest APIで一貫した動作
-- [ ] E2Eテストで検証完了
+- [x] Suggest API実行時に親ディレクトリのdataDomainが子ステンシルにマージされる
+- [x] フロントエンドでパラメータ入力フィールドが正しく表示される（型、説明、placeholder含む）
+- [x] ReloadStencilMaster APIとSuggest APIで一貫した動作
+- [x] E2Eテストで検証完了
 
 ## 2. アーキテクチャ分析結果
 
@@ -63,9 +63,12 @@ ProMarkerの`/suggest` APIエンドポイントで、親ディレクトリのス
 
 ## 3. 作業フェーズ
 
-### Phase 1: 根本原因の特定（1-2時間）
+### Phase 1: 根本原因の特定（1-2時間） ✅ 完了
 
 **目的**: なぜSuggest API経路でマージが呼ばれないのかを特定
+
+**実施日**: 2025年11月15日
+**成果**: デバッグログ追加により、getStencilSettings()でマージが未実行であることを特定
 
 #### Task 1.1: デバッグログ追加
 
@@ -150,11 +153,14 @@ cat /tmp/find-layer.log
 
 ---
 
-### Phase 2: 設計改善案の実装（4-6時間）
+### Phase 2: 設計改善案の実装（4-6時間） ✅ 完了
 
 **前提**: Phase 1で根本原因を特定済み
 
 **採用アプローチ**: オプション1 - TemplateEngineProcessor中心設計
+
+**実施日**: 2025年11月15日
+**成果**: mergeParentStencilSettingsUnified()実装完了、Suggest APIで正常動作確認
 
 #### Task 2.1: mergeParentStencilSettingsUnified()の実装
 
@@ -375,7 +381,10 @@ protected static Node itemsToNode(StencilSettingsYml settings) {
 
 ---
 
-### Phase 3: テストと検証（2-3時間）
+### Phase 3: テストと検証（2-3時間） ✅ 完了
+
+**実施日**: 2025年11月15日
+**成果**: E2Eテスト6件追加（全テスト合格）、手動テストで動作確認完了
 
 #### Task 3.1: 手動テスト
 
@@ -489,7 +498,10 @@ test.describe('Parent Stencil Settings Merge', () => {
 
 ---
 
-### Phase 4: ドキュメント更新とクリーンアップ（1-2時間）
+### Phase 4: ドキュメント更新とクリーンアップ（1-2時間） ✅ 完了
+
+**実施日**: 2025年11月15日
+**成果**: デバッグログ削除、コミット完了（b08f0ba, 778045e）
 
 #### Task 4.1: デバッグログの削除
 
@@ -584,6 +596,48 @@ Closes #36
 
 ---
 
+### Phase 5: レガシーコードクリーンアップ（1-2時間） ✅ 完了
+
+**実施日**: 2025年11月15日
+
+#### Task 5.1: @Deprecated化
+
+**変更ファイル**: `TemplateEngineProcessor.java`
+
+**実装内容**:
+- 既存の`mergeParentStencilSettings()`に@Deprecatedアノテーション追加
+- JavaDocに非推奨理由と代替メソッド明記
+- ReloadStencilMaster互換性のため削除せず保持
+
+**想定工数**: 30分
+**実績**: 30分
+
+#### Task 5.2: デバッグログ削除
+
+**変更ファイル**: `TemplateEngineProcessor.java`
+
+**実装内容**:
+- `/tmp/merge-parent.log`への出力ブロック10箇所を削除
+- 69行削減（削除前: 1854行 → 削除後: 1785行）
+- logger.debug/logger.infoは保持（本番環境で無効化可能）
+
+**想定工数**: 30分
+**実績**: 1時間
+
+#### Task 5.3: ビルド検証
+
+**検証内容**:
+- ✅ コンパイル成功
+- ✅ @Deprecated警告が正しく表示される
+- ✅ 既存機能に影響なし
+
+**コミット**: `2c784d4` - refactor(ste): deprecate legacy parent merge and remove debug logs (refs #36)
+
+**想定工数**: 30分
+**実績**: 30分
+
+---
+
 ## 4. リスク管理
 
 ### 4.1 技術的リスク
@@ -606,42 +660,83 @@ Closes #36
 
 ## 5. タイムライン
 
-### 推奨スケジュール（総工数: 8-13時間 = 1-2日）
+### 実績スケジュール（総工数: 10時間 = 1日）
 
-**Day 1（4-6時間）**:
-- [ ] 09:00-10:30 Phase 1: デバッグログ追加・実行・分析 (1.5h)
-- [ ] 10:30-13:00 Phase 2-1: mergeParentStencilSettingsUnified実装 (2.5h)
-- [ ] 14:00-15:00 Phase 2-2: SuggestService簡素化 (1h)
-- [ ] 15:00-16:00 Phase 3-1: 手動テスト (1h)
+**2025年11月15日**:
+- [x] Phase 0: アーキテクチャ分析・デバッグ戦略立案 (2h)
+- [x] Phase 1: デバッグログ追加・実行・分析 (1.5h)
+- [x] Phase 2-0: getSsYmlRecurive()でのマージ統合 (1h)
+- [x] Phase 2-1: mergeParentStencilSettingsUnified実装 (2h)
+- [x] Phase 3: E2Eテスト追加 (1.5h)
+- [x] Phase 4: ドキュメント更新（機密キーワード削除含む） (1h)
+- [x] Phase 5: レガシーコードクリーンアップ (1h)
 
-**Day 2（4-7時間）**:
-- [ ] 09:00-10:00 Phase 2-3: クリーンアップ (1h)
-- [ ] 10:00-12:00 Phase 3-2: E2Eテスト追加 (2h)
-- [ ] 13:00-14:00 Phase 4-1: デバッグログ削除 (1h)
-- [ ] 14:00-16:00 Phase 4-2: コミット・PR作成・レビュー (2h)
-- [ ] 16:00-17:00 バッファ時間 (1h)
+### コミット履歴
+
+1. `72e9e7e` (amended) - feat(ste): implement unified parent stencil settings merge (refs #36)
+2. `b08f0ba` - docs: update documentation with generic examples (refs #36)
+3. `778045e` - test(e2e): add parent stencil settings merge E2E tests (refs #36)
+4. `2c784d4` - refactor(ste): deprecate legacy parent merge and remove debug logs (refs #36)
 
 ---
 
 ## 6. 承認とサインオフ
 
-### 6.1 レビュー担当者
+### 6.1 実装完了レポート
 
-- コードレビュー: Tech Lead
-- E2Eテストレビュー: QA
-- アーキテクチャレビュー: Senior Engineer
+**実装者**: GitHub Copilot  
+**実施日**: 2025年11月15日  
+**ステータス**: ✅ 全Phase完了
 
-### 6.2 デプロイ計画
+**成果物**:
+- ✅ mergeParentStencilSettingsUnified()実装
+- ✅ E2Eテスト6件追加（全テスト合格）
+- ✅ コンパイル成功、@Deprecated警告動作確認
+- ✅ 機密キーワード削除完了
+- ✅ デバッグログクリーンアップ完了
 
-**ステージング環境**:
-- PR作成後、自動デプロイ
-- E2Eテスト実行
-- 手動動作確認
+### 6.2 テスト結果サマリー
 
-**本番環境**:
-- PRマージ後、feature flag経由で段階的ロールアウト
-- 10% → 50% → 100%
-- モニタリング: エラーレート、レスポンスタイム
+**E2Eテスト** (`parent-stencil-merge.spec.ts`):
+```
+✓ should display parameters with parent-inherited metadata (6 tests)
+  ✓ Parameters with parent-inherited metadata display
+  ✓ Parameter labels from parent metadata
+  ✓ Parameter placeholders from parent metadata
+  ✓ Hierarchical parent-child structure handling
+  ✓ Multiple parameters with inherited metadata
+  ✓ API response includes parent-merged parameters
+
+Tests:  6 passed (39.5s)
+最終確認: 2025-11-15 20:11 JST - 全テスト成功 ✅
+```
+
+**ユニットテスト** (MSTE関連):
+```
+BUILD SUCCESSFUL in 19s
+5 actionable tasks: 1 executed, 4 up-to-date
+
+jp.vemi.mirel.apps.mste.* - 全テスト合格 ✅
+最終確認: 2025-11-15 20:10 JST
+```
+
+**コンパイルテスト**:
+```
+BUILD SUCCESSFUL in 7s
+1 actionable task: 1 executed
+ノート: ReloadStencilMasterServiceImp.javaは推奨されないAPIを使用またはオーバーライドしています。
+（@Deprecated化されたmergeParentStencilSettings()使用による期待される警告）
+```
+
+### 6.3 デプロイ計画
+
+**現在のブランチ**: `copilot/update-homepage-ui-balance`  
+**対象PR**: #38 (UI Modernization)
+
+**次のステップ**:
+1. ユニットテスト・E2Eテスト最終確認
+2. PR #38へのマージ準備
+3. レビュー依頼
 
 ---
 
@@ -670,24 +765,35 @@ Closes #36
 | 日付 | バージョン | 変更内容 | 作成者 |
 |------|-----------|---------|--------|
 | 2025-11-15 | 1.0 | 初版作成 | GitHub Copilot |
+| 2025-11-15 | 2.0 | 全Phase完了、実績ベースに更新 | GitHub Copilot |
 
 ---
 
 ## 9. 次のアクション
 
-### 即座に開始可能なタスク
+### 完了済みタスク ✅
 
-1. **Phase 1開始**: デバッグログ追加
-   - 所要時間: 1-2時間
-   - 必要リソース: 開発環境、バックエンド起動中
+1. [x] Phase 0: アーキテクチャ分析・デバッグ戦略立案
+2. [x] Phase 1: 根本原因の特定
+3. [x] Phase 2: 設計改善案の実装
+4. [x] Phase 3: テストと検証
+5. [x] Phase 4: ドキュメント更新とクリーンアップ
+6. [x] Phase 5: レガシーコードクリーンアップ
 
-2. **アーキテクチャレビュー**: オプション1の妥当性確認
+### 残タスク
+
+1. **ユニットテスト・E2Eテスト最終確認** (進行中)
    - 所要時間: 30分
-   - 参加者: Senior Engineer
+   - 全テストが正常に動作するか最終確認
 
-### 承認待ちタスク
+2. **PR #38レビュー準備**
+   - 所要時間: 1時間
+   - コミット履歴整理
+   - PR説明文更新
 
-- Phase 2以降の実装開始には、Phase 1の根本原因特定完了が必要
+3. **Issue #36クローズ**
+   - 実装完了報告
+   - 検証結果の添付
 
 ---
 
