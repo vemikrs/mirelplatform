@@ -162,7 +162,8 @@ public class StencilSettingsYml {
       }
     }
 
-    final Map<String, Map<String, Object>> mergedItems = Maps.newLinkedHashMap(list1map);
+    final Map<String, Map<String, Object>> mergedItems = Maps.<String, Map<String, Object>>newLinkedHashMap();
+    mergedItems.putAll(list1map);
 
     for (Map<String, Object> list1item : list1pm) {
 
