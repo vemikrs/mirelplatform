@@ -973,24 +973,19 @@ public class TemplateEngineProcessor {
             logger.debug("stencilCanonicalName: {}", context.getStencilCanonicalName());
             
             
-            // パス構築の改善
-            String stencilPath;
-            if (layerDir.endsWith("/")) {
-                stencilPath = layerDir + context.getStencilCanonicalName().substring(1); // 先頭の"/"を除去
-            } else {
-                stencilPath = layerDir + context.getStencilCanonicalName(); 
-            }
+            // パス構築の改善 - constructSecurePath()でパストラバーサル攻撃を防ぐ
+            String relativePath = context.getStencilCanonicalName().replaceFirst("^/", "");
             
             // serialNoが指定されている場合はそれも含める
             if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
                 SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
-                stencilPath = stencilPath + "/" + context.getSerialNo();
+                relativePath = relativePath + "/" + context.getSerialNo();
             }
             
-            // NOTE: Path is constructed from sanitized identifiers (SanitizeUtil.sanitizeIdentifier)
-            // CodeQL warning suppressed: path injection risk mitigated by input validation
-            @SuppressWarnings("lgtm[java/path-injection]")
-            File settingsFile = new File(stencilPath + "/stencil-settings.yml");
+            relativePath = relativePath + "/stencil-settings.yml";
+            
+            // constructSecurePath()でパス検証を実施
+            File settingsFile = constructSecurePath(layerDir, relativePath);
             logger.debug("Searching settings file: {}", settingsFile.getAbsolutePath());
             
             if (settingsFile.exists() && settingsFile.isFile()) {
