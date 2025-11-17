@@ -141,11 +141,7 @@ public class WebSecurityConfig {
      */
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
-            if (!securityProperties.isEnabled()) {
-                authz.requestMatchers("/commons/**").permitAll()
-                    .requestMatchers("/apps/*/api/**").permitAll();
-            }
-
+            // 共通パブリックエンドポイント
             authz.requestMatchers("/auth/login").permitAll()
                     .requestMatchers("/auth/check").permitAll()
                     .requestMatchers("/auth/**").permitAll()
@@ -153,8 +149,17 @@ public class WebSecurityConfig {
                     .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                     .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
                     .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
-                    .requestMatchers("/swagger-ui.html").permitAll() // Swagger UI HTML
-                    .anyRequest().authenticated();
+                    .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
+
+            // セキュリティ無効時は全てのAPIをパブリックに
+            if (!securityProperties.isEnabled()) {
+                authz.requestMatchers("/commons/**").permitAll()
+                    .requestMatchers("/apps/*/api/**").permitAll()
+                    .anyRequest().permitAll(); // ゲストモード：全てのリクエストを許可
+            } else {
+                // セキュリティ有効時のみ認証を要求
+                authz.anyRequest().authenticated();
+            }
         });
     }
 

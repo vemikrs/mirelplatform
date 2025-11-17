@@ -40,9 +40,10 @@ mirel:
       samples: classpath:/promarker/stencil/samples
     auto-deploy-samples: true
 
-# Development-only: Disable CSRF protection for easier API testing
+# Development-only: Disable security for guest mode testing
 # CSRF is enabled by default in production (Mipla2SecurityProperties.csrfEnabled=true)
 mipla2:
   security:
+    enabled: false  # ゲストモード：認証不要
     api:
       csrf-enabled: false
