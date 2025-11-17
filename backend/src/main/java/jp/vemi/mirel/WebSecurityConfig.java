@@ -20,6 +20,10 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 import jp.vemi.framework.util.DatabaseUtil;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
@@ -60,11 +64,41 @@ public class WebSecurityConfig {
             AuthenticationService authenticationService) throws Exception {
         DatabaseUtil.initializeDefaultTenant();
 
+        configureCors(http);
         configureCsrf(http);
         configureAuthorization(http);
         configureAuthentication(http, authenticationService);
 
         return http.build();
+    }
+
+    /**
+     * CORS設定を行います。
+     * 開発環境でフロントエンドからのAPIアクセスを許可します。
+     *
+     * @param http セキュリティ設定
+     * @throws Exception 設定中に例外が発生した場合
+     */
+    private void configureCors(HttpSecurity http) throws Exception {
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+    }
+
+    /**
+     * CORS設定ソースを提供します。
+     * 
+     * @return CORS設定ソース
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     /**
