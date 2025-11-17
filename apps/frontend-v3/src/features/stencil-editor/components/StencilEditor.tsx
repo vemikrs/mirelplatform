@@ -3,9 +3,12 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { YamlEditor, YamlEditorHandle } from './YamlEditor';
-import { TemplateEditor, TemplateEditorHandle } from './TemplateEditor';
-import { ErrorPanel, ValidationError } from './ErrorPanel';
+import { YamlEditor } from './YamlEditor';
+import type { YamlEditorHandle } from './YamlEditor';
+import { TemplateEditor } from './TemplateEditor';
+import type { TemplateEditorHandle } from './TemplateEditor';
+import { ErrorPanel } from './ErrorPanel';
+import type { ValidationError } from './ErrorPanel';
 import { VersionHistory } from './VersionHistory';
 import { PreviewPanel } from './PreviewPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger, Button } from '@mirel/ui';
