@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, AlertDescription } from '@mirel/ui';
+import { Card } from '@mirel/ui';
 
 export type ErrorSeverity = 'error' | 'warning' | 'info';
 
@@ -77,15 +77,16 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
               : '';
 
           return (
-            <Alert
+            <Card
               key={index}
-              variant={config.variant}
-              className={`cursor-pointer transition-colors hover:bg-gray-100 ${
-                error.severity === 'error' ? 'border-red-300' : ''
+              className={`cursor-pointer transition-colors hover:bg-gray-100 p-3 ${
+                error.severity === 'error' ? 'border-red-300 bg-red-50' : 
+                error.severity === 'warning' ? 'border-yellow-300 bg-yellow-50' :
+                'border-blue-300 bg-blue-50'
               }`}
               onClick={() => onErrorClick?.(error)}
             >
-              <AlertDescription className="flex items-start gap-2">
+              <div className="flex items-start gap-2">
                 <span className="text-lg">{config.icon}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -106,8 +107,8 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
                     </code>
                   )}
                 </div>
-              </AlertDescription>
-            </Alert>
+              </div>
+            </Card>
           );
         })}
       </div>
