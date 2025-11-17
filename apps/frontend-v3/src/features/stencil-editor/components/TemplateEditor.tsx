@@ -3,7 +3,8 @@
  */
 import React, { useRef, useImperativeHandle } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { linter, Diagnostic } from '@codemirror/lint';
+import { linter } from '@codemirror/lint';
+import type { Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
 import { ftlValidator } from '../utils/ftl-validator';
 import type { ValidationError } from './ErrorPanel';

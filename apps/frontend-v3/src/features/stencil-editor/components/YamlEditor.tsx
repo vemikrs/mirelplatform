@@ -4,7 +4,8 @@
 import React, { useRef, useImperativeHandle } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
-import { linter, Diagnostic } from '@codemirror/lint';
+import { linter } from '@codemirror/lint';
+import type { Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
 import { StencilConfigSchema } from '../schemas';
 import * as jsYaml from 'js-yaml';
