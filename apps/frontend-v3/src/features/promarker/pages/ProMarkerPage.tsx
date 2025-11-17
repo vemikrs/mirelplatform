@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast, Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator, type StepState } from '@mirel/ui';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
@@ -23,6 +24,7 @@ import { toastMessages } from '../constants/toastMessages';
  * Phase 1 - Step 6: React Hook Form + Zod validation integration
  */
 export function ProMarkerPage() {
+  const navigate = useNavigate();
   const suggestMutation = useSuggest();
   const generateMutation = useGenerate();
   const reloadMutation = useReloadStencilMaster();
@@ -258,6 +260,10 @@ export function ProMarkerPage() {
     await fetchSuggestData('*', '*', '*');
   };
 
+  const handleManageStencils = () => {
+    navigate('/promarker/stencils');
+  };
+
   // File upload handler (準備済み - 将来のファイルアップロード機能用)
   // const handleFileUploaded = (parameterId: string, fileId: string, fileName: string) => {
   //   parameterForm.setValue(parameterId, fileId);
@@ -396,6 +402,7 @@ export function ProMarkerPage() {
         onClearStencil={handleClearStencil}
         onReloadStencilMaster={handleReloadStencilMaster}
         onJsonEdit={() => setJsonEditorOpen(true)}
+        onManageStencils={handleManageStencils}
         generateDisabled={isGenerateDisabled}
         generateLoading={generateMutation.isPending}
         reloadLoading={reloadMutation.isPending}
