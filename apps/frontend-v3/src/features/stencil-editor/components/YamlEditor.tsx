@@ -7,7 +7,6 @@ import { yaml } from '@codemirror/lang-yaml';
 import { linter, Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
 import { StencilConfigSchema } from '../schemas';
-import { z } from 'zod';
 import * as jsYaml from 'js-yaml';
 import type { ValidationError } from './ErrorPanel';
 
@@ -33,7 +32,7 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
 
     try {
       // YAML構文チェック
-      const parsed = jsYaml.load(text) as any;
+      const parsed = jsYaml.load(text) as unknown;
 
       // Zodスキーマバリデーション
       if (parsed && parsed.stencil && parsed.stencil.config) {
