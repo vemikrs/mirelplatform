@@ -2,7 +2,7 @@
  * メインのステンシルエディタコンポーネント
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { YamlEditor, YamlEditorHandle } from './YamlEditor';
 import { TemplateEditor, TemplateEditorHandle } from './TemplateEditor';
 import { ErrorPanel, ValidationError } from './ErrorPanel';
@@ -16,8 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@mirel/ui';
 export const StencilEditor: React.FC = () => {
   const { stencilId, serial } = useParams<{ stencilId: string; serial: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
-  const [mode, setMode] = useState<EditorMode>('view');
+  // クエリパラメータからmodeを取得（デフォルトはview）
+  const initialMode = (searchParams.get('mode') as EditorMode) || 'view';
+  const [mode, setMode] = useState<EditorMode>(initialMode);
   const [data, setData] = useState<LoadStencilResponse | null>(null);
   const [yamlContent, setYamlContent] = useState('');
   const [templateContents, setTemplateContents] = useState<Record<string, string>>({});

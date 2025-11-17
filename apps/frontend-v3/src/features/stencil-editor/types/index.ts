@@ -79,3 +79,27 @@ export interface VersionInfo {
   isActive: boolean;
   changes?: string;
 }
+
+// ステンシル一覧用の型
+export interface StencilListItem {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  latestSerial: string;
+  lastUpdate: string;
+  lastUpdateUser: string;
+  description: string;
+  versionCount: number;
+}
+
+export interface StencilCategory {
+  id: string;
+  name: string;
+  stencilCount: number;
+}
+
+export interface ListStencilsResponse {
+  categories: StencilCategory[];
+  stencils: StencilListItem[];
+}

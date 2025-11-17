@@ -7,6 +7,7 @@ import type {
   SaveStencilRequest,
   SaveStencilResponse,
   VersionInfo,
+  ListStencilsResponse,
 } from '../types';
 
 const API_BASE = '/mapi/apps/mste/editor';
@@ -67,6 +68,22 @@ export const getVersionHistory = async (
   stencilId: string
 ): Promise<VersionInfo[]> => {
   const response = await axios.get(`${API_BASE}/${stencilId}/versions`);
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors.join(', '));
+  }
+
+  return response.data.data;
+};
+
+/**
+ * ステンシル一覧を取得
+ */
+export const listStencils = async (
+  categoryId?: string
+): Promise<ListStencilsResponse> => {
+  const params = categoryId ? { categoryId } : {};
+  const response = await axios.get(`${API_BASE}/list`, { params });
 
   if (response.data.errors && response.data.errors.length > 0) {
     throw new Error(response.data.errors.join(', '));

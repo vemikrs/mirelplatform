@@ -5,6 +5,7 @@ import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
 import { SiteMapPage } from '@/features/sitemap/pages/SiteMapPage';
 import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarkerPage';
 import { StencilEditor } from '@/features/stencil-editor/components/StencilEditor';
+import { StencilListPage } from '@/features/stencil-editor/pages/StencilListPage';
 import { loadNavigationConfig } from './navigation.schema';
 
 /**
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: 'promarker',
         element: <ProMarkerPageWithErrorBoundary />,
+      },
+      {
+        path: 'promarker/stencils',
+        element: <StencilListPage />,
       },
       {
         path: 'promarker/editor/:stencilId/:serial',
