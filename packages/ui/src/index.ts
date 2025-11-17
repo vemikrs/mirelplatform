@@ -57,6 +57,8 @@ export {
 } from './components/Toast'
 export { Toaster } from './components/Toaster'
 export { useToast, toast } from './components/use-toast'
+export { Alert, AlertTitle, AlertDescription, type AlertProps } from './components/Alert'
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
 
 // Utils
 export { cn } from './lib/utils'

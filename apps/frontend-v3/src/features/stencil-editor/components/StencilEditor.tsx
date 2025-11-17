@@ -8,10 +8,9 @@ import { TemplateEditor, TemplateEditorHandle } from './TemplateEditor';
 import { ErrorPanel, ValidationError } from './ErrorPanel';
 import { VersionHistory } from './VersionHistory';
 import { PreviewPanel } from './PreviewPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './SimpleTabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger, Button } from '@mirel/ui';
 import { loadStencil, saveStencil } from '../api/stencil-editor-api';
 import type { LoadStencilResponse, EditorMode } from '../types';
-import { Button } from '@mirel/ui';
 
 export const StencilEditor: React.FC = () => {
   const { stencilId, serial } = useParams<{ stencilId: string; serial: string }>();
