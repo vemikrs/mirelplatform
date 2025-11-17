@@ -43,6 +43,67 @@ public class StencilEditorController {
     @Autowired
     private StencilEditorService stencilEditorService;
 
+    @GetMapping("/list")
+    @Operation(
+        summary = "ステンシル一覧取得",
+        description = "全カテゴリのステンシル一覧を取得します。categoryIdパラメータでフィルタリング可能"
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiResponse.class)
+            )
+        )
+    })
+    public ResponseEntity<ApiResponse<Map<String, Object>>> listStencils(
+        @org.springframework.web.bind.annotation.RequestParam(required = false) String categoryId
+    ) {
+        // TODO: 本格実装 - 現在はモックデータを返す
+        ApiResponse<Map<String, Object>> response = ApiResponse.<Map<String, Object>>builder()
+            .data(createMockListData())
+            .build();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    /**
+     * モックデータ生成（暫定）
+     */
+    private Map<String, Object> createMockListData() {
+        return Map.of(
+            "categories", List.of(
+                Map.of("id", "/samples", "name", "Sample Stencils", "stencilCount", 2),
+                Map.of("id", "/springboot", "name", "Spring Boot", "stencilCount", 1)
+            ),
+            "stencils", List.of(
+                Map.of(
+                    "id", "/samples/hello-world",
+                    "name", "Hello World Generator",
+                    "categoryId", "/samples",
+                    "categoryName", "Sample Stencils",
+                    "latestSerial", "250913A",
+                    "lastUpdate", "2025/09/13",
+                    "lastUpdateUser", "mirelplatform",
+                    "description", "シンプルなHello Worldジェネレーターです。",
+                    "versionCount", 1
+                ),
+                Map.of(
+                    "id", "/samples/springboot/spring-boot-service",
+                    "name", "Spring Boot Service Generator",
+                    "categoryId", "/samples/springboot",
+                    "categoryName", "Spring Boot Samples",
+                    "latestSerial", "250914A",
+                    "lastUpdate", "2025/09/14",
+                    "lastUpdateUser", "mirelplatform",
+                    "description", "Spring BootサービスクラスのテンプレートGenerator",
+                    "versionCount", 1
+                )
+            )
+        );
+    }
+
     @GetMapping("/{stencilId}/{serial}")
     @Operation(
         summary = "ステンシル読込",
