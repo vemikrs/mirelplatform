@@ -194,30 +194,47 @@ export class FtlValidator {
     fileName: string
   ): ValidationError[] {
     const errors: ValidationError[] = [];
+    const fullContent = lines.join('\n');
 
-    lines.forEach((line, lineIndex) => {
-      const lineNumber = lineIndex + 1;
+    // コメント部分を除外
+    const withoutComments = fullContent.replace(/<#--[\s\S]*?-->/g, '');
 
-      // 閉じられていない ${
-      const openBraces = (line.match(/\$\{/g) || []).length;
-      const closeBraces = (line.match(/\}/g) || []).length;
+    // 文字列リテラル内を除外（簡易版）
+    const withoutStrings = withoutComments.replace(/'[^']*'/g, '').replace(/"[^"]*"/g, '');
 
-      if (openBraces > closeBraces) {
-        errors.push({
-          severity: 'error',
-          message: '閉じられていない補間: ${',
-          line: lineNumber,
-          file: fileName,
-        });
-      } else if (closeBraces > openBraces) {
-        errors.push({
-          severity: 'warning',
-          message: '対応しない閉じ括弧: }',
-          line: lineNumber,
-          file: fileName,
-        });
+    // ${ と } のバランスをチェック
+    let balance = 0;
+    let interpolationStart = -1;
+    
+    for (let i = 0; i < withoutStrings.length; i++) {
+      if (i < withoutStrings.length - 1 && withoutStrings[i] === '$' && withoutStrings[i + 1] === '{') {
+        if (balance === 0) {
+          interpolationStart = i;
+        }
+        balance++;
+        i++; // Skip '{'
+      } else if (withoutStrings[i] === '}' && balance > 0) {
+        balance--;
       }
-    });
+    }
+
+    // 閉じられていない ${ がある場合のみエラー
+    if (balance > 0) {
+      // エラーが発生している行を特定
+      let charCount = 0;
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        charCount += lines[lineIndex].length + 1; // +1 for newline
+        if (charCount > interpolationStart) {
+          errors.push({
+            severity: 'error',
+            message: '閉じられていない補間: ${',
+            line: lineIndex + 1,
+            file: fileName,
+          });
+          break;
+        }
+      }
+    }
 
     return errors;
   }
