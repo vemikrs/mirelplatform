@@ -1,5 +1,6 @@
 /**
  * バージョン履歴ダイアログ
+ * シリアル改版管理と自動バックアップの両方を扱う
  */
 import React, { useState } from 'react';
 import {
@@ -14,18 +15,21 @@ import {
 import type { StencilVersion } from '../types';
 
 interface HistoryDialogProps {
-  stencilId: string;  // 将来の拡張用
+  stencilId: string;
   currentSerial: string;
   versions: StencilVersion[];
   onRestore: (serial: string) => void;
+  onDelete?: (serial: string) => void;
+  onShowDiff?: (oldSerial: string, newSerial: string) => void;
   onClose: () => void;
 }
 
 export const HistoryDialog: React.FC<HistoryDialogProps> = ({
-  stencilId: _stencilId,  // eslint-disable-line @typescript-eslint/no-unused-vars
   currentSerial,
   versions,
   onRestore,
+  onDelete,
+  onShowDiff,
   onClose,
 }) => {
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
@@ -34,20 +38,26 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
   const handleRestore = async () => {
     if (!selectedVersion) return;
 
+    const version = versions.find(v => v.serial === selectedVersion);
+    if (!version) return;
+
+    const confirmMsg = `バージョン ${selectedVersion} (${version.updateDate}) に復元しますか？\n現在の変更は失われます。`;
+    if (!confirm(confirmMsg)) return;
+
     try {
       setLoading(true);
       await onRestore(selectedVersion);
       onClose();
       
       toast({
-        title: 'バージョン復元',
+        title: '復元完了',
         description: `バージョン ${selectedVersion} を復元しました`,
-        variant: 'success',
+        variant: 'default',
       });
     } catch (error) {
       console.error('復元エラー:', error);
       toast({
-        title: '復元エラー',
+        title: 'エラー',
         description: 'バージョンの復元に失敗しました',
         variant: 'destructive',
       });
@@ -56,90 +66,189 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
     }
   };
 
+  const handleDelete = async (serial: string) => {
+    if (serial === currentSerial) {
+      toast({
+        title: '削除不可',
+        description: '現在使用中のバージョンは削除できません',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    const version = versions.find(v => v.serial === serial);
+    if (!version) return;
+
+    const confirmMsg = `バージョン ${serial} (${version.updateDate}) を削除しますか？\nこの操作は取り消せません。`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      setLoading(true);
+      await onDelete?.(serial);
+      
+      toast({
+        title: '削除完了',
+        description: `バージョン ${serial} を削除しました`,
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('削除エラー:', error);
+      toast({
+        title: 'エラー',
+        description: 'バージョンの削除に失敗しました',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShowDiff = () => {
+    if (!selectedVersion || selectedVersion === currentSerial) {
+      toast({
+        title: '差分表示不可',
+        description: '異なるバージョンを選択してください',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    onShowDiff?.(currentSerial, selectedVersion);
+    setShowDiff(true);
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="max-w-4xl max-h-[85vh] bg-white">
         <DialogHeader>
           <DialogTitle>バージョン履歴</DialogTitle>
+          <div className="text-sm text-gray-500 mt-1">
+            現在: {currentSerial}
+          </div>
         </DialogHeader>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto p-4">
-          {versions.map((version) => {
-            const isCurrent = version.serial === currentSerial;
-            const isSelected = version.serial === selectedVersion;
+        <div className="grid grid-cols-1 gap-4">
+          {/* バージョンリスト */}
+          <div className="space-y-2 max-h-[500px] overflow-y-auto border rounded-lg p-4 bg-gray-50">
+            {versions.map((version) => {
+              const isCurrent = version.serial === currentSerial;
+              const isSelected = version.serial === selectedVersion;
 
-            return (
-              <div
-                key={version.serial}
-                className={`
-                  p-4 border rounded-lg cursor-pointer transition-all
-                  ${isCurrent 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : isSelected
-                    ? 'border-gray-400 bg-gray-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }
-                `}
-                onClick={() => setSelectedVersion(version.serial)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-lg">
-                        {version.serial}
-                      </span>
-                      {isCurrent && (
-                        <span className="px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full">
-                          現在
+              return (
+                <div
+                  key={version.serial}
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition-all
+                    ${isCurrent 
+                      ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                      : isSelected
+                      ? 'border-green-400 bg-green-50 shadow-sm'
+                      : 'border-gray-200 bg-white hover:border-gray-400 hover:shadow'
+                    }
+                  `}
+                  onClick={() => setSelectedVersion(version.serial)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {/* シリアル番号 */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg font-bold text-gray-800">
+                          {version.serial}
                         </span>
+                        {isCurrent && (
+                          <span className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded font-semibold">
+                            ● 現在使用中
+                          </span>
+                        )}
+                        {isSelected && !isCurrent && (
+                          <span className="px-2 py-0.5 text-xs bg-green-600 text-white rounded font-semibold">
+                            ✓ 選択中
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* 更新日時・更新者 */}
+                      <div className="space-y-1 text-sm text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-500">更新日時:</span>
+                          <span>{version.updateDate || '不明'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-500">更新者:</span>
+                          <span>{version.updateUser || '不明'}</span>
+                        </div>
+                      </div>
+
+                      {/* 説明 */}
+                      {version.description && (
+                        <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded border border-gray-200">
+                          {version.description}
+                        </div>
                       )}
                     </div>
-                    
-                    <div className="mt-1 text-sm text-gray-600">
-                      {version.updateDate}
-                    </div>
-                    
-                    <div className="mt-1 text-xs text-gray-500">
-                      更新者: {version.updateUser}
-                    </div>
 
-                    {version.description && (
-                      <div className="mt-2 text-sm text-gray-700">
-                        {version.description}
+                    {/* アクションボタン */}
+                    {!isCurrent && (
+                      <div className="ml-4 flex flex-col gap-2">
+                        <Button
+                          size="sm"
+                          variant={isSelected ? 'default' : 'outline'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRestore();
+                          }}
+                          disabled={loading || !isSelected}
+                          className="min-w-[80px]"
+                        >
+                          復元
+                        </Button>
+                        {onDelete && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(version.serial);
+                            }}
+                            disabled={loading}
+                            className="min-w-[80px]"
+                          >
+                            削除
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {isSelected && !isCurrent && (
-                    <div className="ml-4">
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRestore();
-                        }}
-                        disabled={loading}
-                      >
-                        復元
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {versions.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              バージョン履歴がありません
-            </div>
-          )}
+            {versions.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-4xl mb-2">📋</div>
+                <div>バージョン履歴がありません</div>
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            閉じる
-          </Button>
+          <div className="flex w-full justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleShowDiff}
+                disabled={!selectedVersion || selectedVersion === currentSerial || loading}
+              >
+                📊 差分表示
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={onClose}>
+                閉じる
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
