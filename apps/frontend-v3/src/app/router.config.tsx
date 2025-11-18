@@ -32,7 +32,7 @@ export const router = createBrowserRouter([
         element: <StencilListPage />,
       },
       {
-        path: 'promarker/editor/:stencilId/:serial',
+        path: 'promarker/editor/*',
         element: <StencilEditor />,
       },
       {
