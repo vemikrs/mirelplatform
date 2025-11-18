@@ -51,7 +51,6 @@ export const StencilEditor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -63,8 +62,6 @@ export const StencilEditor: React.FC = () => {
   // タブ管理
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
   const [activeTabPath, setActiveTabPath] = useState<string | null>(null);
-  
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const yamlEditorRef = useRef<YamlEditorHandle>(null);
   const templateEditorRefs = useRef<Record<string, TemplateEditorHandle>>({});
@@ -94,34 +91,7 @@ export const StencilEditor: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  // 自動保存タイマー
-  useEffect(() => {
-    if (!autoSaveEnabled || mode !== 'edit' || !hasUnsavedChanges) {
-      return;
-    }
 
-    // エラーがある場合は自動保存しない
-    const errors = validationErrors.filter(e => e.severity === 'error');
-    if (errors.length > 0) {
-      return;
-    }
-
-    // 30秒後に自動保存
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    autoSaveTimerRef.current = setTimeout(() => {
-      handleSave(true);
-    }, 30000);
-
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yamlContent, templateContents, autoSaveEnabled, mode, hasUnsavedChanges, validationErrors]);
 
     // 内容変更検知
   useEffect(() => {
@@ -209,21 +179,16 @@ export const StencilEditor: React.FC = () => {
     }
   };
 
-  const handleSave = async (isAutoSave = false) => {
+  const handleSave = async () => {
     if (!data || !stencilId || !serial) return;
 
     // バリデーションエラーがある場合は警告
     const errors = validationErrors.filter(e => e.severity === 'error');
     if (errors.length > 0) {
-      if (!isAutoSave) {
-        const confirm = window.confirm(
-          `${errors.length}件のエラーがあります。このまま保存しますか？`
-        );
-        if (!confirm) return;
-      } else {
-        // 自動保存の場合はエラー時スキップ
-        return;
-      }
+      const confirm = window.confirm(
+        `${errors.length}件のエラーがあります。このまま保存しますか？`
+      );
+      if (!confirm) return;
     }
 
     setSaving(true);
@@ -244,7 +209,7 @@ export const StencilEditor: React.FC = () => {
         serial,
         config: data.config,
         files: updatedFiles,
-        message: isAutoSave ? '自動保存' : '編集保存',
+        message: '編集保存',
       });
 
       // 保存成功時の処理
@@ -257,24 +222,20 @@ export const StencilEditor: React.FC = () => {
         files: updatedFiles
       });
 
-      if (!isAutoSave) {
-        toast({
-          title: '保存完了',
-          description: 'ステンシルを保存しました',
-          variant: 'success',
-        });
-        // 一覧へ戻る
-        navigate('/promarker/stencils');
-      }
+      toast({
+        title: '保存完了',
+        description: 'ステンシルを保存しました',
+        variant: 'success',
+      });
+      // 一覧へ戻る
+      navigate('/promarker/stencils');
     } catch (error) {
       console.error('保存エラー:', error);
-      if (!isAutoSave) {
-        toast({
-          title: '保存エラー',
-          description: '保存に失敗しました',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: '保存失敗',
+        description: '保存に失敗しました',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
@@ -584,68 +545,142 @@ export const StencilEditor: React.FC = () => {
   return (
     <div className="stencil-editor p-4">
       <div className="flex justify-between items-center mb-4">
-        <div>
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">{data.config.name}</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowManageDialog(true)}
+            title="ステンシル管理"
+            className="h-8 w-8 p-0"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </Button>
           {mode === 'edit' && (
-            <div className="text-sm text-gray-600 mt-1">
-              {saving && '保存中...'}
-              {!saving && hasUnsavedChanges && '未保存の変更があります'}
-              {!saving && !hasUnsavedChanges && lastSaved && `最終保存: ${lastSaved.toLocaleTimeString()}`}
-              {!saving && !hasUnsavedChanges && !lastSaved && '変更なし'}
+            <div className="flex items-center gap-1 text-sm text-gray-600">
+              {saving && (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>保存中...</span>
+                </>
+              )}
+              {!saving && hasUnsavedChanges && (
+                <>
+                  <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>未保存</span>
+                </>
+              )}
+              {!saving && !hasUnsavedChanges && lastSaved && (
+                <>
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{lastSaved.toLocaleTimeString()}</span>
+                </>
+              )}
             </div>
           )}
         </div>
-        <div className="flex gap-2 items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowShortcuts(!showShortcuts)}
-            title="キーボードショートカット"
-          >
-            ⌨️
-          </Button>
-          {mode === 'edit' && (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={autoSaveEnabled}
-                onChange={(e) => setAutoSaveEnabled(e.target.checked)}
-                className="rounded"
-              />
-              自動保存(30秒)
-            </label>
-          )}
-          <Button
-            variant="outline"
-            onClick={() => setMode(mode === 'view' ? 'edit' : 'view')}
-          >
-            {mode === 'view' ? '編集モード' : '参照モード'}
-          </Button>
-          {mode === 'edit' && (
-            <Button onClick={() => handleSave(false)} disabled={saving}>
-              {saving ? '保存中...' : '保存'}
+        <div className="flex gap-3 items-center">
+          {/* 編集操作グループ */}
+          <div className="flex gap-1 items-center w-[76px]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode(mode === 'view' ? 'edit' : 'view')}
+              title={mode === 'view' ? '編集モード' : '参照モード'}
+              className="h-9 w-9 p-0"
+            >
+              {mode === 'view' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
             </Button>
-          )}
-          <Button variant="outline" onClick={() => setShowPreview(true)}>
-            プレビュー
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowHistoryDialog(true)}
-            title="バージョン履歴"
-          >
-            📋 履歴
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowManageDialog(true)}
-            title="ステンシル管理"
-          >
-            ⚙️ 管理
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/promarker/stencils')}>
-            一覧へ戻る
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSave()}
+              disabled={saving || mode === 'view'}
+              title="保存"
+              className="h-9 w-9 p-0"
+              style={{ visibility: mode === 'view' ? 'hidden' : 'visible' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            </Button>
+          </div>
+
+          {/* セパレータ */}
+          <div className="h-6 w-px bg-gray-300"></div>
+
+          {/* プレビュー・履歴グループ */}
+          <div className="flex gap-1 items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPreview(true)}
+              title="プレビュー"
+              className="h-9 w-9 p-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHistoryDialog(true)}
+              title="バージョン履歴"
+              className="h-9 w-9 p-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </Button>
+          </div>
+
+          {/* セパレータ */}
+          <div className="h-6 w-px bg-gray-300"></div>
+
+          {/* ヘルプ・ナビゲーショングループ */}
+          <div className="flex gap-1 items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              title="キーボードショートカット"
+              className="h-9 w-9 p-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/promarker/stencils')}
+              title="一覧へ戻る"
+              className="h-9 w-9 p-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -707,27 +742,16 @@ export const StencilEditor: React.FC = () => {
           style={{ width: explorerCollapsed ? '0px' : '30%' }}
         >
           {!explorerCollapsed && (
-            <>
-              {/* 折りたたみボタン */}
-              <button
-                onClick={() => setExplorerCollapsed(true)}
-                className="absolute top-2 right-2 z-10 p-1 bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                title="エクスプローラーを閉じる"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <FileExplorer
-                files={data.files}
-                currentFilePath={activeTabPath}
-                onFileSelect={handleFileOpen}
-                onFileRename={handleFileRename}
-                onFileCreate={handleFileCreate}
-                onFileDelete={handleFileDelete}
-                readOnly={mode === 'view'}
-              />
-            </>
+            <FileExplorer
+              files={data.files}
+              currentFilePath={activeTabPath}
+              onFileSelect={handleFileOpen}
+              onFileRename={handleFileRename}
+              onFileCreate={handleFileCreate}
+              onFileDelete={handleFileDelete}
+              readOnly={mode === 'view'}
+              onCollapse={() => setExplorerCollapsed(true)}
+            />
           )}
         </div>
 

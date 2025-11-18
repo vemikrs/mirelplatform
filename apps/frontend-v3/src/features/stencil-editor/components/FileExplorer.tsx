@@ -21,6 +21,7 @@ interface FileExplorerProps {
   onFileCreate?: (parentPath: string, fileName: string) => void;
   onFileDelete?: (path: string) => void;
   readOnly?: boolean;
+  onCollapse?: () => void;
 }
 
 export const FileExplorer: React.FC<FileExplorerProps> = ({
@@ -31,6 +32,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   onFileCreate,
   onFileDelete,
   readOnly = false,
+  onCollapse,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
@@ -297,7 +299,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
           {/* アイコン */}
           <span className="text-gray-600 text-sm">
-            {node.type === 'folder' ? '📁' : '📄'}
+            {node.type === 'folder' ? (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )}
           </span>
 
           {/* ファイル/フォルダ名 */}
@@ -339,10 +349,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     e.stopPropagation();
                     startCreateFile(node.path);
                   }}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
                   title="新規ファイル"
                 >
-                  ➕
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                 </button>
               )}
               <button
@@ -350,10 +362,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   e.stopPropagation();
                   startRename(node);
                 }}
-                className="text-xs text-gray-500 hover:text-gray-700"
+                className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
                 title="名前変更"
               >
-                ✏️
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </button>
               {node.type === 'file' && (
                 <button
@@ -363,10 +377,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                       onFileDelete?.(node.path);
                     }
                   }}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="p-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
                   title="削除"
                 >
-                  🗑️
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -383,7 +399,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
               >
                 <div className="w-4" />
-                <span className="text-gray-600 text-sm">📄</span>
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 <input
                   type="text"
                   value={newFileName}
@@ -427,16 +445,31 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         }
       }}
     >
-      <div className="p-2 border-b bg-white sticky top-0">
+      <div className="p-2 border-b bg-white sticky top-0 z-10">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold">ファイル</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">ファイル</span>
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="エクスプローラーを閉じる"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="flex gap-1">
             <button
               onClick={() => setShowShortcuts(!showShortcuts)}
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
               title="キーボードショートカット"
             >
-              ⌨️
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </button>
             {!readOnly && (
               <button
@@ -464,7 +497,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             style={{ paddingLeft: '8px' }}
           >
             <div className="w-4" />
-            <span className="text-gray-600 text-sm">📄</span>
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             <input
               type="text"
               value={newFileName}

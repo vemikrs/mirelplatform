@@ -19,19 +19,16 @@ interface ErrorPanelProps {
 const severityConfig = {
   error: {
     variant: 'destructive' as const,
-    icon: '❌',
     label: 'エラー',
     color: 'text-red-600',
   },
   warning: {
     variant: 'default' as const,
-    icon: '⚠️',
     label: '警告',
     color: 'text-yellow-600',
   },
   info: {
     variant: 'default' as const,
-    icon: 'ℹ️',
     label: '情報',
     color: 'text-blue-600',
   },
@@ -51,18 +48,29 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
       <div className="mb-3 flex items-center gap-4 text-sm">
         <span className="font-semibold">検証結果</span>
         {errorCount > 0 && (
-          <span className="text-red-600">
-            ❌ エラー: {errorCount}
+          <span className="flex items-center gap-1 text-red-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            エラー: {errorCount}
           </span>
         )}
         {warningCount > 0 && (
-          <span className="text-yellow-600">
-            ⚠️ 警告: {warningCount}
+          <span className="flex items-center gap-1 text-yellow-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            警告: {warningCount}
           </span>
         )}
         {infoCount > 0 && (
-          <span className="text-blue-600">
-            ℹ️ 情報: {infoCount}
+          <span className="flex items-center gap-1 text-blue-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16v-4m0-4h.01" />
+            </svg>
+            情報: {infoCount}
           </span>
         )}
       </div>
@@ -83,7 +91,21 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
               onClick={() => onErrorClick?.(error)}
             >
               <div className="flex items-start gap-2">
-                <span className="text-lg">{config.icon}</span>
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {error.severity === 'error' ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </>
+                  ) : error.severity === 'warning' ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  ) : (
+                    <>
+                      <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16v-4m0-4h.01" />
+                    </>
+                  )}
+                </svg>
                 <AlertDescription>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-semibold ${config.color}`}>
