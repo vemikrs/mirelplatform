@@ -25,6 +25,8 @@ export interface YamlEditorHandle {
 export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
   ({ value, onChange, onValidationChange, readOnly = false }, ref) => {
     const editorRef = useRef<EditorView | null>(null);
+    const previousErrorsRef = useRef<string>('');
+    
   // YAMLバリデーション用のlinter
   const yamlLinter = linter((view) => {
     const diagnostics: Diagnostic[] = [];
@@ -36,35 +38,66 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
       const parsed = jsYaml.load(text) as unknown;
 
       // Zodスキーマバリデーション
-      if (parsed && parsed.stencil && parsed.stencil.config) {
-        const result = StencilConfigSchema.safeParse(parsed.stencil.config);
+      if (parsed && typeof parsed === 'object') {
+        const parsedObj = parsed as any;
         
-        if (!result.success) {
-          // Zodエラーを診断情報に変換
-          result.error.errors.forEach((error) => {
-            const errorPath = error.path.join('.');
-            const message = `${errorPath}: ${error.message}`;
-            
-            // CodeMirror診断情報
-            const lineNumber = findLineForPath(text, errorPath);
-            const from = lineNumber > 0 ? view.state.doc.line(lineNumber).from : 0;
-            const to = lineNumber > 0 ? view.state.doc.line(lineNumber).to : text.length;
-            
-            diagnostics.push({
-              from,
-              to,
-              severity: 'error',
-              message,
-            });
-
-            // ValidationError形式
-            validationErrors.push({
-              severity: 'error',
-              message,
-              line: lineNumber,
-              file: 'stencil-settings.yml',
-            });
+        if (!parsedObj.stencil) {
+          validationErrors.push({
+            severity: 'error',
+            message: 'stencil: 必須フィールドがありません',
+            line: 1,
+            file: 'stencil-settings.yml',
           });
+          diagnostics.push({
+            from: 0,
+            to: 10,
+            severity: 'error',
+            message: 'stencil: 必須フィールドがありません',
+          });
+        } else if (!parsedObj.stencil.config) {
+          validationErrors.push({
+            severity: 'error',
+            message: 'stencil.config: 必須フィールドがありません',
+            line: 2,
+            file: 'stencil-settings.yml',
+          });
+          diagnostics.push({
+            from: 0,
+            to: 20,
+            severity: 'error',
+            message: 'stencil.config: 必須フィールドがありません',
+          });
+        } else {
+          const result = StencilConfigSchema.safeParse(parsedObj.stencil.config);
+          
+          if (!result.success) {
+            // Zodエラーを診断情報に変換
+            result.error.errors.forEach((error) => {
+              const errorPath = error.path.length > 0 ? error.path.join('.') : 'config';
+              const fieldName = error.path[error.path.length - 1] || 'config';
+              const message = `${errorPath}: ${error.message} (期待される型: ${error.code})`;
+              
+              // CodeMirror診断情報
+              const lineNumber = findLineForPath(text, fieldName.toString());
+              const from = lineNumber > 0 ? view.state.doc.line(lineNumber).from : 0;
+              const to = lineNumber > 0 ? view.state.doc.line(lineNumber).to : text.length;
+              
+              diagnostics.push({
+                from,
+                to,
+                severity: 'error',
+                message,
+              });
+
+              // ValidationError形式
+              validationErrors.push({
+                severity: 'error',
+                message,
+                line: lineNumber,
+                file: 'stencil-settings.yml',
+              });
+            });
+          }
         }
       }
     } catch (error) {
@@ -87,8 +120,12 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
       });
     }
 
-    // エラー情報を親コンポーネントに通知
-    onValidationChange?.(validationErrors);
+    // エラー情報を親コンポーネントに通知（変更があった場合のみ）
+    const currentErrorsKey = JSON.stringify(validationErrors.map(e => `${e.message}:${e.line}`));
+    if (currentErrorsKey !== previousErrorsRef.current) {
+      previousErrorsRef.current = currentErrorsKey;
+      onValidationChange?.(validationErrors);
+    }
 
     return diagnostics;
   });

@@ -11,14 +11,33 @@ import { ErrorPanel } from './ErrorPanel';
 import type { ValidationError } from './ErrorPanel';
 import { VersionHistory } from './VersionHistory';
 import { PreviewPanel } from './PreviewPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger, Button } from '@mirel/ui';
+import { FileExplorer } from './FileExplorer';
+import { Tabs, TabsContent, TabsList, TabsTrigger, Button, toast, Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@mirel/ui';
 import { loadStencil, saveStencil } from '../api/stencil-editor-api';
 import type { LoadStencilResponse, EditorMode } from '../types';
 
 export const StencilEditor: React.FC = () => {
-  const { stencilId, serial } = useParams<{ stencilId: string; serial: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = window.location.pathname;
+  
+  // URLから stencilId と serial を抽出（例: /promarker/editor/springboot/service171/221208A）
+  const pathParts = location.split('/').filter(Boolean);
+  const editorIndex = pathParts.indexOf('editor');
+  
+  // editor以降のパスを解析
+  // 最後の要素がシリアル番号（例: 221208A）
+  const serial = pathParts[pathParts.length - 1];
+  // editor の次から最後の1つ前までがstencilId（例: /springboot/service171）
+  const stencilId = '/' + pathParts.slice(editorIndex + 1, -1).join('/');
+  
+  console.log('🔍 StencilEditor URL解析:', {
+    location,
+    pathParts,
+    editorIndex,
+    stencilId,
+    serial,
+  });
   
   // クエリパラメータからmodeを取得（デフォルトはview）
   const initialMode = (searchParams.get('mode') as EditorMode) || 'view';
@@ -34,8 +53,12 @@ export const StencilEditor: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [explorerWidth, setExplorerWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
   
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const explorerRef = useRef<HTMLDivElement>(null);
   
   const yamlEditorRef = useRef<YamlEditorHandle>(null);
   const templateEditorRefs = useRef<Record<string, TemplateEditorHandle>>({});
@@ -76,21 +99,45 @@ export const StencilEditor: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yamlContent, templateContents, autoSaveEnabled, mode, hasUnsavedChanges, validationErrors]);
 
-  // 内容変更検知
+    // 内容変更検知
   useEffect(() => {
     if (mode === 'edit' && data) {
       const originalYaml = data.files.find(f => f.name === 'stencil-settings.yml')?.content || '';
       const hasYamlChange = yamlContent !== originalYaml;
-      
-      const hasTemplateChange = data.files
-        .filter(f => f.type === 'template')
-        .some(f => templateContents[f.path] !== f.content);
-      
+
+      const hasTemplateChange = Object.keys(templateContents).some(path => {
+        const original = data.files.find(f => f.path === path)?.content || '';
+        return templateContents[path] !== original;
+      });
+
       setHasUnsavedChanges(hasYamlChange || hasTemplateChange);
-    } else {
-      setHasUnsavedChanges(false);
     }
   }, [yamlContent, templateContents, mode, data]);
+
+  // エクスプローラーリサイズ処理
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 600) {
+        setExplorerWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   // キーボードショートカット
   useEffect(() => {
@@ -133,25 +180,43 @@ export const StencilEditor: React.FC = () => {
     setLoading(true);
     try {
       const result = await loadStencil(id, ser);
+      
+      // APIレスポンスの検証
+      if (!result) {
+        throw new Error('APIレスポンスが空です');
+      }
+      
+      if (!result.files || !Array.isArray(result.files)) {
+        console.error('無効なAPIレスポンス:', result);
+        throw new Error('ファイル一覧が取得できませんでした');
+      }
+      
       setData(result);
       
       // テンプレートファイルを抽出
       const templates: Record<string, string> = {};
       result.files
-        .filter(f => f.type === 'template')
+        .filter(f => f && f.type === 'template')
         .forEach(f => {
           templates[f.path] = f.content;
         });
       setTemplateContents(templates);
       
       // stencil-settings.ymlを抽出
-      const settingsFile = result.files.find(f => f.name === 'stencil-settings.yml');
+      const settingsFile = result.files.find(f => f && f.name === 'stencil-settings.yml');
       if (settingsFile) {
         setYamlContent(settingsFile.content);
+      } else {
+        throw new Error('stencil-settings.ymlが見つかりませんでした');
       }
     } catch (error) {
       console.error('読込エラー:', error);
-      alert('ステンシルの読み込みに失敗しました');
+      const message = error instanceof Error ? error.message : 'ステンシルの読み込みに失敗しました';
+      toast({
+        title: '読み込みエラー',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -177,8 +242,8 @@ export const StencilEditor: React.FC = () => {
     setSaving(true);
     try {
       // ファイルリストを更新
-      const updatedFiles = data.files.map(f => {
-        if (f.name === 'stencil-settings.yml') {
+      const updatedFiles = (data.files || []).map(f => {
+        if (f && f.name === 'stencil-settings.yml') {
           return { ...f, content: yamlContent };
         }
         if (f.type === 'template' && templateContents[f.path]) {
@@ -206,14 +271,22 @@ export const StencilEditor: React.FC = () => {
       });
 
       if (!isAutoSave) {
-        alert('保存しました');
+        toast({
+          title: '保存完了',
+          description: 'ステンシルを保存しました',
+          variant: 'success',
+        });
         // 一覧へ戻る
         navigate('/promarker/stencils');
       }
     } catch (error) {
       console.error('保存エラー:', error);
       if (!isAutoSave) {
-        alert('保存に失敗しました');
+        toast({
+          title: '保存エラー',
+          description: '保存に失敗しました',
+          variant: 'destructive',
+        });
       }
     } finally {
       setSaving(false);
@@ -229,6 +302,95 @@ export const StencilEditor: React.FC = () => {
       setActiveTab('templates');
       setTimeout(() => templateEditorRefs.current[error.file]?.scrollToLine(error.line!), 100);
     }
+  };
+
+  // ファイル選択ハンドラー
+  const handleFileSelect = (file: typeof data.files[0]) => {
+    setSelectedFilePath(file.path);
+    
+    if (file.name === 'stencil-settings.yml') {
+      setActiveTab('yaml');
+    } else if (file.type === 'template') {
+      setActiveTab('templates');
+    } else {
+      setActiveTab('files');
+    }
+  };
+
+  // ファイル名変更ハンドラー
+  const handleFileRename = (oldPath: string, newPath: string) => {
+    if (!data) return;
+    
+    setData({
+      ...data,
+      files: data.files.map(f => 
+        f.path === oldPath ? { ...f, path: newPath, name: newPath.split('/').pop() || f.name } : f
+      )
+    });
+    
+    setHasUnsavedChanges(true);
+    
+    toast({
+      title: 'ファイル名変更',
+      description: `${oldPath} → ${newPath}`,
+      variant: 'success',
+    });
+  };
+
+  // ファイル作成ハンドラー
+  const handleFileCreate = (parentPath: string, fileName: string) => {
+    if (!data) return;
+    
+    const newPath = parentPath === '/' ? `/${fileName}` : `${parentPath}/${fileName}`;
+    
+    // 既存ファイルチェック
+    if (data.files.some(f => f.path === newPath)) {
+      toast({
+        title: '作成エラー',
+        description: '同名のファイルが既に存在します',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const newFile = {
+      path: newPath,
+      name: fileName,
+      content: '',
+      type: fileName.endsWith('.ftl') ? 'template' as const : 'other' as const,
+      isEditable: true,
+    };
+    
+    setData({
+      ...data,
+      files: [...data.files, newFile]
+    });
+    
+    setHasUnsavedChanges(true);
+    
+    toast({
+      title: 'ファイル作成',
+      description: `${newPath} を作成しました`,
+      variant: 'success',
+    });
+  };
+
+  // ファイル削除ハンドラー
+  const handleFileDelete = (path: string) => {
+    if (!data) return;
+    
+    setData({
+      ...data,
+      files: data.files.filter(f => f.path !== path)
+    });
+    
+    setHasUnsavedChanges(true);
+    
+    toast({
+      title: 'ファイル削除',
+      description: `${path} を削除しました`,
+      variant: 'success',
+    });
   };
 
   // バージョン復元ハンドラー
@@ -263,10 +425,18 @@ export const StencilEditor: React.FC = () => {
       setMode('edit');
       setActiveTab('yaml');
       
-      alert(`バージョン ${serial} を復元しました。編集後に保存してください。`);
+      toast({
+        title: 'バージョン復元',
+        description: `バージョン ${serial} を復元しました。編集後に保存してください。`,
+        variant: 'success',
+      });
     } catch (error) {
-      console.error('復元エラー:', error);
-      alert('バージョンの復元に失敗しました');
+      console.error('バージョン復元エラー:', error);
+      toast({
+        title: '復元エラー',
+        description: 'バージョンの復元に失敗しました',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -340,87 +510,119 @@ export const StencilEditor: React.FC = () => {
       {/* エラーパネル */}
       <ErrorPanel errors={validationErrors} onErrorClick={handleErrorClick} />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="yaml">YAML設定</TabsTrigger>
-          <TabsTrigger value="templates">テンプレート</TabsTrigger>
-          <TabsTrigger value="files">その他ファイル</TabsTrigger>
-          <TabsTrigger value="history">履歴</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="yaml" className="mt-4">
-          <YamlEditor
-            ref={yamlEditorRef}
-            value={yamlContent}
-            onChange={setYamlContent}
-            onValidationChange={(errors) => {
-              // YAMLエラーのみ更新
-              setValidationErrors(prev => [
-                ...prev.filter(e => e.file !== 'stencil-settings.yml'),
-                ...errors
-              ]);
-            }}
+      {/* メインレイアウト: エクスプローラー + タブ */}
+      <div className="flex gap-0 h-[calc(100vh-280px)]">
+        {/* 左側: ファイルエクスプローラー */}
+        <div 
+          ref={explorerRef}
+          className="border-r bg-gray-50 overflow-hidden flex-shrink-0"
+          style={{ width: `${explorerWidth}px` }}
+        >
+          <FileExplorer
+            files={data.files}
+            currentFilePath={selectedFilePath}
+            onFileSelect={handleFileSelect}
+            onFileRename={handleFileRename}
+            onFileCreate={handleFileCreate}
+            onFileDelete={handleFileDelete}
             readOnly={mode === 'view'}
           />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="templates" className="mt-4">
-          <div className="space-y-4">
-            {data.files
-              .filter(f => f.type === 'template')
-              .map(f => (
-                <div key={f.path} className="border rounded overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-2 font-mono text-sm font-semibold">
-                    {f.path}
-                  </div>
-                  <TemplateEditor
-                    ref={el => {
-                      if (el) templateEditorRefs.current[f.path] = el;
-                    }}
-                    value={templateContents[f.path] || f.content}
-                    onChange={(content) => {
-                      setTemplateContents(prev => ({
-                        ...prev,
-                        [f.path]: content
-                      }));
-                    }}
-                    fileName={f.name}
-                    onValidationChange={(errors) => {
-                      // 該当ファイルのエラーのみ更新
-                      setValidationErrors(prev => [
-                        ...prev.filter(e => e.file !== f.path),
-                        ...errors
-                      ]);
-                    }}
-                    readOnly={mode === 'view'}
-                  />
+        {/* リサイズハンドル */}
+        <div
+          className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize active:bg-blue-500 transition-colors"
+          onMouseDown={() => setIsResizing(true)}
+        />
+
+        {/* 右側: タブコンテンツ */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <TabsList>
+              <TabsTrigger value="yaml">YAML設定</TabsTrigger>
+              <TabsTrigger value="templates">テンプレート</TabsTrigger>
+              <TabsTrigger value="files">その他ファイル</TabsTrigger>
+              <TabsTrigger value="history">履歴</TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-auto">
+              <TabsContent value="yaml" className="mt-4 h-full">
+                <YamlEditor
+                  ref={yamlEditorRef}
+                  value={yamlContent}
+                  onChange={setYamlContent}
+                  onValidationChange={(errors) => {
+                    setValidationErrors(prev => [
+                      ...prev.filter(e => e.file !== 'stencil-settings.yml'),
+                      ...errors
+                    ]);
+                  }}
+                  readOnly={mode === 'view'}
+                />
+              </TabsContent>
+
+              <TabsContent value="templates" className="mt-4">
+                <Accordion type="multiple" defaultValue={[]} className="space-y-2">
+                  {data.files
+                    .filter(f => f.type === 'template')
+                    .map((f, index) => (
+                      <AccordionItem key={f.path} value={`template-${index}`} className="border rounded overflow-hidden">
+                        <AccordionTrigger className="bg-gray-100 px-4 py-2 hover:bg-gray-200 font-mono text-sm font-semibold">
+                          {f.path}
+                        </AccordionTrigger>
+                        <AccordionContent className="p-0">
+                          <TemplateEditor
+                            ref={el => {
+                              if (el) templateEditorRefs.current[f.path] = el;
+                            }}
+                            value={templateContents[f.path] || f.content}
+                            onChange={(content) => {
+                              setTemplateContents(prev => ({
+                                ...prev,
+                                [f.path]: content
+                              }));
+                            }}
+                            fileName={f.name}
+                            onValidationChange={(errors) => {
+                              setValidationErrors(prev => [
+                                ...prev.filter(e => e.file !== f.path),
+                                ...errors
+                              ]);
+                            }}
+                            readOnly={mode === 'view'}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                </Accordion>
+              </TabsContent>
+
+              <TabsContent value="files" className="mt-4">
+                <div className="space-y-2">
+                  {data.files
+                    .filter(f => f.type === 'other')
+                    .map(f => (
+                      <div key={f.path} className="p-2 border rounded">
+                        <div className="font-mono text-sm">{f.path}</div>
+                        <pre className="mt-2 p-2 bg-gray-50 text-xs overflow-x-auto">
+                          {f.content}
+                        </pre>
+                      </div>
+                    ))}
                 </div>
-              ))}
-          </div>
-        </TabsContent>
+              </TabsContent>
 
-        <TabsContent value="files" className="mt-4">
-          <div className="space-y-2">
-            {data.files
-              .filter(f => f.type === 'other')
-              .map(f => (
-                <div key={f.path} className="p-2 border rounded">
-                  <div className="font-mono text-sm">{f.path}</div>
-                </div>
-              ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          {stencilId && serial && (
-            <VersionHistory
-              stencilId={stencilId}
-              currentSerial={serial}
-              onRestore={handleRestore}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+              <TabsContent value="history" className="mt-4">
+                <VersionHistory
+                  stencilId={stencilId}
+                  versions={data.versions}
+                  onRestore={handleRestore}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+      </div>
 
       {/* プレビューパネル */}
       {showPreview && (

@@ -41,7 +41,11 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
       setVersions(result);
     } catch (error) {
       console.error('バージョン履歴の読込エラー:', error);
-      alert('バージョン履歴の読み込みに失敗しました');
+      toast({
+        title: '読み込みエラー',
+        description: 'バージョン履歴の読み込みに失敗しました',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -67,7 +71,11 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
       setCompareMode(true);
     } catch (error) {
       console.error('差分表示エラー:', error);
-      alert('差分表示に失敗しました');
+      toast({
+        title: '差分表示エラー',
+        description: '差分表示に失敗しました',
+        variant: 'destructive',
+      });
     }
   };
 

@@ -1,8 +1,9 @@
 /**
  * テンプレートプレビューパネル
  */
-import React, { useState } from 'react';
-import { Button } from '@mirel/ui';
+import React, { useState, useMemo } from 'react';
+import { Button, toast } from '@mirel/ui';
+import * as jsYaml from 'js-yaml';
 import type { StencilConfig } from '../types';
 
 interface PreviewPanelProps {
@@ -22,50 +23,52 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const [previewResult, setPreviewResult] = useState<string>('');
 
   // YAMLからパラメータ定義を抽出
-  const extractParameters = (): Array<{ id: string; name: string; type: string }> => {
-    try {
-      // 簡易的なYAMLパース（dataDomain部分のみ）
-      const dataDomainMatch = yamlContent.match(/dataDomain:\s*\n((?:\s+-.*\n)+)/);
-      if (!dataDomainMatch) return [];
-
-      const params: Array<{ id: string; name: string; type: string }> = [];
-      const lines = dataDomainMatch[1].split('\n');
-      let currentParam: Record<string, unknown> = {};
-
-      for (const line of lines) {
-        const idMatch = line.match(/^\s+- id:\s*"?([^"]+)"?/);
-        const nameMatch = line.match(/^\s+name:\s*"?([^"]+)"?/);
-        const typeMatch = line.match(/^\s+type:\s*"?([^"]+)"?/);
-
-        if (idMatch) {
-          if (currentParam.id) {
-            params.push(currentParam);
-          }
-          currentParam = { id: idMatch[1], name: '', type: 'text' };
-        } else if (nameMatch && currentParam.id) {
-          currentParam.name = nameMatch[1];
-        } else if (typeMatch && currentParam.id) {
-          currentParam.type = typeMatch[1];
+  const extractParameters = useMemo(() => {
+    return (): Array<{ id: string; name: string; type: string }> => {
+      try {
+        // js-yamlで正確にパース
+        const parsed = jsYaml.load(yamlContent) as Record<string, unknown>;
+        const stencil = parsed?.stencil as { dataDomain?: Array<{ id?: string; name?: string; type?: string }> } | undefined;
+        
+        if (!stencil?.dataDomain) {
+          console.warn('dataDomainが見つかりません');
+          return [];
         }
-      }
 
-      if (currentParam.id) {
-        params.push(currentParam);
-      }
+        const dataDomain = stencil.dataDomain;
+        
+        if (!Array.isArray(dataDomain)) {
+          console.warn('dataDomainが配列ではありません:', dataDomain);
+          return [];
+        }
 
-      return params;
-    } catch (error) {
-      console.error('パラメータ抽出エラー:', error);
-      return [];
-    }
-  };
+        const params = dataDomain
+          .filter((item) => item && item.id)
+          .map((item) => ({
+            id: item.id!,
+            name: item.name || item.id!,
+            type: item.type || 'text'
+          }));
+
+        console.log('抽出されたパラメータ:', params);
+        return params;
+      } catch (error) {
+        console.error('パラメータ抽出エラー:', error);
+        return [];
+      }
+    };
+  }, [yamlContent]);
 
   const parameters = extractParameters();
 
   // プレビュー生成（簡易版 - FreeMarker変数を置換）
   const generatePreview = () => {
     if (!selectedTemplate) {
-      alert('テンプレートを選択してください');
+      toast({
+        title: '選択エラー',
+        description: 'テンプレートを選択してください',
+        variant: 'warning',
+      });
       return;
     }
 

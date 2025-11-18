@@ -38,6 +38,7 @@ export const TemplateEditor = React.forwardRef<
     ref
   ) => {
     const editorRef = useRef<EditorView | null>(null);
+    const previousErrorsRef = useRef<string>('');
 
     // FTL構文バリデーション用のlinter
     const ftlLinter = linter((view) => {
@@ -69,8 +70,12 @@ export const TemplateEditor = React.forwardRef<
         });
       });
 
-      // エラー情報を親コンポーネントに通知
-      onValidationChange?.(errors);
+      // エラー情報を親コンポーネントに通知（変更があった場合のみ）
+      const currentErrorsKey = JSON.stringify(errors.map(e => `${e.message}:${e.line}`));
+      if (currentErrorsKey !== previousErrorsRef.current) {
+        previousErrorsRef.current = currentErrorsKey;
+        onValidationChange?.(errors);
+      }
 
       return diagnostics;
     });
