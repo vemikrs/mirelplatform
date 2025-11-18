@@ -84,8 +84,8 @@ public class StencilEditorController {
         jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
         // リクエストパスから処理を判定
-        // 例1: /apps/mste/editor/springboot/service171/221208A → loadStencil
-        // 例2: /apps/mste/editor/springboot/service171/versions → getVersionHistory
+        // 例1: /apps/mste/editor/springboot/service/221208A → loadStencil
+        // 例2: /apps/mste/editor/springboot/service/versions → getVersionHistory
         String requestPath = servletRequest.getRequestURI();
         String contextPath = servletRequest.getContextPath(); // /mipla2
         String basePath = "/apps/mste/editor";

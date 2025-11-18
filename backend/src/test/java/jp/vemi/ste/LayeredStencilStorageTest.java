@@ -217,10 +217,10 @@ public class LayeredStencilStorageTest {
     @Test
     @Order(5)
     public void testExistingUserStencilSerialDetection() {
-        System.out.println("=== Test 5: Test existing user stencil (springboot/service171) ===");
+        System.out.println("=== Test 5: Test existing user stencil (springboot/service) ===");
         
         // 実際に存在するユーザーステンシルをテスト
-        String existingStencilId = "/springboot/service171";
+        String existingStencilId = "/springboot/service";
         String expectedSerial = "221208A";
         
         // SteContextを作成
