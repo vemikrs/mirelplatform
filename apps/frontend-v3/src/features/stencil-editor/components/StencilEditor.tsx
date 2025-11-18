@@ -151,18 +151,6 @@ export const StencilEditor: React.FC = () => {
         e.preventDefault();
         setMode(mode === 'view' ? 'edit' : 'view');
       }
-
-      // Escape: 一覧へ戻る（確認あり）
-      if (e.key === 'Escape') {
-        if (hasUnsavedChanges) {
-          const confirm = window.confirm('未保存の変更があります。一覧へ戻りますか?');
-          if (confirm) {
-            navigate('/promarker/stencils');
-          }
-        } else {
-          navigate('/promarker/stencils');
-        }
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);

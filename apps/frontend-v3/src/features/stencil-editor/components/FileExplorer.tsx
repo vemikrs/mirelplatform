@@ -3,7 +3,6 @@
  * VS Codeライクなファイルツリー表示と操作機能
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { toast } from '@mirel/ui';
 import type { StencilFile } from '../types';
 
 interface FileNode {
@@ -39,6 +38,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
   const [focusedPath, setFocusedPath] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // ファイルリストからツリー構造を構築
@@ -245,11 +245,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const confirmCreateFile = (folderPath: string) => {
     if (!newFileName.trim()) {
-      toast({
-        title: '入力エラー',
-        description: 'ファイル名を入力してください',
-        variant: 'warning',
-      });
+      // 空の場合はキャンセル扱い
+      cancelCreateFile();
       return;
     }
 
@@ -392,8 +389,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmCreateFile(node.path);
-                    if (e.key === 'Escape') cancelCreateFile();
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      confirmCreateFile(node.path);
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      cancelCreateFile();
+                    }
                   }}
                   onBlur={() => confirmCreateFile(node.path)}
                   placeholder="ファイル名を入力"
@@ -424,22 +428,41 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       }}
     >
       <div className="p-2 border-b bg-white sticky top-0">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-semibold">ファイル</span>
-          {!readOnly && (
+          <div className="flex gap-1">
             <button
-              onClick={() => startCreateFile('/')}
-              className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              title="キーボードショートカット"
             >
-              新規ファイル
+              ⌨️
             </button>
-          )}
+            {!readOnly && (
+              <button
+                onClick={() => startCreateFile('/')}
+                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                新規ファイル
+              </button>
+            )}
+          </div>
         </div>
+        {showShortcuts && (
+          <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded space-y-1">
+            <div><kbd className="px-1 bg-white border rounded">↑↓</kbd> 移動</div>
+            <div><kbd className="px-1 bg-white border rounded">←→</kbd> フォルダ開閉</div>
+            <div><kbd className="px-1 bg-white border rounded">Enter</kbd> 選択/開閉</div>
+          </div>
+        )}
       </div>
       <div className="group">
         {fileTree.children?.map((node) => renderNode(node))}
         {creatingIn === '/' && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50">
+          <div 
+            className="flex items-center gap-1 px-2 py-1 bg-blue-50"
+            style={{ paddingLeft: '8px' }}
+          >
             <div className="w-4" />
             <span className="text-gray-600 text-sm">📄</span>
             <input
@@ -447,8 +470,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') confirmCreateFile('/');
-                if (e.key === 'Escape') cancelCreateFile();
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  confirmCreateFile('/');
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  cancelCreateFile();
+                }
               }}
               onBlur={() => confirmCreateFile('/')}
               placeholder="ファイル名を入力"
