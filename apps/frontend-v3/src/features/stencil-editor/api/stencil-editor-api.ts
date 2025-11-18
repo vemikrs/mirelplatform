@@ -19,7 +19,16 @@ export const loadStencil = async (
   stencilId: string,
   serial: string
 ): Promise<LoadStencilResponse> => {
-  const response = await axios.get(`${API_BASE}/${stencilId}/${serial}`);
+  // stencilIdは既に/で始まっている（例: /springboot/service）
+  const url = `${API_BASE}${stencilId}/${serial}`;
+  console.log('🌐 loadStencil API呼び出し:', {
+    API_BASE,
+    stencilId,
+    serial,
+    url,
+  });
+  
+  const response = await axios.get(url);
   
   if (response.data.errors && response.data.errors.length > 0) {
     throw new Error(response.data.errors.join(', '));
@@ -52,7 +61,9 @@ export const saveCommonSettings = async (
   categoryId: string,
   content: string
 ): Promise<void> => {
-  const response = await axios.post(`${API_BASE}/common/${categoryId}`, {
+  // categoryIdは既に/で始まっている可能性がある
+  const normalizedCategoryId = categoryId.startsWith('/') ? categoryId.slice(1) : categoryId;
+  const response = await axios.post(`${API_BASE}/common/${normalizedCategoryId}`, {
     content: { yamlContent: content },
   });
 
@@ -67,7 +78,8 @@ export const saveCommonSettings = async (
 export const getVersionHistory = async (
   stencilId: string
 ): Promise<VersionInfo[]> => {
-  const response = await axios.get(`${API_BASE}/${stencilId}/versions`);
+  // stencilIdは既に/で始まっている（例: /springboot/service）
+  const response = await axios.get(`${API_BASE}${stencilId}/versions`);
 
   if (response.data.errors && response.data.errors.length > 0) {
     throw new Error(response.data.errors.join(', '));

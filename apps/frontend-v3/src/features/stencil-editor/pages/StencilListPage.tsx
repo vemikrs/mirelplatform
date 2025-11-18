@@ -37,11 +37,13 @@ export const StencilListPage: React.FC = () => {
   };
 
   const handleView = (stencilId: string, serial: string) => {
-    navigate(`/promarker/editor/${stencilId}/${serial}?mode=view`);
+    // stencilIdは既に/で始まっている（例: /springboot/service）
+    navigate(`/promarker/editor${stencilId}/${serial}?mode=view`);
   };
 
   const handleEdit = (stencilId: string, serial: string) => {
-    navigate(`/promarker/editor/${stencilId}/${serial}?mode=edit`);
+    // stencilIdは既に/で始まっている（例: /springboot/service）
+    navigate(`/promarker/editor${stencilId}/${serial}?mode=edit`);
   };
 
   const filteredStencils = selectedCategory

@@ -73,7 +73,7 @@ function createParameterSchema(param: DataElement): z.ZodTypeAny {
     
     case 'file': {
       // File IDs are strings (uploaded file references)
-      let schema = z.string();
+      const schema = z.string();
       
       if (validation.required) {
         return schema.min(1, validation.errorMessage || 'ファイルをアップロードしてください');
@@ -84,7 +84,7 @@ function createParameterSchema(param: DataElement): z.ZodTypeAny {
     
     default: {
       // Unknown type - treat as text with minimal validation
-      let schema = z.string();
+      const schema = z.string();
       
       if (validation.required) {
         return schema.min(1, validation.errorMessage || '必須項目です');
