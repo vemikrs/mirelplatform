@@ -12,6 +12,7 @@ import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * ステンシルエディタサービス
@@ -38,4 +39,11 @@ public interface StencilEditorService {
      * @return バージョン履歴
      */
     ApiResponse<List<StencilVersionDto>> getVersionHistory(String stencilId);
+    
+    /**
+     * ステンシル一覧を取得する（ストレージレイヤーから）
+     * @param categoryId カテゴリIDフィルタ（null=全て）
+     * @return カテゴリとステンシルの一覧
+     */
+    ApiResponse<Map<String, Object>> listStencils(String categoryId);
 }

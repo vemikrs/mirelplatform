@@ -61,53 +61,14 @@ public class StencilEditorController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> listStencils(
         @org.springframework.web.bind.annotation.RequestParam(required = false) String categoryId
     ) {
-        // TODO: 本格実装 - 現在はモックデータを返す
-        ApiResponse<Map<String, Object>> response = ApiResponse.<Map<String, Object>>builder()
-            .data(createMockListData())
-            .build();
+        ApiResponse<Map<String, Object>> response = stencilEditorService.listStencils(categoryId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    /**
-     * モックデータ生成（暫定）
-     */
-    private Map<String, Object> createMockListData() {
-        return Map.of(
-            "categories", List.of(
-                Map.of("id", "/samples", "name", "Sample Stencils", "stencilCount", 2),
-                Map.of("id", "/springboot", "name", "Spring Boot", "stencilCount", 1)
-            ),
-            "stencils", List.of(
-                Map.of(
-                    "id", "/samples/hello-world",
-                    "name", "Hello World Generator",
-                    "categoryId", "/samples",
-                    "categoryName", "Sample Stencils",
-                    "latestSerial", "250913A",
-                    "lastUpdate", "2025/09/13",
-                    "lastUpdateUser", "mirelplatform",
-                    "description", "シンプルなHello Worldジェネレーターです。",
-                    "versionCount", 1
-                ),
-                Map.of(
-                    "id", "/samples/springboot/spring-boot-service",
-                    "name", "Spring Boot Service Generator",
-                    "categoryId", "/samples/springboot",
-                    "categoryName", "Spring Boot Samples",
-                    "latestSerial", "250914A",
-                    "lastUpdate", "2025/09/14",
-                    "lastUpdateUser", "mirelplatform",
-                    "description", "Spring BootサービスクラスのテンプレートGenerator",
-                    "versionCount", 1
-                )
-            )
-        );
-    }
-
-    @GetMapping("/{stencilId}/{serial}")
+    @GetMapping("/**")
     @Operation(
-        summary = "ステンシル読込",
-        description = "指定されたステンシルの設定とファイル一覧を取得します"
+        summary = "ステンシル読込またはバージョン履歴取得",
+        description = "指定されたステンシルの設定とファイル一覧を取得、またはバージョン履歴を取得します"
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -119,21 +80,53 @@ public class StencilEditorController {
             )
         )
     })
-    public ResponseEntity<ApiResponse<LoadStencilResult>> getStencil(
-        @PathVariable String stencilId,
-        @PathVariable String serial
+    public ResponseEntity<?> handleDynamicPath(
+        jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        LoadStencilParameter param = LoadStencilParameter.builder()
-            .stencilId(stencilId)
-            .serial(serial)
-            .build();
+        // リクエストパスから処理を判定
+        // 例1: /apps/mste/editor/springboot/service171/221208A → loadStencil
+        // 例2: /apps/mste/editor/springboot/service171/versions → getVersionHistory
+        String requestPath = servletRequest.getRequestURI();
+        String contextPath = servletRequest.getContextPath(); // /mipla2
+        String basePath = "/apps/mste/editor";
+        
+        // /mipla2/apps/mste/editor を除去
+        String pathAfterBase = requestPath.substring((contextPath + basePath).length());
+        
+        // versionsエンドポイントかどうか判定
+        if (pathAfterBase.endsWith("/versions")) {
+            // バージョン履歴取得
+            String stencilId = pathAfterBase.replace("/versions", "");
+            ApiResponse<List<StencilVersionDto>> response = 
+                stencilEditorService.getVersionHistory(stencilId);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            // ステンシル読込
+            // 最後の要素がシリアル番号
+            int lastSlash = pathAfterBase.lastIndexOf('/');
+            if (lastSlash == -1) {
+                // パスが不正
+                ApiResponse<String> errorResponse = ApiResponse.<String>builder()
+                    .build();
+                errorResponse.addError("Invalid path format");
+                return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+            }
             
-        ApiRequest<LoadStencilParameter> request = ApiRequest.<LoadStencilParameter>builder()
-            .model(param)
-            .build();
+            String stencilId = pathAfterBase.substring(0, lastSlash);
+            String serial = pathAfterBase.substring(lastSlash + 1);
             
-        ApiResponse<LoadStencilResult> response = stencilEditorService.loadStencil(request);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+            LoadStencilParameter param = LoadStencilParameter.builder()
+                .stencilId(stencilId)
+                .serial(serial)
+                .build();
+                
+            ApiRequest<LoadStencilParameter> request = ApiRequest.<LoadStencilParameter>builder()
+                .model(param)
+                .build();
+                
+            ApiResponse<LoadStencilResult> response = stencilEditorService.loadStencil(request);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
     }
 
     @PostMapping("/save")
@@ -182,19 +175,6 @@ public class StencilEditorController {
         // TODO: 実装
         ApiResponse<Void> response = ApiResponse.<Void>builder().build();
         response.addMessage("カテゴリ共通設定を保存しました");
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    @GetMapping("/{stencilId}/versions")
-    @Operation(
-        summary = "バージョン履歴取得",
-        description = "ステンシルのバージョン履歴を取得します"
-    )
-    public ResponseEntity<ApiResponse<List<StencilVersionDto>>> getVersionHistory(
-        @PathVariable String stencilId
-    ) {
-        ApiResponse<List<StencilVersionDto>> response = 
-            stencilEditorService.getVersionHistory(stencilId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
