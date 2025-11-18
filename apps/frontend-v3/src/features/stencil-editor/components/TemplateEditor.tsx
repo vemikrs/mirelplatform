@@ -6,8 +6,11 @@ import CodeMirror from '@uiw/react-codemirror';
 import { linter } from '@codemirror/lint';
 import type { Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
+import { java } from '@codemirror/lang-java';
+import { html } from '@codemirror/lang-html';
 import { ftlValidator } from '../utils/ftl-validator';
 import type { ValidationError } from './ErrorPanel';
+import { freemarkerDecorator, freemarkerTheme } from '../utils/freemarker-decorator';
 
 interface TemplateEditorProps {
   value: string;
@@ -93,12 +96,31 @@ export const TemplateEditor = React.forwardRef<
       },
     }));
 
+    // ファイル拡張子に基づいて言語モードを選択
+    const getLanguageMode = () => {
+      const ext = fileName.toLowerCase();
+      if (ext.endsWith('.java.ftl') || ext.endsWith('.java')) {
+        return java();
+      } else if (ext.endsWith('.html.ftl') || ext.endsWith('.html')) {
+        return html();
+      } else if (ext.endsWith('.xml.ftl') || ext.endsWith('.xml')) {
+        return html(); // XMLもHTMLモードで対応
+      }
+      // デフォルトはHTMLモード
+      return html();
+    };
+
     return (
       <div className="template-editor">
         <CodeMirror
           value={value}
           height="600px"
-          extensions={[ftlLinter]}
+          extensions={[
+            getLanguageMode(),
+            freemarkerDecorator,
+            freemarkerTheme,
+            ftlLinter
+          ]}
           onChange={onChange}
           onCreateEditor={(view) => {
             editorRef.current = view;

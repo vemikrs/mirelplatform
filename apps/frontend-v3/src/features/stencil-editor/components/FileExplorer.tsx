@@ -326,7 +326,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   toggleFolder(node.path);
                 }
               }}
-              className="flex-1 text-sm truncate"
+              className="flex-1 text-sm whitespace-nowrap"
+              title={node.name}
             >
               {node.name}
             </span>
@@ -410,7 +411,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="file-explorer h-full bg-gray-50 overflow-y-auto focus:outline-none"
+      className="file-explorer h-full bg-gray-50 focus:outline-none"
+      style={{
+        overflowY: 'auto',
+        overflowX: 'auto',
+      }}
       tabIndex={0}
       onFocus={() => {
         if (!focusedPath && flattenedNodes.length > 0) {
