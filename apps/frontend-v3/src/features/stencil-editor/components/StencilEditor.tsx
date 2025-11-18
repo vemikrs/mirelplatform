@@ -14,6 +14,7 @@ import { FileExplorer } from './FileExplorer';
 import { FileTabs } from './FileTabs';
 import type { OpenTab } from './FileTabs';
 import { HistoryDialog } from './HistoryDialog';
+import { StencilManageDialog } from './StencilManageDialog';
 import { Button, toast } from '@mirel/ui';
 import { loadStencil, saveStencil } from '../api/stencil-editor-api';
 import type { LoadStencilResponse, EditorMode } from '../types';
@@ -55,7 +56,9 @@ export const StencilEditor: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   
   // タブ管理
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
@@ -593,6 +596,14 @@ export const StencilEditor: React.FC = () => {
           )}
         </div>
         <div className="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowShortcuts(!showShortcuts)}
+            title="キーボードショートカット"
+          >
+            ⌨️
+          </Button>
           {mode === 'edit' && (
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -625,6 +636,13 @@ export const StencilEditor: React.FC = () => {
           >
             📋 履歴
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowManageDialog(true)}
+            title="ステンシル管理"
+          >
+            ⚙️ 管理
+          </Button>
           <Button variant="outline" onClick={() => navigate('/promarker/stencils')}>
             一覧へ戻る
           </Button>
@@ -633,6 +651,53 @@ export const StencilEditor: React.FC = () => {
 
       {/* エラーパネル */}
       <ErrorPanel errors={validationErrors} onErrorClick={handleErrorClick} />
+
+      {/* ショートカットヘルプダイアログ */}
+      {showShortcuts && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">キーボードショートカット</h2>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span>保存</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">Ctrl+S</kbd>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>編集モード切替</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">Ctrl+E</kbd>
+              </div>
+              <hr className="my-2" />
+              <div className="text-xs text-gray-500 font-semibold">ファイルエクスプローラー</div>
+              <div className="flex justify-between items-center">
+                <span>ファイル移動</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">↑↓</kbd>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>フォルダ開閉</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">←→</kbd>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>選択/開閉</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">Enter</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* メインレイアウト: エクスプローラー + タブ */}
       <div className="flex gap-0 h-[calc(100vh-280px)] relative">
@@ -699,11 +764,33 @@ export const StencilEditor: React.FC = () => {
       {/* 履歴ダイアログ */}
       {showHistoryDialog && (
         <HistoryDialog
-          stencilId={stencilId}
           currentSerial={data.config.serial}
           versions={data.versions}
           onRestore={handleRestore}
           onClose={() => setShowHistoryDialog(false)}
+        />
+      )}
+
+      {/* ステンシル管理ダイアログ */}
+      {showManageDialog && (
+        <StencilManageDialog
+          stencilId={stencilId}
+          stencilName={data.config.name}
+          categoryId={data.config.categoryId}
+          currentSerial={data.config.serial}
+          availableCategories={['/springboot', '/react', '/vue', '/samples']}
+          availableSerials={data.versions.map(v => v.serial)}
+          onSave={async (saveData) => {
+            // TODO: バックエンド実装
+            console.log('ステンシル情報更新:', saveData);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }}
+          onRevision={async (revisionData) => {
+            // TODO: バックエンド実装
+            console.log('シリアル改版:', revisionData);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }}
+          onClose={() => setShowManageDialog(false)}
         />
       )}
 
