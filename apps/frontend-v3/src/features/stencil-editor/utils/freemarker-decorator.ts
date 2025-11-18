@@ -2,7 +2,7 @@
  * FreeMarker デコレータ
  * 既存の言語モード（Java/HTML）にFreeMarker構文のハイライトを追加
  */
-import { EditorView, Decoration, ViewPlugin, ViewUpdate, DecorationSet } from '@codemirror/view';
+import { EditorView, Decoration, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 
 // FreeMarker構文パターン（プリコンパイル）
@@ -13,7 +13,7 @@ const FREEMARKER_PATTERNS = [
   { regex: /<#--[\s\S]*?-->/g, className: 'cm-freemarker-comment' },    // <#-- comment -->
 ];
 
-function createDecorations(view: EditorView): DecorationSet {
+function createDecorations(view: EditorView) {
   const builder = new RangeSetBuilder<Decoration>();
   const text = view.state.doc.toString();
   const allMatches: Array<{ from: number; to: number; decoration: Decoration }> = [];
@@ -46,7 +46,7 @@ function createDecorations(view: EditorView): DecorationSet {
 
 export const freemarkerDecorator = ViewPlugin.fromClass(
   class {
-    decorations: DecorationSet;
+    decorations;
 
     constructor(view: EditorView) {
       this.decorations = createDecorations(view);
