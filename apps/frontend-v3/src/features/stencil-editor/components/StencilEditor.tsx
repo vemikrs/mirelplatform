@@ -58,6 +58,7 @@ export const StencilEditor: React.FC = () => {
   const [showManageDialog, setShowManageDialog] = useState(false);
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // タブ管理
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
@@ -65,6 +66,18 @@ export const StencilEditor: React.FC = () => {
   
   const yamlEditorRef = useRef<YamlEditorHandle>(null);
   const templateEditorRefs = useRef<Record<string, TemplateEditorHandle>>({});
+
+  // F11キーで全画面切り替え
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setIsFullscreen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // データ読込
   useEffect(() => {
@@ -543,8 +556,8 @@ export const StencilEditor: React.FC = () => {
   }
 
   return (
-    <div className="stencil-editor p-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className={isFullscreen ? "fixed inset-0 z-50 bg-white flex flex-col" : "stencil-editor p-4"}>
+      <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b pb-3' : ''}`}>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">{data.config.name}</h1>
           <Button
@@ -661,6 +674,23 @@ export const StencilEditor: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? "全画面解除 (F11)" : "全画面モード (F11)"}
+              className="h-9 w-9 p-0"
+            >
+              {isFullscreen ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowShortcuts(!showShortcuts)}
               title="キーボードショートカット"
               className="h-9 w-9 p-0"
@@ -715,6 +745,10 @@ export const StencilEditor: React.FC = () => {
                 <span>編集モード切替</span>
                 <kbd className="px-2 py-1 bg-gray-100 border rounded">Ctrl+E</kbd>
               </div>
+              <div className="flex justify-between items-center">
+                <span>全画面モード切替</span>
+                <kbd className="px-2 py-1 bg-gray-100 border rounded">F11</kbd>
+              </div>
               <hr className="my-2" />
               <div className="text-xs text-gray-500 font-semibold">ファイルエクスプローラー</div>
               <div className="flex justify-between items-center">
@@ -735,7 +769,7 @@ export const StencilEditor: React.FC = () => {
       )}
 
       {/* メインレイアウト: エクスプローラー + タブ */}
-      <div className="flex gap-0 h-[calc(100vh-280px)] relative">
+      <div className={`flex gap-0 relative ${isFullscreen ? 'flex-1 overflow-hidden' : 'h-[calc(100vh-280px)]'}`}>
         {/* 左側: ファイルエクスプローラー */}
         <div 
           className="border-r bg-gray-50 overflow-hidden flex-shrink-0 transition-all duration-300 relative"
