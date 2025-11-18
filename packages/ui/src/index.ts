@@ -59,6 +59,7 @@ export { Toaster } from './components/Toaster'
 export { useToast, toast } from './components/use-toast'
 export { Alert, AlertTitle, AlertDescription, type AlertProps } from './components/Alert'
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion'
 
 // Utils
 export { cn } from './lib/utils'
