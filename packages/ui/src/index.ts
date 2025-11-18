@@ -60,6 +60,7 @@ export { useToast, toast } from './components/use-toast'
 export { Alert, AlertTitle, AlertDescription, type AlertProps } from './components/Alert'
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion'
+export { Combobox, type ComboboxOption } from './components/combobox'
 
 // Utils
 export { cn } from './lib/utils'
