@@ -170,7 +170,7 @@ export function RootLayout() {
       </header>
 
       {navigation.quickLinks.length > 0 ? (
-        <div className="border-b border-outline/40 bg-surface-subtle/70">
+        <div className="border-b border-border bg-surface">
           <div className="container flex flex-wrap items-center gap-2 py-3">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Quick Links

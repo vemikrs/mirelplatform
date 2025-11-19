@@ -142,8 +142,8 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                     ${isCurrent 
                       ? 'border-primary bg-primary/10 shadow-sm' 
                       : isSelected
-                      ? 'border-green-400 bg-green-50 dark:bg-green-900/30 shadow-sm'
-                      : 'border-gray-200 border-border bg-surface hover:border-border hover:shadow'
+                      ? 'border-green-600 dark:border-green-500 bg-green-600/10 dark:bg-green-600/20 shadow-sm'
+                      : 'border-border bg-surface hover:border-border hover:shadow'
                     }
                   `}
                   onClick={() => setSelectedVersion(version.serial)}
@@ -161,7 +161,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                           </span>
                         )}
                         {isSelected && !isCurrent && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-green-600 text-white rounded font-semibold">
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-green-600 dark:bg-green-700 text-white rounded font-semibold">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>

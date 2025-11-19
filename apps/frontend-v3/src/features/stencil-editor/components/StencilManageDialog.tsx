@@ -158,9 +158,10 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
               実行する操作を選択してください
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setMode('edit')}
-                className="p-6 border-2 border-gray-300 border-border rounded-lg hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                            <button
+                type="button"
+                onClick={() => setActiveAction('save')}
+                className="p-6 border-2 border-border rounded-lg hover:border-primary hover:bg-primary/10 transition-all"
               >
                 <div className="text-4xl mb-2">📝</div>
                 <div className="font-semibold text-lg mb-1">情報編集</div>
@@ -170,7 +171,7 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
               </button>
               <button
                 onClick={() => setMode('revision')}
-                className="p-6 border-2 border-gray-300 border-border rounded-lg hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all"
+                className="p-6 border-2 border-border rounded-lg hover:border-green-600 dark:hover:border-green-500 hover:bg-green-600/10 dark:hover:bg-green-600/20 transition-all"
               >
                 <div className="text-4xl mb-2">🔄</div>
                 <div className="font-semibold text-lg mb-1">シリアル改版</div>
@@ -179,7 +180,7 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
                 </div>
               </button>
             </div>
-            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-sm text-yellow-800 dark:text-yellow-300">
+            <div className="mt-4 p-4 bg-yellow-600/10 dark:bg-yellow-600/20 border border-yellow-600/30 dark:border-yellow-600/40 rounded-lg text-sm text-yellow-800 dark:text-yellow-300">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

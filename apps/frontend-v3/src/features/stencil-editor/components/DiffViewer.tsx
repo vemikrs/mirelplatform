@@ -53,8 +53,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
 
   if (!hasChanges) {
     return (
-      <div className="rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-8 text-center">
-        <p className="text-gray-600 dark:text-gray-400">変更はありません</p>
+      <div className="rounded border border-border bg-surface-subtle p-8 text-center">
+        <p className="text-muted-foreground">変更はありません</p>
       </div>
     );
   }
@@ -68,7 +68,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
       </div>
 
       {/* 差分表示 */}
-      <div className="overflow-auto rounded border border-gray-300 dark:border-gray-700">
+      <div className="overflow-auto rounded border border-border">
         <ReactDiffViewer
           oldValue={oldValue}
           newValue={newValue}

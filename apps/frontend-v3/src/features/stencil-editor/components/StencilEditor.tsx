@@ -70,7 +70,16 @@ export const StencilEditor: React.FC = () => {
 
   // 全画面切り替え関数
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
+    setIsFullscreen(prev => {
+      const newValue = !prev;
+      // body に data 属性を追加してヘッダーを非表示にする
+      if (newValue) {
+        document.body.setAttribute('data-fullscreen-editor', 'true');
+      } else {
+        document.body.removeAttribute('data-fullscreen-editor');
+      }
+      return newValue;
+    });
   }, []);
 
   // F11キーで全画面切り替え
@@ -553,6 +562,13 @@ export const StencilEditor: React.FC = () => {
     );
   };
 
+  // クリーンアップ: コンポーネントアンマウント時にdata属性を削除
+  useEffect(() => {
+    return () => {
+      document.body.removeAttribute('data-fullscreen-editor');
+    };
+  }, []);
+
   if (loading) {
     return <div className="p-4">読み込み中...</div>;
   }
@@ -563,7 +579,7 @@ export const StencilEditor: React.FC = () => {
 
   // フルスクリーン時のエディタコンテンツ
   const editorContent = (
-    <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "stencil-editor p-4 bg-background"}>
+    <div className={isFullscreen ? "fixed inset-0 z-100 bg-background flex flex-col" : "stencil-editor p-4 bg-background"}>
       <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b border-border pb-3' : ''}`}>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-foreground">{data.config.name}</h1>
@@ -731,7 +747,7 @@ export const StencilEditor: React.FC = () => {
           onClick={() => setShowShortcuts(false)}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
+            className="bg-surface rounded-lg shadow-xl max-w-md w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">

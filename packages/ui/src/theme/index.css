@@ -203,4 +203,11 @@
     padding-left: var(--container-padding);
     padding-right: var(--container-padding);
   }
+
+  /* === Fullscreen Editor Mode === */
+  /* フルスクリーンエディタ表示時はヘッダーとQuick Linksを完全に非表示 */
+  body[data-fullscreen-editor="true"] header.sticky,
+  body[data-fullscreen-editor="true"] header.sticky + div {
+    display: none !important;
+  }
 }

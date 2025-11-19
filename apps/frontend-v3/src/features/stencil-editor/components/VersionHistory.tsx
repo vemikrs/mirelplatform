@@ -194,7 +194,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
       </div>
 
       {/* 比較用バージョン選択ヘルプ */}
-      <div className="mb-4 rounded bg-blue-50 p-3 text-sm text-blue-800">
+      <div className="mb-4 rounded bg-primary/10 p-3 text-sm text-primary">
         <p>
           💡 2つのバージョンを選択して「差分表示」ボタンをクリックすると、変更内容を確認できます
         </p>
@@ -212,8 +212,8 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
               key={version.serial}
               className={`rounded border p-4 ${
                 isCurrent
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 bg-white'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border bg-surface'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -223,21 +223,21 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                       {version.serial}
                     </span>
                     {isCurrent && (
-                      <span className="rounded bg-blue-500 px-2 py-1 text-xs text-white">
+                      <span className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">
                         現在
                       </span>
                     )}
                     {version.isActive && !isCurrent && (
-                      <span className="rounded bg-green-500 px-2 py-1 text-xs text-white">
+                      <span className="rounded bg-green-600 dark:bg-green-700 px-2 py-1 text-xs text-white">
                         有効
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-sm text-gray-600">
+                  <div className="mt-1 text-sm text-muted-foreground">
                     {formatDate(version.createdAt)} - {version.createdBy || '不明'}
                   </div>
                   {version.changes && (
-                    <div className="mt-1 text-sm text-gray-700">
+                    <div className="mt-1 text-sm text-foreground">
                       {version.changes}
                     </div>
                   )}
@@ -284,7 +284,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
       </div>
 
       {versions.length === 0 && (
-        <div className="rounded border border-gray-300 bg-gray-50 p-8 text-center text-gray-600">
+        <div className="rounded border border-border bg-surface-subtle p-8 text-center text-muted-foreground">
           バージョン履歴がありません
         </div>
       )}
