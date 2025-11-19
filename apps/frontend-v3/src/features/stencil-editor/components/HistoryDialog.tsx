@@ -119,17 +119,17 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] bg-white dark:bg-gray-800">
+      <DialogContent className="max-w-4xl max-h-[85vh] bg-surface">
         <DialogHeader>
           <DialogTitle>バージョン履歴</DialogTitle>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-muted-foreground mt-1">
             現在: {currentSerial}
           </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-4">
           {/* バージョンリスト */}
-          <div className="space-y-2 max-h-[500px] overflow-y-auto border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+          <div className="space-y-2 max-h-[500px] overflow-y-auto border border-border rounded-lg p-4 bg-surface-subtle">
             {versions.map((version) => {
               const isCurrent = version.serial === currentSerial;
               const isSelected = version.serial === selectedVersion;
@@ -140,10 +140,10 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                   className={`
                     p-4 border rounded-lg cursor-pointer transition-all
                     ${isCurrent 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-sm' 
+                      ? 'border-primary bg-primary/10 shadow-sm' 
                       : isSelected
                       ? 'border-green-400 bg-green-50 dark:bg-green-900/30 shadow-sm'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow'
+                      : 'border-gray-200 border-border bg-surface hover:border-border hover:shadow'
                     }
                   `}
                   onClick={() => setSelectedVersion(version.serial)}
@@ -152,11 +152,11 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                     <div className="flex-1">
                       {/* シリアル番号 */}
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                        <span className="text-lg font-bold text-foreground">
                           {version.serial}
                         </span>
                         {isCurrent && (
-                          <span className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded font-semibold">
+                          <span className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded font-semibold">
                             ● 現在使用中
                           </span>
                         )}
@@ -171,20 +171,20 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                       </div>
                       
                       {/* 更新日時・更新者 */}
-                      <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                      <div className="space-y-1 text-sm text-foreground">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-500 dark:text-gray-400">更新日時:</span>
+                          <span className="font-semibold text-muted-foreground">更新日時:</span>
                           <span>{version.updateDate || '不明'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-500 dark:text-gray-400">更新者:</span>
+                          <span className="font-semibold text-muted-foreground">更新者:</span>
                           <span>{version.updateUser || '不明'}</span>
                         </div>
                       </div>
 
                       {/* 説明 */}
                       {version.description && (
-                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+                        <div className="mt-2 text-sm text-foreground bg-surface p-2 rounded border border-gray-200 border-border">
                           {version.description}
                         </div>
                       )}
@@ -227,7 +227,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
             })}
 
             {versions.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-muted-foreground">
                 <div className="text-4xl mb-2">📋</div>
                 <div>バージョン履歴がありません</div>
               </div>

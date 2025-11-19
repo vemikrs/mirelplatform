@@ -144,37 +144,37 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-gray-800">
+      <DialogContent className="max-w-2xl bg-surface">
         <DialogHeader>
           <DialogTitle>ステンシル管理</DialogTitle>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-muted-foreground mt-1">
             現在のシリアル: {currentSerial}
           </div>
         </DialogHeader>
 
         {!mode && (
           <div className="space-y-4 py-6">
-            <div className="text-center text-gray-600 mb-6">
+            <div className="text-center text-muted-foreground mb-6">
               実行する操作を選択してください
             </div>
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setMode('edit')}
-                className="p-6 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                className="p-6 border-2 border-gray-300 border-border rounded-lg hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
               >
                 <div className="text-4xl mb-2">📝</div>
                 <div className="font-semibold text-lg mb-1">情報編集</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   カテゴリ・ステンシル名を変更
                 </div>
               </button>
               <button
                 onClick={() => setMode('revision')}
-                className="p-6 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all"
+                className="p-6 border-2 border-gray-300 border-border rounded-lg hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all"
               >
                 <div className="text-4xl mb-2">🔄</div>
                 <div className="font-semibold text-lg mb-1">シリアル改版</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   新しいシリアルにコピー
                 </div>
               </button>
@@ -193,7 +193,7 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
         {mode === 'edit' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">
+              <label className="text-sm font-semibold text-foreground">
                 カテゴリ <span className="text-red-500">*</span>
               </label>
               <Combobox
@@ -204,13 +204,13 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
                 searchPlaceholder="カテゴリを検索..."
                 allowCustom={true}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 既存のカテゴリから選択、または新しいカテゴリを入力できます
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">
+              <label className="text-sm font-semibold text-foreground">
                 ステンシル名 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -225,7 +225,7 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
         {mode === 'revision' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">
+              <label className="text-sm font-semibold text-foreground">
                 改版元シリアル <span className="text-red-500">*</span>
               </label>
               <Combobox
@@ -236,13 +236,13 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
                 searchPlaceholder="シリアル番号を検索..."
                 allowCustom={false}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 コピー元となるシリアル番号を選択してください
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">
+              <label className="text-sm font-semibold text-foreground">
                 新しいシリアル番号 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -250,12 +250,12 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
                 onChange={(e) => setNewSerial(e.target.value)}
                 placeholder="例: 251118A"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 新しいシリアル番号を入力してください（既存と重複不可）
               </p>
             </div>
 
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-blue-800 dark:text-blue-300">
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg text-sm text-primary">
               📋 ステンシル定義一式（YAML + テンプレートファイル）がコピーされます
             </div>
           </div>

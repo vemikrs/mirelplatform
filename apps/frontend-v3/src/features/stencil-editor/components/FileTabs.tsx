@@ -34,7 +34,7 @@ export const FileTabs: React.FC<FileTabsProps> = ({
 }) => {
   if (tabs.length === 0) {
     return (
-      <div className="h-7 border-b dark:border-gray-700 flex items-center px-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400">
+      <div className="h-7 border-b border-border flex items-center px-2 bg-surface-subtle text-xs text-muted-foreground">
         ← ファイルを選択してください
       </div>
     );
@@ -42,7 +42,7 @@ export const FileTabs: React.FC<FileTabsProps> = ({
 
   return (
     <div 
-      className="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+      className="flex border-b border-border bg-surface-subtle"
       style={{
         overflowX: 'auto',
         overflowY: 'hidden',
@@ -57,11 +57,11 @@ export const FileTabs: React.FC<FileTabsProps> = ({
           <div
             key={tab.path}
             className={`
-              group flex items-center gap-1 px-2 py-1 min-w-fit cursor-pointer border-r dark:border-gray-700
+              group flex items-center gap-1 px-2 py-1 min-w-fit cursor-pointer border-r border-gray-200 border-border
               transition-colors select-none
               ${isActive 
-                ? 'bg-white dark:bg-gray-900 border-b-2 border-b-blue-500 dark:border-b-blue-400 text-gray-900 dark:text-white' 
-                : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                ? 'bg-background border-b-2 border-b-primary text-foreground' 
+                : 'bg-surface-subtle hover:bg-surface-raised text-muted-foreground hover:text-foreground'
               }
             `}
             onClick={() => onTabChange(tab.path)}
@@ -76,7 +76,7 @@ export const FileTabs: React.FC<FileTabsProps> = ({
             
             {/* 未保存マーク */}
             {tab.isDirty && (
-              <span className="text-blue-500 dark:text-blue-400 text-sm leading-none">●</span>
+              <span className="text-primary text-sm leading-none">●</span>
             )}
             
             {/* 閉じるボタン */}
@@ -87,7 +87,7 @@ export const FileTabs: React.FC<FileTabsProps> = ({
               }}
               className={`
                 w-3 h-3 flex items-center justify-center rounded text-xs
-                text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600
+                text-muted-foreground hover:text-foreground hover:bg-gray-200 dark:hover:bg-surface-raised
                 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                 transition-opacity
               `}

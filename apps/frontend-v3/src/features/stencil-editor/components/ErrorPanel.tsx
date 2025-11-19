@@ -44,9 +44,9 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
   const infoCount = errors.filter((e) => e.severity === 'info').length;
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+    <div className="border-t border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-4 text-sm">
-        <span className="font-semibold dark:text-white">検証結果</span>
+        <span className="font-semibold text-foreground">検証結果</span>
         {errorCount > 0 && (
           <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -89,8 +89,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full h-5/6 flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+      <div className="bg-surface rounded-lg shadow-xl max-w-6xl w-full h-5/6 flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b border-border">
           <h2 className="text-xl font-bold">テンプレートプレビュー</h2>
           <Button variant="outline" onClick={onClose}>
             閉じる
@@ -99,7 +99,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
         <div className="flex-1 flex overflow-hidden">
           {/* 左側: サンプルデータ入力 */}
-          <div className="w-1/3 border-r dark:border-gray-700 p-4 overflow-y-auto">
+          <div className="w-1/3 border-r border-border p-4 overflow-y-auto">
             <h3 className="font-semibold mb-3">サンプルデータ</h3>
 
             {/* テンプレート選択 */}
@@ -145,7 +145,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 パラメータが定義されていません
               </p>
             )}
@@ -163,19 +163,19 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <div className="flex-1 p-4 overflow-y-auto">
             <h3 className="font-semibold mb-3">プレビュー結果</h3>
             {previewResult ? (
-              <pre className="bg-gray-50 dark:bg-gray-900 p-4 rounded border dark:border-gray-700 text-sm font-mono overflow-x-auto">
+              <pre className="bg-surface-subtle p-4 rounded border border-border text-sm font-mono overflow-x-auto">
                 {previewResult}
               </pre>
             ) : (
-              <div className="text-gray-500 text-center py-8">
+              <div className="text-muted-foreground text-center py-8">
                 左側でサンプルデータを入力し、「プレビュー生成」ボタンを押してください
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <p className="text-sm text-gray-600">
+        <div className="p-4 border-t border-border bg-surface-subtle">
+          <p className="text-sm text-muted-foreground">
             <strong>注意:</strong> これは簡易プレビューです。実際の生成結果とは異なる場合があります。
             FreeMarkerの制御構文（#if、#list等）は反映されません。
           </p>

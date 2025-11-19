@@ -2,6 +2,7 @@
  * メインのステンシルエディタコンポーネント
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { YamlEditor } from './YamlEditor';
 import type { YamlEditorHandle } from './YamlEditor';
@@ -67,17 +68,22 @@ export const StencilEditor: React.FC = () => {
   const yamlEditorRef = useRef<YamlEditorHandle>(null);
   const templateEditorRefs = useRef<Record<string, TemplateEditorHandle>>({});
 
+  // 全画面切り替え関数
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+
   // F11キーで全画面切り替え
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F11') {
         e.preventDefault();
-        setIsFullscreen(prev => !prev);
+        toggleFullscreen();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleFullscreen]);
 
   // データ読込
   useEffect(() => {
@@ -484,7 +490,7 @@ export const StencilEditor: React.FC = () => {
   const renderActiveEditor = () => {
     if (!activeTabPath) {
       return (
-        <div className="flex items-center justify-center h-full text-gray-500">
+        <div className="flex items-center justify-center h-full text-muted-foreground">
           ← ファイルを選択してください
         </div>
       );
@@ -540,7 +546,7 @@ export const StencilEditor: React.FC = () => {
     return (
       <div className="p-4">
         <div className="mb-2 font-mono text-sm font-semibold">{activeFile.path}</div>
-        <pre className="p-4 bg-gray-50 text-xs overflow-x-auto rounded border">
+        <pre className="p-4 bg-surface-subtle text-xs overflow-x-auto rounded border">
           {activeFile.content}
         </pre>
       </div>
@@ -555,17 +561,18 @@ export const StencilEditor: React.FC = () => {
     return <div className="p-4">データがありません</div>;
   }
 
-  return (
-    <div className={isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col" : "stencil-editor p-4"}>
-      <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b dark:border-gray-700 pb-3' : ''}`}>
+  // フルスクリーン時のエディタコンテンツ
+  const editorContent = (
+    <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "stencil-editor p-4 bg-background"}>
+      <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b border-border pb-3' : ''}`}>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold dark:text-white">{data.config.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{data.config.name}</h1>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowManageDialog(true)}
             title="ステンシル管理"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -573,7 +580,7 @@ export const StencilEditor: React.FC = () => {
             </svg>
           </Button>
           {mode === 'edit' && (
-            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
               {saving && (
                 <>
                   <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -609,7 +616,7 @@ export const StencilEditor: React.FC = () => {
               size="sm"
               onClick={() => setMode(mode === 'view' ? 'edit' : 'view')}
               title={mode === 'view' ? '編集モード' : '参照モード'}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               {mode === 'view' ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -628,7 +635,7 @@ export const StencilEditor: React.FC = () => {
               onClick={() => handleSave()}
               disabled={saving || mode === 'view'}
               title="保存"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
               style={{ visibility: mode === 'view' ? 'hidden' : 'visible' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -638,7 +645,7 @@ export const StencilEditor: React.FC = () => {
           </div>
 
           {/* セパレータ */}
-          <div className="h-6 w-px bg-gray-300"></div>
+          <div className="h-6 w-px bg-border"></div>
 
           {/* プレビュー・履歴グループ */}
           <div className="flex gap-1 items-center">
@@ -647,7 +654,7 @@ export const StencilEditor: React.FC = () => {
               size="sm"
               onClick={() => setShowPreview(true)}
               title="プレビュー"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -658,7 +665,7 @@ export const StencilEditor: React.FC = () => {
               size="sm"
               onClick={() => setShowHistoryDialog(true)}
               title="バージョン履歴"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -667,16 +674,16 @@ export const StencilEditor: React.FC = () => {
           </div>
 
           {/* セパレータ */}
-          <div className="h-6 w-px bg-gray-300"></div>
+          <div className="h-6 w-px bg-border"></div>
 
           {/* ヘルプ・ナビゲーショングループ */}
           <div className="flex gap-1 items-center">
-            <Button
+                        <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsFullscreen(!isFullscreen)}
+              onClick={toggleFullscreen}
               title={isFullscreen ? "全画面解除 (F11)" : "全画面モード (F11)"}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               {isFullscreen ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -693,7 +700,7 @@ export const StencilEditor: React.FC = () => {
               size="sm"
               onClick={() => setShowShortcuts(!showShortcuts)}
               title="キーボードショートカット"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -704,7 +711,7 @@ export const StencilEditor: React.FC = () => {
               size="sm"
               onClick={() => navigate('/promarker/stencils')}
               title="一覧へ戻る"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -720,7 +727,7 @@ export const StencilEditor: React.FC = () => {
       {/* ショートカットヘルプダイアログ */}
       {showShortcuts && (
         <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/5 dark:bg-black/70 flex items-center justify-center z-50"
           onClick={() => setShowShortcuts(false)}
         >
           <div 
@@ -728,40 +735,40 @@ export const StencilEditor: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold dark:text-white">キーボードショートカット</h2>
+              <h2 className="text-xl font-bold text-foreground">キーボードショートカット</h2>
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-muted-foreground hover:text-foreground"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-3 text-sm dark:text-gray-200">
+            <div className="space-y-3 text-sm text-foreground">
               <div className="flex justify-between items-center">
                 <span>保存</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Ctrl+S</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+S</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>編集モード切替</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Ctrl+E</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+E</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>全画面モード切替</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">F11</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">F11</kbd>
               </div>
-              <hr className="my-2 dark:border-gray-600" />
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">ファイルエクスプローラー</div>
+              <hr className="my-2 border-border" />
+              <div className="text-xs text-muted-foreground text-muted-foreground font-semibold">ファイルエクスプローラー</div>
               <div className="flex justify-between items-center">
                 <span>ファイル移動</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">↑↓</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">↑↓</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>フォルダ開閉</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">←→</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">←→</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>選択/開閉</span>
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Enter</kbd>
+                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Enter</kbd>
               </div>
             </div>
           </div>
@@ -772,7 +779,7 @@ export const StencilEditor: React.FC = () => {
       <div className={`flex gap-0 relative ${isFullscreen ? 'flex-1 overflow-hidden' : 'h-[calc(100vh-280px)]'}`}>
         {/* 左側: ファイルエクスプローラー */}
         <div 
-          className="border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden shrink-0 transition-all duration-300 relative"
+          className="border-r border-border bg-background overflow-hidden shrink-0 transition-all duration-300 relative"
           style={{ width: explorerCollapsed ? '0px' : '30%' }}
         >
           {!explorerCollapsed && (
@@ -793,7 +800,7 @@ export const StencilEditor: React.FC = () => {
         {explorerCollapsed && (
           <button
             onClick={() => setExplorerCollapsed(false)}
-            className="absolute left-0 top-2 z-20 p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-r hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-md"
+            className="absolute left-0 top-2 z-20 p-2 bg-surface border border-border rounded-r hover:bg-surface-raised transition-colors shadow-md text-muted-foreground"
             title="エクスプローラーを開く"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -863,4 +870,8 @@ export const StencilEditor: React.FC = () => {
       )}
     </div>
   );
+
+  // フルスクリーンモード時はReact Portalを使用してdocument.bodyに直接レンダリング
+  // これによりRootLayoutのstickyヘッダーを完全にバイパスできる
+  return isFullscreen ? createPortal(editorContent, document.body) : editorContent;
 };
