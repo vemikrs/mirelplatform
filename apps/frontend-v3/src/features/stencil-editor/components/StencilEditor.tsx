@@ -556,10 +556,10 @@ export const StencilEditor: React.FC = () => {
   }
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-50 bg-white flex flex-col" : "stencil-editor p-4"}>
-      <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b pb-3' : ''}`}>
+    <div className={isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col" : "stencil-editor p-4"}>
+      <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b dark:border-gray-700 pb-3' : ''}`}>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{data.config.name}</h1>
+          <h1 className="text-2xl font-bold dark:text-white">{data.config.name}</h1>
           <Button
             variant="ghost"
             size="sm"
@@ -573,7 +573,7 @@ export const StencilEditor: React.FC = () => {
             </svg>
           </Button>
           {mode === 'edit' && (
-            <div className="flex items-center gap-1 text-sm text-gray-600">
+            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
               {saving && (
                 <>
                   <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -720,48 +720,48 @@ export const StencilEditor: React.FC = () => {
       {/* ショートカットヘルプダイアログ */}
       {showShortcuts && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
           onClick={() => setShowShortcuts(false)}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">キーボードショートカット</h2>
+              <h2 className="text-xl font-bold dark:text-white">キーボードショートカット</h2>
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-sm dark:text-gray-200">
               <div className="flex justify-between items-center">
                 <span>保存</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">Ctrl+S</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Ctrl+S</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>編集モード切替</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">Ctrl+E</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Ctrl+E</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>全画面モード切替</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">F11</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">F11</kbd>
               </div>
-              <hr className="my-2" />
-              <div className="text-xs text-gray-500 font-semibold">ファイルエクスプローラー</div>
+              <hr className="my-2 dark:border-gray-600" />
+              <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">ファイルエクスプローラー</div>
               <div className="flex justify-between items-center">
                 <span>ファイル移動</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">↑↓</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">↑↓</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>フォルダ開閉</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">←→</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">←→</kbd>
               </div>
               <div className="flex justify-between items-center">
                 <span>選択/開閉</span>
-                <kbd className="px-2 py-1 bg-gray-100 border rounded">Enter</kbd>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded">Enter</kbd>
               </div>
             </div>
           </div>
@@ -772,7 +772,7 @@ export const StencilEditor: React.FC = () => {
       <div className={`flex gap-0 relative ${isFullscreen ? 'flex-1 overflow-hidden' : 'h-[calc(100vh-280px)]'}`}>
         {/* 左側: ファイルエクスプローラー */}
         <div 
-          className="border-r bg-gray-50 overflow-hidden flex-shrink-0 transition-all duration-300 relative"
+          className="border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden shrink-0 transition-all duration-300 relative"
           style={{ width: explorerCollapsed ? '0px' : '30%' }}
         >
           {!explorerCollapsed && (
@@ -793,7 +793,7 @@ export const StencilEditor: React.FC = () => {
         {explorerCollapsed && (
           <button
             onClick={() => setExplorerCollapsed(false)}
-            className="absolute left-0 top-2 z-20 p-2 bg-white border border-gray-300 rounded-r hover:bg-gray-100 transition-colors shadow-md"
+            className="absolute left-0 top-2 z-20 p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-r hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-md"
             title="エクスプローラーを開く"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,6 +3,7 @@
  */
 import React, { useMemo } from 'react';
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued';
+import { useTheme } from '@/lib/hooks/useTheme';
 
 interface DiffViewerProps {
   oldValue: string;
@@ -19,6 +20,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
   newTitle = '変更後',
   splitView = true,
 }) => {
+  const { isDark } = useTheme();
+  
   // 差分がない場合の判定
   const hasChanges = useMemo(() => {
     return oldValue !== newValue;
@@ -50,8 +53,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
 
   if (!hasChanges) {
     return (
-      <div className="rounded border border-gray-300 bg-gray-50 p-8 text-center">
-        <p className="text-gray-600">変更はありません</p>
+      <div className="rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-8 text-center">
+        <p className="text-gray-600 dark:text-gray-400">変更はありません</p>
       </div>
     );
   }
@@ -60,12 +63,12 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     <div className="diff-viewer-container">
       {/* 変更統計 */}
       <div className="mb-2 flex items-center gap-4 text-sm">
-        <span className="text-green-600">+{changeStats.additions} 追加</span>
-        <span className="text-red-600">-{changeStats.deletions} 削除</span>
+        <span className="text-green-600 dark:text-green-400">+{changeStats.additions} 追加</span>
+        <span className="text-red-600 dark:text-red-400">-{changeStats.deletions} 削除</span>
       </div>
 
       {/* 差分表示 */}
-      <div className="overflow-auto rounded border border-gray-300">
+      <div className="overflow-auto rounded border border-gray-300 dark:border-gray-700">
         <ReactDiffViewer
           oldValue={oldValue}
           newValue={newValue}
@@ -73,7 +76,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
           rightTitle={newTitle}
           splitView={splitView}
           compareMethod={DiffMethod.WORDS}
-          useDarkTheme={false}
+          useDarkTheme={isDark}
           styles={{
             variables: {
               light: {

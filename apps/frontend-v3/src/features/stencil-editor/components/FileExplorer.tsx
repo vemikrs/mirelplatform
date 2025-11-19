@@ -272,17 +272,17 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     return (
       <div key={node.path}>
         <div
-          className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 cursor-pointer group ${
-            isFocused ? 'bg-blue-50 ring-1 ring-blue-300' : ''
+          className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group ${
+            isFocused ? 'bg-blue-50 dark:bg-blue-900/40 ring-1 ring-blue-300 dark:ring-blue-500' : ''
           } ${
-            isSelected ? 'bg-blue-100' : ''
+            isSelected ? 'bg-blue-100 dark:bg-blue-800/50' : ''
           }`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
           {node.type === 'folder' && (
             <button
               onClick={() => toggleFolder(node.path)}
-              className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 rounded"
+              className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
             >
               <svg
                 width="12"
@@ -298,7 +298,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           {node.type === 'file' && <div className="w-4" />}
 
           {/* アイコン */}
-          <span className="text-gray-600 text-sm">
+          <span className={`text-sm ${
+            isSelected || isFocused 
+              ? 'text-blue-600 dark:text-blue-400' 
+              : 'text-gray-600 dark:text-gray-400'
+          }`}>
             {node.type === 'folder' ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -322,7 +326,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               }}
               onBlur={() => confirmRename(node)}
               autoFocus
-              className="flex-1 px-1 py-0 border rounded text-sm"
+              className="flex-1 px-1 py-0 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
             />
           ) : (
             <span
@@ -333,7 +337,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   toggleFolder(node.path);
                 }
               }}
-              className="flex-1 text-sm whitespace-nowrap"
+              className="flex-1 text-sm whitespace-nowrap dark:text-gray-200"
               title={node.name}
             >
               {node.name}
@@ -349,7 +353,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     e.stopPropagation();
                     startCreateFile(node.path);
                   }}
-                  className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                  className="p-0.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                   title="新規ファイル"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +366,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   e.stopPropagation();
                   startRename(node);
                 }}
-                className="p-0.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                className="p-0.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                 title="名前変更"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,7 +381,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                       onFileDelete?.(node.path);
                     }
                   }}
-                  className="p-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                  className="p-0.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                   title="削除"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,7 +399,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {node.children.map((child) => renderNode(child, depth + 1))}
             {isCreating && (
               <div
-                className="flex items-center gap-1 px-2 py-1 bg-blue-50"
+                className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20"
                 style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
               >
                 <div className="w-4" />
@@ -420,7 +424,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   onBlur={() => confirmCreateFile(node.path)}
                   placeholder="ファイル名を入力"
                   autoFocus
-                  className="flex-1 px-1 py-0 border rounded text-sm"
+                  className="flex-1 px-1 py-0 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
                 />
               </div>
             )}
@@ -433,7 +437,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="file-explorer h-full bg-gray-50 focus:outline-none"
+      className="file-explorer h-full bg-gray-50 dark:bg-gray-800 focus:outline-none"
       style={{
         overflowY: 'auto',
         overflowX: 'auto',
@@ -445,14 +449,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         }
       }}
     >
-      <div className="p-2 border-b bg-white sticky top-0 z-10">
+      <div className="p-2 border-b dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">ファイル</span>
+            <span className="text-sm font-semibold dark:text-white">ファイル</span>
             {onCollapse && (
               <button
                 onClick={onCollapse}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 title="エクスプローラーを閉じる"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -482,10 +486,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           </div>
         </div>
         {showShortcuts && (
-          <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded space-y-1">
-            <div><kbd className="px-1 bg-white border rounded">↑↓</kbd> 移動</div>
-            <div><kbd className="px-1 bg-white border rounded">←→</kbd> フォルダ開閉</div>
-            <div><kbd className="px-1 bg-white border rounded">Enter</kbd> 選択/開閉</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-2 rounded space-y-1">
+            <div><kbd className="px-1 bg-white dark:bg-gray-600 border dark:border-gray-500 rounded">↑↓</kbd> 移動</div>
+            <div><kbd className="px-1 bg-white dark:bg-gray-600 border dark:border-gray-500 rounded">←→</kbd> フォルダ開閉</div>
+            <div><kbd className="px-1 bg-white dark:bg-gray-600 border dark:border-gray-500 rounded">Enter</kbd> 選択/開閉</div>
           </div>
         )}
       </div>
@@ -493,11 +497,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         {fileTree.children?.map((node) => renderNode(node))}
         {creatingIn === '/' && (
           <div 
-            className="flex items-center gap-1 px-2 py-1 bg-blue-50"
+            className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20"
             style={{ paddingLeft: '8px' }}
           >
             <div className="w-4" />
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <input

@@ -8,9 +8,11 @@ import type { Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
 import { java } from '@codemirror/lang-java';
 import { html } from '@codemirror/lang-html';
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { ftlValidator } from '../utils/ftl-validator';
 import type { ValidationError } from './ErrorPanel';
 import { freemarkerDecorator, freemarkerTheme } from '../utils/freemarker-decorator';
+import { useTheme } from '@/lib/hooks/useTheme';
 
 interface TemplateEditorProps {
   value: string;
@@ -42,6 +44,7 @@ export const TemplateEditor = React.forwardRef<
   ) => {
     const editorRef = useRef<EditorView | null>(null);
     const previousErrorsRef = useRef<string>('');
+    const { isDark } = useTheme();
 
     // FTL構文バリデーション用のlinter
     const ftlLinter = linter((view) => {
@@ -148,7 +151,7 @@ export const TemplateEditor = React.forwardRef<
             completionKeymap: true,
             lintKeymap: true,
           }}
-          theme="light"
+          theme={isDark ? vscodeDark : 'light'}
         />
       </div>
     );

@@ -7,9 +7,11 @@ import { yaml } from '@codemirror/lang-yaml';
 import { linter } from '@codemirror/lint';
 import type { Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { StencilConfigSchema } from '../schemas';
 import * as jsYaml from 'js-yaml';
 import type { ValidationError } from './ErrorPanel';
+import { useTheme } from '@/lib/hooks/useTheme';
 
 interface YamlEditorProps {
   value: string;
@@ -26,6 +28,7 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
   ({ value, onChange, onValidationChange, readOnly = false }, ref) => {
     const editorRef = useRef<EditorView | null>(null);
     const previousErrorsRef = useRef<string>('');
+    const { isDark } = useTheme();
     
   // YAMLバリデーション用のlinter
   const yamlLinter = linter((view) => {
@@ -196,7 +199,7 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
           completionKeymap: true,
           lintKeymap: true,
         }}
-        theme="light"
+        theme={isDark ? vscodeDark : 'light'}
       />
     </div>
   );

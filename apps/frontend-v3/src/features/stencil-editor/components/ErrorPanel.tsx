@@ -44,11 +44,11 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
   const infoCount = errors.filter((e) => e.severity === 'info').length;
 
   return (
-    <div className="border-t border-gray-200 bg-gray-50 p-4">
+    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
       <div className="mb-3 flex items-center gap-4 text-sm">
-        <span className="font-semibold">検証結果</span>
+        <span className="font-semibold dark:text-white">検証結果</span>
         {errorCount > 0 && (
-          <span className="flex items-center gap-1 text-red-600">
+          <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" strokeWidth={2} />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -57,7 +57,7 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
           </span>
         )}
         {warningCount > 0 && (
-          <span className="flex items-center gap-1 text-yellow-600">
+          <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -65,7 +65,7 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
           </span>
         )}
         {infoCount > 0 && (
-          <span className="flex items-center gap-1 text-blue-600">
+          <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" strokeWidth={2} />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16v-4m0-4h.01" />
@@ -87,7 +87,7 @@ export function ErrorPanel({ errors, onErrorClick }: ErrorPanelProps) {
             <Alert
               key={index}
               variant={config.variant}
-              className="cursor-pointer transition-colors hover:bg-gray-100"
+              className="cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => onErrorClick?.(error)}
             >
               <div className="flex items-start gap-2">
