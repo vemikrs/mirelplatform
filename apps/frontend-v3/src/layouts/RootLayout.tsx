@@ -190,7 +190,7 @@ export function RootLayout() {
         </div>
       ) : null}
 
-      <main className="flex-1 bg-surface-subtle/40 py-10">
+      <main className="flex-1 bg-background py-10">
         <div className="container">
           <Outlet />
         </div>
