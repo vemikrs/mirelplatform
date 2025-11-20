@@ -1,352 +1,136 @@
 # mirelplatform - GitHub Copilot Instructions
 
-**Allways answer in Japanese.**
+> **基本ルール**: すべての応答は日本語。指示ファイルの内容は常に最新のベストプラクティス（2025/11時点）に沿ってメンテすること。[GitHub公式ブログの指針](https://github.blog/ai-and-ml/github-copilot/5-tips-for-writing-better-custom-instructions-for-copilot/)や[Monorepo向けCopilot運用事例](https://github.com/orgs/community/discussions/179916)を参考に、各ドメインの文脈を明示する。
 
-## Project Overview
+## 1. プロジェクト全体像
 
-ProMarker is a comprehensive code generation and template management platform built on the mirelplatform framework. This application provides automated development scaffolding, template processing, and code generation capabilities for rapid application development.
+ProMarker は mirelplatform フレームワーク上で動作するモノレポ（pnpm workspace）。以下の4ドメインが密結合しているため、作業前に対象範囲を明示する。
 
-### Architecture
-- **Backend**: Spring Boot 3.3 with Java 21, mirelplatform framework
-- **Frontend**: React 19+ with Vite, Tailwind CSS 4, Radix UI, shadcn/ui components (@mirel/ui)
-- **State Management**: Zustand + TanStack Query (React Query) for server state
-- **Database**: H2 (development), MySQL (production)
-- **Template Engine**: FreeMarker with custom function resolvers
-- **Monorepo**: pnpm workspace with packages (ui, e2e) + apps (frontend-v3)
-- **Testing**: Playwright E2E, Vitest for unit tests
-- **Container**: DevContainer support for Codespaces and local development
+| ドメイン | 役割 | 主な技術 | 起動/ビルド | 備考 |
+|---|---|---|---|---|
+| `apps/frontend-v3` | React 19 + Vite アプリ | TypeScript, Tailwind 4, Radix UI, Zustand, TanStack Query | `pnpm --filter frontend-v3 dev` (VS Code Task経由) | `/promarker` からアクセス。APIは `/mapi/*` を必ず経由。|
+| `packages/ui` | @mirel/ui デザインシステム | Radix + shadcn, Storybook相当のユーティリティ | 直接ビルド不要。`tsc --noEmit` に通ること | ここで Dialog 等の共通実装を定義。|
+| `packages/e2e` | Playwright E2E | Playwright 1.49+, Vite test server bootstrapping | `pnpm test:e2e` | 自動で backend/frontend を立ち上げる。|
+| `backend` | Spring Boot 3.3 API | Java 21, Gradle 8, FreeMarker | `./gradlew :backend:bootRun --args='--spring.profiles.active=dev'` | `mipla2` コンテキスト配下で API 提供。|
 
-## Copilot Workflow（作業報告ルール）
+## 2. 回答/コミュニケーション指針
 
-Copilotが作業を行う際のルール：
+- 日本語で簡潔に回答。成果物は Markdown で整理し、コード変更がある場合はファイル名と意図を先に提示。
+- ユーザー要求が複数ある場合は TODO リストを活用し、段階ごとに更新（Copilot Spaces運用の推奨に従いコンテキストを明確化）。
+- Issue/PRへ投稿する際は開始/完了それぞれでコメントし、末尾に **"Powered by Copilot 🤖"** を付記。
+- `docs/issue/#<Issue>/*.md` を作業ログとして更新。アーキテクチャ判断・障害の暫定措置も必ず追記。
 
-### Issue/PRへのコメント
-* 各Phaseの作業開始時・完了時に関連Issue/PRへ進捗報告を投稿し、対応する `docs/issue/#<Issue>/*.md` を更新
-* コメントの末尾に必ず **"Powered by Copilot 🤖"** を明記
-* 作業内容・変更点・次のステップを簡潔に記載
+## 3. コーディング規約とコミット
 
-### コミットメッセージ
-
-コミットメッセージは以下のルールに従う：
-
-#### **形式**
+### 3.1 コミットメッセージ形式
 
 ```
-<type>(<scope>): <subject> (refs #<issue-number>)
+<type>(<scope>): <subject> (refs #<issue>)
 ```
 
-#### **Type（必須）**
+Type: `feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert`
 
-- **feat**: 新機能追加
-- **fix**: バグ修正
-- **docs**: ドキュメント変更のみ
-- **style**: コードの意味に影響しない変更（空白、フォーマット、セミコロン等）
-- **refactor**: リファクタリング（バグ修正も機能追加もしない）
-- **perf**: パフォーマンス改善
-- **test**: テスト追加・修正
-- **chore**: ビルドプロセスや補助ツールの変更
-- **ci**: CI/CD設定の変更
-- **build**: ビルドシステムや外部依存関係の変更
-- **revert**: 以前のコミットを取り消す
+Scope例: `frontend`, `backend`, `ui`, `e2e`, `infra`, `modal`, `deps`
 
-#### **Scope（オプション）**
+Subjectは50文字以内、日本語可。Issue連携必須。
 
-変更の範囲を示す（括弧内）：
-- `ci`: CI/CD関連
-- `deps`: 依存関係
-- `modal`: モーダルコンポーネント
-- `nav`: ナビゲーション
-- `seo`: SEO関連
-- `liquid`: Liquid Design関連
-- 等
+### 3.2 コミット前チェック
 
-#### **Subject（必須）**
+- `git status` / `git diff` で意図しない差分がないか確認。
+- 生成物 (`dist/`, `.next/`, `pnpm-lock.yaml` 手動編集 等) をコミットしない。pnpm v9 の `workspace-lock.yaml` は **変更禁止**。
+- Java系は `./gradlew :backend:check`, フロントは `pnpm --filter frontend-v3 lint` を可能な限り実行。
 
-- 50文字以内を目安
-- 日本語OK
-- 文末にピリオド不要
-
-#### **Issue参照（推奨）**
-
-- `(refs #<issue>)`: 作業中のIssue参照
-- `(closes #<issue>)`: Issueをクローズする場合
-- 複数Issue: `(refs #12, #34)`
-
-#### **例**
-
-```bash
-# 機能追加
-feat(modal): プロダクト詳細モーダルを追加 (refs #25)
-
-# バグ修正
-fix(nav): スクロール時のNavbar表示バグを修正 (closes #34)
-
-# CI/CD改善
-chore(ci): Yarn Cacheを有効化してビルド時間短縮 (refs #45)
-
-# ドキュメント更新
-docs: copilot-instructionsにコミットルールを追記 (refs #45)
+## 4. モノレポのフォルダガイド
 
 ```
-
-#### **コミット前の確認**
-* `git status` で変更ファイル一覧を確認
-* `git diff` で意図しない差分がないかチェック
-* 特に以下に注意：
-  - README.mdの意図しない上書き
-  - 既存ファイルの削除・移動漏れ
-  - ビルド成果物（`dist/`等）のコミット防止
-  - `copilot-instructions.md` の意図しない変更
-* 確認後に `git add` してコミット
-
-### 進捗の可視化
-* 複数ファイルの変更は、変更内容を箇条書きで報告
-* ビルドエラーや問題発生時は即座に報告し、解決策を提示
-
-### PRレビューコメントの取得
-* GitHub PRのレビューコメント（インラインコメント）を取得する場合：
-  ```bash
-  gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[] | {path, line, body, user: .user.login, created_at}'
-  ```
-* レビュー全体のサマリーを取得する場合：
-  ```bash
-  gh pr view {pr_number} --json reviews,comments
-  ```
-
-## Development Environment
-
-### Quick Start
-
-**⚠️ 重要: サービス起動にはVS Code Tasksを使用すること**
-シェルスクリプトを直接実行すると、ターミナルがキャンセルされた際にプロセスが残り続けます。
-必ず `create_and_run_task` ツールを使用してバックグラウンドタスクとして起動してください。
-
-```bash
-# ❌ 非推奨: シェルスクリプト直接実行
-./scripts/start-services.sh  # プロセスが残る可能性がある
-
-# ✅ 推奨: VS Code Tasksまたはgradlewコマンド直接実行
-# バックエンド起動
-cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
-
-# フロントエンド起動
-pnpm --filter frontend-v3 dev  # または: cd apps/frontend-v3 && npm run dev
-```
-
-**プロセスの強制停止**
-- **停止**：**Port→PID→Kill**。例：`fuser -k 5173/tcp`  
-- **禁止**：`pkill -f node` / `killall node` / `kill $(pgrep node)`
-
-**GitHub Copilotへの指示:**
-- サービス起動時は必ずVS Code Tasksを作成・使用する
-- `run_in_terminal` で `isBackground=true` は使用しない（プロセスが残る）
-- 長時間実行プロセスは `create_and_run_task` でタスク化する
-
-### Service URLs
-- Frontend v3: http://localhost:5173/
-- Backend API: http://localhost:3000/mipla2
-- Swagger UI: http://localhost:3000/mipla2/swagger-ui.html
-- OpenAPI JSON: http://localhost:3000/mipla2/api-docs
-- ProMarker UI (v3): http://localhost:5173/promarker
-- H2 Console: http://localhost:3000/mipla2/h2-console
-
-### Key Configuration Files
-- `backend/src/main/resources/config/application.yml` - Main configuration
-- `apps/frontend-v3/vite.config.ts` - Frontend build and proxy settings
-- `settings.gradle` - Multi-project Gradle configuration
-- `.devcontainer/devcontainer.json` - Development container setup
-
-### API Proxy Configuration
-Frontend development server (Vite) proxies API calls:
-```typescript
-// vite.config.ts proxy configuration
-server: {
-  proxy: {
-    '/mapi': {
-      target: 'http://localhost:3000/mipla2',
-      changeOrigin: true,
-      rewrite: (path) => path.replace(/^\/mapi/, ''),
-    },
-  },
-}
-```
-
-**Critical Pattern**: 
-- Frontend API calls: `POST /mapi/apps/mste/api/suggest`
-- Backend receives: `POST /mipla2/apps/mste/api/suggest`
-- Spring Boot context path: `/mipla2`
-- Always use `/mapi/` prefix in frontend code for proxy routing
-
-## Core Components
-
-### Backend Structure
-```
-backend/
-├── src/main/java/jp/vemi/
-│   ├── mirel/apps/mste/        # ProMarker core functionality
-│   │   ├── domain/service/     # Business logic
-│   │   ├── application/controller/ # REST controllers
-│   │   └── domain/dto/         # Data transfer objects
-│   ├── framework/              # Base framework utilities
-│   └── ste/                   # Stencil Template Engine
-├── src/main/resources/
-│   ├── config/                # Configuration files
-│   ├── stencil-samples/       # Built-in template samples
-│   └── templates/             # Web templates
-```
-
-### Frontend Structure
-```
-apps/frontend-v3/
-├── src/
-│   ├── app/routes/            # React Router pages
-│   ├── features/promarker/    # ProMarker feature module
-│   ├── components/            # Shared components
-│   └── lib/                   # Utilities and API client
-├── packages/ui/               # Design system (@mirel/ui)
-└── vite.config.ts            # Vite configuration
-```
-
-## Development Guidelines
-
-### Code Style
-- Java: Follow Spring Boot conventions, use Lombok for boilerplate reduction
-- React: Use functional components with hooks, TypeScript strict mode, maintain immutable state patterns
-- Ensure proper null safety checks, especially for API response handling
-
-### API Response Patterns
-- Most APIs return `ApiResponse<T>` structure with `data`, `messages`, `errors` fields
-- Special case: SuggestService uses ModelWrapper for frontend compatibility
-- Always check for both success data and error conditions
-
-### Database Access
-- Primary: JPA repositories with Spring Data patterns
-- Development: Framework debug endpoint `/framework/db/query` (localhost only)
-- Use proper transaction boundaries for multi-step operations
-
-### Template System
-- Stencil templates use YAML configuration + FreeMarker templates
-- Templates stored in `backend/src/main/resources/stencil-samples/`
-- Support for hierarchical category organization
-
-## Key Features Implementation
-
-### ProMarker (MSTE) - Main Template Engine
-- **Purpose**: Dynamic code generation from templates
-- **Main UI**: `/apps/frontend-v3/src/features/promarker/` (React)
-- **Core Service**: `SuggestServiceImp`, `GenerateServiceImp`
-- **Workflow**: Category selection → Stencil selection → Parameter input → Generation
-
-### Stencil Management
-- **Configuration**: YAML-based stencil settings
-- **Templates**: FreeMarker (.ftl) files for code generation
-- **Storage**: Classpath-bundled samples + database-managed custom stencils
-- **Categories**: Hierarchical organization with user/standard/sample levels
-
-### File Management
-- **Upload/Download**: Secure temporary file handling
-- **Batch Operations**: ZIP compression for multi-file downloads
-- **Integration**: Template parameter file references
-
-## Related Documentation
-
-For detailed information on specific aspects, refer to:
-
-- **[API Reference](./docs/api-reference.md)** - Complete API endpoint documentation
-- **[Frontend Architecture](./docs/frontend-architecture.md)** - React implementation details (Note: Some content may reference legacy Vue.js)
-- **[Development Guide](./docs/development-guide.md)** - Advanced development patterns
-- **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
-
-## Common Development Tasks
-
-### Adding New API Endpoints
-1. Create DTO classes in `domain/dto/`
-2. Implement service in `domain/service/`
-3. Create API wrapper in `domain/api/`
-4. Register with Spring's component scanning
-
-### Frontend Component Development
-1. Follow React functional component patterns with TypeScript strict mode
-2. Use @mirel/ui components (shadcn/ui + Radix UI wrapper) for design system consistency
-3. Use Tailwind CSS 4 for styling with class-variance-authority for component variants
-4. Implement proper error handling with Radix Toast notifications
-5. Use TanStack Query for server state, Zustand for client state
-6. Follow feature-based architecture: `apps/frontend-v3/src/features/{feature}/`
-
-### Template Development
-1. Create YAML configuration in `stencil-samples/`
-2. Implement FreeMarker templates (.ftl files)
-3. Test with ProMarker UI workflow
-4. Ensure proper parameter validation
-
-## Monorepo Workspace Structure
-
-### Packages Organization
-```
-packages/
-├── ui/              # @mirel/ui design system (shadcn/ui wrapper)
-├── e2e/             # Playwright E2E tests
-└── configs/         # Shared configurations
-
 apps/
-└── frontend-v3/     # React app with Vite
+  frontend-v3/         # Reactアプリ (Vite)
+packages/
+  ui/                  # デザインシステム (@mirel/ui)
+  e2e/                 # Playwright テスト
+backend/               # Spring Boot サービス
+docs/                  # 仕様・検証ログ・Issue別記録
+scripts/               # サービス起動/停止/ビルドスクリプト (直接実行は避ける)
 ```
 
-### Package Management Commands
-```bash
-# Install dependencies for all packages
-pnpm install
+### ドメイン別ベストプラクティス
 
-# Run command in specific package
-pnpm --filter frontend-v3 dev
-pnpm --filter e2e test
+- **Frontend**: React19, `src/app`(ルーティング), `src/features/promarker`(機能単位)。API呼び出しは `src/lib/api` 経由で `/mapi/*` のみ使用。UIコンポーネントは可能な限り `@mirel/ui` を利用し、Tailwindは `@apply` 禁止・`class-variance-authority` でバリアント管理。
+- **Packages/ui**: Radixコンポーネントを拡張。DOM直書き禁止、アクセシビリティ属性を維持。`Dialog` 等のスタイル調整はここで集約し、アプリ側では props で調整。
+- **Backend**: `jp.vemi.mirel.apps.mste` 配下に API/Service/Domain を分離。リクエストDTOは `domain/dto`, Service戻り値は `ApiResponse` で統一。`/mapi` から流入したパラメータは `ApiRequest<*>.model` で受ける。
+- **E2E**: Playwright は `packages/e2e/tests/specs/promarker-v3/` に集約。テストは `apps/frontend-v3` を起動せず、Playwright config が `frontend-v3 dev` タスクを自動起動する。新規テストは `page-objects` を必ず経由。
 
-# Run command in all packages
-pnpm -r build
-pnpm -r typecheck
-```
+## 5. 開発環境とタスク実行
 
-## Testing Strategy
+### 5.1 VS Code Tasks (必須)
 
-### E2E Testing with Playwright
-- **Location**: `packages/e2e/tests/`
-- **Configuration**: `packages/e2e/playwright.config.ts`
-- **Auto-start**: Configured to start backend + frontend automatically
-- **Parallel execution**: Limited to 2 workers (local) / 1 worker (CI) for stability
-- **Localization**: Japanese locale (ja-JP), Asia/Tokyo timezone
+- 長時間動くサーバー・ウォッチャーは **必ず** VS Code Tasks (`create_and_run_task`) で起動。`run_in_terminal` の `isBackground=true` は使用禁止。
+- 代表タスク:
+  - `shell: Backend: Start Spring Boot`
+  - `shell: Frontend-v3: Start Vite`
+  - `shell: Start All Services` (両方必要な場合のみ)
+  - `shell: Watch Logs` (監視向け)
 
-### Key E2E Test Commands
-```bash
-# Run all E2E tests
-pnpm test:e2e
+### 5.2 プロセス終了
 
-# Run with UI mode (interactive)
-pnpm test:e2e:ui
+- Port→PID→Kill を徹底 (`fuser -k 5173/tcp` 等)。`pkill -f node` や `killall` 系コマンドは禁止。
 
-# Run specific test file
-pnpm --filter e2e test tests/specs/promarker-v3/form-validation.spec.ts
-```
+### 5.3 環境別メモ
 
-### Test Organization
-- **Archived tests**: `tests/specs/_archived-vue-frontend/` (ignored in config)
-- **Active tests**: Focus on `tests/specs/promarker-v3/` (React frontend)
-- **Page Objects**: Organized by feature in `tests/page-objects/`
+- **DevContainer/Codespaces**: `pnpm install` 後、`pnpm dlx husky` 等のセットアップは不要（すでに済み）。VS Code の `Java: Clean Workspace` を使う際は `backend/.gradle` を削除しない。
+- **ローカル**: Node v22.20.0 (nvm利用), Java 21 (SDKMAN!) を想定。`pnpm env use --global 22.20.0` 済みか確認。
 
-## Security Considerations
+## 6. ビルド & テスト マトリクス
 
-- **Authentication**: JWT-based with session management
-- **API Access**: Most endpoints require authentication
-- **File Security**: Temporary file cleanup and access control
-- **Database**: Development debug access restricted to localhost only
-- **Template Security**: Proper input validation for template parameters
+| 種別 | コマンド (タスク経由) | 目的 |
+|---|---|---|
+| Frontend Dev | `pnpm --filter frontend-v3 dev` | Vite開発サーバー |
+| Frontend Test | `pnpm --filter frontend-v3 test` / `pnpm --filter frontend-v3 lint` | Vitest + ESLint |
+| UI Package | `pnpm --filter @mirel/ui typecheck` | `tsc --noEmit`。Storybookは未導入 |
+| Backend Dev | `./gradlew :backend:bootRun --args='--spring.profiles.active=dev'` | Spring Boot |
+| Backend Test | `./gradlew :backend:test` / `:backend:check` | JUnit |
+| E2E | `pnpm test:e2e` | Playwright、必要サービス自動起動 |
 
-### Performance Guidelines
+成果確認後は `pnpm prune` や `./gradlew --stop` でプロセスを解放する。
 
-- **Frontend**: Use React.memo, useMemo, useCallback appropriately; leverage TanStack Query caching
-- **Backend**: Implement proper caching for template metadata, use efficient database queries
-- **File Operations**: Stream large files, implement proper cleanup for temporary files
-- **E2E Testing**: Use Playwright with resource-aware parallelization (workers: 2 local, 1 CI)
+## 7. API/フロント間プロキシ規約
 
----
+- Vite 側では `/mapi` → `http://localhost:3000/mipla2` へ rewrite。React から直接 `http://localhost:3000` を叩かない。
+- 例: `POST /mapi/apps/mste/api/generate` → Backend: `/mipla2/apps/mste/api/generate`
+- Spring の `server.servlet.context-path=/mipla2` を変更しないこと。
 
-This document provides the foundation for working with the mirelplatform. Refer to the detailed documentation in the `docs/` directory for specific implementation guidance.
+## 8. セキュリティ & データ管理
+
+- JWT/セッション情報を含むファイルは Git 追跡禁止。`.env` ではなく `config/application.yml` の `spring.config.import=optional:file:.env` を利用。
+- 一時ファイルは `data/storage/` 配下に生成され、72時間でクリーンアップ。テストでは `FileManagementService` をモックする。
+- Playwright でアップロードする秘密情報は `packages/e2e/tests/fixtures` に保存しない。
+
+## 9. 作業手順テンプレート
+
+1. Issue から TODO を切り出し、`manage_todo_list` で追跡。
+2. 関連ファイルを読み込み (`read_file`, `grep_search`) → 必要なら `file_search`。
+3. 変更は `apply_patch` or `edit_notebook_file`。複数ファイル修正時は差分を小さく保つ。
+4. `run_task` 経由でビルド/テスト。失敗時はログ抜粋を共有し、再現手順と暫定策を記録。
+5. 変更後は `get_errors` or ツール出力でエラー確認。必要に応じ `pnpm lint` / `gradlew check`。
+6. Issue/PR コメントに結果を要約し、`docs/issue/#<id>/` に詳細を追記。コメント末尾は **"Powered by Copilot 🤖"**。
+
+## 10. 参考リンク
+
+- GitHub Copilot カスタムインストラクションのベストプラクティス（プロジェクト概要・フォルダ構成を明示することが推奨）[^1]
+- Monorepo での Copilot コンテキスト分割とナレッジ共有の重要性[^2]
+
+[^1]: GitHub Blog “5 tips for writing better custom instructions for Copilot” (2025). https://github.blog/ai-and-ml/github-copilot/5-tips-for-writing-better-custom-instructions-for-copilot/
+[^2]: GitHub Community Discussion “Taming Your Monorepo with GitHub Copilot” (2025). https://github.com/orgs/community/discussions/179916
+
+## 11. スコープ別インストラクション
+
+Copilot Chat / Coding Agent に対象ドメインを明確に伝えるため、以下の補助ファイルを参照すること。
+
+| ファイル | 役割 |
+| --- | --- |
+| `.github/copilot/frontend.md` | `apps/frontend-v3` 向け。Viteの起動手順や build/lint/test コマンドを記載。 |
+| `.github/copilot/backend.md` | `backend/` 向け。Gradle タスクや API 構成ポリシー、プロファイル設定を記載。 |
+| `.github/copilot/ui-package.md` | `packages/ui` の Radix/shadcn ラッパーに関するガイド。型チェック・テスト必須。 |
+| `.github/copilot/e2e.md` | `packages/e2e` Playwright テスト実装用。自動起動やレポート確認手順を記載。 |
+
+パッケージやモジュールの変更時は、まず該当ファイルを読み込み、要求されたビルド・テストコマンドを必ず実行すること。
