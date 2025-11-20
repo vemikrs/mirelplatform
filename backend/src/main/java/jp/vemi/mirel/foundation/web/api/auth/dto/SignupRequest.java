@@ -5,19 +5,26 @@ package jp.vemi.mirel.foundation.web.api.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * ログインリクエストDTO.
+ * サインアップリクエストDTO.
  */
 @Data
-public class LoginRequest {
+public class SignupRequest {
+    
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
     
     @NotBlank(message = "Password is required")
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
     
-    private String tenantId; // オプション: 初回テナント指定
+    @NotBlank(message = "Display name is required")
+    private String displayName;
+    
+    private String firstName;
+    private String lastName;
 }

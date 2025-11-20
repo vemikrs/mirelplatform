@@ -3,8 +3,10 @@
  */
 package jp.vemi.mirel.foundation.web.api.auth.controller;
 
+import jakarta.validation.Valid;
 import jp.vemi.mirel.foundation.context.ExecutionContext;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
+import jp.vemi.mirel.foundation.web.api.auth.service.AuthenticationServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,85 @@ public class AuthenticationController {
 
     @Autowired
     private ExecutionContext executionContext;
+
+    @Autowired
+    private AuthenticationServiceImpl authenticationService;
+
+    /**
+     * ログイン
+     */
+    @PostMapping("/login")
+    public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            AuthenticationResponse response = authenticationService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Login failed: {}", e.getMessage());
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    /**
+     * サインアップ
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<AuthenticationResponse> signup(@Valid @RequestBody SignupRequest request) {
+        try {
+            AuthenticationResponse response = authenticationService.signup(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Signup failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * トークンリフレッシュ
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthenticationResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        try {
+            AuthenticationResponse response = authenticationService.refresh(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Token refresh failed: {}", e.getMessage());
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    /**
+     * ログアウト
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshTokenRequest request) {
+        try {
+            String refreshToken = request != null ? request.getRefreshToken() : null;
+            authenticationService.logout(refreshToken);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            logger.error("Logout failed: {}", e.getMessage());
+            return ResponseEntity.ok().build(); // Always return 200 for logout
+        }
+    }
+
+    /**
+     * テナント切替
+     */
+    @PostMapping("/switch-tenant")
+    public ResponseEntity<UserContextDto> switchTenant(@RequestBody SwitchTenantRequest request) {
+        try {
+            if (!executionContext.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            String userId = executionContext.getCurrentUserId();
+            UserContextDto response = authenticationService.switchTenant(userId, request.getTenantId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Tenant switch failed: {}", e.getMessage());
+            return ResponseEntity.status(403).build();
+        }
+    }
 
     /**
      * 現在のユーザ情報を取得
