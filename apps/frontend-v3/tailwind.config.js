@@ -136,6 +136,10 @@ export default {
         'liquid-normal': 'var(--liquid-duration-normal)',
         'liquid-slow': 'var(--liquid-duration-slow)',
       },
+      zIndex: {
+        '110': '110',  // Dialog Overlay用
+        '120': '120',  // Dialog Content用
+      },
       keyframes: {
         'toast-in': {
           '0%': { opacity: 0, transform: 'translateY(12px) scale(0.95)' },
