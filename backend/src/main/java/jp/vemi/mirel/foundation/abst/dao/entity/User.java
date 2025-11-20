@@ -11,6 +11,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.Instant;
 import java.util.Date;
 
 @Setter
@@ -31,6 +32,40 @@ public class User {
 
     @Column(name = "tenant_id")
     private String tenantId;
+
+    // SaaS拡張フィールド
+    @Column(name = "email", unique = true)
+    private String email;
+
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "salt")
+    private String salt;
+
+    @Column(name = "attributes", columnDefinition = "TEXT")
+    private String attributes; // JSON形式で拡張属性を格納
+
+    @Column(name = "roles", columnDefinition = "TEXT")
+    private String roles; // システムロール（カンマ区切り）
+
+    @Column(name = "is_active", columnDefinition = "boolean default true")
+    private Boolean isActive = true;
+
+    @Column(name = "email_verified", columnDefinition = "boolean default false")
+    private Boolean emailVerified = false;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
 
     /** バージョン */
     @Column(columnDefinition = "integer default 1")

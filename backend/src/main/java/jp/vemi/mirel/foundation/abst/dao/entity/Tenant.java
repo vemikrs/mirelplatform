@@ -26,6 +26,22 @@ public class Tenant {
     @Column(name = "tenant_name")
     private String tenantName;
 
+    // SaaS拡張フィールド
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "org_id")
+    private String orgId;
+
+    @Column(name = "settings", columnDefinition = "TEXT")
+    private String settings; // JSON形式でテナント設定を格納
+
+    @Column(name = "is_active", columnDefinition = "boolean default true")
+    private Boolean isActive = true;
+
     /** バージョン */
     @Column(columnDefinition = "integer default 1")
     private long version;
