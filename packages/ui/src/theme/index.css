@@ -210,4 +210,10 @@
   body[data-fullscreen-editor="true"] header.sticky + div {
     display: none !important;
   }
+
+  /* フルスクリーンエディタ表示時はRadix Dialog（モーダル）をエディタより前面に表示 */
+  body[data-fullscreen-editor="true"] [role="dialog"],
+  body[data-fullscreen-editor="true"] [data-state="open"][class*="fixed inset-0"] {
+    z-index: 150 !important;
+  }
 }
