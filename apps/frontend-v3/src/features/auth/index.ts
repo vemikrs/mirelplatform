@@ -1,1 +1,1 @@
-export { LoginPage } from './pages';
+export { LoginPage, SignupPage } from './pages';

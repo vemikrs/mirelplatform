@@ -7,7 +7,8 @@ import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarker
 import { StencilEditor } from '@/features/stencil-editor/components/StencilEditor';
 import { StencilListPage } from '@/features/stencil-editor/pages/StencilListPage';
 import { SaaSStatusPage } from '@/features/saas-status';
-import { LoginPage } from '@/features/auth';
+import { LoginPage, SignupPage } from '@/features/auth';
+import { ProtectedRoute } from '@/components/auth';
 import { loadNavigationConfig } from './navigation.schema';
 
 /**
@@ -18,6 +19,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/signup',
+    element: <SignupPage />,
   },
   {
     id: 'app-root',
