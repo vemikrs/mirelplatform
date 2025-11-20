@@ -16,7 +16,15 @@ import { FileTabs } from './FileTabs';
 import type { OpenTab } from './FileTabs';
 import { HistoryDialog } from './HistoryDialog';
 import { StencilManageDialog } from './StencilManageDialog';
-import { Button, toast } from '@mirel/ui';
+import { 
+  Button, 
+  toast,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@mirel/ui';
 import { loadStencil, saveStencil } from '../api/stencil-editor-api';
 import type { LoadStencilResponse, EditorMode } from '../types';
 
@@ -579,7 +587,7 @@ export const StencilEditor: React.FC = () => {
 
   // フルスクリーン時のエディタコンテンツ
   const editorContent = (
-    <div className={isFullscreen ? "fixed inset-0 z-100 bg-background flex flex-col" : "stencil-editor p-4 bg-background"}>
+    <div className={isFullscreen ? "fixed inset-0 z-10 bg-background flex flex-col" : "stencil-editor p-4 bg-background"}>
       <div className={`flex justify-between items-center mb-4 ${isFullscreen ? 'px-4 pt-4 border-b border-border pb-3' : ''}`}>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-foreground">{data.config.name}</h1>
@@ -741,55 +749,44 @@ export const StencilEditor: React.FC = () => {
       <ErrorPanel errors={validationErrors} onErrorClick={handleErrorClick} />
 
       {/* ショートカットヘルプダイアログ */}
-      {showShortcuts && (
-        <div 
-          className="fixed inset-0 bg-black/5 dark:bg-black/70 flex items-center justify-center z-50"
-          onClick={() => setShowShortcuts(false)}
-        >
-          <div 
-            className="bg-surface rounded-lg shadow-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-foreground">キーボードショートカット</h2>
-              <button
-                onClick={() => setShowShortcuts(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
+      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
+        <DialogContent className="max-w-md bg-surface">
+          <DialogHeader>
+            <DialogTitle>キーボードショートカット</DialogTitle>
+            <DialogDescription>
+              よく使用するキーボードショートカットの一覧です。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-foreground py-4">
+            <div className="flex justify-between items-center">
+              <span>保存</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+S</kbd>
             </div>
-            <div className="space-y-3 text-sm text-foreground">
-              <div className="flex justify-between items-center">
-                <span>保存</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+S</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>編集モード切替</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+E</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>全画面モード切替</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">F11</kbd>
-              </div>
-              <hr className="my-2 border-border" />
-              <div className="text-xs text-muted-foreground text-muted-foreground font-semibold">ファイルエクスプローラー</div>
-              <div className="flex justify-between items-center">
-                <span>ファイル移動</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">↑↓</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>フォルダ開閉</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">←→</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>選択/開閉</span>
-                <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Enter</kbd>
-              </div>
+            <div className="flex justify-between items-center">
+              <span>編集モード切替</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Ctrl+E</kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>全画面モード切替</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">F11</kbd>
+            </div>
+            <hr className="my-2 border-border" />
+            <div className="text-xs text-muted-foreground font-semibold">ファイルエクスプローラー</div>
+            <div className="flex justify-between items-center">
+              <span>ファイル移動</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">↑↓</kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>フォルダ開閉</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">←→</kbd>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>選択/開閉</span>
+              <kbd className="px-2 py-1 bg-surface-subtle border border-border rounded">Enter</kbd>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* メインレイアウト: エクスプローラー + タブ */}
       <div className={`flex gap-0 relative ${isFullscreen ? 'flex-1 overflow-hidden' : 'h-[calc(100vh-280px)]'}`}>
@@ -801,7 +798,7 @@ export const StencilEditor: React.FC = () => {
           {!explorerCollapsed && (
             <FileExplorer
               files={data.files}
-              currentFilePath={activeTabPath}
+              currentFilePath={activeTabPath || undefined}
               onFileSelect={handleFileOpen}
               onFileRename={handleFileRename}
               onFileCreate={handleFileCreate}
@@ -843,8 +840,9 @@ export const StencilEditor: React.FC = () => {
       </div>
 
       {/* 履歴ダイアログ */}
-      {showHistoryDialog && (
+      {showHistoryDialog && data && (
         <HistoryDialog
+          stencilId={stencilId}
           currentSerial={data.config.serial}
           versions={data.versions}
           onRestore={handleRestore}

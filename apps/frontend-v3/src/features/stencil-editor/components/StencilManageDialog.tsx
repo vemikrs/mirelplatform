@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   Button,
   Input,
@@ -147,9 +148,9 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
       <DialogContent className="max-w-2xl bg-surface">
         <DialogHeader>
           <DialogTitle>ステンシル管理</DialogTitle>
-          <div className="text-sm text-muted-foreground mt-1">
-            現在のシリアル: {currentSerial}
-          </div>
+          <DialogDescription>
+            ステンシルの情報編集やシリアル改版を行います。現在のシリアル: {currentSerial}
+          </DialogDescription>
         </DialogHeader>
 
         {!mode && (
@@ -158,9 +159,9 @@ export const StencilManageDialog: React.FC<StencilManageDialogProps> = ({
               実行する操作を選択してください
             </div>
             <div className="grid grid-cols-2 gap-4">
-                            <button
+              <button
                 type="button"
-                onClick={() => setActiveAction('save')}
+                onClick={() => setMode('edit')}
                 className="p-6 border-2 border-border rounded-lg hover:border-primary hover:bg-primary/10 transition-all"
               >
                 <div className="text-4xl mb-2">📝</div>

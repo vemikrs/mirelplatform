@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   Button,
   toast,
@@ -122,9 +123,9 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
       <DialogContent className="max-w-4xl max-h-[85vh] bg-surface">
         <DialogHeader>
           <DialogTitle>バージョン履歴</DialogTitle>
-          <div className="text-sm text-muted-foreground mt-1">
-            現在: {currentSerial}
-          </div>
+          <DialogDescription>
+            過去のバージョンを確認・復元できます。現在のシリアル: {currentSerial}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-4">
