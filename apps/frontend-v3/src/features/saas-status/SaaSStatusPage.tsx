@@ -3,7 +3,7 @@ import { Card } from '@mirel/ui';
 
 /**
  * SaaS実装ステータスページ
- * Phase 1-3の実装状況を表示
+ * Phase 1-4の実装状況を表示
  */
 export function SaaSStatusPage() {
   return (
@@ -78,27 +78,70 @@ export function SaaSStatusPage() {
 
       {/* Phase 3: API実装 */}
       <Card className="mb-6 p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🔄 Phase 3: バックエンドAPI実装（進行中）</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-green-600">✅ Phase 3: バックエンドAPI実装（完了）</h2>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-green-500">✓</span>
-            <span>認証API DTOs 作成</span>
+            <span>POST /auth/login - ログイン、JWT発行</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-500">✓</span>
-            <span>AuthenticationController 基本実装</span>
+            <span>POST /auth/signup - サインアップ、デフォルトテナント付与</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-500">✓</span>
-            <span>GET /auth/me エンドポイント</span>
+            <span>POST /auth/refresh - トークンリフレッシュ</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-500">✓</span>
-            <span>GET /auth/health エンドポイント</span>
+            <span>POST /auth/logout - ログアウト</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>POST /auth/switch-tenant - テナント切替</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>GET /auth/me - 現在のユーザー情報取得</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>GET /admin/users - 管理者：ユーザー一覧</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>GET /admin/users/:id - 管理者：ユーザー詳細</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>PUT /admin/users/:id - 管理者：ユーザー更新</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Phase 4: フロントエンド */}
+      <Card className="mb-6 p-6">
+        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🔄 Phase 4: フロントエンド実装（進行中）</h2>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>authStore（Zustand）実装</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>ログイン画面（/login）</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-400">○</span>
-            <span>ユーザAPI、テナントAPI、ライセンスAPI（今後実装予定）</span>
+            <span>ヘッダー実装（TenantSwitcher, LicenseBadge, UserMenu）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">○</span>
+            <span>サインアップ画面（/signup）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">○</span>
+            <span>管理画面（Users/Tenants/Licenses）</span>
           </div>
         </div>
       </Card>

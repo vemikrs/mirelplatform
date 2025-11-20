@@ -1,0 +1,150 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface User {
+  userId: string;
+  email: string;
+  displayName: string;
+  firstName?: string;
+  lastName?: string;
+  isActive: boolean;
+  emailVerified: boolean;
+}
+
+interface Tenant {
+  tenantId: string;
+  tenantName: string;
+  displayName: string;
+}
+
+interface Tokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+interface AuthState {
+  user: User | null;
+  currentTenant: Tenant | null;
+  tokens: Tokens | null;
+  isAuthenticated: boolean;
+
+  // Actions
+  login: (email: string, password: string) => Promise<void>;
+  signup: (data: { email: string; password: string; displayName: string; firstName?: string; lastName?: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  switchTenant: (tenantId: string) => Promise<void>;
+  setAuth: (user: User, tenant: Tenant | null, tokens: Tokens) => void;
+  clearAuth: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      currentTenant: null,
+      tokens: null,
+      isAuthenticated: false,
+
+      login: async (email: string, password: string) => {
+        const response = await fetch('/mapi/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Login failed');
+        }
+
+        const data = await response.json();
+        set({
+          user: data.user,
+          currentTenant: data.currentTenant,
+          tokens: data.tokens,
+          isAuthenticated: true,
+        });
+      },
+
+      signup: async (signupData) => {
+        const response = await fetch('/mapi/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(signupData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Signup failed');
+        }
+
+        const data = await response.json();
+        set({
+          user: data.user,
+          currentTenant: data.currentTenant,
+          tokens: data.tokens,
+          isAuthenticated: true,
+        });
+      },
+
+      logout: async () => {
+        const { tokens } = get();
+        if (tokens?.refreshToken) {
+          try {
+            await fetch('/mapi/auth/logout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+            });
+          } catch (error) {
+            console.error('Logout API call failed:', error);
+          }
+        }
+        set({ user: null, currentTenant: null, tokens: null, isAuthenticated: false });
+      },
+
+      switchTenant: async (tenantId: string) => {
+        const { tokens } = get();
+        if (!tokens?.accessToken) {
+          throw new Error('Not authenticated');
+        }
+
+        const response = await fetch('/mapi/auth/switch-tenant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken}`,
+            'X-Tenant-ID': tenantId,
+          },
+          body: JSON.stringify({ tenantId }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Tenant switch failed');
+        }
+
+        const data = await response.json();
+        set({
+          user: data.user,
+          currentTenant: data.currentTenant,
+        });
+      },
+
+      setAuth: (user, tenant, tokens) => {
+        set({ user, currentTenant: tenant, tokens, isAuthenticated: true });
+      },
+
+      clearAuth: () => {
+        set({ user: null, currentTenant: null, tokens: null, isAuthenticated: false });
+      },
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        currentTenant: state.currentTenant,
+        tokens: state.tokens,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);
