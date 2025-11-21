@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Setter
 @Getter
@@ -33,7 +34,11 @@ public class User {
     @Column(name = "tenant_id")
     private String tenantId;
 
-    // SaaS拡張フィールド
+    // SystemUser参照（システム系DB連携）
+    @Column(name = "system_user_id", columnDefinition = "UUID")
+    private UUID systemUserId;
+
+    // SaaS拡張フィールド（後方互換性のため残存、将来的にSystemUserに移行）
     @Column(name = "email", unique = true)
     private String email;
 
