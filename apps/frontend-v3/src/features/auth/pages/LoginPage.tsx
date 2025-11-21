@@ -79,6 +79,12 @@ export function LoginPage() {
           >
             {loading ? 'ログイン中...' : 'ログイン'}
           </Button>
+
+          <div className="mt-4 text-center text-sm">
+            <a href="/password-reset" className="text-gray-600 hover:text-blue-600 hover:underline">
+              パスワードをお忘れですか？
+            </a>
+          </div>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
