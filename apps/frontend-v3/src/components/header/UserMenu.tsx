@@ -108,6 +108,7 @@ export function UserMenu() {
         <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <p className="text-sm font-medium">{user.displayName}</p>
+            <p className="text-xs text-muted-foreground">@{user.username}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
             <div className="mt-2">
               <Badge className={tierColors[currentTier]}>

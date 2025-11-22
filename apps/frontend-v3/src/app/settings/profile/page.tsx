@@ -56,6 +56,19 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username (Read-only) */}
+            <div className="space-y-2">
+              <FormLabel htmlFor="username">ユーザー名</FormLabel>
+              <Input
+                id="username"
+                type="text"
+                value={user?.username || ''}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-sm text-gray-500">ユーザー名は変更できません</p>
+            </div>
+
             {/* Email (Read-only) */}
             <div className="space-y-2">
               <FormLabel htmlFor="email">メールアドレス</FormLabel>
