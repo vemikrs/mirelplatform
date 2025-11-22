@@ -30,7 +30,14 @@ public class SystemUser {
     private UUID id;
     
     /**
-     * Email address - used as primary authentication identifier
+     * Username - unique user identifier for login
+     * Must be unique across the entire system
+     */
+    @Column(name = "username", nullable = false, unique = true, length = 100)
+    private String username;
+    
+    /**
+     * Email address - used as alternative authentication identifier
      * Must be unique across the entire system
      */
     @Column(name = "email", nullable = false, unique = true, length = 255)

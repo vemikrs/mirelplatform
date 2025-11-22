@@ -22,6 +22,14 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, UUID> {
     Optional<SystemUser> findByEmail(String email);
     
     /**
+     * Find SystemUser by username
+     * 
+     * @param username Username
+     * @return Optional SystemUser
+     */
+    Optional<SystemUser> findByUsername(String username);
+    
+    /**
      * Check if email already exists
      * 
      * @param email Email address to check

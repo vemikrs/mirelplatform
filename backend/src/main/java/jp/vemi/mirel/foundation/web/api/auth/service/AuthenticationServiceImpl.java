@@ -63,11 +63,12 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse login(LoginRequest request) {
-        logger.info("Login attempt for email: {}", request.getEmail());
+        logger.info("Login attempt for username or email: {}", request.getUsernameOrEmail());
 
-        // SystemUserでemailを検索
-        SystemUser systemUser = systemUserRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+        // SystemUserでusernameまたはemailを検索
+        SystemUser systemUser = systemUserRepository.findByUsername(request.getUsernameOrEmail())
+            .or(() -> systemUserRepository.findByEmail(request.getUsernameOrEmail()))
+            .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
 
         // アクティブチェック
         if (systemUser.getIsActive() == null || !systemUser.getIsActive()) {
@@ -81,7 +82,7 @@ public class AuthenticationServiceImpl {
 
         // パスワード検証
         if (!passwordEncoder.matches(request.getPassword(), systemUser.getPasswordHash())) {
-            logger.warn("Invalid password for user: {}", request.getEmail());
+            logger.warn("Invalid password for user: {}", request.getUsernameOrEmail());
             
             // ログイン失敗回数をインクリメント
             Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0 : systemUser.getFailedLoginAttempts();
@@ -90,11 +91,11 @@ public class AuthenticationServiceImpl {
             // 5回失敗でアカウントロック
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
-                logger.warn("Account locked due to multiple failed login attempts: {}", request.getEmail());
+                logger.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
             }
             
             systemUserRepository.save(systemUser);
-            throw new RuntimeException("Invalid email or password");
+            throw new RuntimeException("Invalid username/email or password");
         }
 
         // ログイン成功：失敗回数リセット
@@ -143,18 +144,34 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signup(SignupRequest request) {
-        logger.info("Signup attempt for email: {}", request.getEmail());
+        logger.info("Signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+
+        // ユーザー名重複チェック
+        if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
 
         // メール重複チェック
-        if (userRepository.findById(request.getEmail()).isPresent()) {
+        if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        // ユーザー作成
+        // SystemUser作成
+        SystemUser systemUser = new SystemUser();
+        systemUser.setId(UUID.randomUUID());
+        systemUser.setUsername(request.getUsername());
+        systemUser.setEmail(request.getEmail());
+        systemUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        systemUser.setIsActive(true);
+        systemUser.setEmailVerified(false);
+        systemUser = systemUserRepository.save(systemUser);
+
+        // User作成（Applicationレベル）
         User user = new User();
         user.setUserId(UUID.randomUUID().toString());
+        user.setSystemUserId(systemUser.getId());
+        user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setUsername(request.getEmail());
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
