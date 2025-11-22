@@ -18,6 +18,7 @@ import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
 import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage';
 import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
+import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { ProtectedRoute } from '@/components/auth';
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
@@ -64,6 +65,11 @@ export const router = createBrowserRouter([
   {
     path: '/auth/email-verification',
     element: <OtpEmailVerificationPage />,
+  },
+  // OAuth2 Callback Route
+  {
+    path: '/auth/oauth2/success',
+    element: <OAuthCallbackPage />,
   },
   {
     id: 'app-root',
