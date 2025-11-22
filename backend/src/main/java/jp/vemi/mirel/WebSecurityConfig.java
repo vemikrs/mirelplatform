@@ -28,6 +28,7 @@ import java.util.Arrays;
 import jp.vemi.framework.util.DatabaseUtil;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
+import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
 
 @Configuration
 @EnableWebSecurity
@@ -38,6 +39,9 @@ public class WebSecurityConfig {
 
     @Autowired
     private Mipla2SecurityProperties securityProperties;
+    
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
 
     /**
      * Spring Securityのセキュリティフィルタチェーンを構成します。
@@ -193,6 +197,8 @@ public class WebSecurityConfig {
         
         // OAuth2ログイン設定（GitHub）
         http.oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService))
                 .loginPage("/login")
                 .defaultSuccessUrl("/auth/oauth2/success", true)
                 .failureUrl("/login?error=oauth2"));

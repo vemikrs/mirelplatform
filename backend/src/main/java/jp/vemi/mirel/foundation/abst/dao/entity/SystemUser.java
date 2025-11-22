@@ -97,6 +97,24 @@ public class SystemUser {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
     
+    /**
+     * Avatar image URL (from OAuth2 provider or uploaded by user)
+     */
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+    
+    /**
+     * OAuth2 provider name (e.g., "github", "google")
+     */
+    @Column(name = "oauth2_provider", length = 50)
+    private String oauth2Provider;
+    
+    /**
+     * OAuth2 provider-specific user ID
+     */
+    @Column(name = "oauth2_provider_id", length = 255)
+    private String oauth2ProviderId;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

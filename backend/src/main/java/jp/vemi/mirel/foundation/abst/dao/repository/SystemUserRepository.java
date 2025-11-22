@@ -45,4 +45,13 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, UUID> {
      * @return Optional SystemUser
      */
     Optional<SystemUser> findByEmailAndIsActive(String email, Boolean isActive);
+    
+    /**
+     * Find SystemUser by OAuth2 provider and provider ID
+     * 
+     * @param oauth2Provider OAuth2 provider name (e.g., "github")
+     * @param oauth2ProviderId OAuth2 provider-specific user ID
+     * @return Optional SystemUser
+     */
+    Optional<SystemUser> findByOauth2ProviderAndOauth2ProviderId(String oauth2Provider, String oauth2ProviderId);
 }
