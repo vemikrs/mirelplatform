@@ -1,7 +1,9 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import type { ReactNode } from 'react';
 
 interface ProtectedRouteProps {
+  children: ReactNode;
   redirectTo?: string;
   requiredRole?: string;
 }
@@ -10,7 +12,7 @@ interface ProtectedRouteProps {
  * 認証必須ルートコンポーネント
  * 未認証の場合はログイン画面にリダイレクト
  */
-export function ProtectedRoute({ redirectTo = '/login', requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, redirectTo = '/login', requiredRole }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
@@ -25,5 +27,5 @@ export function ProtectedRoute({ redirectTo = '/login', requiredRole }: Protecte
     }
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 }

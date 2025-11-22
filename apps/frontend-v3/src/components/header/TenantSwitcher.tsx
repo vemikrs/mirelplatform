@@ -2,18 +2,25 @@ import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button, Select } from '@mirel/ui';
 import { ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getUserTenants, type TenantInfo } from '@/lib/api/userProfile';
 
 /**
  * テナント切替コンポーネント
  */
 export function TenantSwitcher() {
-  const { currentTenant, switchTenant } = useAuth();
+  const { currentTenant, switchTenant, tokens } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: Fetch user's tenants from API
-  const tenants = [
-    { tenantId: 'default', tenantName: 'Default Workspace', displayName: 'Default Workspace' },
-  ];
+  // Fetch user's tenants from API
+  const { data: tenants = [] } = useQuery<TenantInfo[]>({
+    queryKey: ['userTenants'],
+    queryFn: async () => {
+      if (!tokens?.accessToken) return [];
+      return getUserTenants(tokens.accessToken);
+    },
+    enabled: !!tokens?.accessToken,
+  });
 
   const handleTenantSwitch = async (tenantId: string) => {
     if (tenantId === currentTenant?.tenantId) return;
@@ -28,7 +35,7 @@ export function TenantSwitcher() {
     }
   };
 
-  if (!currentTenant) {
+  if (!currentTenant || tenants.length === 0) {
     return null;
   }
 
@@ -37,7 +44,7 @@ export function TenantSwitcher() {
       <select
         value={currentTenant.tenantId}
         onChange={(e) => handleTenantSwitch(e.target.value)}
-        disabled={isLoading}
+        disabled={isLoading || tenants.length === 0}
         className="px-3 py-2 border rounded-md bg-white text-sm font-medium flex items-center gap-2 hover:bg-gray-50 disabled:opacity-50"
       >
         {tenants.map((tenant) => (
