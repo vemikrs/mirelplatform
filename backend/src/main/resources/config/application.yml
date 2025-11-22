@@ -2,6 +2,7 @@ server:
   port: ${SERVER_PORT:3000}
   servlet:
     context-path: /mipla2
+
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
@@ -25,12 +26,41 @@ spring:
   spring-boot:
     run:
       jvmArguments:: -Xint
+  # Redis設定
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+  # GitHub OAuth2設定
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+            scope:
+              - read:user
+              - user:email
+        provider:
+          github:
+            user-name-attribute: login
+
 logging:
   level:
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     jp.vemi.mirel: DEBUG
     jp.vemi.ste: DEBUG
+
 mipla2:
   security:
     api:
@@ -58,21 +88,6 @@ rate-limit:
   redis:
     fallback-to-memory: ${RATE_LIMIT_REDIS_FALLBACK_TO_MEMORY:true}
 
-# Redis設定
-spring:
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-
 # メール設定
 email:
   provider: ${EMAIL_PROVIDER:smtp}
@@ -89,22 +104,6 @@ azure:
     email:
       from: ${AZURE_COMMUNICATION_EMAIL_FROM:noreply_mirel@vemi.jp}
       from-name: mirelplatform
-
-# GitHub OAuth2設定
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: ${GITHUB_CLIENT_ID:}
-            client-secret: ${GITHUB_CLIENT_SECRET:}
-            scope:
-              - read:user
-              - user:email
-        provider:
-          github:
-            user-name-attribute: login
 
 # アプリケーションURL
 app:
