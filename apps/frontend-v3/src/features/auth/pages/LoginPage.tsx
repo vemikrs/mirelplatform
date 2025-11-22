@@ -84,10 +84,17 @@ export function LoginPage() {
             {loading ? 'ログイン中...' : 'ログイン'}
           </Button>
 
-          <div className="mt-4 text-center text-sm">
-            <a href="/password-reset" className="text-muted-foreground hover:text-primary hover:underline">
-              パスワードをお忘れですか？
-            </a>
+          <div className="mt-4 text-center space-y-2">
+            <div className="text-sm">
+              <a href="/password-reset" className="text-muted-foreground hover:text-primary hover:underline">
+                パスワードをお忘れですか？
+              </a>
+            </div>
+            <div className="text-sm">
+              <a href="/auth/otp-login" className="text-primary hover:underline font-medium">
+                パスワードレスログイン（OTP）
+              </a>
+            </div>
           </div>
         </form>
 

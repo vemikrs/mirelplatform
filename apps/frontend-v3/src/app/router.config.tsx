@@ -7,7 +7,17 @@ import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarker
 import { StencilEditor } from '@/features/stencil-editor/components/StencilEditor';
 import { StencilListPage } from '@/features/stencil-editor/pages/StencilListPage';
 import { SaaSStatusPage } from '@/features/saas-status';
-import { LoginPage, SignupPage, PasswordResetRequestPage, PasswordResetConfirmPage } from '@/features/auth';
+import { 
+  LoginPage, 
+  SignupPage, 
+  PasswordResetRequestPage, 
+  PasswordResetConfirmPage,
+} from '@/features/auth';
+import { OtpLoginPage } from '@/features/auth/pages/OtpLoginPage';
+import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
+import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage';
+import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
+import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { ProtectedRoute } from '@/components/auth';
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
@@ -33,6 +43,27 @@ export const router = createBrowserRouter([
   {
     path: '/password-reset/confirm',
     element: <PasswordResetConfirmPage />,
+  },
+  // OTP Authentication Routes
+  {
+    path: '/auth/otp-login',
+    element: <OtpLoginPage />,
+  },
+  {
+    path: '/auth/otp-verify',
+    element: <OtpVerifyPage />,
+  },
+  {
+    path: '/auth/password-reset',
+    element: <OtpPasswordResetPage />,
+  },
+  {
+    path: '/auth/password-reset-verify',
+    element: <OtpPasswordResetVerifyPage />,
+  },
+  {
+    path: '/auth/email-verification',
+    element: <OtpEmailVerificationPage />,
   },
   {
     id: 'app-root',
