@@ -42,6 +42,58 @@ mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
   # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
 
+# OTP設定
+otp:
+  enabled: ${OTP_ENABLED:true}
+  length: ${OTP_LENGTH:6}
+  expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
+  max-attempts: ${OTP_MAX_ATTEMPTS:3}
+  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
+
+# レート制限設定
+rate-limit:
+  otp:
+    request-per-minute: ${RATE_LIMIT_OTP_REQUEST_PER_MINUTE:3}
+    verify-per-minute: ${RATE_LIMIT_OTP_VERIFY_PER_MINUTE:5}
+  redis:
+    fallback-to-memory: ${RATE_LIMIT_REDIS_FALLBACK_TO_MEMORY:true}
+
+# Redis設定
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+# メール設定
+email:
+  provider: ${EMAIL_PROVIDER:smtp}
+  smtp:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+
+# Azure Communication Services
+azure:
+  communication:
+    connection-string: ${AZURE_COMMUNICATION_CONNECTION_STRING:}
+    email:
+      from: ${AZURE_COMMUNICATION_EMAIL_FROM:noreply_mirel@vemi.jp}
+      from-name: mirelplatform
+
+# アプリケーションURL
+app:
+  base-url: ${APP_BASE_URL:http://localhost:5173}
+
 springdoc:
   api-docs:
     path: /api-docs

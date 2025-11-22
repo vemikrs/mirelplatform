@@ -13,7 +13,16 @@
         }
       },
       "isBackground": true,
-      "problemMatcher": [],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "起動状況を監視中",
+          "endsPattern": "(全サービスが正常に起動しました|起動監視がタイムアウトしました)"
+        }
+      },
       "runOptions": {
         "instanceLimit": 1
       },

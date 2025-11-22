@@ -1,50 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
 import { Badge, Button, Toaster } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
-import { Bell, HelpCircle, Menu, SunMedium, MoonStar, UserRound } from 'lucide-react';
+import { Bell, HelpCircle } from 'lucide-react';
+import { UserMenu } from '@/components/header/UserMenu';
+import { TenantSwitcher } from '@/components/header/TenantSwitcher';
+import { useAuth } from '@/hooks/useAuth';
 
-const THEME_STORAGE_KEY = 'mirel-theme';
+const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
-function useThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') {
-      return 'light';
-    }
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null;
-    if (stored) {
-      return stored;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  return { theme, toggleTheme };
-}
-
-function renderAction(action: NavigationAction, toggleTheme: () => void, currentTheme: 'light' | 'dark') {
+function renderAction(action: NavigationAction) {
   switch (action.type) {
-    case 'theme':
-      return (
-        <Button
-          key={action.id}
-          variant="ghost"
-          size="square"
-          aria-label="テーマ切替"
-          onClick={toggleTheme}
-        >
-          {currentTheme === 'dark' ? <SunMedium className="size-5" /> : <MoonStar className="size-5" />}
-        </Button>
-      );
     case 'notifications':
       return (
         <Button key={action.id} variant="ghost" size="square" aria-label="通知">
@@ -67,25 +33,6 @@ function renderAction(action: NavigationAction, toggleTheme: () => void, current
           )}
         </Button>
       );
-    case 'profile': {
-      const initials = action.initials || 'ME';
-      return (
-        <div
-          key={action.id}
-          className="flex size-9 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary"
-          aria-label="プロフィール"
-          role="img"
-        >
-          {initials}
-        </div>
-      );
-    }
-    case 'custom':
-      return (
-        <Button key={action.id} variant="ghost" size="square" aria-label={action.label ?? 'アクション'}>
-          <UserRound className="size-5" />
-        </Button>
-      );
     default:
       return null;
   }
@@ -97,7 +44,21 @@ function renderAction(action: NavigationAction, toggleTheme: () => void, current
  */
 export function RootLayout() {
   const navigation = useLoaderData() as NavigationConfig;
-  const { theme, toggleTheme } = useThemeToggle();
+  const { isAuthenticated } = useAuth();
+  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+
+  useEffect(() => {
+    const handleToggle = (event: Event) => {
+      const customEvent = event as CustomEvent<{ visible: boolean }>;
+      setQuickLinksVisible(customEvent.detail.visible);
+    };
+    window.addEventListener('quicklinks-toggle', handleToggle);
+    return () => window.removeEventListener('quicklinks-toggle', handleToggle);
+  }, []);
 
   const primaryLinks = useMemo(() => navigation.primary, [navigation.primary]);
 
@@ -139,15 +100,14 @@ export function RootLayout() {
             </nav>
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            {navigation.globalActions.map((action) =>
-              renderAction(action, toggleTheme, theme)
-            )}
+            {isAuthenticated && <TenantSwitcher />}
+            {navigation.globalActions
+              .filter((action) => action.type !== 'theme' && action.type !== 'profile')
+              .map((action) => renderAction(action))}
+            {isAuthenticated && <UserMenu />}
           </div>
           <div className="flex items-center gap-2 md:hidden">
-            {renderAction({ id: 'theme-inline', type: 'theme' }, toggleTheme, theme)}
-            <Button variant="ghost" size="square" aria-label="メニュー">
-              <Menu className="size-5" />
-            </Button>
+            {isAuthenticated && <UserMenu />}
           </div>
         </div>
         <nav className="container flex items-center gap-2 overflow-x-auto pb-3 pt-2 md:hidden">
@@ -169,7 +129,7 @@ export function RootLayout() {
         </nav>
       </header>
 
-      {navigation.quickLinks.length > 0 ? (
+      {navigation.quickLinks.length > 0 && quickLinksVisible ? (
         <div className="border-b border-border bg-surface">
           <div className="container flex flex-wrap items-center gap-2 py-3">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">

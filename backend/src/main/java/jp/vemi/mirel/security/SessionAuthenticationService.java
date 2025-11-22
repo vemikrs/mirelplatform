@@ -3,6 +3,7 @@
  */
 package jp.vemi.mirel.security;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,6 +12,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "false", matchIfMissing = true)
 public class SessionAuthenticationService implements AuthenticationService {
 
     private final AuthenticationManager authenticationManager;

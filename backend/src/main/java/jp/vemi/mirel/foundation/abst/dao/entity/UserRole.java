@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.foundation.abst.dao.entity;
 
@@ -10,6 +10,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import java.io.Serializable;
@@ -31,8 +32,9 @@ public class UserRole {
     private String roleId;
 
     /** バージョン */
-    @Column(columnDefinition = "integer default 1")
-    private long version;
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 1L;
 
     /** 削除フラグ */
     @Column(columnDefinition = "boolean default false")

@@ -183,12 +183,10 @@ public class WebSecurityConfig {
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         } else {
-            http.formLogin(form -> form
-                    .loginPage("/auth/login")
-                    .permitAll())
-                    .logout(logout -> logout
-                            .logoutUrl("/auth/logout")
-                            .permitAll());
+            // JWT無効時はカスタム認証エンドポイント (/auth/login) を使用するため、
+            // formLogin を設定せず、セッション管理のみ設定
+            http.sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         }
     }
 
