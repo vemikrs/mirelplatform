@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.foundation.context;
 
@@ -34,9 +34,12 @@ import java.util.UUID;
 /**
  * ExecutionContext解決Filter.
  * リクエストごとにユーザ、テナント、ライセンス情報を解決してExecutionContextに設定
+ * 
+ * Spring Securityの認証フィルター（BearerTokenAuthenticationFilter等）の後に実行する必要がある
+ * ため、順序は Spring Securityフィルターチェーンの後（LOWEST_PRECEDENCE - 100）に設定
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 10)
+@Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class ExecutionContextFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionContextFilter.class);
@@ -58,22 +61,37 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            // リクエストメタデータ設定
-            executionContext.setRequestId(UUID.randomUUID().toString());
-            executionContext.setIpAddress(getClientIpAddress(request));
-            executionContext.setUserAgent(request.getHeader("User-Agent"));
-            executionContext.setRequestTime(Instant.now());
-
-            // Spring SecurityからユーザIDを取得
+            // Spring Securityからユーザ IDを取得
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            
+            logger.debug("ExecutionContextFilter: auth={}, isAuthenticated={}, principal={}", 
+                auth != null ? auth.getClass().getSimpleName() : "null",
+                auth != null ? auth.isAuthenticated() : "N/A",
+                auth != null ? auth.getPrincipal() : "null");
+                
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                // 認証済みの場合のみExecutionContextを参照(requestスコープBean)
+                ExecutionContext context = getExecutionContextSafely();
+                if (context == null) {
+                    // ExecutionContext取得失敗時はスキップ
+                    logger.debug("ExecutionContext not available, skipping context resolution");
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                // リクエストメタデータ設定
+                context.setRequestId(UUID.randomUUID().toString());
+                context.setIpAddress(getClientIpAddress(request));
+                context.setUserAgent(request.getHeader("User-Agent"));
+                context.setRequestTime(Instant.now());
+                
                 String userId = auth.getName();
                 logger.debug("ExecutionContextFilter: Resolving context for user: {}", userId);
 
                 // ユーザ情報取得
                 User user = userRepository.findById(userId).orElse(null);
                 if (user != null) {
-                    executionContext.setCurrentUser(user);
+                    context.setCurrentUser(user);
 
                     // カレントテナント解決
                     String tenantId = resolveTenantId(request, auth, user);
@@ -81,12 +99,12 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
 
                     if (StringUtils.hasText(tenantId)) {
                         Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
-                        executionContext.setCurrentTenant(tenant);
+                        context.setCurrentTenant(tenant);
 
                         // 有効ライセンス取得（USER/TENANTスコープ両方）
                         List<ApplicationLicense> licenses = licenseRepository
                             .findEffectiveLicenses(userId, tenantId, Instant.now());
-                        executionContext.setEffectiveLicenses(licenses);
+                        context.setEffectiveLicenses(licenses);
                         logger.debug("ExecutionContextFilter: Found {} effective licenses", 
                             licenses != null ? licenses.size() : 0);
                     }
@@ -97,6 +115,19 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             logger.error("Error in ExecutionContextFilter", e);
             filterChain.doFilter(request, response);
+        }
+    }
+
+    /**
+     * ExecutionContextを安全に取得
+     * requestスコープが有効でない場合はnullを返す
+     */
+    private ExecutionContext getExecutionContextSafely() {
+        try {
+            return executionContext;
+        } catch (Exception e) {
+            logger.debug("Failed to get ExecutionContext: {}", e.getMessage());
+            return null;
         }
     }
 
