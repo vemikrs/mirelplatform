@@ -53,7 +53,7 @@ mipla2:
 auth:
   method: jwt
   jwt:
-    enabled: false  # JWT機能を一時無効化（開発中）
+    enabled: true  # JWT機能を有効化
 
 # JWT秘密鍵(開発用固定値)
 jwt:
