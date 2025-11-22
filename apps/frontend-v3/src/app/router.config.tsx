@@ -10,6 +10,8 @@ import { SaaSStatusPage } from '@/features/saas-status';
 import { LoginPage, SignupPage, PasswordResetRequestPage, PasswordResetConfirmPage } from '@/features/auth';
 import { ProtectedRoute } from '@/components/auth';
 import { loadNavigationConfig } from './navigation.schema';
+import ProfilePage from '@/app/settings/profile/page';
+import SecurityPage from '@/app/settings/security/page';
 
 /**
  * React Router v7 configuration
@@ -65,6 +67,22 @@ export const router = createBrowserRouter([
       {
         path: 'sitemap',
         element: <SiteMapPage />,
+      },
+      {
+        path: 'settings/profile',
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'settings/security',
+        element: (
+          <ProtectedRoute>
+            <SecurityPage />
+          </ProtectedRoute>
+        ),
       },
       // Backward compatibility route for E2E tests
       {

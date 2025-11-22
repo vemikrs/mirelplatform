@@ -3,6 +3,10 @@ import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
 import { Badge, Button, Toaster } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Bell, HelpCircle, Menu, SunMedium, MoonStar, UserRound } from 'lucide-react';
+import { UserMenu } from '@/components/header/UserMenu';
+import { TenantSwitcher } from '@/components/header/TenantSwitcher';
+import { LicenseBadge } from '@/components/header/LicenseBadge';
+import { useAuth } from '@/hooks/useAuth';
 
 const THEME_STORAGE_KEY = 'mirel-theme';
 
@@ -98,6 +102,7 @@ function renderAction(action: NavigationAction, toggleTheme: () => void, current
 export function RootLayout() {
   const navigation = useLoaderData() as NavigationConfig;
   const { theme, toggleTheme } = useThemeToggle();
+  const { isAuthenticated } = useAuth();
 
   const primaryLinks = useMemo(() => navigation.primary, [navigation.primary]);
 
@@ -139,9 +144,16 @@ export function RootLayout() {
             </nav>
           </div>
           <div className="hidden items-center gap-2 md:flex">
+            {isAuthenticated && (
+              <>
+                <TenantSwitcher />
+                <LicenseBadge />
+              </>
+            )}
             {navigation.globalActions.map((action) =>
               renderAction(action, toggleTheme, theme)
             )}
+            {isAuthenticated && <UserMenu />}
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {renderAction({ id: 'theme-inline', type: 'theme' }, toggleTheme, theme)}
