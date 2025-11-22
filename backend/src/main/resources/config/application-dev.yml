@@ -1,7 +1,7 @@
 # application-dev.yml - Development Environment Configuration
 spring:
   datasource:
-    url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=LEGACY;LOCK_TIMEOUT=10000
+    url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=MySQL;LOCK_TIMEOUT=10000
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -40,10 +40,21 @@ mirel:
       samples: classpath:/promarker/stencil/samples
     auto-deploy-samples: true
 
-# Development-only: Disable security for guest mode testing
-# CSRF is enabled by default in production (Mipla2SecurityProperties.csrfEnabled=true)
+# Development-only: Security configuration for SaaS authentication testing
+# CSRF is disabled for development convenience
+# In production, set enabled=true and csrf-enabled=true
 mipla2:
   security:
-    enabled: false  # ゲストモード：認証不要
+    enabled: true  # SaaS認証テスト用に有効化
     api:
-      csrf-enabled: false
+      csrf-enabled: false  # 開発時はCSRF無効（本番では true）
+
+# JWT authentication method (default in WebSecurityConfig)
+auth:
+  method: jwt
+  jwt:
+    enabled: false  # JWT機能を一時無効化（開発中）
+
+# JWT秘密鍵(開発用固定値)
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LTEyMzQ1Njc4OTBhYmNkZWY=
