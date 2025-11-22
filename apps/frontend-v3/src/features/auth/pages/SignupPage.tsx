@@ -4,9 +4,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/lib/hooks/useTheme';
 import { Button, Card, Input } from '@mirel/ui';
 
 export function SignupPage() {
+  // テーマを初期化
+  useTheme();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -55,16 +58,16 @@ export function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">mirelplatform</h1>
-          <p className="text-gray-600">新規アカウント作成</p>
+          <h1 className="text-3xl font-bold mb-2 text-foreground">mirelplatform</h1>
+          <p className="text-muted-foreground">新規アカウント作成</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
+            <label htmlFor="email" className="block text-sm font-medium mb-2 text-foreground">
               メールアドレス *
             </label>
             <Input
@@ -79,7 +82,7 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium mb-2">
+            <label htmlFor="displayName" className="block text-sm font-medium mb-2 text-foreground">
               表示名 *
             </label>
             <Input
@@ -95,7 +98,7 @@ export function SignupPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium mb-2">
+              <label htmlFor="firstName" className="block text-sm font-medium mb-2 text-foreground">
                 名
               </label>
               <Input
@@ -108,7 +111,7 @@ export function SignupPage() {
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium mb-2">
+              <label htmlFor="lastName" className="block text-sm font-medium mb-2 text-foreground">
                 姓
               </label>
               <Input
@@ -123,7 +126,7 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-2">
+            <label htmlFor="password" className="block text-sm font-medium mb-2 text-foreground">
               パスワード *
             </label>
             <Input
@@ -139,7 +142,7 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2 text-foreground">
               パスワード（確認） *
             </label>
             <Input
@@ -154,7 +157,7 @@ export function SignupPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded text-sm">
+            <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded text-sm">
               {error}
             </div>
           )}
@@ -168,10 +171,10 @@ export function SignupPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>すでにアカウントをお持ちの方は、</p>
           <p className="mt-1">
-            <a href="/login" className="text-blue-600 hover:underline">
+            <a href="/login" className="text-primary hover:underline">
               ログイン
             </a>
           </p>
