@@ -11,6 +11,7 @@ export function SignupPage() {
   // テーマを初期化
   useTheme();
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -43,6 +44,7 @@ export function SignupPage() {
 
     try {
       await signup({
+        username: formData.username,
         email: formData.email,
         password: formData.password,
         displayName: formData.displayName,
@@ -66,6 +68,24 @@ export function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium mb-2 text-foreground">
+              ユーザー名 *
+            </label>
+            <Input
+              id="username"
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              required
+              placeholder="username"
+              className="w-full"
+              minLength={3}
+              maxLength={50}
+            />
+            <p className="text-xs text-gray-500 mt-1">3〜50文字で入力してください</p>
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2 text-foreground">
               メールアドレス *

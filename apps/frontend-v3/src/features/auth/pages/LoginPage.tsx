@@ -8,7 +8,7 @@ export function LoginPage() {
   // テーマを初期化（ログイン画面でもテーマが適用されるように）
   useTheme();
   
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,10 +22,10 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(usernameOrEmail, password);
       navigate('/');
     } catch (err) {
-      setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+      setError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');
     } finally {
       setLoading(false);
     }
@@ -41,16 +41,16 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2 text-foreground">
-              メールアドレス
+            <label htmlFor="usernameOrEmail" className="block text-sm font-medium mb-2 text-foreground">
+              ユーザー名 または メールアドレス
             </label>
             <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="usernameOrEmail"
+              type="text"
+              value={usernameOrEmail}
+              onChange={(e) => setUsernameOrEmail(e.target.value)}
               required
-              placeholder="user@example.com"
+              placeholder="username or user@example.com"
               className="w-full"
             />
           </div>

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 interface User {
   userId: string;
+  username: string;
   email: string;
   displayName: string;
   firstName?: string;
@@ -30,8 +31,8 @@ interface AuthState {
   isAuthenticated: boolean;
 
   // Actions
-  login: (email: string, password: string) => Promise<void>;
-  signup: (data: { email: string; password: string; displayName: string; firstName?: string; lastName?: string }) => Promise<void>;
+  login: (usernameOrEmail: string, password: string) => Promise<void>;
+  signup: (data: { username: string; email: string; password: string; displayName: string; firstName?: string; lastName?: string }) => Promise<void>;
   logout: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   setAuth: (user: User, tenant: Tenant | null, tokens: Tokens) => void;
@@ -47,11 +48,11 @@ export const useAuthStore = create<AuthState>()(
       tokens: null,
       isAuthenticated: false,
 
-      login: async (email: string, password: string) => {
+      login: async (usernameOrEmail: string, password: string) => {
         const response = await fetch('/mapi/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ usernameOrEmail, password }),
         });
 
         if (!response.ok) {
