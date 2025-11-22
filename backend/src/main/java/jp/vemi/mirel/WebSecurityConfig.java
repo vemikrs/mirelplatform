@@ -124,7 +124,9 @@ public class WebSecurityConfig {
                 csrf.ignoringRequestMatchers(
                         "/auth/**",
                         "/api/**",
-                        "/apps/*/api/**")
+                        "/apps/*/api/**",
+                        "/login/oauth2/code/**",  // OAuth2コールバックをCSRF除外
+                        "/oauth2/**")             // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
             }
         });
@@ -188,6 +190,12 @@ public class WebSecurityConfig {
             http.sessionManagement(session -> session
                     .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         }
+        
+        // OAuth2ログイン設定（GitHub）
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/auth/oauth2/success", true)
+                .failureUrl("/login?error=oauth2"));
     }
 
     /**

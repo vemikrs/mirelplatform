@@ -90,6 +90,22 @@ azure:
       from: ${AZURE_COMMUNICATION_EMAIL_FROM:noreply_mirel@vemi.jp}
       from-name: mirelplatform
 
+# GitHub OAuth2設定
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+            scope:
+              - read:user
+              - user:email
+        provider:
+          github:
+            user-name-attribute: login
+
 # アプリケーションURL
 app:
   base-url: ${APP_BASE_URL:http://localhost:5173}
