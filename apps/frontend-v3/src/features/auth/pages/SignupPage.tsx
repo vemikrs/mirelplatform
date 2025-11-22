@@ -1,3 +1,6 @@
+/*
+ * Copyright(c) 2025 mirelplatform.
+ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
@@ -55,7 +58,7 @@ export function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">ProMarker</h1>
+          <h1 className="text-3xl font-bold mb-2">mirelplatform</h1>
           <p className="text-gray-600">新規アカウント作成</p>
         </div>
 

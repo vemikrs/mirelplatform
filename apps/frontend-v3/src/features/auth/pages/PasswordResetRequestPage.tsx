@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mirel/ui/components/button';
-import { Input } from '@mirel/ui/components/input';
-import { Label } from '@mirel/ui/components/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mirel/ui/components/card';
+import { Button } from '@mirel/ui';
+import { Input } from '@mirel/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mirel/ui';
 
 export function PasswordResetRequestPage() {
   const [email, setEmail] = useState('');
@@ -73,7 +72,7 @@ export function PasswordResetRequestPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <label htmlFor="email" className="block text-sm font-medium">Email</label>
               <Input
                 id="email"
                 type="email"

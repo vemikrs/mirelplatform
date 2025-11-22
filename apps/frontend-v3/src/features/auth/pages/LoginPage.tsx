@@ -31,7 +31,7 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">ProMarker</h1>
+          <h1 className="text-3xl font-bold mb-2">mirelplatform</h1>
           <p className="text-gray-600">SaaS Platform</p>
         </div>
 

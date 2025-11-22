@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@mirel/ui/components/button';
-import { Input } from '@mirel/ui/components/input';
-import { Label } from '@mirel/ui/components/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mirel/ui/components/card';
+import { Button } from '@mirel/ui';
+import { Input } from '@mirel/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mirel/ui';
 
 export function PasswordResetConfirmPage() {
   const [searchParams] = useSearchParams();
@@ -155,7 +154,7 @@ export function PasswordResetConfirmPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <label htmlFor="newPassword" className="block text-sm font-medium">New Password</label>
               <Input
                 id="newPassword"
                 type="password"
@@ -169,7 +168,7 @@ export function PasswordResetConfirmPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirm Password</label>
               <Input
                 id="confirmPassword"
                 type="password"
