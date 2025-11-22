@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel;
 
@@ -18,6 +18,9 @@ public class DatabaseInitializer {
 
   @Bean
   public ApplicationRunner initializer() {
-    return args -> DatabaseUtil.initializeDefaultTenant();
+    return args -> {
+      DatabaseUtil.initializeDefaultTenant();
+      DatabaseUtil.initializeSaasTestData();
+    };
   }
 }
