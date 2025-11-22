@@ -6,8 +6,8 @@ package jp.vemi.mirel.foundation.service.oauth2;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.service.AvatarService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -26,13 +26,25 @@ import java.util.UUID;
  * GitHub OAuth2認証後のユーザー情報を処理し、SystemUserと紐付けます。
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     
     private final SystemUserRepository systemUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final AvatarService avatarService;
+    
+    /**
+     * コンストラクタ
+     * PasswordEncoderに@Lazyを付与して循環依存を回避
+     */
+    public CustomOAuth2UserService(
+            SystemUserRepository systemUserRepository,
+            @Lazy PasswordEncoder passwordEncoder,
+            AvatarService avatarService) {
+        this.systemUserRepository = systemUserRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.avatarService = avatarService;
+    }
     
     /**
      * OAuth2ユーザー情報を取得し、SystemUserを作成または更新します。

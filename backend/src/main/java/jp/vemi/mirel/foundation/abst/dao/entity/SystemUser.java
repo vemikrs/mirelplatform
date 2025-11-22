@@ -32,8 +32,9 @@ public class SystemUser {
     /**
      * Username - unique user identifier for login
      * Must be unique across the entire system
+     * Nullable for backward compatibility during migration
      */
-    @Column(name = "username", nullable = false, unique = true, length = 100)
+    @Column(name = "username", nullable = true, unique = true, length = 100)
     private String username;
     
     /**
