@@ -58,3 +58,20 @@ auth:
 # JWT秘密鍵(開発用固定値)
 jwt:
   secret: dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LTEyMzQ1Njc4OTBhYmNkZWY=
+
+# 開発環境用OTP設定 (有効期限を長めに)
+otp:
+  expiration-minutes: 10
+
+# 開発環境用レート制限 (緩和)
+rate-limit:
+  otp:
+    request-per-minute: 10
+    verify-per-minute: 20
+
+# 開発環境用メール設定 (MailHog)
+email:
+  provider: smtp
+  smtp:
+    host: localhost
+    port: 1025
