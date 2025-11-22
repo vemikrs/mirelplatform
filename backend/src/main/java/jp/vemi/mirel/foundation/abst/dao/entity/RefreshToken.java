@@ -1,9 +1,10 @@
 /*
- * Copyright(c) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.foundation.abst.dao.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.Instant;
@@ -46,8 +47,9 @@ public class RefreshToken {
     private Instant revokedAt;
 
     /** バージョン */
-    @Column(columnDefinition = "integer default 1")
-    private long version;
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 1L;
 
     /** 削除フラグ */
     @Column(name = "delete_flag", columnDefinition = "boolean default false")
