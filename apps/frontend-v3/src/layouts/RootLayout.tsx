@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
 import { Badge, Button, Toaster } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
-import { Bell, HelpCircle, Menu } from 'lucide-react';
+import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { TenantSwitcher } from '@/components/header/TenantSwitcher';
 import { useAuth } from '@/hooks/useAuth';
@@ -108,9 +108,6 @@ export function RootLayout() {
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {isAuthenticated && <UserMenu />}
-            <Button variant="ghost" size="square" aria-label="メニュー">
-              <Menu className="size-5" />
-            </Button>
           </div>
         </div>
         <nav className="container flex items-center gap-2 overflow-x-auto pb-3 pt-2 md:hidden">
