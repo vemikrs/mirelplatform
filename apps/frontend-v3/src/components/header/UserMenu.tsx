@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/lib/hooks/useTheme';
@@ -19,11 +19,26 @@ export function UserMenu() {
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
     if (typeof window === 'undefined') return true;
     const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
     return stored === null ? true : stored === 'true';
   });
+
+  // 外側クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
 
   const toggleQuickLinks = () => {
     const newValue = !quickLinksVisible;
@@ -77,7 +92,7 @@ export function UserMenu() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-subtle transition-colors"
