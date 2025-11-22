@@ -11,6 +11,7 @@ interface User {
   lastName?: string;
   isActive: boolean;
   emailVerified: boolean;
+  avatarUrl?: string | null;
 }
 
 interface Tenant {

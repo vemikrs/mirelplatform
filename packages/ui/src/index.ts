@@ -61,6 +61,7 @@ export { Alert, AlertTitle, AlertDescription, type AlertProps } from './componen
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion'
 export { Combobox, type ComboboxOption } from './components/combobox'
+export { Avatar, type AvatarProps } from './components/Avatar'
 
 // Utils
 export { cn } from './lib/utils'

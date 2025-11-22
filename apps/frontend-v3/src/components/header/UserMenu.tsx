@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/lib/hooks/useTheme';
-import { Button, Badge } from '@mirel/ui';
+import { Button, Badge, Avatar } from '@mirel/ui';
 import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserLicenses, type LicenseInfo } from '@/lib/api/userProfile';
@@ -97,9 +97,12 @@ export function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-subtle transition-colors"
       >
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-          {user.displayName?.charAt(0).toUpperCase() || 'U'}
-        </div>
+        <Avatar 
+          src={user.avatarUrl}
+          alt={user.displayName || user.email}
+          fallback={user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+          size="sm"
+        />
         <span className="hidden sm:block text-sm font-medium">{user.displayName || user.email}</span>
         <ChevronDown className="w-4 h-4" />
       </button>
@@ -107,8 +110,18 @@ export function UserMenu() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-medium">{user.displayName}</p>
-            <p className="text-xs text-muted-foreground">@{user.username}</p>
+            <div className="flex items-center gap-3 mb-2">
+              <Avatar 
+                src={user.avatarUrl}
+                alt={user.displayName || user.email}
+                fallback={user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                size="md"
+              />
+              <div>
+                <p className="text-sm font-medium">{user.displayName}</p>
+                <p className="text-xs text-muted-foreground">@{user.username}</p>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">{user.email}</p>
             <div className="mt-2">
               <Badge className={tierColors[currentTier]}>
