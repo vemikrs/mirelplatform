@@ -2,27 +2,53 @@ import { useEffect, useState } from 'react';
 
 const THEME_STORAGE_KEY = 'mirel-theme';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export function useTheme() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') {
-      return 'light';
+      return 'system';
     }
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null;
-    if (stored) {
-      return stored;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
+    return stored || 'system';
   });
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+
+    const applyTheme = () => {
+      let isDark = false;
+      if (themeMode === 'system') {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } else {
+        isDark = themeMode === 'dark';
+      }
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+
+    applyTheme();
+    window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
+
+    // システムモードの場合、メディアクエリの変更を監視
+    if (themeMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => applyTheme();
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+  }, [themeMode]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  return { theme, toggleTheme, isDark: theme === 'dark' };
+  const setTheme = (mode: ThemeMode) => {
+    setThemeMode(mode);
+  };
+
+  const isDark = 
+    themeMode === 'dark' || 
+    (themeMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  return { theme: themeMode, themeMode, setTheme, toggleTheme, isDark };
 }

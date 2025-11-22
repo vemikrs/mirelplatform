@@ -2,7 +2,7 @@
   "brand": {
     "name": "mirelplatform",
     "shortName": "mirel",
-    "tagline": "エンタープライズ向け業務アプリケーション基盤"
+    "tagline": "業務アプリケーション基盤"
   },
   "primary": [
     { "id": "home", "label": "ホーム", "path": "/" },

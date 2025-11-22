@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/lib/hooks/useTheme';
 import { Button, Badge } from '@mirel/ui';
 import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserLicenses, type LicenseInfo } from '@/lib/api/userProfile';
-
-const THEME_STORAGE_KEY = 'mirel-theme';
 
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
@@ -15,14 +14,9 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  */
 export function UserMenu() {
   const { user, logout, tokens } = useAuth();
+  const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null;
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
 
   // Fetch user's licenses from API
   const { data: licenses = [] } = useQuery<LicenseInfo[]>({
@@ -33,16 +27,6 @@ export function UserMenu() {
     },
     enabled: !!tokens?.accessToken,
   });
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
 
   const handleLogout = async () => {
     try {
@@ -91,8 +75,8 @@ export function UserMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-surface rounded-md shadow-lg border border-outline/20 z-50">
-          <div className="px-4 py-3 border-b border-outline/20">
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <p className="text-sm font-medium">{user.displayName}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
             <div className="mt-2">
@@ -108,7 +92,7 @@ export function UserMenu() {
                 setIsOpen(false);
                 navigate('/settings/profile');
               }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-subtle transition-colors"
+              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <User className="w-4 h-4" />
               プロフィール設定
@@ -119,24 +103,55 @@ export function UserMenu() {
                 setIsOpen(false);
                 navigate('/settings/security');
               }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-subtle transition-colors"
+              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <Settings className="w-4 h-4" />
               セキュリティ設定
             </button>
-
-            <button
-              onClick={() => {
-                toggleTheme();
-              }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-subtle transition-colors"
-            >
-              {theme === 'dark' ? <SunMedium className="w-4 h-4" /> : <MoonStar className="w-4 h-4" />}
-              {theme === 'dark' ? 'ライトモード' : 'ダークモード'}
-            </button>
           </div>
 
-          <div className="py-1 border-t border-outline/20">
+          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-2">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">テーマ</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setTheme('light')}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
+                    themeMode === 'light'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <SunMedium className="w-4 h-4" />
+                  ライトモード
+                </button>
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
+                    themeMode === 'dark'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <MoonStar className="w-4 h-4" />
+                  ダークモード
+                </button>
+                <button
+                  onClick={() => setTheme('system')}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
+                    themeMode === 'system'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                  システムに従う
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
