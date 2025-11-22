@@ -20,7 +20,7 @@ import java.util.UUID;
  * This entity is designed to reside in a system-wide database or separate schema.
  */
 @Entity
-@Table(name = "`system_user`")
+@Table(name = "mir_system_user")
 @Getter
 @Setter
 public class SystemUser {

@@ -1,3 +1,6 @@
+/*
+ * Copyright(c) 2015-2025 mirelplatform.
+ */
 package jp.vemi.mirel.foundation.abst.dao.entity;
 
 import jakarta.persistence.*;
@@ -15,7 +18,7 @@ import java.util.UUID;
  * Tokens expire after a configured period (default: 1 hour)
  */
 @Entity
-@Table(name = "password_reset_token")
+@Table(name = "mir_password_reset_token")
 @Getter
 @Setter
 public class PasswordResetToken {
