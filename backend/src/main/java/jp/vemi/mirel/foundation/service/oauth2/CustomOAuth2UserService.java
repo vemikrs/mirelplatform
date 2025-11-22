@@ -5,6 +5,7 @@ package jp.vemi.mirel.foundation.service.oauth2;
 
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
+import jp.vemi.mirel.foundation.service.AvatarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +32,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     
     private final SystemUserRepository systemUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvatarService avatarService;
     
     /**
      * OAuth2ユーザー情報を取得し、SystemUserを作成または更新します。
@@ -75,6 +77,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             updateSystemUserFromGitHub(user, userInfo);
             systemUserRepository.save(user);
             log.info("Updated existing OAuth2 user: id={}, email={}", user.getId(), user.getEmail());
+            
+            // アバター画像をダウンロード・保存
+            downloadAndUpdateAvatar(userInfo, user);
         } else {
             // メールアドレスで既存ユーザーを検索（メール連携）
             Optional<SystemUser> userByEmail = userInfo.getEmail() != null
@@ -89,11 +94,33 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 updateSystemUserFromGitHub(user, userInfo);
                 systemUserRepository.save(user);
                 log.info("Linked OAuth2 to existing email user: id={}, email={}", user.getId(), user.getEmail());
+                
+                // アバター画像をダウンロード・保存
+                downloadAndUpdateAvatar(userInfo, user);
             } else {
                 // 新規ユーザーを作成
                 SystemUser newUser = createSystemUserFromGitHub(userInfo, provider, providerId);
                 systemUserRepository.save(newUser);
                 log.info("Created new OAuth2 user: id={}, email={}", newUser.getId(), newUser.getEmail());
+                
+                // アバター画像をダウンロード・保存
+                downloadAndUpdateAvatar(userInfo, newUser);
+            }
+        }
+    }
+    
+    /**
+     * アバター画像をダウンロードしてSystemUserを更新します。
+     * 
+     * @param userInfo GitHub OAuth2ユーザー情報
+     * @param user SystemUser
+     */
+    private void downloadAndUpdateAvatar(GitHubOAuth2UserInfo userInfo, SystemUser user) {
+        if (userInfo.getAvatarUrl() != null) {
+            String avatarUrl = avatarService.downloadAndSaveAvatar(userInfo.getAvatarUrl(), user.getId());
+            if (avatarUrl != null) {
+                user.setAvatarUrl(avatarUrl);
+                systemUserRepository.save(user);
             }
         }
     }
