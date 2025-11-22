@@ -27,8 +27,8 @@ echo "   ポート: 3000"
 echo "   プロファイル: dev"
 echo "   ログ: logs/backend.log"
 
-# nohupを使ってプロセスをシェルから完全に切り離す
-nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun" > logs/backend.log 2>&1 &
+# setsid を使ってプロセスを完全に切り離す（新しいセッションで起動）
+setsid bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun" > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
@@ -48,13 +48,13 @@ if [ ! -d "apps/frontend-v3/node_modules" ]; then
     fi
 fi
 
-# Vite 開発サーバ起動（nohup で切り離し）
+# Vite 開発サーバ起動（setsid で完全に切り離し）
 if command -v pnpm >/dev/null 2>&1; then
     FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && pnpm dev"
 else
     FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && npm run dev"
 fi
-nohup bash -c "$FRONTEND_CMD" > logs/frontend.log 2>&1 &
+setsid bash -c "$FRONTEND_CMD" > logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
 
@@ -82,48 +82,54 @@ echo "⏰ 起動完了まで約30-60秒お待ちください..."
 # 起動状況ファイルのクリーンアップ
 rm -f logs/.backend_ready logs/.frontend_ready
 
-# バックグラウンドで起動状況を監視
-{
-    echo "起動状況を監視中..."
-    for i in {1..180}; do
-        sleep 1
-        echo -n "."
-        
-        # Backend起動チェック (アプリのコンテキストパス配下)
-        if curl -s http://localhost:3000/mipla2/actuator/health >/dev/null 2>&1; then
-            if [ ! -f "logs/.backend_ready" ]; then
-                echo "✅ Backend起動完了 (http://localhost:3000/mipla2)"
-                touch logs/.backend_ready
-            fi
-        fi
-        
-        # Frontend 起動チェック
-        if curl -s http://localhost:5173/ >/dev/null 2>&1; then
-            if [ ! -f "logs/.frontend_ready" ]; then
-                echo "✅ Frontend起動完了 (http://localhost:5173/)"
-                touch logs/.frontend_ready
-            fi
-        fi
-        
-        # 両方起動したら終了
-        if [ -f "logs/.backend_ready" ] && [ -f "logs/.frontend_ready" ]; then
-            echo ""
-            echo "🎉 全サービスが正常に起動しました!"
-            echo "ブラウザでアクセスできます。"
-            exit 0
-        fi
-    done
-    
-    # タイムアウトした場合
-    echo ""
-    echo "⚠️  起動監視がタイムアウトしました（180秒）"
-    echo "サービスは継続実行中です。ログを確認してください。"
-} > logs/startup-monitor.log 2>&1 &
-
-# バックグラウンドプロセスをシェルから切り離す
-disown
-
-echo "起動スクリプト実行完了。バックグラウンドで監視中..."
-echo "監視状況: tail -f logs/startup-monitor.log"
+# 起動状況を監視（フォアグラウンドで実行）
 echo ""
-echo "このスクリプトは終了します。サービスは継続実行されます。"
+echo "起動状況を監視中..."
+for i in {1..180}; do
+    sleep 1
+    echo -n "."
+    
+    # Backend起動チェック (アプリのコンテキストパス配下)
+    if curl -s http://localhost:3000/mipla2/actuator/health >/dev/null 2>&1; then
+        if [ ! -f "logs/.backend_ready" ]; then
+            echo ""
+            echo "✅ Backend起動完了 (http://localhost:3000/mipla2)"
+            touch logs/.backend_ready
+        fi
+    fi
+    
+    # Frontend 起動チェック
+    if curl -s http://localhost:5173/ >/dev/null 2>&1; then
+        if [ ! -f "logs/.frontend_ready" ]; then
+            echo ""
+            echo "✅ Frontend起動完了 (http://localhost:5173/)"
+            touch logs/.frontend_ready
+        fi
+    fi
+    
+    # 両方起動したら終了
+    if [ -f "logs/.backend_ready" ] && [ -f "logs/.frontend_ready" ]; then
+        echo ""
+        echo "🎉 全サービスが正常に起動しました!"
+        echo "======================================"
+        echo "🌐 アクセス可能:"
+        echo "   Frontend: http://localhost:5173/"
+        echo "   Backend API: http://localhost:3000/mipla2"
+        echo ""
+        echo "📊 ログ監視:"
+        echo "   tail -f logs/backend.log"
+        echo "   tail -f logs/frontend.log"
+        echo ""
+        echo "このターミナルは閉じても問題ありません。"
+        echo "サービスを停止するには: ./scripts/stop-services.sh"
+        exit 0
+    fi
+done
+
+# タイムアウトした場合
+echo ""
+echo "⚠️  起動監視がタイムアウトしました（180秒）"
+echo "サービスは継続実行中です。ログを確認してください:"
+echo "   tail -f logs/backend.log"
+echo "   tail -f logs/frontend.log"
+exit 1
