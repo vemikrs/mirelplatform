@@ -29,6 +29,8 @@ import jp.vemi.framework.util.DatabaseUtil;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
 import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
+import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -42,6 +44,12 @@ public class WebSecurityConfig {
     
     @Autowired
     private CustomOAuth2UserService customOAuth2UserService;
+    
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+    
+    @Autowired
+    private OAuth2AuthenticationFailureHandler oauth2FailureHandler;
 
     /**
      * Spring Securityのセキュリティフィルタチェーンを構成します。
@@ -199,9 +207,9 @@ public class WebSecurityConfig {
         http.oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
-                .loginPage("/login")
-                .defaultSuccessUrl("/auth/oauth2/success", true)
-                .failureUrl("/login?error=oauth2"));
+                .successHandler(oauth2SuccessHandler)
+                .failureHandler(oauth2FailureHandler)
+                .loginPage("/login"));
     }
 
     /**
