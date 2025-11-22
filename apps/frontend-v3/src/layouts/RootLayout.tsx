@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
 import { Badge, Button, Toaster } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
@@ -6,6 +6,8 @@ import { Bell, HelpCircle, Menu } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { TenantSwitcher } from '@/components/header/TenantSwitcher';
 import { useAuth } from '@/hooks/useAuth';
+
+const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
 function renderAction(action: NavigationAction) {
   switch (action.type) {
@@ -43,6 +45,20 @@ function renderAction(action: NavigationAction) {
 export function RootLayout() {
   const navigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
+  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+
+  useEffect(() => {
+    const handleToggle = (event: Event) => {
+      const customEvent = event as CustomEvent<{ visible: boolean }>;
+      setQuickLinksVisible(customEvent.detail.visible);
+    };
+    window.addEventListener('quicklinks-toggle', handleToggle);
+    return () => window.removeEventListener('quicklinks-toggle', handleToggle);
+  }, []);
 
   const primaryLinks = useMemo(() => navigation.primary, [navigation.primary]);
 
@@ -116,7 +132,7 @@ export function RootLayout() {
         </nav>
       </header>
 
-      {navigation.quickLinks.length > 0 ? (
+      {navigation.quickLinks.length > 0 && quickLinksVisible ? (
         <div className="border-b border-border bg-surface">
           <div className="container flex flex-wrap items-center gap-2 py-3">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">

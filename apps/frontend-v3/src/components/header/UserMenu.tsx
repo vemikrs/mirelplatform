@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { Button, Badge } from '@mirel/ui';
-import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserLicenses, type LicenseInfo } from '@/lib/api/userProfile';
+
+const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
@@ -17,6 +19,19 @@ export function UserMenu() {
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+
+  const toggleQuickLinks = () => {
+    const newValue = !quickLinksVisible;
+    setQuickLinksVisible(newValue);
+    window.localStorage.setItem(QUICK_LINKS_STORAGE_KEY, String(newValue));
+    // カスタムイベントでRootLayoutに通知
+    window.dispatchEvent(new CustomEvent('quicklinks-toggle', { detail: { visible: newValue } }));
+  };
 
   // Fetch user's licenses from API
   const { data: licenses = [] } = useQuery<LicenseInfo[]>({
@@ -149,6 +164,16 @@ export function UserMenu() {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={toggleQuickLinks}
+              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {quickLinksVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              Quick Links {quickLinksVisible ? '非表示' : '表示'}
+            </button>
           </div>
 
           <div className="py-1 border-t border-gray-200 dark:border-gray-700">
