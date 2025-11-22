@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { OtpPurpose } from '@/lib/api/otp.types';
 
 interface User {
   userId: string;
@@ -24,11 +25,25 @@ interface Tokens {
   expiresIn: number;
 }
 
+/**
+ * OTP認証状態
+ */
+interface OtpState {
+  email: string | null;
+  purpose: OtpPurpose | null;
+  requestId: string | null;
+  expiresAt: Date | null;
+  expirationMinutes: number | null;
+}
+
 interface AuthState {
   user: User | null;
   currentTenant: Tenant | null;
   tokens: Tokens | null;
   isAuthenticated: boolean;
+  
+  // OTP認証状態
+  otpState: OtpState | null;
 
   // Actions
   login: (usernameOrEmail: string, password: string) => Promise<void>;
@@ -38,7 +53,13 @@ interface AuthState {
   setAuth: (user: User, tenant: Tenant | null, tokens: Tokens) => void;
   clearAuth: () => void;
   updateUser: (updatedUser: Partial<User>) => void;
+  
+  // OTP Actions
+  setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => void;
+  clearOtpState: () => void;
+  isOtpExpired: () => boolean;
 }
+      otpState: null,
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -143,6 +164,30 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (!user) return;
         set({ user: { ...user, ...updatedUser } });
+      
+      setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => {
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + expirationMinutes);
+        
+        set({
+          otpState: {
+            email,
+            purpose,
+            requestId,
+            expiresAt,
+            expirationMinutes,
+          },
+        });
+      },
+      
+      clearOtpState: () => {
+        set({ otpState: null });
+      },
+      
+      isOtpExpired: () => {
+        const { otpState } = get();
+        if (!otpState || !otpState.expiresAt) return true;
+        return new Date() > new Date(otpState.expiresAt);
       },
     }),
     {
@@ -151,6 +196,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         currentTenant: state.currentTenant,
         tokens: state.tokens,
+        isAuthenticated: state.isAuthenticated,
+        otpState: state.otpState, // OTP状態も永続化
         isAuthenticated: state.isAuthenticated,
       }),
     }
