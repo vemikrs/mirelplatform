@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.security.jwt;
 
@@ -12,6 +12,8 @@ import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,15 +23,21 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.KeyOperation;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
+import java.util.List;
+
 @Service
 @ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "true", matchIfMissing = false)
 public class JwtService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${auth.jwt.enabled:false}")
     private boolean jwtEnabled;
@@ -52,17 +60,30 @@ public class JwtService {
         String secretKey = keyGenerator.generateSecretKey();
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
 
-        // JWKの作成（use=sig を明示）
+        // JWKの作成（HMAC署名用の必須属性を全て設定）
         OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes)
                 .keyID("mirel-jwt-key")
                 .algorithm(com.nimbusds.jose.JWSAlgorithm.HS256)
                 .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
+                .keyOperations(java.util.Collections.singleton(com.nimbusds.jose.jwk.KeyOperation.SIGN))
                 .build();
         
-        JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+        logger.info("JWK created: keyID={}, algorithm={}, keyUse={}, keyType={}", 
+            jwk.getKeyID(), jwk.getAlgorithm(), jwk.getKeyUse(), jwk.getKeyType());
+        
+        JWKSet jwkSet = new JWKSet(jwk);
+        
+        logger.info("JWKSet created with {} keys", jwkSet.getKeys().size());
+        
+        // カスタムJWKSource: JWKSelectorを無視して常にJWKを返す
+        JWKSource<SecurityContext> jwkSource = (jwkSelector, securityContext) -> {
+            logger.info("JWKSource called. Selector: {}. Returning all {} keys unconditionally", 
+                jwkSelector, jwkSet.getKeys().size());
+            return jwkSet.getKeys(); // Selectorの条件を無視して全てのJWKを返す
+        };
 
         // エンコーダーとデコーダーの設定
-        this.encoder = new NimbusJwtEncoder(jwks);
+        this.encoder = new NimbusJwtEncoder(jwkSource);
         
         SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
         this.decoder = NimbusJwtDecoder.withSecretKey(key).build();
@@ -85,7 +106,10 @@ public class JwtService {
                         .collect(Collectors.toList()))
                 .build();
 
-        return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        // HS256アルゴリズムを明示的に指定
+        JwsHeader header = JwsHeader.with(() -> "HS256").build();
+        
+        return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
     public Jwt decodeToken(String token) {
