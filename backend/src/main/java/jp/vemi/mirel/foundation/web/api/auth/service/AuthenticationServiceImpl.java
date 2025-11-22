@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2024 mirelplatform.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.foundation.web.api.auth.service;
 
@@ -35,6 +35,9 @@ public class AuthenticationServiceImpl {
     private UserRepository userRepository;
 
     @Autowired
+    private SystemUserRepository systemUserRepository;
+
+    @Autowired
     private TenantRepository tenantRepository;
 
     @Autowired
@@ -49,8 +52,11 @@ public class AuthenticationServiceImpl {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
+    @Autowired(required = false)
     private JwtService jwtService;
+
+    @org.springframework.beans.factory.annotation.Value("${auth.jwt.enabled:false}")
+    private boolean jwtEnabled;
 
     /**
      * ログイン処理
@@ -59,20 +65,45 @@ public class AuthenticationServiceImpl {
     public AuthenticationResponse login(LoginRequest request) {
         logger.info("Login attempt for email: {}", request.getEmail());
 
-        // emailでユーザー検索
-        User user = userRepository.findById(request.getEmail())
+        // SystemUserでemailを検索
+        SystemUser systemUser = systemUserRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
+        // アクティブチェック
+        if (systemUser.getIsActive() == null || !systemUser.getIsActive()) {
+            throw new RuntimeException("User account is not active");
+        }
+
+        // アカウントロックチェック
+        if (systemUser.getAccountLocked() != null && systemUser.getAccountLocked()) {
+            throw new RuntimeException("User account is locked");
+        }
+
         // パスワード検証
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getPassword(), systemUser.getPasswordHash())) {
             logger.warn("Invalid password for user: {}", request.getEmail());
+            
+            // ログイン失敗回数をインクリメント
+            Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0 : systemUser.getFailedLoginAttempts();
+            systemUser.setFailedLoginAttempts(failedAttempts + 1);
+            
+            // 5回失敗でアカウントロック
+            if (failedAttempts + 1 >= 5) {
+                systemUser.setAccountLocked(true);
+                logger.warn("Account locked due to multiple failed login attempts: {}", request.getEmail());
+            }
+            
+            systemUserRepository.save(systemUser);
             throw new RuntimeException("Invalid email or password");
         }
 
-        // アクティブチェック
-        if (user.getIsActive() == null || !user.getIsActive()) {
-            throw new RuntimeException("User account is not active");
-        }
+        // ログイン成功：失敗回数リセット
+        systemUser.setFailedLoginAttempts(0);
+        systemUserRepository.save(systemUser);
+
+        // Userエンティティを取得（ApplicationデータにアクセスするためにsystemUserIdで検索）
+        User user = userRepository.findBySystemUserId(systemUser.getId())
+            .orElseThrow(() -> new RuntimeException("User profile not found"));
 
         // 最終ログイン時刻更新
         user.setLastLoginAt(Instant.now());
@@ -81,12 +112,18 @@ public class AuthenticationServiceImpl {
         // テナント解決
         Tenant tenant = resolveTenant(user, request.getTenantId());
 
-        // トークン生成
-        String accessToken = jwtService.generateToken(
-            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                user.getUserId(), null, List.of()
-            )
-        );
+        // トークン生成（JWT有効な場合のみ）
+        String accessToken;
+        if (jwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    user.getUserId(), null, List.of()
+                )
+            );
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
 
         // RefreshToken作成
         RefreshToken refreshToken = createRefreshToken(user);
@@ -150,11 +187,17 @@ public class AuthenticationServiceImpl {
         licenseRepository.save(license);
 
         // トークン生成
-        String accessToken = jwtService.generateToken(
-            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                user.getUserId(), null, List.of()
-            )
-        );
+        String accessToken;
+        if (jwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    user.getUserId(), null, List.of()
+                )
+            );
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
 
         RefreshToken refreshToken = createRefreshToken(user);
 
@@ -169,6 +212,9 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse refresh(RefreshTokenRequest request) {
+        if (!jwtEnabled || jwtService == null) {
+            throw new IllegalStateException("JWT is disabled. Refresh token not supported.");
+        }
         logger.info("Token refresh attempt");
 
         // RefreshToken検証
@@ -189,11 +235,17 @@ public class AuthenticationServiceImpl {
             tenantRepository.findById(user.getTenantId()).orElse(null) : null;
 
         // 新しいアクセストークン生成
-        String accessToken = jwtService.generateToken(
-            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                user.getUserId(), null, List.of()
-            )
-        );
+        String accessToken;
+        if (jwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    user.getUserId(), null, List.of()
+                )
+            );
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(

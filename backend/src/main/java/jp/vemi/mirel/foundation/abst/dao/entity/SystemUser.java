@@ -1,3 +1,6 @@
+/*
+ * Copyright(c) 2015-2025 mirelplatform.
+ */
 package jp.vemi.mirel.foundation.abst.dao.entity;
 
 import jakarta.persistence.*;
@@ -17,7 +20,7 @@ import java.util.UUID;
  * This entity is designed to reside in a system-wide database or separate schema.
  */
 @Entity
-@Table(name = "system_user")
+@Table(name = "`system_user`")
 @Getter
 @Setter
 public class SystemUser {
