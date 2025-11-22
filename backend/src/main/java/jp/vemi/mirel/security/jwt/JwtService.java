@@ -13,17 +13,26 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
 @Service
+@ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "true", matchIfMissing = false)
 public class JwtService {
+
+    @Value("${auth.jwt.enabled:false}")
+    private boolean jwtEnabled;
 
     @Autowired
     private JwtKeyGenerator keyGenerator;
@@ -34,22 +43,36 @@ public class JwtService {
 
     @PostConstruct
     public void init() {
+        if (!jwtEnabled) {
+            // JWT無効時はスキップ
+            return;
+        }
+
         // 秘密鍵の生成
         String secretKey = keyGenerator.generateSecretKey();
-        SecretKey key = new SecretKeySpec(
-            Base64.getDecoder().decode(secretKey),
-            "HmacSHA256"
-        );
+        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
 
-        // JWKSourceの作成（デコーダー用の鍵と同じものを使用）
-        JWKSource<SecurityContext> jwks = new ImmutableSecret<>(key);
+        // JWKの作成（use=sig を明示）
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes)
+                .keyID("mirel-jwt-key")
+                .algorithm(com.nimbusds.jose.JWSAlgorithm.HS256)
+                .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
+                .build();
+        
+        JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
 
         // エンコーダーとデコーダーの設定
         this.encoder = new NimbusJwtEncoder(jwks);
+        
+        SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
         this.decoder = NimbusJwtDecoder.withSecretKey(key).build();
     }
 
     public String generateToken(Authentication authentication) {
+        if (!jwtEnabled || encoder == null) {
+            throw new IllegalStateException("JWT is disabled. Enable auth.jwt.enabled in application.yml");
+        }
+
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()

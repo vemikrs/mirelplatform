@@ -15,7 +15,15 @@ public class JwtKeyGenerator {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
+    @Value("${jwt.secret:}")
+    private String jwtSecret;
+
     public String generateSecretKey() {
+        // 環境変数 or 設定ファイルのキーを優先
+        if (jwtSecret != null && !jwtSecret.isBlank()) {
+            return jwtSecret;
+        }
+
         if ("prod".equals(activeProfile)) {
             String envKey = System.getenv("JWT_SECRET");
             if (envKey == null) {
