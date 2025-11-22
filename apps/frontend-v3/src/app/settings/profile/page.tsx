@@ -8,7 +8,7 @@ import { updateProfile, type UpdateProfileRequest } from '@/lib/api/userProfile'
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 
 export default function ProfilePage() {
-  const { user, tokens } = useAuth();
+  const { user, tokens, updateUser } = useAuth();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<UpdateProfileRequest>({
@@ -24,9 +24,15 @@ export default function ProfilePage() {
       if (!tokens?.accessToken) throw new Error('Not authenticated');
       return updateProfile(tokens.accessToken, data);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       setMessage({ type: 'success', text: 'プロフィールを更新しました' });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      // authStore の user を更新してメニュー等に即座に反映
+      updateUser({
+        displayName: response.data.displayName,
+        firstName: response.data.firstName,
+        lastName: response.data.lastName,
+      });
     },
     onError: (error: Error) => {
       setMessage({ type: 'error', text: error.message });

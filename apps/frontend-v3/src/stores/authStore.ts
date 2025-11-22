@@ -36,6 +36,7 @@ interface AuthState {
   switchTenant: (tenantId: string) => Promise<void>;
   setAuth: (user: User, tenant: Tenant | null, tokens: Tokens) => void;
   clearAuth: () => void;
+  updateUser: (updatedUser: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -135,6 +136,12 @@ export const useAuthStore = create<AuthState>()(
 
       clearAuth: () => {
         set({ user: null, currentTenant: null, tokens: null, isAuthenticated: false });
+      },
+
+      updateUser: (updatedUser: Partial<User>) => {
+        const { user } = get();
+        if (!user) return;
+        set({ user: { ...user, ...updatedUser } });
       },
     }),
     {
