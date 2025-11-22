@@ -11,8 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 export function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const setToken = useAuthStore((state) => state.setToken);
-  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -26,9 +25,24 @@ export function OAuthCallbackPage() {
     }
 
     if (token) {
-      // JWTトークンをストアに保存
-      setToken(token);
-      setAuthenticated(true);
+      // TODO: トークンをデコードしてユーザー情報を取得する
+      // 現在は簡易的に認証状態のみを設定
+      setAuth(
+        {
+          userId: 'oauth-user',
+          username: 'oauth-user',
+          email: 'oauth@example.com',
+          displayName: 'OAuth User',
+          isActive: true,
+          emailVerified: true,
+        },
+        null, // tenant情報なし
+        {
+          accessToken: token,
+          refreshToken: '',
+          expiresIn: 3600,
+        }
+      );
       
       // ダッシュボードに遷移
       navigate('/');
@@ -36,7 +50,7 @@ export function OAuthCallbackPage() {
       // トークンがない場合はログインページに戻る
       navigate('/login?error=no_token');
     }
-  }, [searchParams, navigate, setToken, setAuthenticated]);
+  }, [searchParams, navigate, setAuth]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

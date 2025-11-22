@@ -60,7 +60,6 @@ interface AuthState {
   clearOtpState: () => void;
   isOtpExpired: () => boolean;
 }
-      otpState: null,
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -69,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
       currentTenant: null,
       tokens: null,
       isAuthenticated: false,
+      otpState: null,
 
       login: async (usernameOrEmail: string, password: string) => {
         const response = await fetch('/mapi/auth/login', {
@@ -165,6 +165,7 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (!user) return;
         set({ user: { ...user, ...updatedUser } });
+      },
       
       setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => {
         const expiresAt = new Date();
@@ -199,7 +200,6 @@ export const useAuthStore = create<AuthState>()(
         tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
         otpState: state.otpState, // OTP状態も永続化
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
