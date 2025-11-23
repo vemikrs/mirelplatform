@@ -3,6 +3,12 @@
 # OTPログインの疎通確認を自動化するスモークテスト。
 # Usage: ./scripts/e2e/otp-login-smoke.sh
 # 環境変数で BASE_URL / MAILHOG_URL / EMAIL / PURPOSE / COOKIE_JAR を上書き可能。
+#
+# 改良点 (Issue #40):
+# - OTP再送機能（最大2回まで）
+# - 指数的待機時間
+# - quoted-printable デコード対応
+# - レート制限検知
 
 set -euo pipefail
 
@@ -12,7 +18,8 @@ EMAIL=${EMAIL:-user@example.com}
 PURPOSE=${PURPOSE:-LOGIN}
 COOKIE_JAR=${COOKIE_JAR:-/tmp/otp-login-cookies.txt}
 POLL_MAX=${POLL_MAX:-30}
-POLL_INTERVAL=${POLL_INTERVAL:-2}
+POLL_INTERVAL_BASE=${POLL_INTERVAL_BASE:-1}  # 指数退避の基準秒数
+MAX_RESEND_ATTEMPTS=${MAX_RESEND_ATTEMPTS:-2}  # 再送最大回数
 TMP_DIR=$(mktemp -d /tmp/otp-login.XXXXXX)
 
 cleanup() {
@@ -46,11 +53,22 @@ request_otp() {
   log_info "OTPリクエスト送信: $EMAIL"
   local payload
   payload=$(printf '{"model":{"email":"%s","purpose":"%s"}}' "$EMAIL" "$PURPOSE")
-  if ! curl -sS -H 'Content-Type: application/json' -d "$payload" \
-    "$BASE_URL/auth/otp/request" -o "$TMP_DIR/otp-request.json"; then
-    log_error "OTPリクエストが失敗しました"
+  local http_code
+  http_code=$(curl -sS -w '%{http_code}' -o "$TMP_DIR/otp-request.json" \
+    -H 'Content-Type: application/json' -d "$payload" \
+    "$BASE_URL/auth/otp/request")
+  
+  if [[ "$http_code" != "200" ]]; then
+    # レート制限検知
+    if [[ "$http_code" == "429" ]] || grep -q "リクエスト制限" "$TMP_DIR/otp-request.json" 2>/dev/null; then
+      log_error "レート制限に達しました (HTTP $http_code)"
+      exit 2  # レート制限専用の終了コード
+    fi
+    log_error "OTPリクエストが失敗しました (HTTP $http_code)"
+    cat "$TMP_DIR/otp-request.json" >&2
     exit 1
   fi
+  
   local request_id
   request_id=$(python3 - "$TMP_DIR/otp-request.json" <<'PY'
 import json, sys
@@ -58,12 +76,20 @@ with open(sys.argv[1]) as fh:
     data = json.load(fh)
 errors = data.get('errors') or []
 if errors:
+    # レート制限エラーチェック
+    for err in errors:
+        if 'リクエスト制限' in err or 'しばらく待って' in err:
+            sys.exit(2)
     sys.stderr.write('OTPリクエストでエラー: ' + '; '.join(errors) + '\n')
     sys.exit(1)
 print(data.get('data', {}).get('requestId', ''))
 PY
   )
-  if [[ -z "$request_id" ]]; then
+  local py_exit=$?
+  if [[ $py_exit -eq 2 ]]; then
+    log_error "レート制限に達しました"
+    exit 2
+  elif [[ $py_exit -ne 0 ]] || [[ -z "$request_id" ]]; then
     log_error "OTPリクエストIDを取得できませんでした"
     exit 1
   fi
@@ -71,9 +97,30 @@ PY
   log_success "OTPリクエスト成功 requestId=$request_id"
 }
 
+resend_otp() {
+  log_info "OTP再送信: $EMAIL"
+  local payload
+  payload=$(printf '{"model":{"email":"%s","purpose":"%s"}}' "$EMAIL" "$PURPOSE")
+  local http_code
+  http_code=$(curl -sS -w '%{http_code}' -o "$TMP_DIR/otp-resend.json" \
+    -H 'Content-Type: application/json' -d "$payload" \
+    "$BASE_URL/auth/otp/resend")
+  
+  if [[ "$http_code" != "200" ]]; then
+    if [[ "$http_code" == "429" ]] || grep -q "しばらく待って" "$TMP_DIR/otp-resend.json" 2>/dev/null; then
+      log_error "再送のクールダウン中またはレート制限 (HTTP $http_code)"
+      return 1
+    fi
+    log_error "OTP再送信が失敗しました (HTTP $http_code)"
+    return 1
+  fi
+  log_success "OTP再送信成功"
+  return 0
+}
+
 extract_otp_from_mailhog() {
   python3 - <<'PY'
-import json, re, sys
+import json, re, sys, quopri
 from html import unescape
 try:
     payload = json.load(sys.stdin)
@@ -82,6 +129,13 @@ except json.JSONDecodeError:
     sys.exit(0)
 for item in payload.get('items', []):
     body = item.get('Content', {}).get('Body') or ''
+    # quoted-printable デコード試行
+    try:
+        body_bytes = body.encode('latin-1')
+        decoded = quopri.decodestring(body_bytes).decode('utf-8', errors='ignore')
+        body = decoded
+    except:
+        pass  # デコード失敗時は元のbodyを使用
     body = unescape(body)
     match = re.search(r'\b(\d{6})\b', body)
     if match:
@@ -92,8 +146,9 @@ PY
 }
 
 wait_for_otp_email() {
-  log_info "MailHogからOTPメールを待機 (最大 ${POLL_MAX} 回)"
+  log_info "MailHogからOTPメールを待機 (最大 ${POLL_MAX} 回、指数退避)"
   local attempt=1
+  local wait_time=$POLL_INTERVAL_BASE
   while (( attempt <= POLL_MAX )); do
     if curl -sS "$MAILHOG_URL/api/v2/messages" -o "$TMP_DIR/mailhog.json"; then
       local code
@@ -104,11 +159,23 @@ wait_for_otp_email() {
         return 0
       fi
     fi
+    
+    # 指数退避 (1, 2, 3, 5, 8, 13, ... 最大60秒)
+    if (( wait_time < 60 )); then
+      local next_wait=$((wait_time + attempt))
+      if (( next_wait > 60 )); then
+        next_wait=60
+      fi
+      sleep "$wait_time"
+      wait_time=$next_wait
+    else
+      sleep 60
+    fi
+    
     attempt=$((attempt + 1))
-    sleep "$POLL_INTERVAL"
   done
   log_error "MailHogからOTPメールを取得できませんでした"
-  exit 1
+  return 1
 }
 
 verify_otp() {
@@ -152,7 +219,23 @@ call_protected_endpoint() {
 main() {
   clear_mailhog
   request_otp
-  wait_for_otp_email
+  
+  # メール取得を試行、失敗したら再送（最大2回）
+  local resend_count=0
+  while ! wait_for_otp_email; do
+    if (( resend_count >= MAX_RESEND_ATTEMPTS )); then
+      log_error "メール取得失敗。再送も${MAX_RESEND_ATTEMPTS}回試行済み"
+      exit 3  # メール未取得専用の終了コード
+    fi
+    resend_count=$((resend_count + 1))
+    log_info "再送を試行します ($resend_count / $MAX_RESEND_ATTEMPTS)"
+    if ! resend_otp; then
+      log_error "再送に失敗しました"
+      exit 1
+    fi
+    clear_mailhog  # 再送後、古いメールをクリア
+  done
+  
   verify_otp
   call_protected_endpoint
   log_success "OTPスモークテスト完了"
