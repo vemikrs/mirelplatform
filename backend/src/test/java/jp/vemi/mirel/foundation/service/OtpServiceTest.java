@@ -80,7 +80,8 @@ class OtpServiceTest {
         when(otpProperties.getMaxAttempts()).thenReturn(5);
         when(otpProperties.getResendCooldownSeconds()).thenReturn(60);
         
-        RateLimitProperties.OtpRateLimitConfig otpConfig = new RateLimitProperties.OtpRateLimitConfig();
+        // RateLimitProperties のクラス名変更に追従 (OtpRateLimitConfig -> OtpRateLimit)
+        RateLimitProperties.OtpRateLimit otpConfig = new RateLimitProperties.OtpRateLimit();
         otpConfig.setRequestPerMinute(3);
         otpConfig.setVerifyPerMinute(10);
         when(rateLimitProperties.getOtp()).thenReturn(otpConfig);
