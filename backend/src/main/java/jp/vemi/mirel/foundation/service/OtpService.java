@@ -3,6 +3,8 @@
  */
 package jp.vemi.mirel.foundation.service;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jp.vemi.mirel.foundation.abst.dao.entity.OtpAuditLog;
 import jp.vemi.mirel.foundation.abst.dao.entity.OtpToken;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
@@ -30,7 +32,6 @@ import java.util.Map;
  * ワンタイムパスワードの生成・検証・再送信を管理
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OtpService {
     
@@ -41,8 +42,52 @@ public class OtpService {
     private final RateLimitService rateLimitService;
     private final OtpProperties otpProperties;
     private final RateLimitProperties rateLimitProperties;
+    private final MeterRegistry meterRegistry;
     
     private final SecureRandom secureRandom = new SecureRandom();
+    
+    // Micrometer メトリクスカウンター
+    private final Counter otpRequestSuccessCounter;
+    private final Counter otpRequestFailedCounter;
+    private final Counter otpVerifySuccessCounter;
+    private final Counter otpVerifyFailedCounter;
+    
+    /**
+     * コンストラクタでメトリクスカウンターを初期化
+     */
+    public OtpService(
+        OtpTokenRepository otpTokenRepository,
+        OtpAuditLogRepository otpAuditLogRepository,
+        SystemUserRepository systemUserRepository,
+        EmailService emailService,
+        RateLimitService rateLimitService,
+        OtpProperties otpProperties,
+        RateLimitProperties rateLimitProperties,
+        MeterRegistry meterRegistry
+    ) {
+        this.otpTokenRepository = otpTokenRepository;
+        this.otpAuditLogRepository = otpAuditLogRepository;
+        this.systemUserRepository = systemUserRepository;
+        this.emailService = emailService;
+        this.rateLimitService = rateLimitService;
+        this.otpProperties = otpProperties;
+        this.rateLimitProperties = rateLimitProperties;
+        this.meterRegistry = meterRegistry;
+        
+        // メトリクスカウンター初期化
+        this.otpRequestSuccessCounter = Counter.builder("otp.request.success")
+            .description("OTP request successful count")
+            .register(meterRegistry);
+        this.otpRequestFailedCounter = Counter.builder("otp.request.failed")
+            .description("OTP request failed count")
+            .register(meterRegistry);
+        this.otpVerifySuccessCounter = Counter.builder("otp.verify.success")
+            .description("OTP verification successful count")
+            .register(meterRegistry);
+        this.otpVerifyFailedCounter = Counter.builder("otp.verify.failed")
+            .description("OTP verification failed count")
+            .register(meterRegistry);
+    }
     
     /**
      * OTPをリクエスト
@@ -61,6 +106,7 @@ public class OtpService {
         String rateLimitKey = "otp:request:" + email;
         int requestPerMinute = rateLimitProperties.getOtp().getRequestPerMinute();
         if (!rateLimitService.checkRateLimit(rateLimitKey, requestPerMinute, 60)) {
+            otpRequestFailedCounter.increment();
             logAudit(requestId, null, email, purpose, "REQUEST", false, 
                 "レート制限超過", ipAddress, userAgent, 
                 String.format("{\"limit\": %d, \"window\": 60}", requestPerMinute));
@@ -70,6 +116,7 @@ public class OtpService {
         // クールダウンチェック
         String cooldownKey = "otp:cooldown:" + email;
         if (rateLimitService.isInCooldown(cooldownKey)) {
+            otpRequestFailedCounter.increment();
             logAudit(requestId, null, email, purpose, "REQUEST", false, 
                 "クールダウン中", ipAddress, userAgent, null);
             throw new RuntimeException("しばらく待ってから再度お試しください。");
@@ -113,6 +160,9 @@ public class OtpService {
         logAudit(requestId, systemUser != null ? systemUser.getId() : null, email, purpose, "REQUEST", true, 
             null, ipAddress, userAgent, null);
         
+        // メトリクス: リクエスト成功
+        otpRequestSuccessCounter.increment();
+        
         log.info("OTPリクエスト成功: email={}, purpose={}, requestId={}", email, purpose, requestId);
         return requestId;
     }
@@ -135,6 +185,7 @@ public class OtpService {
         String rateLimitKey = "otp:verify:" + email;
         int verifyPerMinute = rateLimitProperties.getOtp().getVerifyPerMinute();
         if (!rateLimitService.checkRateLimit(rateLimitKey, verifyPerMinute, 60)) {
+            otpVerifyFailedCounter.increment();
             logAudit(requestId, null, email, purpose, "VERIFY", false, 
                 "検証レート制限超過", ipAddress, userAgent, 
                 String.format("{\"limit\": %d, \"window\": 60}", verifyPerMinute));
@@ -152,6 +203,7 @@ public class OtpService {
             .orElse(null);
         
         if (token == null) {
+            otpVerifyFailedCounter.increment();
             logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false, 
                 "トークンが見つからないか期限切れ", ipAddress, userAgent, null);
             return false;
@@ -159,6 +211,7 @@ public class OtpService {
         
         // 試行回数チェック
         if (token.getAttemptCount() >= token.getMaxAttempts()) {
+            otpVerifyFailedCounter.increment();
             logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false, 
                 "最大試行回数超過", ipAddress, userAgent, null);
             return false;
@@ -170,6 +223,7 @@ public class OtpService {
         
         if (!token.getOtpHash().equals(otpHash)) {
             otpTokenRepository.save(token);
+            otpVerifyFailedCounter.increment();
             logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false, 
                 "OTPコード不一致", ipAddress, userAgent, null);
             return false;
@@ -187,6 +241,9 @@ public class OtpService {
         
         logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", true, 
             null, ipAddress, userAgent, null);
+        
+        // メトリクス: 検証成功
+        otpVerifySuccessCounter.increment();
         
         log.info("OTP検証成功: email={}, purpose={}", email, purpose);
         return true;

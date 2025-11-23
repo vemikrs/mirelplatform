@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -170,11 +171,12 @@ public class OtpController {
                         .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
                     
                     // SecurityContextに認証情報を設定（principalにはアプリユーザーIDを使用）
+                    // ロール ROLE_USER を付与
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(
                             applicationUser.getUserId(),
                             null,
-                            java.util.Collections.emptyList()
+                            java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"))
                         );
                     authentication.setDetails(java.util.Map.of(
                         "systemUserId", systemUser.getId().toString(),
@@ -192,6 +194,17 @@ public class OtpController {
                     HttpSession session = httpRequest.getSession(true);
                     session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
                     boolean contextSaved = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) != null;
+                    
+                    // 構造化ログ (JSON形式)
+                    String structuredLog = String.format(
+                        "{\"event\":\"otp.login.success\",\"userId\":\"%s\",\"systemUserId\":\"%s\",\"sessionId\":\"%s\",\"requestId\":\"%s\"}",
+                        applicationUser.getUserId(),
+                        systemUser.getId().toString(),
+                        session.getId(),
+                        java.util.UUID.randomUUID().toString()
+                    );
+                    log.info(structuredLog);
+                    
                     log.info("OTPログイン成功: セッション認証設定完了 - userId={}, email={}, sessionId={}, saved={}",
                         applicationUser.getUserId(), dto.getEmail(), session.getId(), contextSaved);
                 }

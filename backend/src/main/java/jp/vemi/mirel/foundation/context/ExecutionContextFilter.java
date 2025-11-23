@@ -107,7 +107,19 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                         context.setEffectiveLicenses(licenses);
                         logger.debug("ExecutionContextFilter: Found {} effective licenses", 
                             licenses != null ? licenses.size() : 0);
+                        
+                        // 構造化ログ (JSON形式) - ExecutionContext解決成功
+                        String structuredLog = String.format(
+                            "{\"event\":\"executionContext.resolved\",\"userId\":\"%s\",\"tenantId\":\"%s\",\"requestId\":\"%s\"}",
+                            userId,
+                            tenantId,
+                            context.getRequestId()
+                        );
+                        logger.info(structuredLog);
                     }
+                } else {
+                    // ユーザー取得失敗時の警告ログ
+                    logger.warn("{\"event\":\"executionContext.userNotFound\",\"userId\":\"{}\"}", userId);
                 }
             }
 

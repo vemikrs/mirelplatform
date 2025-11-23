@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
@@ -46,7 +47,7 @@ class OtpLoginIntegrationTest {
     UserRepository userRepository;
 
     @Autowired
-    TestEmailService testEmailService;
+    Cfg.TestEmailService testEmailService;
 
     private String email;
     private String userId;
@@ -54,6 +55,7 @@ class OtpLoginIntegrationTest {
     @TestConfiguration
     static class Cfg {
         @Bean
+        @org.springframework.context.annotation.Primary
         TestEmailService testEmailService() {
             return new TestEmailService();
         }
@@ -74,6 +76,10 @@ class OtpLoginIntegrationTest {
             }
             @Override
             public void sendPlainTextEmail(String to, String subject, String body) {
+                // not used
+            }
+            @Override
+            public void sendHtmlEmail(String to, String subject, String htmlBody) {
                 // not used
             }
         }
@@ -123,16 +129,17 @@ class OtpLoginIntegrationTest {
         assertThat(testEmailService.lastOtpCode).as("OTPコードがメールスタブで捕捉される").isNotBlank();
 
         // 2) verify OTP
+        MockHttpSession session = (MockHttpSession) requestResult.getRequest().getSession();
         String verifyPayload = String.format("{\"model\":{\"email\":\"%s\",\"otpCode\":\"%s\",\"purpose\":\"LOGIN\"}}", email, testEmailService.lastOtpCode);
         mockMvc.perform(post("/auth/otp/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(verifyPayload)
-                .session(requestResult.getRequest().getSession()))
+                .session(session))
             .andExpect(status().isOk());
 
         // 3) /users/me should return 200 using same session (SecurityContext principal = userId)
         MvcResult meResult = mockMvc.perform(get("/users/me")
-                .session(requestResult.getRequest().getSession()))
+                .session(session))
             .andExpect(status().isOk())
             .andReturn();
 
