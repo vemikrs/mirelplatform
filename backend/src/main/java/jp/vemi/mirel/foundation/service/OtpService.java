@@ -13,7 +13,6 @@ import jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.config.OtpProperties;
 import jp.vemi.mirel.foundation.config.RateLimitProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

@@ -160,14 +160,14 @@ wait_for_otp_email() {
       fi
     fi
     
-    # 指数退避 (1, 2, 3, 5, 8, 13, ... 最大60秒)
+    # 指数退避 (Fibonacci-like: 1, 2, 3, 5, 8, 13, ... 最大60秒)
     if (( wait_time < 60 )); then
-      local next_wait=$((wait_time + attempt))
-      if (( next_wait > 60 )); then
-        next_wait=60
+      local prev_wait=$wait_time
+      wait_time=$((wait_time + attempt))
+      if (( wait_time > 60 )); then
+        wait_time=60
       fi
-      sleep "$wait_time"
-      wait_time=$next_wait
+      sleep "$prev_wait"
     else
       sleep 60
     fi

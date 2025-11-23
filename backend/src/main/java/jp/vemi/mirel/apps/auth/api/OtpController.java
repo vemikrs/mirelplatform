@@ -195,13 +195,12 @@ public class OtpController {
                     session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
                     boolean contextSaved = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) != null;
                     
-                    // 構造化ログ (JSON形式)
+                    // 構造化ログ (JSON形式) - リクエストIDは既存のsessionIdを使用
                     String structuredLog = String.format(
-                        "{\"event\":\"otp.login.success\",\"userId\":\"%s\",\"systemUserId\":\"%s\",\"sessionId\":\"%s\",\"requestId\":\"%s\"}",
+                        "{\"event\":\"otp.login.success\",\"userId\":\"%s\",\"systemUserId\":\"%s\",\"sessionId\":\"%s\"}",
                         applicationUser.getUserId(),
                         systemUser.getId().toString(),
-                        session.getId(),
-                        java.util.UUID.randomUUID().toString()
+                        session.getId()
                     );
                     log.info(structuredLog);
                     

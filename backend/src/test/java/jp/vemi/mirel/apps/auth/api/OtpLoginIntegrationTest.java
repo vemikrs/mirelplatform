@@ -36,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(properties = {
     "mirel.security.enabled=true",
-    "auth.method=session"
+    "auth.method=session",
+    "spring.main.allow-bean-definition-overriding=true"
 })
 @AutoConfigureMockMvc
 @DisplayName("OTPログイン統合テスト")
