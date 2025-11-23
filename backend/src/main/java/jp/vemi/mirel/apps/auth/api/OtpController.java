@@ -4,10 +4,16 @@
 package jp.vemi.mirel.apps.auth.api;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jp.vemi.mirel.apps.auth.dto.OtpRequestDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResendDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResponseDto;
 import jp.vemi.mirel.apps.auth.dto.OtpVerifyDto;
+import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
+import jp.vemi.mirel.foundation.abst.dao.entity.User;
+import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
+import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.config.OtpProperties;
 import jp.vemi.mirel.foundation.service.OtpService;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
@@ -16,6 +22,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -31,6 +41,9 @@ public class OtpController {
     
     private final OtpService otpService;
     private final OtpProperties otpProperties;
+    private final SystemUserRepository systemUserRepository;
+    private final UserRepository userRepository;
+    private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
     
     /**
      * OTPリクエスト
@@ -101,7 +114,8 @@ public class OtpController {
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Boolean>> verifyOtp(
         @RequestBody ApiRequest<OtpVerifyDto> request,
-        HttpServletRequest httpRequest
+        HttpServletRequest httpRequest,
+        HttpServletResponse httpResponse
     ) {
         OtpVerifyDto dto = request.getModel();
         
@@ -147,6 +161,41 @@ public class OtpController {
             );
             
             if (verified) {
+                // OTP検証成功後、Spring Securityセッション認証を設定
+                if ("LOGIN".equals(dto.getPurpose())) {
+                    SystemUser systemUser = systemUserRepository.findByEmail(dto.getEmail())
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                    User applicationUser = userRepository.findBySystemUserId(systemUser.getId())
+                        .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
+                    
+                    // SecurityContextに認証情報を設定（principalにはアプリユーザーIDを使用）
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(
+                            applicationUser.getUserId(),
+                            null,
+                            java.util.Collections.emptyList()
+                        );
+                    authentication.setDetails(java.util.Map.of(
+                        "systemUserId", systemUser.getId().toString(),
+                        "email", systemUser.getEmail()
+                    ));
+                    
+                    SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+                    securityContext.setAuthentication(authentication);
+                    SecurityContextHolder.setContext(securityContext);
+            
+                    // Spring Security 6: SecurityContextRepositoryへ保存（レスポンス必須）
+                    securityContextRepository.saveContext(securityContext, httpRequest, httpResponse);
+            
+                    // 念のためHttpSessionに直接SecurityContextを保存（Spring Session連携用）
+                    HttpSession session = httpRequest.getSession(true);
+                    session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
+                    boolean contextSaved = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) != null;
+                    log.info("OTPログイン成功: セッション認証設定完了 - userId={}, email={}, sessionId={}, saved={}",
+                        applicationUser.getUserId(), dto.getEmail(), session.getId(), contextSaved);
+                }
+                
                 return ResponseEntity.ok(ApiResponse.<Boolean>builder()
                     .data(true)
                     .messages(java.util.List.of("認証に成功しました"))
