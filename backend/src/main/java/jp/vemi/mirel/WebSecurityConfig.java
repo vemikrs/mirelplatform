@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -35,6 +37,8 @@ import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(WebSecurityConfig.class);
 
     @Value("${auth.method:jwt}")
     private String authMethod;
@@ -190,17 +194,28 @@ public class WebSecurityConfig {
      */
     private void configureAuthentication(HttpSecurity http, AuthenticationService authenticationService)
             throws Exception {
-        if ("jwt".equals(authMethod) && authenticationService.isJwtSupported()) {
+        boolean jwtSupported = authenticationService.isJwtSupported();
+        log.info("Configuring authentication: method={}, jwtSupported={}", authMethod, jwtSupported);
+        if ("jwt".equals(authMethod) && jwtSupported) {
+            log.info("Enabling JWT resource server configuration");
             http.oauth2ResourceServer(oauth2 -> oauth2
                     .jwt(jwt -> jwt
                             .decoder(authenticationService.getJwtDecoder())))
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         } else {
-            // JWT無効時はカスタム認証エンドポイント (/auth/login) を使用するため、
-            // formLogin を設定せず、セッション管理のみ設定
-            http.sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+            log.info("Enabling session-based security context configuration");
+            // JWT無効時はカスタム認証エンドポイント (/auth/otp/verify) を使用
+            // SecurityContextHolderFilterを有効化するためformLogin()を設定するが、
+            // ログインページは存在しないパスを指定してデフォルトのUIを無効化
+            http.formLogin(form -> form
+                    .loginPage("/auth/login-form")  // 存在しないパス
+                    .permitAll())
+                .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .securityContext(securityContext -> securityContext
+                    .securityContextRepository(securityContextRepository())
+                    .requireExplicitSave(false));  // SecurityContextHolderFilterが自動的にSecurityContextを保存
         }
         
         // OAuth2ログイン設定（GitHub）
@@ -233,6 +248,24 @@ public class WebSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+    /**
+     * SecurityContextRepository Bean.
+     * OTP認証などのカスタム認証でセッションにSecurityContextを保存・復元するために使用します。
+     * 
+     * Spring Security 6の公式推奨に従い、DelegatingSecurityContextRepositoryを使用。
+     * これにより、RequestAttributeSecurityContextRepository（リクエスト属性）と
+     * HttpSessionSecurityContextRepository（HTTPセッション）両方でSecurityContextを管理。
+     * 
+     * @return DelegatingSecurityContextRepository
+     */
+    @Bean
+    public org.springframework.security.web.context.SecurityContextRepository securityContextRepository() {
+        return new org.springframework.security.web.context.DelegatingSecurityContextRepository(
+            new org.springframework.security.web.context.RequestAttributeSecurityContextRepository(),
+            new org.springframework.security.web.context.HttpSessionSecurityContextRepository()
+        );
     }
 
     @Bean

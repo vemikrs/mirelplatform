@@ -39,14 +39,14 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
-  # GitHub OAuth2設定
+  # GitHub OAuth2設定（環境変数未設定時は無効化）
   security:
     oauth2:
       client:
         registration:
           github:
-            client-id: ${GITHUB_CLIENT_ID:}
-            client-secret: ${GITHUB_CLIENT_SECRET:}
+            client-id: ${GITHUB_CLIENT_ID:#{null}}
+            client-secret: ${GITHUB_CLIENT_SECRET:#{null}}
             scope:
               - read:user
               - user:email

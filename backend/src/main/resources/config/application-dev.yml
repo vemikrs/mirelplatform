@@ -24,12 +24,31 @@ spring:
   h2:
     console:
       enabled: true
+  # Spring Boot Mail設定（JavaMailSender Bean生成用）
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  # 開発環境用OAuth2設定（ダミー値で設定エラー回避）
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: dummy-dev-client-id
+            client-secret: dummy-dev-client-secret
 
 logging:
   level:
     jp.vemi.mirel: DEBUG
     jp.vemi.framework: DEBUG
     jp.vemi.ste: DEBUG
+    org.springframework.security: DEBUG
 
 mirel:
   storage-dir: ./data/storage
@@ -51,9 +70,9 @@ mipla2:
 
 # JWT authentication method (default in WebSecurityConfig)
 auth:
-  method: jwt
+  method: session  # OTPセッション認証を利用
   jwt:
-    enabled: true  # JWT機能を有効化
+    enabled: false  # JWTは開発モードでは無効化
 
 # JWT秘密鍵(開発用固定値)
 jwt:
