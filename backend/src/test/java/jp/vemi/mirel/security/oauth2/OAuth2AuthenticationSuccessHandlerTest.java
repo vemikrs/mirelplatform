@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -37,6 +38,9 @@ class OAuth2AuthenticationSuccessHandlerTest {
     
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private ObjectProvider<JwtService> jwtServiceProvider;
     
     @Mock
     private SystemUserRepository systemUserRepository;
@@ -91,6 +95,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(oauth2User.getAttributes()).thenReturn(githubAttributes);
         when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId("github", "12345"))
                 .thenReturn(Optional.of(systemUser));
+        when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         when(jwtService.generateToken(any(Authentication.class))).thenReturn(testToken);
         
         // When: 認証成功ハンドラーを実行
@@ -108,6 +113,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(oauth2User.getAttributes()).thenReturn(githubAttributes);
         when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId(anyString(), anyString()))
                 .thenReturn(Optional.empty());
+        when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
@@ -125,6 +131,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(oauth2User.getAttributes()).thenReturn(githubAttributes);
         when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId("github", "12345"))
                 .thenReturn(Optional.of(systemUser));
+        when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         when(jwtService.generateToken(any(Authentication.class)))
                 .thenThrow(new RuntimeException("JWT generation failed"));
         
@@ -158,12 +165,30 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(oauth2User.getAttributes()).thenReturn(githubAttributes);
         when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId("github", "12345"))
                 .thenReturn(Optional.of(systemUser));
+        when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         when(jwtService.generateToken(any(Authentication.class))).thenReturn(testToken);
-        
+
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
-        
+
         // Then: カスタムURLでリダイレクト
         verify(response).sendRedirect("https://example.com/auth/oauth2/success?token=" + testToken);
+    }
+
+    @Test
+    @DisplayName("認証失敗: JWTサービス未設定")
+    void testOnAuthenticationSuccess_JwtServiceUnavailable() throws Exception {
+        when(authentication.getPrincipal()).thenReturn(oauth2User);
+        when(oauth2User.getAttributes()).thenReturn(githubAttributes);
+        when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId("github", "12345"))
+                .thenReturn(Optional.of(systemUser));
+        when(jwtServiceProvider.getIfAvailable()).thenReturn(null);
+
+        // When: 認証成功ハンドラーを実行
+        handler.onAuthenticationSuccess(request, response, authentication);
+
+        // Then: JWT無効エラーでリダイレクト
+        verify(response).sendRedirect("http://localhost:5173/login?error=oauth2_jwt_disabled");
+        verify(jwtService, never()).generateToken(any());
     }
 }

@@ -11,6 +11,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -31,7 +32,7 @@ import java.util.Optional;
 @Slf4j
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     
-    private final JwtService jwtService;
+    private final ObjectProvider<JwtService> jwtServiceProvider;
     private final SystemUserRepository systemUserRepository;
     
     @Value("${app.base-url:http://localhost:5173}")
@@ -57,6 +58,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                     return;
                 }
                 
+                JwtService jwtService = jwtServiceProvider.getIfAvailable();
+                if (jwtService == null) {
+                    log.warn("JWT service unavailable - auth.jwt.enabled=false? Redirecting with oauth2_jwt_disabled error");
+                    getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=oauth2_jwt_disabled");
+                    return;
+                }
+
                 // JWTトークンを生成
                 String token = jwtService.generateToken(authentication);
                 
