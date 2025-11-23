@@ -87,7 +87,7 @@
 | HTMLテンプレ変更 | 抽出正規表現破損 | `data-otp="XXXXXX"` 属性追加設計 |
 
 ## 8. 確認用チェックリスト
-- [ ] Integration Test で 200 + 正しい UserProfileDto.
+- [x] Integration Test で 200 + 正しい UserProfileDto (/users/me が 200 を返却し userId を含む)  [OtpLoginIntegrationTest 追加]
 - [ ] スモークスクリプト 2連続成功 (冷/温スタート)。
 - [ ] Playwright E2E 成功レポート保存。
 - [ ] ログに userId/systemUserId/tenantId/roles 出力確認。
@@ -96,7 +96,7 @@
 
 ## 9. 今後の実装タスク (Issue #40 継続)
 1. `OtpController` ロール付与変更。
-2. Integration Test 追加 (`OtpLoginIntegrationTest`).
+2. (完了) Integration Test 追加済み (`OtpLoginIntegrationTest`).
 3. スモークスクリプト改良 (再送/指数待機/quoted-printable 正規化)。
 4. Playwright シナリオ追加。
 5. ログ構造化 (JSONラインフォーマット)。
