@@ -19,6 +19,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class UserProfileDto {
     private String userId;
+    private String username;
     private String email;
     private String displayName;
     private String firstName;

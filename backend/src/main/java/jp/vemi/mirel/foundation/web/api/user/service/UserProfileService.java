@@ -73,6 +73,7 @@ public class UserProfileService {
 
         return UserProfileDto.builder()
             .userId(user.getUserId())
+            .username(user.getUsername())
             .email(user.getEmail())
             .displayName(user.getDisplayName())
             .firstName(user.getFirstName())
