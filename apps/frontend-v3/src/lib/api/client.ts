@@ -20,6 +20,12 @@ export const apiClient = axios.create({
   timeout: 30000, // 30 seconds
 });
 
+let tokenProvider: () => string | null | undefined = () => null;
+
+export const setTokenProvider = (provider: () => string | null | undefined) => {
+  tokenProvider = provider;
+};
+
 /**
  * Request interceptor
  * - Logs all requests in development mode
@@ -27,6 +33,11 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config) => {
+    const token = tokenProvider();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
     }

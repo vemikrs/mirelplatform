@@ -7,8 +7,6 @@ import { useMutation } from '@tanstack/react-query';
 import { requestOtp, verifyOtp, resendOtp } from '@/lib/api/otp';
 import type {
   OtpRequestPayload,
-  OtpVerifyPayload,
-  OtpResendPayload,
 } from '@/lib/api/otp.types';
 import { getApiErrors } from '@/lib/api/client';
 

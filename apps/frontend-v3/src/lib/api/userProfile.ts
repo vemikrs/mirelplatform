@@ -3,10 +3,10 @@
  */
 
 import { apiClient, getApiErrors } from './client';
-import type { ApiResponse } from './types';
 
 export interface UserProfile {
   userId: string;
+  username: string;
   email: string;
   displayName: string;
   firstName?: string;
@@ -53,19 +53,11 @@ export interface LicenseInfo {
 /**
  * Get current user profile
  */
-export async function getUserProfile(accessToken: string): Promise<UserProfile> {
+export async function getUserProfile(): Promise<UserProfile> {
   try {
-    const response = await apiClient.get<ApiResponse<UserProfile>>('/users/me', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await apiClient.get<UserProfile>('/users/me');
 
-    if (response.data.errors && response.data.errors.length > 0) {
-      throw new Error(response.data.errors.join(', '));
-    }
-
-    return response.data.data!;
+    return response.data;
   } catch (error) {
     const errors = getApiErrors(error);
     throw new Error(errors.join(', '));
@@ -76,25 +68,15 @@ export async function getUserProfile(accessToken: string): Promise<UserProfile> 
  * Update user profile
  */
 export async function updateProfile(
-  accessToken: string,
   request: UpdateProfileRequest
 ): Promise<UserProfile> {
   try {
-    const response = await apiClient.put<ApiResponse<UserProfile>>(
+    const response = await apiClient.put<UserProfile>(
       '/users/me',
-      request,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
+      request
     );
 
-    if (response.data.errors && response.data.errors.length > 0) {
-      throw new Error(response.data.errors.join(', '));
-    }
-
-    return response.data.data!;
+    return response.data;
   } catch (error) {
     const errors = getApiErrors(error);
     throw new Error(errors.join(', '));
@@ -105,23 +87,13 @@ export async function updateProfile(
  * Update user password
  */
 export async function updatePassword(
-  accessToken: string,
   request: UpdatePasswordRequest
 ): Promise<void> {
   try {
-    const response = await apiClient.put<ApiResponse<void>>(
+    await apiClient.put<void>(
       '/users/me/password',
-      request,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
+      request
     );
-
-    if (response.data.errors && response.data.errors.length > 0) {
-      throw new Error(response.data.errors.join(', '));
-    }
   } catch (error) {
     const errors = getApiErrors(error);
     throw new Error(errors.join(', '));
@@ -131,19 +103,11 @@ export async function updatePassword(
 /**
  * Get user tenants
  */
-export async function getUserTenants(accessToken: string): Promise<TenantInfo[]> {
+export async function getUserTenants(): Promise<TenantInfo[]> {
   try {
-    const response = await apiClient.get<ApiResponse<TenantInfo[]>>('/users/me/tenants', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await apiClient.get<TenantInfo[]>('/users/me/tenants');
 
-    if (response.data.errors && response.data.errors.length > 0) {
-      throw new Error(response.data.errors.join(', '));
-    }
-
-    return response.data.data || [];
+    return response.data || [];
   } catch (error) {
     const errors = getApiErrors(error);
     throw new Error(errors.join(', '));
@@ -153,19 +117,11 @@ export async function getUserTenants(accessToken: string): Promise<TenantInfo[]>
 /**
  * Get user licenses
  */
-export async function getUserLicenses(accessToken: string): Promise<LicenseInfo[]> {
+export async function getUserLicenses(): Promise<LicenseInfo[]> {
   try {
-    const response = await apiClient.get<ApiResponse<LicenseInfo[]>>('/users/me/licenses', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await apiClient.get<LicenseInfo[]>('/users/me/licenses');
 
-    if (response.data.errors && response.data.errors.length > 0) {
-      throw new Error(response.data.errors.join(', '));
-    }
-
-    return response.data.data || [];
+    return response.data || [];
   } catch (error) {
     const errors = getApiErrors(error);
     throw new Error(errors.join(', '));

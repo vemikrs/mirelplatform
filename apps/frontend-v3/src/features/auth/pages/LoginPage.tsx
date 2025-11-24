@@ -22,7 +22,7 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      await login(usernameOrEmail, password);
+      await login({ usernameOrEmail, password });
       navigate('/');
     } catch (err) {
       setError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');
