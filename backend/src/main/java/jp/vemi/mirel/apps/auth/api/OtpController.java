@@ -16,6 +16,8 @@ import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.config.OtpProperties;
 import jp.vemi.mirel.foundation.service.OtpService;
+import jp.vemi.mirel.foundation.web.api.auth.dto.AuthenticationResponse;
+import jp.vemi.mirel.foundation.web.api.auth.service.AuthenticationServiceImpl;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class OtpController {
     private final OtpProperties otpProperties;
     private final SystemUserRepository systemUserRepository;
     private final UserRepository userRepository;
+    private final AuthenticationServiceImpl authenticationService;
     private final org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
     
     /**
@@ -113,7 +116,7 @@ public class OtpController {
      * @return 検証結果
      */
     @PostMapping("/verify")
-    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(
+    public ResponseEntity<ApiResponse<Object>> verifyOtp(
         @RequestBody ApiRequest<OtpVerifyDto> request,
         HttpServletRequest httpRequest,
         HttpServletResponse httpResponse
@@ -123,28 +126,28 @@ public class OtpController {
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.<Boolean>builder()
+                .body(ApiResponse.<Object>builder()
                     .errors(java.util.List.of("メールアドレスは必須です"))
                     .build());
         }
         
         if (dto.getOtpCode() == null || dto.getOtpCode().isBlank()) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.<Boolean>builder()
+                .body(ApiResponse.<Object>builder()
                     .errors(java.util.List.of("OTPコードは必須です"))
                     .build());
         }
         
         if (!dto.getOtpCode().matches("\\d{6}")) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.<Boolean>builder()
+                .body(ApiResponse.<Object>builder()
                     .errors(java.util.List.of("OTPコードは6桁の数字である必要があります"))
                     .build());
         }
         
         if (dto.getPurpose() == null || dto.getPurpose().isBlank()) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.<Boolean>builder()
+                .body(ApiResponse.<Object>builder()
                     .errors(java.util.List.of("用途は必須です"))
                     .build());
         }
@@ -170,51 +173,25 @@ public class OtpController {
                     User applicationUser = userRepository.findBySystemUserId(systemUser.getId())
                         .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
                     
-                    // SecurityContextに認証情報を設定（principalにはアプリユーザーIDを使用）
-                    // ロール ROLE_USER を付与
-                    UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(
-                            applicationUser.getUserId(),
-                            null,
-                            java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                        );
-                    authentication.setDetails(java.util.Map.of(
-                        "systemUserId", systemUser.getId().toString(),
-                        "email", systemUser.getEmail()
-                    ));
+                    // JWT認証レスポンス生成
+                    AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
                     
-                    SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                    securityContext.setAuthentication(authentication);
-                    SecurityContextHolder.setContext(securityContext);
-            
-                    // Spring Security 6: SecurityContextRepositoryへ保存（レスポンス必須）
-                    securityContextRepository.saveContext(securityContext, httpRequest, httpResponse);
-            
-                    // 念のためHttpSessionに直接SecurityContextを保存（Spring Session連携用）
-                    HttpSession session = httpRequest.getSession(true);
-                    session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
-                    boolean contextSaved = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) != null;
-                    
-                    // 構造化ログ (JSON形式) - リクエストIDは既存のsessionIdを使用
-                    String structuredLog = String.format(
-                        "{\"event\":\"otp.login.success\",\"userId\":\"%s\",\"systemUserId\":\"%s\",\"sessionId\":\"%s\"}",
-                        applicationUser.getUserId(),
-                        systemUser.getId().toString(),
-                        session.getId()
-                    );
-                    log.info(structuredLog);
-                    
-                    log.info("OTPログイン成功: セッション認証設定完了 - userId={}, email={}, sessionId={}, saved={}",
-                        applicationUser.getUserId(), dto.getEmail(), session.getId(), contextSaved);
+                    log.info("OTPログイン成功: JWTトークン発行 - userId={}, email={}",
+                        applicationUser.getUserId(), dto.getEmail());
+                        
+                    return ResponseEntity.ok(ApiResponse.<Object>builder()
+                        .data(authResponse)
+                        .messages(java.util.List.of("認証に成功しました"))
+                        .build());
                 }
                 
-                return ResponseEntity.ok(ApiResponse.<Boolean>builder()
+                return ResponseEntity.ok(ApiResponse.<Object>builder()
                     .data(true)
                     .messages(java.util.List.of("認証に成功しました"))
                     .build());
             } else {
                 return ResponseEntity.badRequest()
-                    .body(ApiResponse.<Boolean>builder()
+                    .body(ApiResponse.<Object>builder()
                         .data(false)
                         .errors(java.util.List.of("認証コードが正しくありません"))
                         .build());
@@ -223,7 +200,7 @@ public class OtpController {
         } catch (RuntimeException e) {
             log.error("OTP検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
             return ResponseEntity.badRequest()
-                .body(ApiResponse.<Boolean>builder()
+                .body(ApiResponse.<Object>builder()
                     .data(false)
                     .errors(java.util.List.of(e.getMessage()))
                     .build());

@@ -141,6 +141,47 @@ public class AuthenticationServiceImpl {
     }
 
     /**
+     * ユーザー指定ログイン処理 (OTP等から利用)
+     */
+    @Transactional
+    public AuthenticationResponse loginWithUser(User user) {
+        logger.info("Login with user object: {}", user.getUserId());
+
+        // 最終ログイン時刻更新
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
+
+        // テナント解決
+        Tenant tenant = resolveTenant(user, null);
+
+        // トークン生成（JWT有効な場合のみ）
+        String accessToken;
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (isJwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    user.getUserId(), null, List.of()
+                )
+            );
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
+
+        // RefreshToken作成
+        RefreshToken refreshToken = createRefreshToken(user);
+
+        // 有効ライセンス取得
+        List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
+            user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now()
+        );
+
+        logger.info("Login successful for user: {}", user.getUserId());
+
+        return buildAuthenticationResponse(user, tenant, accessToken, refreshToken.getTokenHash(), licenses);
+    }
+
+    /**
      * サインアップ処理
      */
     @Transactional
