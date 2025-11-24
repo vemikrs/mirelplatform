@@ -54,18 +54,33 @@ export function useRequestOtp(options?: {
  * verify({ email: 'user@example.com', otpCode: '123456', purpose: 'LOGIN' });
  */
 export function useVerifyOtp(options?: {
-  onSuccess?: () => void;
+  onSuccess?: (data: any) => void;
   onError?: (errors: string[]) => void;
 }) {
   return useMutation({
     mutationFn: verifyOtp,
     onSuccess: (response) => {
+      // response is ApiResponse<boolean | AuthenticationResponse>
+      // response.data is boolean | AuthenticationResponse
+      
       if (response.data === true) {
-        options?.onSuccess?.();
+        // Boolean success (e.g. password reset)
+        options?.onSuccess?.(true);
+      } else if (typeof response.data === 'object' && response.data !== null && 'tokens' in response.data) {
+        // AuthenticationResponse success (e.g. login)
+        options?.onSuccess?.(response.data);
       } else if (response.errors.length > 0) {
         options?.onError?.(response.errors);
       } else {
-        options?.onError?.(['認証コードが正しくありません']);
+        // Fallback for unexpected success structure
+        // If response.data is false, it means verification failed
+        if (response.data === false) {
+             options?.onError?.(['認証コードが正しくありません']);
+        } else {
+             // Should not happen if backend returns 200 OK with valid data
+             console.warn('Unexpected OTP verification response:', response);
+             options?.onError?.(['予期しないレスポンス形式です']);
+        }
       }
     },
     onError: (error) => {

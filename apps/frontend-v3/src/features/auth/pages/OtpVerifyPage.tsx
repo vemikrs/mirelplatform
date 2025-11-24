@@ -45,7 +45,8 @@ export function OtpVerifyPage() {
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp({
     onSuccess: (data) => {
-      // data can be boolean or AuthenticationResponse
+      // data is boolean | AuthenticationResponse (passed from useVerifyOtp onSuccess)
+      
       if (typeof data === 'object' && data !== null && 'tokens' in data) {
         // It's AuthenticationResponse (Login success)
         setAuth(data);
