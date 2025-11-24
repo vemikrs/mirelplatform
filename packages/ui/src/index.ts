@@ -41,6 +41,23 @@ export {
   DialogTitle,
   DialogDescription,
 } from './components/Dialog'
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './components/DropdownMenu'
 export { SectionHeading } from './components/SectionHeading'
 export { StepIndicator, type StepState, type StepIndicatorStep } from './components/StepIndicator'
 export { Skeleton } from './components/Skeleton'
