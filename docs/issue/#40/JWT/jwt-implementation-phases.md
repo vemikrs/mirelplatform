@@ -12,7 +12,7 @@
 進捗管理のため、以下のようにチェックボックス形式でも追跡できるようにする:
 
 - [x] フェーズ1: Backend JWT 基盤 & セキュリティ設定
-- [ ] フェーズ2: パスワードログイン JWT 化 & `/users/me` 連携
+- [x] フェーズ2: パスワードログイン JWT 化 & `/users/me` 連携
 - [ ] フェーズ3: フロント認証クライアント（`authStore` / `apiClient`）の JWT 対応
 - [ ] フェーズ4: OTP ログインの JWT 対応
 - [ ] フェーズ5: 自動リフレッシュ & UX 改善
@@ -79,10 +79,10 @@
 
 ### フェーズ進捗チェックリスト
 
-- [ ] `/auth/login` が JWT 仕様のレスポンスを返す
-- [ ] `/auth/me` が JWT ベースでユーザ情報を返す
-- [ ] `/users/me` / `/users/me/tenants` / `/users/me/licenses` が JWT 認証で 200 となる
-- [ ] 未認証または不正トークンで `/users/me/**` が 401 となる
+- [x] `/auth/login` が JWT 仕様のレスポンスを返す
+- [x] `/auth/me` が JWT ベースでユーザ情報を返す
+- [x] `/users/me` / `/users/me/tenants` / `/users/me/licenses` が JWT 認証で 200 となる
+- [x] 未認証または不正トークンで `/users/me/**` が 401 となる
 
 ### スコープ
 - `/auth/login` を JWT 仕様に変更（`AuthenticationResponse` に access/refresh/token 有効期限を含める）。
