@@ -21,7 +21,7 @@ export function LicenseBadge({ applicationId = 'promarker' }: LicenseBadgeProps)
     queryKey: ['userLicenses'],
     queryFn: async () => {
       if (!tokens?.accessToken) return [];
-      return getUserLicenses(tokens.accessToken);
+      return getUserLicenses();
     },
     enabled: !!tokens?.accessToken,
   });

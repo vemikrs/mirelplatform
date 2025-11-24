@@ -21,7 +21,7 @@ export default function SecurityPage() {
   const updatePasswordMutation = useMutation({
     mutationFn: async (data: UpdatePasswordRequest) => {
       if (!tokens?.accessToken) throw new Error('Not authenticated');
-      return updatePassword(tokens.accessToken, data);
+      return updatePassword(data);
     },
     onSuccess: () => {
       setMessage({ type: 'success', text: 'パスワードを更新しました' });

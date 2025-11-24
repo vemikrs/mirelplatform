@@ -17,7 +17,7 @@ export function TenantSwitcher() {
     queryKey: ['userTenants'],
     queryFn: async () => {
       if (!tokens?.accessToken) return [];
-      return getUserTenants(tokens.accessToken);
+      return getUserTenants();
     },
     enabled: !!tokens?.accessToken,
   });

@@ -22,16 +22,16 @@ export default function ProfilePage() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfileRequest) => {
       if (!tokens?.accessToken) throw new Error('Not authenticated');
-      return updateProfile(tokens.accessToken, data);
+      return updateProfile(data);
     },
     onSuccess: (response) => {
       setMessage({ type: 'success', text: 'プロフィールを更新しました' });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       // authStore の user を更新してメニュー等に即座に反映
       updateUser({
-        displayName: response.data.displayName,
-        firstName: response.data.firstName,
-        lastName: response.data.lastName,
+        displayName: response.displayName,
+        firstName: response.firstName,
+        lastName: response.lastName,
       });
     },
     onError: (error: Error) => {
