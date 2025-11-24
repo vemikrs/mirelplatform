@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { cn } from '../lib/utils'
+import { getOverlayStyle } from '../lib/styles'
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
@@ -39,16 +40,14 @@ const DialogContent = React.forwardRef<
         'fixed grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg',
         className
       )}
-      style={{
+      style={getOverlayStyle('dialog', {
         left: '50%',
         top: '50%',
         transform: 'translate(-50%, -50%)',
         zIndex: 120,
         isolation: 'isolate',
-        backgroundColor: 'hsl(var(--background))',
-        color: 'hsl(var(--foreground))',
         ...style
-      }}
+      })}
       {...props}
     >
       {children}
