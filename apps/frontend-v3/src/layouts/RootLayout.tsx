@@ -6,6 +6,7 @@ import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { TenantSwitcher } from '@/components/header/TenantSwitcher';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
@@ -45,6 +46,15 @@ function renderAction(action: NavigationAction) {
 export function RootLayout() {
   const navigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
+  const fetchProfile = useAuthStore((state) => state.fetchProfile);
+
+  // Sync user profile on mount if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProfile();
+    }
+  }, [isAuthenticated, fetchProfile]);
+
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
     if (typeof window === 'undefined') return true;
     const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);

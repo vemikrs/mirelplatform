@@ -12,6 +12,7 @@ export function useAuth() {
   const signup = useAuthStore((state) => state.signup);
   const logout = useAuthStore((state) => state.logout);
   const switchTenant = useAuthStore((state) => state.switchTenant);
+  const updateUser = useAuthStore((state) => state.updateUser);
 
   return {
     user,
@@ -22,6 +23,7 @@ export function useAuth() {
     signup,
     logout,
     switchTenant,
+    updateUser,
   };
 }
 
@@ -29,9 +31,6 @@ export function useAuth() {
  * ライセンスチェックフック
  */
 export function useLicense(applicationId: string, requiredTier?: 'FREE' | 'PRO' | 'MAX') {
-  const user = useAuthStore((state) => state.user);
-  const currentTenant = useAuthStore((state) => state.currentTenant);
-  
   // TODO: Implement license checking logic
   // For now, return placeholder values
   const hasLicense = true;

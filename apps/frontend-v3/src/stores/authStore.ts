@@ -1,30 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { OtpPurpose } from '@/lib/api/otp.types';
-
-interface User {
-  userId: string;
-  username: string;
-  email: string;
-  displayName: string;
-  firstName?: string;
-  lastName?: string;
-  isActive: boolean;
-  emailVerified: boolean;
-  avatarUrl?: string | null;
-}
-
-interface Tenant {
-  tenantId: string;
-  tenantName: string;
-  displayName: string;
-}
-
-interface Tokens {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-}
+import { authApi, type LoginRequest, type SignupRequest, type TokenDto, type TenantContextDto } from '@/lib/api/auth';
+import { getUserProfile, getUserTenants, getUserLicenses, type UserProfile, type TenantInfo, type LicenseInfo } from '@/lib/api/userProfile';
+import { setTokenProvider } from '@/lib/api/client';
 
 /**
  * OTP認証状態
@@ -38,22 +17,26 @@ interface OtpState {
 }
 
 interface AuthState {
-  user: User | null;
-  currentTenant: Tenant | null;
-  tokens: Tokens | null;
+  user: UserProfile | null;
+  currentTenant: TenantContextDto | null;
+  tokens: TokenDto | null;
+  tenants: TenantInfo[];
+  licenses: LicenseInfo[];
   isAuthenticated: boolean;
   
   // OTP認証状態
   otpState: OtpState | null;
 
   // Actions
-  login: (usernameOrEmail: string, password: string) => Promise<void>;
-  signup: (data: { username: string; email: string; password: string; displayName: string; firstName?: string; lastName?: string }) => Promise<void>;
+  login: (data: LoginRequest) => Promise<void>;
+  signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
-  setAuth: (user: User, tenant: Tenant | null, tokens: Tokens) => void;
+  fetchProfile: () => Promise<void>;
+  
+  setAuth: (user: UserProfile, tenant: TenantContextDto | null, tokens: TokenDto) => void;
   clearAuth: () => void;
-  updateUser: (updatedUser: Partial<User>) => void;
+  updateUser: (updatedUser: Partial<UserProfile>) => void;
   
   // OTP Actions
   setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => void;
@@ -67,90 +50,71 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       currentTenant: null,
       tokens: null,
+      tenants: [],
+      licenses: [],
       isAuthenticated: false,
       otpState: null,
 
-      login: async (usernameOrEmail: string, password: string) => {
-        const response = await fetch('/mapi/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usernameOrEmail, password }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Login failed');
-        }
-
-        const data = await response.json();
+      login: async (request: LoginRequest) => {
+        const response = await authApi.login(request);
         set({
-          user: data.user,
-          currentTenant: data.currentTenant,
-          tokens: data.tokens,
+          user: response.user,
+          currentTenant: response.currentTenant,
+          tokens: response.tokens,
           isAuthenticated: true,
         });
+        // Login successful, fetch full profile data
+        await get().fetchProfile();
       },
 
-      signup: async (signupData) => {
-        const response = await fetch('/mapi/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(signupData),
-        });
-
-        if (!response.ok) {
-          throw new Error('Signup failed');
-        }
-
-        const data = await response.json();
+      signup: async (request: SignupRequest) => {
+        const response = await authApi.register(request);
         set({
-          user: data.user,
-          currentTenant: data.currentTenant,
-          tokens: data.tokens,
+          user: response.user,
+          currentTenant: response.currentTenant,
+          tokens: response.tokens,
           isAuthenticated: true,
         });
+        await get().fetchProfile();
       },
 
       logout: async () => {
         const { tokens } = get();
-        if (tokens?.refreshToken) {
-          try {
-            await fetch('/mapi/auth/logout', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-            });
-          } catch (error) {
-            console.error('Logout API call failed:', error);
-          }
-        }
-        set({ user: null, currentTenant: null, tokens: null, isAuthenticated: false });
+        await authApi.logout(tokens?.refreshToken);
+        set({ 
+          user: null, 
+          currentTenant: null, 
+          tokens: null, 
+          tenants: [],
+          licenses: [],
+          isAuthenticated: false 
+        });
       },
 
       switchTenant: async (tenantId: string) => {
-        const { tokens } = get();
-        if (!tokens?.accessToken) {
-          throw new Error('Not authenticated');
-        }
-
-        const response = await fetch('/mapi/auth/switch-tenant', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokens.accessToken}`,
-            'X-Tenant-ID': tenantId,
-          },
-          body: JSON.stringify({ tenantId }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Tenant switch failed');
-        }
-
-        const data = await response.json();
+        const response = await authApi.switchTenant(tenantId);
         set({
-          user: data.user,
-          currentTenant: data.currentTenant,
+          user: response.user,
+          currentTenant: response.currentTenant,
+          tokens: response.tokens,
         });
+        // Refresh licenses as they might be tenant-specific
+        const licenses = await getUserLicenses();
+        set({ licenses });
+      },
+
+      fetchProfile: async () => {
+        try {
+          const [user, tenants, licenses] = await Promise.all([
+            getUserProfile(),
+            getUserTenants(),
+            getUserLicenses()
+          ]);
+          set({ user, tenants, licenses });
+        } catch (error) {
+          console.error('Failed to fetch profile data', error);
+          // If profile fetch fails (e.g. 401), we might want to logout or handle it
+        }
       },
 
       setAuth: (user, tenant, tokens) => {
@@ -158,10 +122,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearAuth: () => {
-        set({ user: null, currentTenant: null, tokens: null, isAuthenticated: false });
+        set({ 
+          user: null, 
+          currentTenant: null, 
+          tokens: null, 
+          tenants: [],
+          licenses: [],
+          isAuthenticated: false 
+        });
       },
 
-      updateUser: (updatedUser: Partial<User>) => {
+      updateUser: (updatedUser: Partial<UserProfile>) => {
         const { user } = get();
         if (!user) return;
         set({ user: { ...user, ...updatedUser } });
@@ -199,8 +170,14 @@ export const useAuthStore = create<AuthState>()(
         currentTenant: state.currentTenant,
         tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
-        otpState: state.otpState, // OTP状態も永続化
+        otpState: state.otpState,
+        // Don't persist tenants/licenses if they are dynamic, or do if we want offline support
+        // For now, let's not persist them to ensure freshness on reload (fetchProfile will run)
       }),
     }
   )
 );
+
+// Initialize API client token provider
+setTokenProvider(() => useAuthStore.getState().tokens?.accessToken);
+
