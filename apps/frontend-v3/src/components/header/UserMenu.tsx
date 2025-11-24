@@ -100,7 +100,7 @@ export function UserMenu() {
         <Avatar 
           src={user.avatarUrl}
           alt={user.displayName || user.email}
-          fallback={user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+          fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
           size="sm"
         />
         <span className="hidden sm:block text-sm font-medium">{user.displayName || user.email}</span>
@@ -114,7 +114,7 @@ export function UserMenu() {
               <Avatar 
                 src={user.avatarUrl}
                 alt={user.displayName || user.email}
-                fallback={user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                 size="md"
               />
               <div>
