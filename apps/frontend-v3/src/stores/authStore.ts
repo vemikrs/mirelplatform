@@ -80,7 +80,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         const { tokens } = get();
-        await authApi.logout(tokens?.refreshToken);
+        
+        // 1. ローカル状態を即座にクリア
         set({ 
           user: null, 
           currentTenant: null, 
@@ -89,6 +90,16 @@ export const useAuthStore = create<AuthState>()(
           licenses: [],
           isAuthenticated: false 
         });
+        
+        // 2. バックエンドへログアウト通知(ベストエフォート)
+        try {
+          await authApi.logout(tokens?.refreshToken);
+        } catch (error) {
+          console.warn('Logout API call failed', error);
+        }
+        
+        // 3. ログイン画面へリダイレクト
+        window.location.href = '/login';
       },
 
       switchTenant: async (tenantId: string) => {

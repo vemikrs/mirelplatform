@@ -6,6 +6,7 @@ import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
+import axios from 'axios';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
@@ -50,7 +51,14 @@ export function RootLayout() {
   // Sync user profile on mount if authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchProfile();
+      fetchProfile().catch((error) => {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          // インターセプターで既にログアウト処理が実行されているはず
+          // ここでは追加の処理は不要(無限ループ防止)
+          return;
+        }
+        console.error('Failed to fetch profile', error);
+      });
     }
   }, [isAuthenticated, fetchProfile]);
 

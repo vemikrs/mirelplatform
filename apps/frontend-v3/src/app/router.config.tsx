@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet, redirect } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
 import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
@@ -24,6 +24,52 @@ import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
+import { useAuthStore } from '@/stores/authStore';
+import { getUserProfile } from '@/lib/api/userProfile';
+import axios from 'axios';
+import type { NavigationConfig } from './navigation.schema';
+
+// キャッシュ用の変数（同一セッション内での重複API呼び出しを防ぐ）
+let cachedProfile: unknown = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5000; // 5秒
+
+/**
+ * Authentication Loader
+ * Runs before rendering protected routes to verify server-side authentication
+ */
+async function authLoader(): Promise<NavigationConfig> {
+  const { isAuthenticated, tokens, updateUser } = useAuthStore.getState();
+  
+  if (!isAuthenticated || !tokens?.accessToken) {
+    throw redirect('/login');
+  }
+  
+  try {
+    const now = Date.now();
+    
+    // キャッシュが有効ならスキップ
+    if (cachedProfile && (now - cacheTimestamp) < CACHE_DURATION) {
+      return loadNavigationConfig();
+    }
+    
+    // /users/me で認証検証とプロフィール取得を同時実行
+    const profile = await getUserProfile();
+    cachedProfile = profile;
+    cacheTimestamp = now;
+    
+    // プロフィールをストアに保存(RootLayoutでの再取得を防ぐ)
+    updateUser(profile);
+    
+    return loadNavigationConfig();
+  } catch (error) {
+    // 401の場合、インターセプターで既にログアウト&リダイレクト済み
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      throw redirect('/login');
+    }
+    throw error;
+  }
+}
 
 /**
  * React Router v7 configuration
@@ -86,7 +132,7 @@ export const router = createBrowserRouter([
     id: 'app-root',
     path: '/',
     element: <RootLayout />,
-    loader: loadNavigationConfig,
+    loader: authLoader,
     errorElement: <InternalServerErrorPage />,
     children: [
       {
