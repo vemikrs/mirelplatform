@@ -17,8 +17,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "mir_otp_token", indexes = {
-    @Index(name = "idx_user_purpose_verified", columnList = "system_user_id, purpose, is_verified, expires_at"),
-    @Index(name = "idx_expires_at", columnList = "expires_at")
+    @Index(name = "idx_otp_user_purpose", columnList = "system_user_id, purpose, is_verified, expires_at")
 })
 @Getter
 @Setter
