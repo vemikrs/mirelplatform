@@ -59,7 +59,7 @@ export function LoginPage() {
       
       // returnUrlパラメータがあればそこへ、なければlocation.stateから、それもなければホームへ
       const returnUrl = searchParams.get('returnUrl');
-      const from = returnUrl || location.state?.from?.pathname || '/';
+      const from = returnUrl || location.state?.from?.pathname || '/home';
       navigate(from, { replace: true });
     } catch (_error) {
       setError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');

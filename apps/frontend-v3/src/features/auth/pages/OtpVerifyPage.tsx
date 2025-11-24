@@ -53,7 +53,7 @@ export function OtpVerifyPage() {
         // @ts-ignore - data is AuthenticationResponse
         setAuth(data.user, data.currentTenant, data.tokens);
         clearOtpState();
-        navigate('/');
+        navigate('/home');
       } else if (data === true) {
         // It's boolean true (e.g. password reset verified)
         if (otpState?.purpose === 'LOGIN') {
@@ -64,7 +64,7 @@ export function OtpVerifyPage() {
              // For other purposes (PASSWORD_RESET), navigate to next step
              // TODO: Implement navigation for password reset
              clearOtpState();
-             navigate('/'); 
+             navigate('/home'); 
         }
       }
     },

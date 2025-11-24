@@ -45,7 +45,7 @@ export function OAuthCallbackPage() {
       );
       
       // ダッシュボードに遷移
-      navigate('/');
+      navigate('/home');
     } else {
       // トークンがない場合はログインページに戻る
       navigate('/login?error=no_token');

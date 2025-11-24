@@ -5,7 +5,7 @@
     "tagline": "業務アプリケーション基盤"
   },
   "primary": [
-    { "id": "home", "label": "ホーム", "path": "/" },
+    { "id": "home", "label": "ホーム", "path": "/home" },
     { "id": "promarker", "label": "ProMarker", "path": "/promarker", "description": "コード生成支援" },
     { "id": "catalog", "label": "UIカタログ", "path": "/catalog", "description": "UI部品デモ" },
     { "id": "sitemap", "label": "サイトマップ", "path": "/sitemap", "description": "全機能一覧" }

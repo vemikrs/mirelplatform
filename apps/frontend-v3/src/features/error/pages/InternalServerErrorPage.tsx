@@ -64,7 +64,7 @@ export function InternalServerErrorPage() {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             aria-label="ホームページに戻る"
           >
             ホームに戻る

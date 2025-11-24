@@ -154,8 +154,12 @@ export const router = createBrowserRouter([
         ),
         children: [
           {
-            index: true,
+            path: 'home',
             element: <HomePage />,
+          },
+          {
+            index: true,
+            loader: () => redirect('/home'),
           },
           {
             path: 'promarker',
