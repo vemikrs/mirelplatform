@@ -14,7 +14,7 @@
 - [x] フェーズ1: Backend JWT 基盤 & セキュリティ設定
 - [x] フェーズ2: パスワードログイン JWT 化 & `/users/me` 連携
 - [x] フェーズ3: フロント認証クライアント（`authStore` / `apiClient`）の JWT 対応
-- [ ] フェーズ4: OTP ログインの JWT 対応
+- [x] フェーズ4: OTP ログインの JWT 対応
 - [ ] フェーズ5: 自動リフレッシュ & UX 改善
 - [ ] フェーズ6: ゲストモード・権限モデル・監査ログ整備
 - [ ] フェーズ7: 統合テスト & E2E 検証完了
@@ -148,10 +148,10 @@
 
 ### フェーズ進捗チェックリスト
 
-- [ ] `OtpController.verifyOtp` に JWT/セッション分岐が実装されている
-- [ ] JWT モードの OTP ログインで `AuthenticationResponse` が返る
-- [ ] フロント OTP 画面が `setAuth` で JWT を反映する
-- [ ] 既存セッションモードの OTP テストがグリーンである
+- [x] `OtpController.verifyOtp` に JWT/セッション分岐が実装されている
+- [x] JWT モードの OTP ログインで `AuthenticationResponse` が返る
+- [x] フロント OTP 画面が `setAuth` で JWT を反映する
+- [x] 既存セッションモードの OTP テストがグリーンである
 
 ### スコープ
 - `OtpController.verifyOtp` に `auth.method` に応じた分岐を追加し、`jwt` モード時にパスワードログインと同じ JWT スキーマのレスポンスを返す。
