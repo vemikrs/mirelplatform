@@ -56,7 +56,7 @@ export function OtpPasswordResetVerifyPage() {
       alert('認証コードを再送信しました');
     },
     onError: (errors) => {
-      setError(errors[0]);
+      setError(errors[0] || '再送信に失敗しました');
     },
   });
 

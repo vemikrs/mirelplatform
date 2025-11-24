@@ -151,7 +151,7 @@ export const StencilEditor: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (mode === 'edit' && !saving) {
-          handleSave(false);
+          handleSave();
         }
       }
 
@@ -235,7 +235,7 @@ export const StencilEditor: React.FC = () => {
           return { ...f, content: yamlContent };
         }
         if (f.type === 'template' && templateContents[f.path]) {
-          return { ...f, content: templateContents[f.path] };
+          return { ...f, content: templateContents[f.path] || '' };
         }
         return f;
       });
@@ -308,7 +308,7 @@ export const StencilEditor: React.FC = () => {
   }, [data, openTabs, setOpenTabs, setActiveTabPath]);
 
   // ファイル選択ハンドラー（タブを開く）
-  const handleFileOpen = useCallback((file: typeof data.files[0]) => {
+  const handleFileOpen = useCallback((file: LoadStencilResponse['files'][0]) => {
     const existingTab = openTabs.find(t => t.path === file.path);
     
     if (existingTab) {
@@ -505,6 +505,8 @@ export const StencilEditor: React.FC = () => {
 
   // アクティブなエディタをレンダリング
   const renderActiveEditor = () => {
+    if (!data) return null;
+
     if (!activeTabPath) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">

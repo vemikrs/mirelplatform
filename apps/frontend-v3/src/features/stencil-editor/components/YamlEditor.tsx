@@ -75,13 +75,13 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
           
           if (!result.success) {
             // Zodエラーを診断情報に変換
-            result.error.errors.forEach((error) => {
+            (result.error as any).errors.forEach((error: any) => {
               const errorPath = error.path.length > 0 ? error.path.join('.') : 'config';
               const fieldName = error.path[error.path.length - 1] || 'config';
               const message = `${errorPath}: ${error.message} (期待される型: ${error.code})`;
               
               // CodeMirror診断情報
-              const lineNumber = findLineForPath(text, fieldName.toString());
+              const lineNumber = findLineForPath(text, String(fieldName));
               const from = lineNumber > 0 ? view.state.doc.line(lineNumber).from : 0;
               const to = lineNumber > 0 ? view.state.doc.line(lineNumber).to : text.length;
               
@@ -139,8 +139,12 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
     const pathParts = path.split('.');
     const searchKey = pathParts[pathParts.length - 1];
     
+    if (!searchKey) return 0;
+    const key = searchKey as string;
+
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(searchKey + ':')) {
+      const line = lines[i];
+      if (line && (line as string).includes(key + ':')) {
         return i + 1;
       }
     }
@@ -150,7 +154,7 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
   // エラーメッセージから行番号を抽出
   const extractLineNumber = (message: string): number | undefined => {
     const match = message.match(/line (\d+)/);
-    return match ? parseInt(match[1], 10) : undefined;
+    return (match && match[1]) ? parseInt(match[1], 10) : undefined;
   };
 
   // 特定の行にスクロール
@@ -181,7 +185,7 @@ export const YamlEditor = React.forwardRef<YamlEditorHandle, YamlEditorProps>(
           lineNumbers: true,
           highlightActiveLineGutter: true,
           highlightSpecialChars: true,
-          foldGursor: true,
+          foldGutter: true,
           drawSelection: true,
           dropCursor: true,
           allowMultipleSelections: true,

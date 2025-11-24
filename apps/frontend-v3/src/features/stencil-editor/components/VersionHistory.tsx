@@ -2,7 +2,7 @@
  * バージョン履歴コンポーネント
  */
 import React, { useState, useEffect } from 'react';
-import { Button } from '@mirel/ui';
+import { Button, toast } from '@mirel/ui';
 import { DiffViewer } from './DiffViewer';
 import { getVersionHistory, loadStencil } from '../api/stencil-editor-api';
 import type { StencilVersion, StencilFile } from '../types';

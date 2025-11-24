@@ -23,7 +23,7 @@ describe('OAuthCallbackPage', () => {
   const mockSetToken = vi.fn();
   const mockSetAuthenticated = vi.fn();
   
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     
     // useNavigateモック

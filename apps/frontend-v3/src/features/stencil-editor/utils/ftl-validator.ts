@@ -47,12 +47,16 @@ export class FtlValidator {
       let match;
       while ((match = openPattern.exec(line)) !== null) {
         const directive = match[1];
-        stack.push({ directive, line: lineNumber });
+        if (directive) {
+          stack.push({ directive, line: lineNumber });
+        }
       }
 
       // 終了タグを検出
       while ((match = closePattern.exec(line)) !== null) {
         const directive = match[1];
+        if (!directive) continue;
+        
         const last = stack.pop();
 
         if (!last) {
@@ -104,6 +108,7 @@ export class FtlValidator {
 
       while ((match = variablePattern.exec(line)) !== null) {
         const expression = match[1];
+        if (!expression) continue;
 
         // 空の変数参照
         if (!expression.trim()) {
@@ -223,7 +228,9 @@ export class FtlValidator {
       // エラーが発生している行を特定
       let charCount = 0;
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        charCount += lines[lineIndex].length + 1; // +1 for newline
+        const line = lines[lineIndex];
+        if (line === undefined) continue;
+        charCount += line.length + 1; // +1 for newline
         if (charCount > interpolationStart) {
           errors.push({
             severity: 'error',
@@ -252,8 +259,13 @@ export class FtlValidator {
 
     let match;
     while ((match = variablePattern.exec(content)) !== null) {
-      const varName = match[1].split('.')[0]; // 最初の部分のみ
-      usedVars.add(varName);
+      if (match[1]) {
+        const parts = match[1].split('.');
+        const varName = parts[0] || '';
+        if (varName) {
+          usedVars.add(varName);
+        }
+      }
     }
 
     expectedVars.forEach((varName) => {

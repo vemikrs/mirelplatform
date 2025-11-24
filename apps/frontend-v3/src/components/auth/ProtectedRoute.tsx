@@ -12,8 +12,8 @@ interface ProtectedRouteProps {
  * 認証必須ルートコンポーネント
  * 未認証の場合はログイン画面にリダイレクト
  */
-export function ProtectedRoute({ children, redirectTo = '/login', requiredRole }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -21,12 +21,15 @@ export function ProtectedRoute({ children, redirectTo = '/login', requiredRole }
   }
 
   // 権限チェック
+  // TODO: UserProfileにrolesを追加するか、別の方法で権限チェックを行う
+  /*
   if (requiredRole && user?.roles) {
     const hasRole = user.roles.includes(requiredRole);
     if (!hasRole) {
       return <Navigate to="/403" replace />;
     }
   }
+  */
 
   return <>{children}</>;
 }

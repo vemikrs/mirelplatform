@@ -42,7 +42,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
     const version = versions.find(v => v.serial === selectedVersion);
     if (!version) return;
 
-    const confirmMsg = `バージョン ${selectedVersion} (${version.updateDate}) に復元しますか？\n現在の変更は失われます。`;
+    const confirmMsg = `バージョン ${selectedVersion} (${version.createdAt}) に復元しますか？\n現在の変更は失われます。`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -80,7 +80,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
     const version = versions.find(v => v.serial === serial);
     if (!version) return;
 
-    const confirmMsg = `バージョン ${serial} (${version.updateDate}) を削除しますか？\nこの操作は取り消せません。`;
+    const confirmMsg = `バージョン ${serial} (${version.createdAt}) を削除しますか？\nこの操作は取り消せません。`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -115,7 +115,6 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
     }
 
     onShowDiff?.(currentSerial, selectedVersion);
-    setShowDiff(true);
   };
 
   return (
@@ -171,22 +170,22 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                         )}
                       </div>
                       
-                      {/* 更新日時・更新者 */}
+                      {/* 作成日時・作成者 */}
                       <div className="space-y-1 text-sm text-foreground">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-muted-foreground">更新日時:</span>
-                          <span>{version.updateDate || '不明'}</span>
+                          <span className="font-semibold text-muted-foreground">作成日時:</span>
+                          <span>{version.createdAt || '不明'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-muted-foreground">更新者:</span>
-                          <span>{version.updateUser || '不明'}</span>
+                          <span className="font-semibold text-muted-foreground">作成者:</span>
+                          <span>{version.createdBy || '不明'}</span>
                         </div>
                       </div>
 
                       {/* 説明 */}
-                      {version.description && (
+                      {version.changes && (
                         <div className="mt-2 text-sm text-foreground bg-surface p-2 rounded border border-gray-200 border-border">
-                          {version.description}
+                          {version.changes}
                         </div>
                       )}
                     </div>

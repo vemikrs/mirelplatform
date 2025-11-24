@@ -11,6 +11,7 @@ interface DiffViewerProps {
   oldTitle?: string;
   newTitle?: string;
   splitView?: boolean;
+  language?: string;
 }
 
 export const DiffViewer: React.FC<DiffViewerProps> = ({
@@ -19,6 +20,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
   oldTitle = '変更前',
   newTitle = '変更後',
   splitView = true,
+  // language, // 未使用のためコメントアウト
 }) => {
   const { isDark } = useTheme();
   

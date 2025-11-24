@@ -123,7 +123,7 @@ export const StencilListPage: React.FC = () => {
                       {stencil.name}
                     </CardTitle>
                     <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="secondary">{stencil.categoryName}</Badge>
+                      <Badge variant="neutral">{stencil.categoryName}</Badge>
                       <Badge variant="outline">v{stencil.latestSerial}</Badge>
                     </div>
                   </div>
