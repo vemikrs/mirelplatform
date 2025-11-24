@@ -49,7 +49,9 @@ export function OtpVerifyPage() {
       
       if (typeof data === 'object' && data !== null && 'tokens' in data) {
         // It's AuthenticationResponse (Login success)
-        setAuth(data);
+        // setAuth expects (user, tenant, tokens)
+        // @ts-ignore - data is AuthenticationResponse
+        setAuth(data.user, data.currentTenant, data.tokens);
         clearOtpState();
         navigate('/');
       } else if (data === true) {
