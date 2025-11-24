@@ -25,7 +25,6 @@ import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
 import { useAuthStore } from '@/stores/authStore';
-import { getUserProfile } from '@/lib/api/userProfile';
 import axios from 'axios';
 import type { NavigationConfig } from './navigation.schema';
 
@@ -37,20 +36,10 @@ const CACHE_DURATION = 5000; // 5秒
 
 /**
  * Authentication Loader
- * Runs before rendering protected routes to verify server-side authentication
+ * - HttpOnly Cookie を前提とし、サーバセッション (/users/me 系) を単一の真実とする
+ * - 成功時は authStore.rehydrateFromServerSession() がストアを完全に再構築
  */
 async function authLoader(): Promise<NavigationConfig> {
-  const { isAuthenticated, tokens, updateUser } = useAuthStore.getState();
-  
-  if (!isAuthenticated || !tokens?.accessToken) {
-    // 現在のパスをreturnUrlとしてリダイレクト（ログインページ自体は除外）
-    const currentPath = window.location.pathname + window.location.search;
-    if (currentPath !== '/login') {
-      throw redirect(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
-    }
-    throw redirect('/login');
-  }
-  
   try {
     const now = Date.now();
     const currentKey = window.location.pathname;
@@ -60,16 +49,15 @@ async function authLoader(): Promise<NavigationConfig> {
       return cachedData.navigation;
     }
     
-    // /users/me で認証検証とプロフィール取得を同時実行
-    const profile = await getUserProfile();
+    // サーバセッションから authStore を再構築
+    const { rehydrateFromServerSession } = useAuthStore.getState();
+    await rehydrateFromServerSession();
+
     const navigation = await loadNavigationConfig();
     
-    cachedData = { profile, navigation };
+    cachedData = { profile: null, navigation };
     cacheKey = currentKey;
     cacheTimestamp = now;
-    
-    // プロフィールをストアに保存(RootLayoutでの再取得を防ぐ)
-    updateUser(profile);
     
     return navigation;
   } catch (error) {

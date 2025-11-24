@@ -31,6 +31,7 @@ import jp.vemi.framework.util.DatabaseUtil;
 import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
+import jp.vemi.mirel.security.CookieOrHeaderBearerTokenResolver;
 import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
@@ -234,6 +235,7 @@ public class WebSecurityConfig {
         if ("jwt".equals(authMethod) && jwtSupported) {
             log.info("Enabling JWT resource server configuration");
             http.oauth2ResourceServer(oauth2 -> oauth2
+                    .bearerTokenResolver(new CookieOrHeaderBearerTokenResolver()) // Cookie対応
                     .jwt(jwt -> jwt
                             .decoder(authenticationService.getJwtDecoder())))
                     .sessionManagement(session -> session

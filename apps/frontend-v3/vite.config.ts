@@ -22,6 +22,18 @@ export default defineConfig({
         target: 'http://localhost:3000/mipla2',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/mapi/, ''),
+        // Cookie のドメインとパスを書き換える
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+            // Log only that Set-Cookie header exists to avoid leaking sensitive values
+            const setCookie = proxyRes.headers['set-cookie'];
+            if (setCookie) {
+              console.log('[Vite Proxy] Set-Cookie received (masked). Count:', Array.isArray(setCookie) ? setCookie.length : 1);
+            }
+          });
+        },
       },
     },
   },

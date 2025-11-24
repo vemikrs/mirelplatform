@@ -4,7 +4,9 @@
 package jp.vemi.mirel.foundation.web.api.auth.controller;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jp.vemi.mirel.foundation.context.ExecutionContext;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.foundation.web.api.auth.service.AuthenticationServiceImpl;
@@ -37,9 +39,17 @@ public class AuthenticationController {
      * ログイン
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthenticationResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.login(request);
+            
+            // Set access token in HttpOnly cookie
+            if (response.getTokens() != null) {
+                setTokenCookies(httpResponse, response.getTokens());
+            }
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Login failed: {}", e.getMessage());
@@ -51,9 +61,17 @@ public class AuthenticationController {
      * サインアップ
      */
     @PostMapping("/signup")
-    public ResponseEntity<AuthenticationResponse> signup(@Valid @RequestBody SignupRequest request) {
+    public ResponseEntity<AuthenticationResponse> signup(
+            @Valid @RequestBody SignupRequest request,
+            HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.signup(request);
+            
+            // Set access token in HttpOnly cookie
+            if (response.getTokens() != null) {
+                setTokenCookies(httpResponse, response.getTokens());
+            }
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Signup failed: {}", e.getMessage());
@@ -65,9 +83,17 @@ public class AuthenticationController {
      * トークンリフレッシュ
      */
     @PostMapping("/refresh")
-    public ResponseEntity<AuthenticationResponse> refresh(@RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<AuthenticationResponse> refresh(
+            @RequestBody RefreshTokenRequest request,
+            HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.refresh(request);
+            
+            // Set access token in HttpOnly cookie
+            if (response.getTokens() != null) {
+                setTokenCookies(httpResponse, response.getTokens());
+            }
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Token refresh failed: {}", e.getMessage());
@@ -79,13 +105,23 @@ public class AuthenticationController {
      * ログアウト
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshTokenRequest request) {
+    public ResponseEntity<Void> logout(
+            @RequestBody(required = false) RefreshTokenRequest request,
+            HttpServletResponse httpResponse) {
         try {
             String refreshToken = request != null ? request.getRefreshToken() : null;
             authenticationService.logout(refreshToken);
+            
+            // Clear cookies
+            clearTokenCookies(httpResponse);
+            
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             logger.error("Logout failed: {}", e.getMessage());
+            
+            // Clear cookies even on error
+            clearTokenCookies(httpResponse);
+            
             return ResponseEntity.ok().build(); // Always return 200 for logout
         }
     }
@@ -222,6 +258,48 @@ public class AuthenticationController {
         return ResponseEntity.ok(isValid);
     }
 
+    /**
+     * Set JWT tokens as HttpOnly cookies
+     */
+    private void setTokenCookies(HttpServletResponse response, TokenDto tokens) {
+        // Access token cookie (HttpOnly, Secure in production)
+        Cookie accessTokenCookie = new Cookie("accessToken", tokens.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false); // Set true in production with HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(60 * 60); // 1 hour
+        response.addCookie(accessTokenCookie);
+        
+        // Refresh token cookie (HttpOnly, Secure in production)
+        Cookie refreshTokenCookie = new Cookie("refreshToken", tokens.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false); // Set true in production with HTTPS
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7 days
+        response.addCookie(refreshTokenCookie);
+        
+        logger.debug("JWT tokens set in HttpOnly cookies");
+    }
+    
+    /**
+     * Clear JWT token cookies
+     */
+    private void clearTokenCookies(HttpServletResponse response) {
+        Cookie accessTokenCookie = new Cookie("accessToken", null);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(0);
+        response.addCookie(accessTokenCookie);
+        
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        response.addCookie(refreshTokenCookie);
+        
+        logger.debug("JWT token cookies cleared");
+    }
+    
     /**
      * クライアントIPアドレスを取得
      * プロキシ経由の場合も考慮

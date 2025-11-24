@@ -18,28 +18,22 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: true, // Enable Cookie-based authentication
 });
-
-let tokenProvider: () => string | null | undefined = () => null;
-
-export const setTokenProvider = (provider: () => string | null | undefined) => {
-  tokenProvider = provider;
-};
 
 /**
  * Request interceptor
  * - Logs all requests in development mode
- * - Can add authentication tokens here
+ * - Authentication is handled via HttpOnly Cookie (no Authorization header needed)
  */
 apiClient.interceptors.request.use(
   (config) => {
-    const token = tokenProvider();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     if (import.meta.env.DEV) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+        data: config.data,
+        withCredentials: config.withCredentials,
+        cookies: document.cookie || '(no cookies visible - may be HttpOnly)',
+      });
     }
     return config;
   },
@@ -59,7 +53,11 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse<unknown>>) => {
     if (import.meta.env.DEV) {
-      console.log(`[API Response] ${response.config.url}`, response.data);
+      console.log(`[API Response] ${response.config.url}`, {
+        status: response.status,
+        data: response.data,
+        setCookieHeader: response.headers['set-cookie'] || '(none)',
+      });
     }
     
     // Check for API-level errors
@@ -72,6 +70,13 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<ApiResponse<unknown>>) => {
     // Handle 401 Unauthorized globally
     if (error.response?.status === 401) {
+      console.error('[401 Unauthorized]', {
+        url: error.config?.url,
+        method: error.config?.method,
+        withCredentials: error.config?.withCredentials,
+        currentPath: window.location.pathname,
+      });
+      
       // Avoid infinite loop: don't redirect if already on login page
       if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/auth/')) {
         // Dynamically import to avoid circular dependency
@@ -81,6 +86,7 @@ apiClient.interceptors.response.use(
         
         // Redirect to login with current path as returnUrl
         const currentPath = window.location.pathname + window.location.search;
+        console.log('[401 Redirect]', { to: `/login?returnUrl=${encodeURIComponent(currentPath)}` });
         window.location.href = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
       }
       

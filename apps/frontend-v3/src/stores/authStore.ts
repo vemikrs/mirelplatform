@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { OtpPurpose } from '@/lib/api/otp.types';
 import { authApi, type LoginRequest, type SignupRequest, type TokenDto, type TenantContextDto } from '@/lib/api/auth';
 import { getUserProfile, getUserTenants, getUserLicenses, type UserProfile, type TenantInfo, type LicenseInfo } from '@/lib/api/userProfile';
-import { setTokenProvider } from '@/lib/api/client';
 
 /**
  * OTP認証状態
@@ -32,6 +31,7 @@ interface AuthState {
   logout: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   fetchProfile: () => Promise<void>;
+  rehydrateFromServerSession: () => Promise<void>;
   
   setAuth: (user: UserProfile, tenant: TenantContextDto | null, tokens: TokenDto) => void;
   clearAuth: () => void;
@@ -120,6 +120,31 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         }
       },
 
+      // HttpOnly Cookie ベースのセッションからストアを再構築
+      // F5 や新規タブなどでメモリストアが空になった場合に使用
+      rehydrateFromServerSession: async () => {
+        try {
+          const [user, tenants, licenses] = await Promise.all([
+            getUserProfile(),
+            getUserTenants(),
+            getUserLicenses(),
+          ]);
+
+          set({
+            user,
+            currentTenant: user.currentTenant ?? null,
+            tenants,
+            licenses,
+            // HttpOnly Cookie 経由で /users/me が成功している時点で認証済み
+            isAuthenticated: true,
+          });
+        } catch (error) {
+          console.error('Failed to rehydrate auth store from server session', error);
+          // 401 などの場合は呼び出し側 (authLoader) でリダイレクト制御を行う
+          throw error;
+        }
+      },
+
       setAuth: (user, tenant, tokens) => {
         set({ user, currentTenant: tenant, tokens, isAuthenticated: true });
       },
@@ -167,7 +192,4 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       },
     })
 );
-
-// Initialize API client token provider
-setTokenProvider(() => useAuthStore.getState().tokens?.accessToken);
 

@@ -1,7 +1,5 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,89 +8,21 @@ interface ProtectedRouteProps {
 }
 
 /**
- * JWT Payload structure
- * Based on backend JwtService.java
- */
-interface JwtPayload {
-  iss: string;       // Issuer ("self")
-  iat: number;       // Issued at (Unix timestamp)
-  exp: number;       // Expiration (Unix timestamp)
-  sub: string;       // Subject (username)
-  roles: string[];   // User roles
-}
-
-/**
- * Decode JWT token payload
- * @param token JWT token string
- * @returns Decoded payload or null if invalid
- */
-function decodeJwtPayload(token: string): JwtPayload | null {
-  try {
-    // JWT is "header.payload.signature"
-    const parts = token.split('.');
-    if (parts.length !== 3 || !parts[1]) return null;
-    
-    // Base64URL decode (add padding if needed)
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Failed to decode JWT:', error);
-    return null;
-  }
-}
-
-/**
  * 認証必須ルートコンポーネント
- * 未認証の場合はログイン画面にリダイレクト
- * トークン期限切れもチェック
+ * HttpOnly Cookie + authLoader 前提のシンプルなガード。
+ *
+ * - 実際の認証判定はルートの loader(authLoader) が /users/me の結果で行う
+ * - ここでは、loader を素通りしてきたコンテンツをそのまま描画する
+ * - 追加でクライアント側だけのロールチェックなどが必要になった場合に拡張する
  */
 export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
-  const { isAuthenticated, tokens } = useAuth();
   const location = useLocation();
-  
-  console.log('[DEBUG ProtectedRoute] Render:', {
-    pathname: location.pathname,
-    isAuthenticated,
-    hasTokens: !!tokens,
-    timestamp: new Date().toISOString()
-  });
 
-  // トークン期限切れチェック(JWTデコード)
-  const isTokenValid = useMemo(() => {
-    if (!tokens?.accessToken) return false;
-    
-    const payload = decodeJwtPayload(tokens.accessToken);
-    if (!payload) return false;
-    
-    // exp は秒単位、Date.now() はミリ秒単位
-    // 5秒のバッファを持たせてクロックスキュー対策
-    const expiresAt = payload.exp * 1000;
-    const buffer = 5000; // 5 seconds
-    
-    return expiresAt > (Date.now() + buffer);
-  }, [tokens]);
-
-  if (!isAuthenticated || !isTokenValid) {
-    console.log('[DEBUG ProtectedRoute] Redirecting to login:', {
-      reason: !isAuthenticated ? 'not authenticated' : 'token invalid',
-      from: location.pathname,
-      to: redirectTo
-    });
-    // ログアウト操作からのリダイレクトは window.location.replace で処理されるため、
-    // このコンポーネントは通常実行されない。
-    // 実行される場合は、直接URLアクセス等の自然な未認証状態。
-    // メッセージ表示はLoginPage側でreturnUrlの有無で判断する。
+  // ここまで到達している時点で、authLoader が成功している想定。
+  // もし loader を経由していないパスで誤って使われた場合のみ、安全側にログインへ飛ばす。
+  if (!location.key) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
-  
-  console.log('[DEBUG ProtectedRoute] Rendering children');
 
   // 権限チェック
   // TODO: UserProfileにrolesを追加するか、別の方法で権限チェックを行う
