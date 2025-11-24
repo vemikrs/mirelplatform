@@ -54,6 +54,7 @@ apiClient.interceptors.request.use(
  * - Logs responses in development mode
  * - Handles global error scenarios
  * - Does NOT throw on API-level errors (errors array)
+ * - Handles 401 Unauthorized globally by clearing auth and redirecting to login
  */
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse<unknown>>) => {
@@ -68,7 +69,24 @@ apiClient.interceptors.response.use(
     
     return response;
   },
-  (error: AxiosError<ApiResponse<unknown>>) => {
+  async (error: AxiosError<ApiResponse<unknown>>) => {
+    // Handle 401 Unauthorized globally
+    if (error.response?.status === 401) {
+      // Avoid infinite loop: don't redirect if already on login page
+      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/auth/')) {
+        // Dynamically import to avoid circular dependency
+        const { useAuthStore } = await import('@/stores/authStore');
+        const { clearAuth } = useAuthStore.getState();
+        clearAuth();
+        
+        // Redirect to login with current path as returnUrl
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+      }
+      
+      return Promise.reject(error);
+    }
+    
     // Network error or HTTP error
     if (error.response) {
       // HTTP error (4xx, 5xx)

@@ -20,6 +20,7 @@ import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordRes
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { ProtectedRoute } from '@/components/auth';
+import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
@@ -29,6 +30,16 @@ import SecurityPage from '@/app/settings/security/page';
  * Defines application routes and navigation structure
  */
 export const router = createBrowserRouter([
+  // Error Pages (static routes)
+  {
+    path: '/403',
+    element: <ForbiddenPage />,
+  },
+  {
+    path: '/500',
+    element: <InternalServerErrorPage />,
+  },
+  // Auth Routes (no authentication required)
   {
     path: '/login',
     element: <LoginPage />,
@@ -76,6 +87,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RootLayout />,
     loader: loadNavigationConfig,
+    errorElement: <InternalServerErrorPage />,
     children: [
       {
         path: 'saas-status',
@@ -126,6 +138,11 @@ export const router = createBrowserRouter([
             element: <ProMarkerPageWithErrorBoundary />,
           },
         ],
+      },
+      // 404 Catch-all (must be last in children)
+      {
+        path: '*',
+        element: <NotFoundPage />,
       },
     ],
   },
