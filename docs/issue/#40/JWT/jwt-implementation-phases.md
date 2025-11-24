@@ -13,7 +13,7 @@
 
 - [x] フェーズ1: Backend JWT 基盤 & セキュリティ設定
 - [x] フェーズ2: パスワードログイン JWT 化 & `/users/me` 連携
-- [ ] フェーズ3: フロント認証クライアント（`authStore` / `apiClient`）の JWT 対応
+- [x] フェーズ3: フロント認証クライアント（`authStore` / `apiClient`）の JWT 対応
 - [ ] フェーズ4: OTP ログインの JWT 対応
 - [ ] フェーズ5: 自動リフレッシュ & UX 改善
 - [ ] フェーズ6: ゲストモード・権限モデル・監査ログ整備
@@ -113,10 +113,10 @@
 
 ### フェーズ進捗チェックリスト
 
-- [ ] `authStore.login` が新レスポンス形式に対応している
-- [ ] `apiClient` が自動で `Authorization: Bearer` ヘッダを付与する
-- [ ] 初回ロード/リロード時に `/users/me` ベースの状態同期が行われる
-- [ ] `getUserTenants` / `getUserLicenses` が accessToken 引数に依存しない
+- [x] `authStore.login` が新レスポンス形式に対応している
+- [x] `apiClient` が自動で `Authorization: Bearer` ヘッダを付与する
+- [x] 初回ロード/リロード時に `/users/me` ベースの状態同期が行われる
+- [x] `getUserTenants` / `getUserLicenses` が accessToken 引数に依存しない
 
 ### スコープ
 - `authStore.login` を新しい `/auth/login` レスポンス形式に追従させる。
