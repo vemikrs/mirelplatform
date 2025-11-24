@@ -20,19 +20,34 @@ export function LoginPage() {
   const { toast } = useToast();
   const toastShownRef = React.useRef(false);
 
+  console.log('[DEBUG LoginPage] Render:', {
+    returnUrl: searchParams.get('returnUrl'),
+    hasReturnUrlParam: !!searchParams.get('returnUrl'),
+    search: location.search,
+    state: location.state
+  });
+
   useEffect(() => {
-    // リダイレクト時のメッセージ表示
-    if (location.state?.message && !toastShownRef.current) {
+    // returnUrlパラメータがある場合のみメッセージを表示
+    // （ログアウト操作からの遷移ではメッセージを表示しない）
+    const returnUrl = searchParams.get('returnUrl');
+    
+    console.log('[DEBUG LoginPage] useEffect:', {
+      returnUrl,
+      toastShown: toastShownRef.current,
+      willShowToast: !!(returnUrl && !toastShownRef.current)
+    });
+    
+    if (returnUrl && !toastShownRef.current) {
+      console.log('[DEBUG LoginPage] Showing toast message');
       toast({
         variant: "destructive",
-        title: "アクセスエラー",
-        description: location.state.message,
+        title: "認証が必要です",
+        description: "このページにアクセスするにはログインが必要です。",
       });
       toastShownRef.current = true;
-      // 履歴をクリアして再表示を防ぐ
-      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, toast, navigate, location.pathname]);
+  }, [searchParams, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

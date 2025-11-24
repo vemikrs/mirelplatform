@@ -56,6 +56,13 @@ function decodeJwtPayload(token: string): JwtPayload | null {
 export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
   const { isAuthenticated, tokens } = useAuth();
   const location = useLocation();
+  
+  console.log('[DEBUG ProtectedRoute] Render:', {
+    pathname: location.pathname,
+    isAuthenticated,
+    hasTokens: !!tokens,
+    timestamp: new Date().toISOString()
+  });
 
   // トークン期限切れチェック(JWTデコード)
   const isTokenValid = useMemo(() => {
@@ -73,8 +80,19 @@ export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRou
   }, [tokens]);
 
   if (!isAuthenticated || !isTokenValid) {
-    return <Navigate to={redirectTo} state={{ from: location, message: 'このページにアクセスするにはログインが必要です。' }} replace />;
+    console.log('[DEBUG ProtectedRoute] Redirecting to login:', {
+      reason: !isAuthenticated ? 'not authenticated' : 'token invalid',
+      from: location.pathname,
+      to: redirectTo
+    });
+    // ログアウト操作からのリダイレクトは window.location.replace で処理されるため、
+    // このコンポーネントは通常実行されない。
+    // 実行される場合は、直接URLアクセス等の自然な未認証状態。
+    // メッセージ表示はLoginPage側でreturnUrlの有無で判断する。
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
+  
+  console.log('[DEBUG ProtectedRoute] Rendering children');
 
   // 権限チェック
   // TODO: UserProfileにrolesを追加するか、別の方法で権限チェックを行う

@@ -68,13 +68,13 @@ export function UserMenu() {
     enabled: !!tokens?.accessToken,
   });
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    console.log('[DEBUG UserMenu] handleLogout called');
+    // logout() は window.location.replace('/login') を実行するため、
+    // この関数は return しない（ページ遷移する）
+    // navigate() は不要
+    logout();
+    console.log('[DEBUG UserMenu] logout() called (this may not be logged)');
   };
 
   const handleTenantSwitch = async (tenantId: string) => {

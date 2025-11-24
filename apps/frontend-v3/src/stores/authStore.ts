@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { OtpPurpose } from '@/lib/api/otp.types';
 import { authApi, type LoginRequest, type SignupRequest, type TokenDto, type TenantContextDto } from '@/lib/api/auth';
 import { getUserProfile, getUserTenants, getUserLicenses, type UserProfile, type TenantInfo, type LicenseInfo } from '@/lib/api/userProfile';
@@ -44,16 +43,14 @@ interface AuthState {
   isOtpExpired: () => boolean;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      currentTenant: null,
-      tokens: null,
-      tenants: [],
-      licenses: [],
-      isAuthenticated: false,
-      otpState: null,
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  user: null,
+  currentTenant: null,
+  tokens: null,
+  tenants: [],
+  licenses: [],
+  isAuthenticated: false,
+  otpState: null,
 
       login: async (request: LoginRequest) => {
         const response = await authApi.login(request);
@@ -78,28 +75,23 @@ export const useAuthStore = create<AuthState>()(
         await get().fetchProfile();
       },
 
-      logout: async () => {
+      logout: () => {
+        console.log('[DEBUG logout] Step 1: Starting logout...');
         const { tokens } = get();
         
-        // 1. ローカル状態を即座にクリア
-        set({ 
-          user: null, 
-          currentTenant: null, 
-          tokens: null, 
-          tenants: [],
-          licenses: [],
-          isAuthenticated: false 
+        console.log('[DEBUG logout] Step 2: Calling logout API (async)...');
+        // 1. バックエンドへログアウト通知(非同期・待たない)
+        authApi.logout(tokens?.refreshToken).catch((error) => {
+          console.warn('Logout API call failed', error);
         });
         
-        // 2. バックエンドへログアウト通知(ベストエフォート)
-        try {
-          await authApi.logout(tokens?.refreshToken);
-        } catch (error) {
-          console.warn('Logout API call failed', error);
-        }
+        console.log('[DEBUG logout] Step 3: Redirecting to /login (immediate)...');
+        // 2. ログイン画面へリダイレクト（履歴を残さない）
+        // 即座にリダイレクトすることで、React の再レンダリングを防止
+        window.location.replace('/login');
         
-        // 3. ログイン画面へリダイレクト
-        window.location.href = '/login';
+        // この後の処理は実行されない（ページ遷移するため）
+        // state clear は次回ページ読み込み時に自動的にクリアされる（メモリ内のみ）
       },
 
       switchTenant: async (tenantId: string) => {
@@ -173,20 +165,7 @@ export const useAuthStore = create<AuthState>()(
         if (!otpState || !otpState.expiresAt) return true;
         return new Date() > new Date(otpState.expiresAt);
       },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        currentTenant: state.currentTenant,
-        tokens: state.tokens,
-        isAuthenticated: state.isAuthenticated,
-        otpState: state.otpState,
-        // Don't persist tenants/licenses if they are dynamic, or do if we want offline support
-        // For now, let's not persist them to ensure freshness on reload (fetchProfile will run)
-      }),
-    }
-  )
+    })
 );
 
 // Initialize API client token provider

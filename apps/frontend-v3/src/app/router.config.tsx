@@ -30,7 +30,8 @@ import axios from 'axios';
 import type { NavigationConfig } from './navigation.schema';
 
 // キャッシュ用の変数（同一セッション内での重複API呼び出しを防ぐ）
-let cachedProfile: unknown = null;
+let cachedData: { profile: unknown; navigation: NavigationConfig } | null = null;
+let cacheKey = '';
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5000; // 5秒
 
@@ -42,26 +43,35 @@ async function authLoader(): Promise<NavigationConfig> {
   const { isAuthenticated, tokens, updateUser } = useAuthStore.getState();
   
   if (!isAuthenticated || !tokens?.accessToken) {
+    // 現在のパスをreturnUrlとしてリダイレクト（ログインページ自体は除外）
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/login') {
+      throw redirect(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
+    }
     throw redirect('/login');
   }
   
   try {
     const now = Date.now();
+    const currentKey = window.location.pathname;
     
-    // キャッシュが有効ならスキップ
-    if (cachedProfile && (now - cacheTimestamp) < CACHE_DURATION) {
-      return loadNavigationConfig();
+    // キャッシュが有効かつ同じURLならスキップ
+    if (cachedData && cacheKey === currentKey && (now - cacheTimestamp) < CACHE_DURATION) {
+      return cachedData.navigation;
     }
     
     // /users/me で認証検証とプロフィール取得を同時実行
     const profile = await getUserProfile();
-    cachedProfile = profile;
+    const navigation = await loadNavigationConfig();
+    
+    cachedData = { profile, navigation };
+    cacheKey = currentKey;
     cacheTimestamp = now;
     
     // プロフィールをストアに保存(RootLayoutでの再取得を防ぐ)
     updateUser(profile);
     
-    return loadNavigationConfig();
+    return navigation;
   } catch (error) {
     // 401の場合、インターセプターで既にログアウト&リダイレクト済み
     if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -128,6 +138,7 @@ export const router = createBrowserRouter([
     path: '/auth/oauth2/success',
     element: <OAuthCallbackPage />,
   },
+  // App Root with authentication
   {
     id: 'app-root',
     path: '/',
@@ -185,11 +196,11 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      // 404 Catch-all (must be last in children)
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
     ],
+  },
+  // 404 Catch-all (must be last, outside RootLayout to avoid authLoader)
+  {
+    path: '*',
+    element: <NotFoundPage />,
   },
 ]);
