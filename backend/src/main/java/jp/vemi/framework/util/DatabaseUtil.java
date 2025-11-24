@@ -110,6 +110,7 @@ public class DatabaseUtil implements ApplicationContextAware {
     UUID adminSystemUserId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     SystemUser adminSystemUser = new SystemUser();
     adminSystemUser.setId(adminSystemUserId);
+    adminSystemUser.setUsername("admin");
     adminSystemUser.setEmail("admin@example.com");
     adminSystemUser.setPasswordHash(encodedPassword);
     adminSystemUser.setEmailVerified(true);
@@ -121,6 +122,7 @@ public class DatabaseUtil implements ApplicationContextAware {
     UUID userSystemUserId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
     SystemUser userSystemUser = new SystemUser();
     userSystemUser.setId(userSystemUserId);
+    userSystemUser.setUsername("user");
     userSystemUser.setEmail("user@example.com");
     userSystemUser.setPasswordHash(encodedPassword);
     userSystemUser.setEmailVerified(true);
@@ -149,6 +151,7 @@ public class DatabaseUtil implements ApplicationContextAware {
     adminUser.setUserId("user-admin-001");
     adminUser.setSystemUserId(adminSystemUserId);
     adminUser.setTenantId("default");
+    adminUser.setUsername("admin");
     adminUser.setEmail("admin@example.com");
     adminUser.setDisplayName("Admin User");
     adminUser.setFirstName("Admin");
@@ -162,6 +165,7 @@ public class DatabaseUtil implements ApplicationContextAware {
     regularUser.setUserId("user-regular-001");
     regularUser.setSystemUserId(userSystemUserId);
     regularUser.setTenantId("default");
+    regularUser.setUsername("user");
     regularUser.setEmail("user@example.com");
     regularUser.setDisplayName("Regular User");
     regularUser.setFirstName("Regular");
