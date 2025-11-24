@@ -30,7 +30,7 @@ function decodeJwtPayload(token: string): JwtPayload | null {
   try {
     // JWT is "header.payload.signature"
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3 || !parts[1]) return null;
     
     // Base64URL decode (add padding if needed)
     const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -66,11 +66,10 @@ export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRou
     
     // exp は秒単位、Date.now() はミリ秒単位
     // 5秒のバッファを持たせてクロックスキュー対策
-    const now = Date.now();
     const expiresAt = payload.exp * 1000;
     const buffer = 5000; // 5 seconds
     
-    return expiresAt > (now + buffer);
+    return expiresAt > (Date.now() + buffer);
   }, [tokens]);
 
   if (!isAuthenticated || !isTokenValid) {
