@@ -64,15 +64,15 @@ mirel:
 # In production, set enabled=true and csrf-enabled=true
 mipla2:
   security:
-    enabled: true  # SaaS認証テスト用に有効化
     api:
+      enabled: true  # SaaS認証テスト用に有効化
       csrf-enabled: false  # 開発時はCSRF無効（本番では true）
 
 # JWT authentication method (default in WebSecurityConfig)
 auth:
-  method: session  # OTPセッション認証を利用
+  method: jwt  # JWT認証を利用
   jwt:
-    enabled: false  # JWTは開発モードでは無効化
+    enabled: true  # JWT有効化
 
 # JWT秘密鍵(開発用固定値)
 jwt:

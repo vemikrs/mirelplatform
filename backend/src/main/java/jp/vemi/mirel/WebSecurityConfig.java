@@ -141,8 +141,6 @@ public class WebSecurityConfig {
                 csrf.ignoringRequestMatchers(
                         "/auth/login",
                         "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
-                        "/api/**",
-                        "/apps/*/api/**",
                         "/login/oauth2/code/**",  // OAuth2コールバックをCSRF除外
                         "/oauth2/**")             // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())

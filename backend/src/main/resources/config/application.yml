@@ -64,7 +64,7 @@ logging:
 mipla2:
   security:
     api:
-      enabled: false
+      enabled: true
   config:
     storage-dir: ${MIREL_STORAGE_DIR:}
 
