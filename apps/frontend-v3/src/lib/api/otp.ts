@@ -5,6 +5,7 @@
 
 import { apiClient } from './client';
 import type { ApiResponse } from './types';
+import type { AuthenticationResponse } from './auth';
 import type {
   OtpRequestPayload,
   OtpVerifyPayload,
@@ -32,12 +33,12 @@ export async function requestOtp(
  * OTP検証
  * 
  * @param payload - メールアドレス、OTPコード、用途
- * @returns 検証結果（true/false）
+ * @returns 検証結果（true/false または AuthenticationResponse）
  */
 export async function verifyOtp(
   payload: OtpVerifyPayload
-): Promise<ApiResponse<boolean>> {
-  const response = await apiClient.post<ApiResponse<boolean>>(
+): Promise<ApiResponse<boolean | AuthenticationResponse>> {
+  const response = await apiClient.post<ApiResponse<boolean | AuthenticationResponse>>(
     '/auth/otp/verify',
     { model: payload }
   );

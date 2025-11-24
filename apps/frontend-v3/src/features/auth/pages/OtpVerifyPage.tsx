@@ -44,11 +44,26 @@ export function OtpVerifyPage() {
   }, [countdown]);
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp({
-    onSuccess: () => {
-      // TODO: バックエンドからユーザー情報・トークンを取得してsetAuth
-      // 暫定: ダミーデータでログイン成功扱い
-      clearOtpState();
-      navigate('/');
+    onSuccess: (data) => {
+      // data can be boolean or AuthenticationResponse
+      if (typeof data === 'object' && data !== null && 'tokens' in data) {
+        // It's AuthenticationResponse (Login success)
+        setAuth(data);
+        clearOtpState();
+        navigate('/');
+      } else if (data === true) {
+        // It's boolean true (e.g. password reset verified)
+        if (otpState?.purpose === 'LOGIN') {
+             // Should not happen with new backend, but handle gracefully
+             console.warn('Expected AuthResponse for LOGIN purpose but got boolean');
+             navigate('/login');
+        } else {
+             // For other purposes (PASSWORD_RESET), navigate to next step
+             // TODO: Implement navigation for password reset
+             clearOtpState();
+             navigate('/'); 
+        }
+      }
     },
     onError: (errors) => {
       setError(errors[0] || '認証に失敗しました');
