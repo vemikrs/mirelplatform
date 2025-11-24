@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { Button, Card, Input, Toaster, useToast } from '@mirel/ui';
@@ -16,6 +16,7 @@ export function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const toastShownRef = React.useRef(false);
 
@@ -40,8 +41,10 @@ export function LoginPage() {
 
     try {
       await login({ usernameOrEmail, password });
-      // リダイレクト元のパスがあればそこへ、なければホームへ
-      const from = location.state?.from?.pathname || '/';
+      
+      // returnUrlパラメータがあればそこへ、なければlocation.stateから、それもなければホームへ
+      const returnUrl = searchParams.get('returnUrl');
+      const from = returnUrl || location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err) {
       setError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');

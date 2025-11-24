@@ -1,6 +1,7 @@
 import { useNavigate, useRouteError } from 'react-router-dom';
 import { Button } from '@mirel/ui';
 import { AlertTriangle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 /**
  * 500 Internal Server Error Page
@@ -9,16 +10,28 @@ import { AlertTriangle } from 'lucide-react';
 export function InternalServerErrorPage() {
   const navigate = useNavigate();
   const error = useRouteError() as Error | null;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  
+  // フォーカス管理: ページ読み込み時に見出しにフォーカス
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="max-w-md text-center space-y-6 px-4">
+      <div className="max-w-md text-center space-y-6 px-4" role="main">
         <div className="flex justify-center">
           <AlertTriangle className="size-20 text-destructive" aria-hidden="true" />
         </div>
         
         <div className="space-y-2">
-          <h1 className="text-7xl font-bold text-destructive">500</h1>
+          <h1 
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-7xl font-bold text-destructive outline-none"
+          >
+            500
+          </h1>
           <h2 className="text-2xl font-semibold text-foreground">サーバーエラー</h2>
         </div>
         
@@ -28,7 +41,7 @@ export function InternalServerErrorPage() {
         </p>
         
         {import.meta.env.DEV && error && (
-          <div className="rounded-lg bg-destructive/10 p-4 text-left">
+          <div className="rounded-lg bg-destructive/10 p-4 text-left" role="alert" aria-live="polite">
             <p className="text-xs font-mono text-destructive break-all">
               {error.message}
             </p>
@@ -40,10 +53,11 @@ export function InternalServerErrorPage() {
           </div>
         )}
         
-        <div className="flex flex-col gap-3 pt-4">
+        <nav className="flex flex-col gap-3 pt-4" aria-label="エラーページナビゲーション">
           <Button 
             className="w-full"
             onClick={() => window.location.reload()}
+            aria-label="ページを再読み込み"
           >
             ページを再読み込み
           </Button>
@@ -51,10 +65,11 @@ export function InternalServerErrorPage() {
             variant="outline" 
             className="w-full"
             onClick={() => navigate('/')}
+            aria-label="ホームページに戻る"
           >
             ホームに戻る
           </Button>
-        </div>
+        </nav>
       </div>
     </div>
   );
