@@ -4,7 +4,6 @@ import { Badge, Button, Toaster } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
-import { TenantSwitcher } from '@/components/header/TenantSwitcher';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -110,7 +109,6 @@ export function RootLayout() {
             </nav>
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            {isAuthenticated && <TenantSwitcher />}
             {navigation.globalActions
               .filter((action) => action.type !== 'theme' && action.type !== 'profile')
               .map((action) => renderAction(action))}

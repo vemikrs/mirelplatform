@@ -1,11 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/lib/hooks/useTheme';
-import { Button, Badge, Avatar } from '@mirel/ui';
-import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff } from 'lucide-react';
+import { useTheme, type ThemeMode } from '@/lib/hooks/useTheme';
+import { 
+  Button, 
+  Badge, 
+  Avatar,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuPortal
+} from '@mirel/ui';
+import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff, Building2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getUserLicenses, type LicenseInfo } from '@/lib/api/userProfile';
+import { getUserLicenses, getUserTenants, type LicenseInfo, type TenantInfo } from '@/lib/api/userProfile';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
@@ -15,30 +31,14 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  * ユーザーメニューコンポーネント
  */
 export function UserMenu() {
-  const { user, logout, tokens } = useAuth();
+  const { user, logout, tokens, currentTenant, switchTenant } = useAuth();
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
     if (typeof window === 'undefined') return true;
     const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
     return stored === null ? true : stored === 'true';
   });
-
-  // 外側クリックで閉じる
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
 
   const toggleQuickLinks = () => {
     const newValue = !quickLinksVisible;
@@ -58,12 +58,31 @@ export function UserMenu() {
     enabled: !!tokens?.accessToken,
   });
 
+  // Fetch user's tenants from API
+  const { data: tenants = [] } = useQuery<TenantInfo[]>({
+    queryKey: ['userTenants'],
+    queryFn: async () => {
+      if (!tokens?.accessToken) return [];
+      return getUserTenants();
+    },
+    enabled: !!tokens?.accessToken,
+  });
+
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const handleTenantSwitch = async (tenantId: string) => {
+    if (tenantId === currentTenant?.tenantId) return;
+    try {
+      await switchTenant(tenantId);
+    } catch (error) {
+      console.error('Failed to switch tenant:', error);
     }
   };
 
@@ -92,130 +111,123 @@ export function UserMenu() {
   };
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-subtle transition-colors"
-      >
-        <Avatar 
-          src={user.avatarUrl}
-          alt={user.displayName || user.email}
-          fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-          size="sm"
-        />
-        <span className="hidden sm:block text-sm font-medium">{user.displayName || user.email}</span>
-        <ChevronDown className="w-4 h-4" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <Avatar 
-                src={user.avatarUrl}
-                alt={user.displayName || user.email}
-                fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-                size="md"
-              />
-              <div>
-                <p className="text-sm font-medium">{user.displayName}</p>
-                <p className="text-xs text-muted-foreground">@{user.username}</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
-            <div className="mt-2">
-              <Badge className={tierColors[currentTier]}>
-                {tierLabels[currentTier]} プラン
-              </Badge>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-surface-subtle">
+          <Avatar 
+            src={undefined}
+            alt={user.displayName || user.email}
+            fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+            size="sm"
+          />
+          <div className="hidden sm:flex flex-col items-start text-left">
+            <span className="text-sm font-medium leading-none">{user.displayName || user.email}</span>
+            {currentTenant && (
+              <span className="text-xs text-muted-foreground mt-0.5">{currentTenant.displayName}</span>
+            )}
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      
+      <DropdownMenuContent className="w-64" align="end">
+        <div className="px-2 py-1.5">
+          <div className="flex items-center gap-3 mb-2">
+            <Avatar 
+              src={undefined}
+              alt={user.displayName || user.email}
+              fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+              size="md"
+            />
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium truncate">{user.displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
             </div>
           </div>
-          
-          <div className="py-1">
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                navigate('/settings/profile');
-              }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <User className="w-4 h-4" />
-              プロフィール設定
-            </button>
-            
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                navigate('/settings/security');
-              }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              セキュリティ設定
-            </button>
-          </div>
-
-          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
-            <div className="px-4 py-2">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">テーマ</p>
-              <div className="space-y-1">
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
-                    themeMode === 'light'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <SunMedium className="w-4 h-4" />
-                  ライトモード
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
-                    themeMode === 'dark'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <MoonStar className="w-4 h-4" />
-                  ダークモード
-                </button>
-                <button
-                  onClick={() => setTheme('system')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded transition-colors ${
-                    themeMode === 'system'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 font-medium'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  システムに従う
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={toggleQuickLinks}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              {quickLinksVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              Quick Links {quickLinksVisible ? '非表示' : '表示'}
-            </button>
-          </div>
-
-          <div className="py-1 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              ログアウト
-            </button>
-          </div>
+          <p className="text-xs text-muted-foreground truncate px-1 mb-2">{user.email}</p>
+          <Badge className={`w-full justify-center ${tierColors[currentTier]}`}>
+            {tierLabels[currentTier]} プラン
+          </Badge>
         </div>
-      )}
-    </div>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Building2 className="mr-2 h-4 w-4" />
+              <span>ワークスペース切替</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup value={currentTenant?.tenantId} onValueChange={handleTenantSwitch}>
+                  {tenants.map((tenant) => (
+                    <DropdownMenuRadioItem key={tenant.tenantId} value={tenant.tenantId}>
+                      {tenant.displayName}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+            <User className="mr-2 h-4 w-4" />
+            <span>プロフィール設定</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>セキュリティ設定</span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {themeMode === 'light' ? <SunMedium className="mr-2 h-4 w-4" /> : 
+               themeMode === 'dark' ? <MoonStar className="mr-2 h-4 w-4" /> : 
+               <Settings className="mr-2 h-4 w-4" />}
+              <span>テーマ設定</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup value={themeMode} onValueChange={(val) => setTheme(val as ThemeMode)}>
+                  <DropdownMenuRadioItem value="light">
+                    <SunMedium className="mr-2 h-4 w-4" />
+                    ライトモード
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dark">
+                    <MoonStar className="mr-2 h-4 w-4" />
+                    ダークモード
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="system">
+                    <Settings className="mr-2 h-4 w-4" />
+                    システムに従う
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+
+          <DropdownMenuItem onClick={toggleQuickLinks}>
+            {quickLinksVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+            <span>Quick Links {quickLinksVisible ? '非表示' : '表示'}</span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/30">
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>ログアウト</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

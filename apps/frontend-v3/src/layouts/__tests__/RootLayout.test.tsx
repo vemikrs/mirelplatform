@@ -25,6 +25,7 @@ const mockNavigation: NavigationConfig = {
   ],
   secondary: [],
   quickLinks: [],
+  inDevelopment: [],
   globalActions: [
     { id: 'theme-toggle', type: 'theme' },
   ],

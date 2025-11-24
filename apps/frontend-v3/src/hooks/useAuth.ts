@@ -30,7 +30,7 @@ export function useAuth() {
 /**
  * ライセンスチェックフック
  */
-export function useLicense(applicationId: string, requiredTier?: 'FREE' | 'PRO' | 'MAX') {
+export function useLicense(_applicationId: string, requiredTier?: 'FREE' | 'PRO' | 'MAX') {
   // TODO: Implement license checking logic
   // For now, return placeholder values
   const hasLicense = true;
