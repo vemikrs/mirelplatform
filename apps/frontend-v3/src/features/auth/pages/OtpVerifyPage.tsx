@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore';
 export function OtpVerifyPage() {
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [hasCheckedInitialOtpState, setHasCheckedInitialOtpState] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const navigate = useNavigate();
@@ -21,12 +22,16 @@ export function OtpVerifyPage() {
   const isOtpExpired = useAuthStore((state) => state.isOtpExpired);
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  // OTP状態がない場合はログインページへ
+  // 初回マウント時にのみ、OTP状態がない場合はログインページへ
   useEffect(() => {
+    if (hasCheckedInitialOtpState) return;
+
     if (!otpState || !otpState.email) {
       navigate('/auth/otp-login');
     }
-  }, [otpState, navigate]);
+
+    setHasCheckedInitialOtpState(true);
+  }, [otpState, navigate, hasCheckedInitialOtpState]);
 
   // 再送信カウントダウン
   useEffect(() => {
@@ -43,7 +48,7 @@ export function OtpVerifyPage() {
       // TODO: バックエンドからユーザー情報・トークンを取得してsetAuth
       // 暫定: ダミーデータでログイン成功扱い
       clearOtpState();
-      navigate('/promarker');
+      navigate('/');
     },
     onError: (errors) => {
       setError(errors[0] || '認証に失敗しました');

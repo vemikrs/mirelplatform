@@ -287,8 +287,8 @@ test.describe('認証機能 Smoke E2E', () => {
       const otpVerifyPage = new OtpVerifyPage(page);
       await otpVerifyPage.verifyOtp('123456');
       
-      // ProMarkerページにリダイレクト（TODO: バックエンド実装後は '/' に変更）
-      await expect(page).toHaveURL('/promarker', { timeout: 10000 });
+      // ダッシュボード（ホーム）にリダイレクト
+      await expect(page).toHaveURL('/', { timeout: 10000 });
     });
     
   });
