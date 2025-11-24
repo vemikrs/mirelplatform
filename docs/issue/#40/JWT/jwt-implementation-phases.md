@@ -43,8 +43,10 @@
 ### スコープ
 - `AuthenticationService` 実装（JWT リソースサーバとトークン検証の接続）
 - `WebSecurityConfig` の JWT/セッション切替の整理
+- **CSRF 対策**: `CookieCsrfTokenRepository.withHttpOnlyFalse()` の設定（`XSRF-TOKEN` Cookie 配布）。
 - `/auth` 公開ポリシーの反映（`/auth/**.permitAll()` の撤廃）
 - 設定不整合時のフェイルセーフ（起動時チェック）
+- **フィルタチェーン維持**: ゲストモード時もセキュリティフィルタを無効化せず、`permitAll()` で制御する構成の確立。
 
 ### DoD（Definition of Done）
 - `auth.method=jwt`, `auth.jwt.enabled=true` 設定でアプリケーションが起動し、
@@ -54,6 +56,8 @@
   - `/auth/login`, `/auth/signup`, `/auth/otp/**`, パスワードリセット系, `/auth/health`, `/auth/logout` が `permitAll`
   - `/auth/me`, `/auth/switch-tenant`, `/auth/refresh` が `authenticated`
   - 上記以外のエンドポイントは本番プロファイルで `anyRequest().authenticated()`
+- **CSRF**: `XSRF-TOKEN` Cookie がレスポンスに含まれ、JS から読み取り可能であること。
+- **ゲストモード**: `securityProperties.isEnabled=false` でも `ExecutionContext` 構築ロジック（フィルタ）が動作すること。
 - JWT リソースサーバ設定が `AuthenticationService.getJwtDecoder()` を通じて正しく動作すること（署名鍵を変えればトークンが無効になる）。
 
 ### 検証ポイント
@@ -185,12 +189,14 @@
   - 401/403 + 有効期限切れエラー時に `/auth/refresh` を 1 回だけ試行し、成功時に元リクエストを再送。
 - 初回ロード時の `/users/me` → `/auth/refresh` フローの実装（7-4 節）。
 - マルチタブ同期（`BroadcastChannel` 等）によるトークン状態共有（7-3 節）。
+- **リフレッシュトークンの猶予期間 (Grace Period)** の実装と検証（マルチタブ競合対策）。
 
 ### DoD
 - アクセストークンの有効期限を短め（例: 1 分）に設定した開発環境で:
   - ユーザが操作を続けている限り、バックグラウンドでトークンが自動リフレッシュされ、画面上は継続利用できる。
   - リフレッシュも失敗した場合のみ、明示的なメッセージ（例: 「セッションの有効期限が切れました。再度ログインしてください。」）が表示される。
 - 2 つ以上のブラウザタブを開いた状態で:
+  - **同時リフレッシュ**: ほぼ同時にリフレッシュが発生しても、猶予期間により両方のタブが生き残る（強制ログアウトされない）こと。
   - 片方でログアウトすると、他方も適切なタイミングでログアウト状態に遷移する。
 
 ### 検証ポイント

@@ -73,6 +73,9 @@
   - `createRefreshToken(userId, ip, userAgent)`
   - `rotateRefreshToken(oldToken, ip, userAgent)`  
   - `revokeRefreshToken(token or familyId)`
+- **ローテーションと猶予期間 (Grace Period)**
+  - リフレッシュトークンは使用ごとにローテーション（無効化＆新規発行）するが、マルチタブ環境での競合（並列リクエストによる意図しない無効化）を防ぐため、**数秒〜数十秒程度の猶予期間**を設ける。
+  - 猶予期間中は、古いトークンでのリフレッシュ要求に対しても（新規発行はせずとも）有効なアクセストークンを返す、あるいはエラーにせず処理する等の対策を行い、トークンファミリ全体の無効化（再利用検知）が即座に発動しないようにする。
 - ここでは「API表面」と「DB/モデル」のIFだけ先に決め、実装は段階的でもOK。
 
 2-4. **運用フェイルセーフと鍵ローテーション**
@@ -202,7 +205,7 @@
   - ゲストモード有効時は、JWT/セッションとは無関係に `/commons/**` や `/apps/*/api/**` を含む全てのエンドポイントを認証不要としつつ、「ゲストユーザー」としての一時的なコンテキスト（必要に応じて ExecutionContext に反映）を検討する。
   - `/auth/**` 系（ログイン・サインアップ・OTP 等）は、ゲストモードかどうかに関わらず常に `permitAll()` とし、未ログイン状態からのアクセスを許容する。
 - 設計上の注意:
-  - ゲストモード時にも将来の JWT 導入に備え、`auth.method` の設定自体は `jwt` としておき、`securityProperties.isEnabled()` フラグで「認証必須かどうか」だけを切り替える。
+  - **フィルタチェーンの維持**: ゲストモードであっても、`securityProperties.isEnabled()` フラグで Spring Security のフィルタチェーン自体を無効化してはならない。`ExecutionContext` の構築（JWT 解析やユーザ特定）を機能させるため、フィルタチェーンは常に有効にし、`authorizeHttpRequests` の設定で `permitAll()` を適用する方式とする。
   - ゲストモードであっても、監査ログやレートリミット、重要な書き込み系 API に対する制限は別途検討する。
   - ゲストモードであっても、以下のカテゴリの API は**常に認証必須**とする:
     - ユーザー作成・削除、権限変更などのアカウント管理系
@@ -230,7 +233,10 @@
 5-5. **`/auth/refresh` と CSRF 対策**
 
 - Cookie ベースのリフレッシュトークンを採用する場合:
-  - `/auth/refresh` は `HttpOnly` Cookie によるリフレッシュトークン送信を前提とし、同時に CSRF トークン（例: `X-CSRF-Token` ヘッダ or Double Submit Cookie）を必須とする。
+  - `/auth/refresh` は `HttpOnly` Cookie によるリフレッシュトークン送信を前提とし、同時に CSRF トークンを必須とする。
+  - **CSRF トークン配布**: Spring Security 標準の `CookieCsrfTokenRepository.withHttpOnlyFalse()` を採用する。
+    - サーバーは `XSRF-TOKEN` という名前の **JS から読み取り可能な** Cookie に CSRF トークンをセットする。
+    - クライアント（`apiClient`）は、その Cookie 値を読み取り、`X-XSRF-TOKEN` ヘッダとしてリクエストに付与する。
   - `SameSite=Lax` もしくは `Strict` を基本とし、クロスサイトからの自動送信を抑止する。
 - アクセストークンのみを用いる簡易構成の場合:
   - `/auth/refresh` 自体を `Authorization: Bearer <accessToken>` で呼ぶ API とし、「アクセストークンがまだ有効な間にのみリフレッシュ可能」とする。
