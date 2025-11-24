@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { ReactNode } from 'react';
 
@@ -14,9 +14,10 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ children, redirectTo = '/login', requiredRole }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={redirectTo} state={{ from: location, message: 'このページにアクセスするにはログインが必要です。' }} replace />;
   }
 
   // 権限チェック

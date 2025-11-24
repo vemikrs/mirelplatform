@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
 import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
@@ -78,24 +78,8 @@ export const router = createBrowserRouter([
     loader: loadNavigationConfig,
     children: [
       {
-        index: true,
-        element: <HomePage />,
-      },
-      {
         path: 'saas-status',
         element: <SaaSStatusPage />,
-      },
-      {
-        path: 'promarker',
-        element: <ProMarkerPageWithErrorBoundary />,
-      },
-      {
-        path: 'promarker/stencils',
-        element: <StencilListPage />,
-      },
-      {
-        path: 'promarker/editor/*',
-        element: <StencilEditor />,
       },
       {
         path: 'catalog',
@@ -106,25 +90,42 @@ export const router = createBrowserRouter([
         element: <SiteMapPage />,
       },
       {
-        path: 'settings/profile',
         element: (
           <ProtectedRoute>
-            <ProfilePage />
+            <Outlet />
           </ProtectedRoute>
         ),
-      },
-      {
-        path: 'settings/security',
-        element: (
-          <ProtectedRoute>
-            <SecurityPage />
-          </ProtectedRoute>
-        ),
-      },
-      // Backward compatibility route for E2E tests
-      {
-        path: 'mirel/mste',
-        element: <ProMarkerPageWithErrorBoundary />,
+        children: [
+          {
+            index: true,
+            element: <HomePage />,
+          },
+          {
+            path: 'promarker',
+            element: <ProMarkerPageWithErrorBoundary />,
+          },
+          {
+            path: 'promarker/stencils',
+            element: <StencilListPage />,
+          },
+          {
+            path: 'promarker/editor/*',
+            element: <StencilEditor />,
+          },
+          {
+            path: 'settings/profile',
+            element: <ProfilePage />,
+          },
+          {
+            path: 'settings/security',
+            element: <SecurityPage />,
+          },
+          // Backward compatibility route for E2E tests
+          {
+            path: 'mirel/mste',
+            element: <ProMarkerPageWithErrorBoundary />,
+          },
+        ],
       },
     ],
   },

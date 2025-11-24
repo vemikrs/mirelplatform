@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/lib/hooks/useTheme';
-import { Button, Card, Input } from '@mirel/ui';
+import { Button, Card, Input, Toaster, useToast } from '@mirel/ui';
 
 export function LoginPage() {
   // テーマを初期化（ログイン画面でもテーマが適用されるように）
@@ -15,6 +15,23 @@ export function LoginPage() {
   
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  const toastShownRef = React.useRef(false);
+
+  useEffect(() => {
+    // リダイレクト時のメッセージ表示
+    if (location.state?.message && !toastShownRef.current) {
+      toast({
+        variant: "destructive",
+        title: "アクセスエラー",
+        description: location.state.message,
+      });
+      toastShownRef.current = true;
+      // 履歴をクリアして再表示を防ぐ
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, toast, navigate, location.pathname]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +40,9 @@ export function LoginPage() {
 
     try {
       await login({ usernameOrEmail, password });
-      navigate('/');
+      // リダイレクト元のパスがあればそこへ、なければホームへ
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err) {
       setError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');
     } finally {
@@ -32,8 +51,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md p-8">
+    <>
+      <Toaster />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2 text-foreground">mirelplatform</h1>
           <p className="text-muted-foreground">SaaS Platform</p>
@@ -128,6 +149,7 @@ export function LoginPage() {
           </p>
         </div>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }
