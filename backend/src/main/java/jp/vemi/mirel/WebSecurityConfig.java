@@ -28,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 import jp.vemi.framework.util.DatabaseUtil;
+import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
 import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
@@ -40,8 +41,8 @@ public class WebSecurityConfig {
 
     private static final Logger log = LoggerFactory.getLogger(WebSecurityConfig.class);
 
-    @Value("${auth.method:jwt}")
-    private String authMethod;
+    @Autowired
+    private AuthProperties authProperties;
 
     @Autowired
     private Mipla2SecurityProperties securityProperties;
@@ -138,14 +139,37 @@ public class WebSecurityConfig {
                 csrf.disable();
             } else {
                 csrf.ignoringRequestMatchers(
-                        "/auth/**",
+                        "/auth/login",
+                        "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
                         "/api/**",
                         "/apps/*/api/**",
                         "/login/oauth2/code/**",  // OAuth2コールバックをCSRF除外
                         "/oauth2/**")             // OAuth2認証エンドポイントをCSRF除外
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler());
+                
+                // CSRFトークンをCookieに書き込むためのフィルターを追加
+                http.addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.authentication.www.BasicAuthenticationFilter.class);
             }
         });
+    }
+
+    /**
+     * CSRFトークンをCookieに書き込むためのフィルター。
+     * Spring Security 6ではCSRFトークンの生成が遅延されるため、
+     * 明示的にトークンを取得してCookieへの書き込みをトリガーする。
+     */
+    private static class CsrfCookieFilter extends org.springframework.web.filter.OncePerRequestFilter {
+        @Override
+        protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain filterChain)
+                throws jakarta.servlet.ServletException, java.io.IOException {
+            org.springframework.security.web.csrf.CsrfToken csrfToken = (org.springframework.security.web.csrf.CsrfToken) request.getAttribute(org.springframework.security.web.csrf.CsrfToken.class.getName());
+            if (csrfToken != null) {
+                // Render the token value to a cookie by causing the deferred token to be loaded
+                csrfToken.getToken();
+            }
+            filterChain.doFilter(request, response);
+        }
     }
 
     /**
@@ -160,14 +184,26 @@ public class WebSecurityConfig {
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
             // 共通パブリックエンドポイント
-            authz.requestMatchers("/auth/login").permitAll()
-                    .requestMatchers("/auth/check").permitAll()
-                    .requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
-                    .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
-                    .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
-                    .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
-                    .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
+            authz.requestMatchers(
+                    "/auth/login",
+                    "/auth/signup",
+                    "/auth/otp/**",
+                    "/auth/health",
+                    "/auth/logout",
+                    "/auth/check"
+                ).permitAll()
+                .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
+                .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
+                .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
+                .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
+                .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
+
+            // 認証必須エンドポイント
+            authz.requestMatchers(
+                    "/auth/me",
+                    "/auth/switch-tenant",
+                    "/auth/refresh"
+                ).authenticated();
 
             // セキュリティ無効時は全てのAPIをパブリックに
             if (!securityProperties.isEnabled()) {
@@ -195,6 +231,7 @@ public class WebSecurityConfig {
     private void configureAuthentication(HttpSecurity http, AuthenticationService authenticationService)
             throws Exception {
         boolean jwtSupported = authenticationService.isJwtSupported();
+        String authMethod = authProperties.getMethod();
         log.info("Configuring authentication: method={}, jwtSupported={}", authMethod, jwtSupported);
         if ("jwt".equals(authMethod) && jwtSupported) {
             log.info("Enabling JWT resource server configuration");

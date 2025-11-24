@@ -12,7 +12,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnProperty(name = "auth.method", havingValue = "session", matchIfMissing = false)
 public class SessionAuthenticationService implements AuthenticationService {
 
     private final AuthenticationManager authenticationManager;

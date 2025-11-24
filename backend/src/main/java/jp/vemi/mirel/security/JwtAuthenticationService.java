@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import jp.vemi.mirel.security.jwt.JwtService;
 
 @Service
-@ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "auth.method", havingValue = "jwt", matchIfMissing = true)
 public class JwtAuthenticationService implements AuthenticationService {
 
     private final AuthenticationManager authenticationManager;

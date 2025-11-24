@@ -33,17 +33,16 @@ import com.nimbusds.jose.proc.SecurityContext;
 
 import java.util.List;
 
+import jp.vemi.mirel.config.properties.AuthProperties;
+
 @Service
-@ConditionalOnProperty(name = "auth.jwt.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "auth.method", havingValue = "jwt", matchIfMissing = true)
 public class JwtService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
-    @Value("${auth.jwt.enabled:false}")
-    private boolean jwtEnabled;
-
     @Autowired
-    private JwtKeyGenerator keyGenerator;
+    private AuthProperties authProperties;
 
     private JwtEncoder encoder;
     @lombok.Getter
@@ -51,14 +50,17 @@ public class JwtService {
 
     @PostConstruct
     public void init() {
-        if (!jwtEnabled) {
+        if (!authProperties.getJwt().isEnabled()) {
             // JWT無効時はスキップ
             return;
         }
 
-        // 秘密鍵の生成
-        String secretKey = keyGenerator.generateSecretKey();
-        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
+        // 秘密鍵の取得
+        String secretKey = authProperties.getJwt().getSecret();
+        if (secretKey == null || secretKey.length() < 32) {
+             throw new IllegalStateException("JWT secret must be at least 32 characters long");
+        }
+        byte[] keyBytes = secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
         // JWKの作成（HMAC署名用の必須属性を全て設定）
         OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes)
@@ -77,8 +79,8 @@ public class JwtService {
         
         // カスタムJWKSource: JWKSelectorを無視して常にJWKを返す
         JWKSource<SecurityContext> jwkSource = (jwkSelector, securityContext) -> {
-            logger.info("JWKSource called. Selector: {}. Returning all {} keys unconditionally", 
-                jwkSelector, jwkSet.getKeys().size());
+            // logger.debug("JWKSource called. Selector: {}. Returning all {} keys unconditionally", 
+            //    jwkSelector, jwkSet.getKeys().size());
             return jwkSet.getKeys(); // Selectorの条件を無視して全てのJWKを返す
         };
 
@@ -90,16 +92,17 @@ public class JwtService {
     }
 
     public String generateToken(Authentication authentication) {
-        if (!jwtEnabled || encoder == null) {
+        if (!authProperties.getJwt().isEnabled() || encoder == null) {
             throw new IllegalStateException("JWT is disabled. Enable auth.jwt.enabled in application.yml");
         }
 
         Instant now = Instant.now();
+        long expiry = authProperties.getJwt().getExpiration();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.HOURS))
+                .expiresAt(now.plusSeconds(expiry))
                 .subject(authentication.getName())
                 .claim("roles", authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)

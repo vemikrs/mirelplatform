@@ -123,3 +123,11 @@ springdoc:
     - /apps/**
     - /commons/**
     - /auth/**
+
+auth:
+  method: jwt
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:changeit_changeit_changeit_changeit_changeit_changeit} # 32文字以上
+    expiration: 3600
+    refresh-expiration: 86400
