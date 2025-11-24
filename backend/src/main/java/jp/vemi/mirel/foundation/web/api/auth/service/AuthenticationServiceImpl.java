@@ -55,8 +55,8 @@ public class AuthenticationServiceImpl {
     @Autowired(required = false)
     private JwtService jwtService;
 
-    @org.springframework.beans.factory.annotation.Value("${auth.jwt.enabled:false}")
-    private boolean jwtEnabled;
+    @Autowired
+    private jp.vemi.mirel.config.properties.AuthProperties authProperties;
 
     /**
      * ログイン処理
@@ -115,7 +115,8 @@ public class AuthenticationServiceImpl {
 
         // トークン生成（JWT有効な場合のみ）
         String accessToken;
-        if (jwtEnabled && jwtService != null) {
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                     user.getUserId(), null, List.of()
@@ -205,7 +206,8 @@ public class AuthenticationServiceImpl {
 
         // トークン生成
         String accessToken;
-        if (jwtEnabled && jwtService != null) {
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                     user.getUserId(), null, List.of()
@@ -229,7 +231,8 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse refresh(RefreshTokenRequest request) {
-        if (!jwtEnabled || jwtService == null) {
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (!isJwtEnabled || jwtService == null) {
             throw new IllegalStateException("JWT is disabled. Refresh token not supported.");
         }
         logger.info("Token refresh attempt");
@@ -253,7 +256,7 @@ public class AuthenticationServiceImpl {
 
         // 新しいアクセストークン生成
         String accessToken;
-        if (jwtEnabled && jwtService != null) {
+        if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                     user.getUserId(), null, List.of()
@@ -437,7 +440,7 @@ public class AuthenticationServiceImpl {
             .tokens(TokenDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .expiresIn(3600L) // 1 hour
+                .expiresIn(authProperties.getJwt().getExpiration())
                 .build())
             .currentTenant(tenant != null ? TenantContextDto.builder()
                 .tenantId(tenant.getTenantId())
