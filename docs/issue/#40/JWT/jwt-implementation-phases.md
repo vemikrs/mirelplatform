@@ -11,7 +11,7 @@
 
 進捗管理のため、以下のようにチェックボックス形式でも追跡できるようにする:
 
-- [ ] フェーズ1: Backend JWT 基盤 & セキュリティ設定
+- [x] フェーズ1: Backend JWT 基盤 & セキュリティ設定
 - [ ] フェーズ2: パスワードログイン JWT 化 & `/users/me` 連携
 - [ ] フェーズ3: フロント認証クライアント（`authStore` / `apiClient`）の JWT 対応
 - [ ] フェーズ4: OTP ログインの JWT 対応
@@ -35,10 +35,10 @@
 
 ### フェーズ進捗チェックリスト
 
-- [ ] `AuthenticationService` 実装が作成され、`WebSecurityConfig` から利用されている
-- [ ] `WebSecurityConfig` の `/auth` 公開ポリシーが計画書どおりに反映されている
-- [ ] `auth.method=jwt`, `auth.jwt.enabled=true` で正常起動する
-- [ ] 設定不整合（鍵未設定など）の場合に起動が失敗する
+- [x] `AuthenticationService` 実装が作成され、`WebSecurityConfig` から利用されている
+- [x] `WebSecurityConfig` の `/auth` 公開ポリシーが計画書どおりに反映されている
+- [x] `auth.method=jwt`, `auth.jwt.enabled=true` で正常起動する
+- [x] 設定不整合（鍵未設定など）の場合に起動が失敗する
 
 ### スコープ
 - `AuthenticationService` 実装（JWT リソースサーバとトークン検証の接続）
