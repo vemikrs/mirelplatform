@@ -44,12 +44,12 @@ public class AuthenticationController {
             HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.login(request);
-            
+
             // Set access token in HttpOnly cookie
             if (response.getTokens() != null) {
                 setTokenCookies(httpResponse, response.getTokens());
             }
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Login failed: {}", e.getMessage());
@@ -66,12 +66,12 @@ public class AuthenticationController {
             HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.signup(request);
-            
+
             // Set access token in HttpOnly cookie
             if (response.getTokens() != null) {
                 setTokenCookies(httpResponse, response.getTokens());
             }
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Signup failed: {}", e.getMessage());
@@ -88,12 +88,12 @@ public class AuthenticationController {
             HttpServletResponse httpResponse) {
         try {
             AuthenticationResponse response = authenticationService.refresh(request);
-            
+
             // Set access token in HttpOnly cookie
             if (response.getTokens() != null) {
                 setTokenCookies(httpResponse, response.getTokens());
             }
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Token refresh failed: {}", e.getMessage());
@@ -107,21 +107,27 @@ public class AuthenticationController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @RequestBody(required = false) RefreshTokenRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
             String refreshToken = request != null ? request.getRefreshToken() : null;
             authenticationService.logout(refreshToken);
-            
+
+            // Invalidate session
+            if (httpRequest.getSession(false) != null) {
+                httpRequest.getSession(false).invalidate();
+            }
+
             // Clear cookies
             clearTokenCookies(httpResponse);
-            
+
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             logger.error("Logout failed: {}", e.getMessage());
-            
+
             // Clear cookies even on error
             clearTokenCookies(httpResponse);
-            
+
             return ResponseEntity.ok().build(); // Always return 200 for logout
         }
     }
@@ -156,31 +162,36 @@ public class AuthenticationController {
             return ResponseEntity.status(401).build();
         }
 
-        var user = executionContext.getCurrentUser();
-        var tenant = executionContext.getCurrentTenant();
+        try {
+            var user = executionContext.getCurrentUser();
+            var tenant = executionContext.getCurrentTenant();
 
-        UserContextDto response = UserContextDto.builder()
-            .user(UserDto.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .displayName(user.getDisplayName())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .isActive(user.getIsActive())
-                .emailVerified(user.getEmailVerified())
-                .build())
-            .currentTenant(tenant != null ? TenantContextDto.builder()
-                .tenantId(tenant.getTenantId())
-                .tenantName(tenant.getTenantName())
-                .displayName(tenant.getDisplayName())
-                .build() : null)
-            .build();
+            UserContextDto response = UserContextDto.builder()
+                    .user(UserDto.builder()
+                            .userId(user.getUserId())
+                            .username(user.getUsername())
+                            .email(user.getEmail())
+                            .displayName(user.getDisplayName())
+                            .firstName(user.getFirstName())
+                            .lastName(user.getLastName())
+                            .isActive(user.getIsActive())
+                            .emailVerified(user.getEmailVerified())
+                            .build())
+                    .currentTenant(tenant != null ? TenantContextDto.builder()
+                            .tenantId(tenant.getTenantId())
+                            .tenantName(tenant.getTenantName())
+                            .displayName(tenant.getDisplayName())
+                            .build() : null)
+                    .build();
 
-        logger.info("Returning user context for user: {}, tenant: {}", 
-            user.getUserId(), tenant != null ? tenant.getTenantId() : "none");
+            logger.info("Returning user context for user: {}, tenant: {}",
+                    user.getUserId(), tenant != null ? tenant.getTenantId() : "none");
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to get current user context", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**
@@ -202,20 +213,19 @@ public class AuthenticationController {
         try {
             String clientIp = getClientIp(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
-            
+
             String token = passwordResetService.requestPasswordReset(
-                request.getEmail(), 
-                clientIp, 
-                userAgent
-            );
-            
+                    request.getEmail(),
+                    clientIp,
+                    userAgent);
+
             // TODO: Send email with reset link containing token
             // For now, return token in response (development only)
             logger.info("Password reset requested for email: {}", request.getEmail());
-            
+
             // In production, don't return the token, just success message
             return ResponseEntity.ok("Password reset email sent");
-            
+
         } catch (IllegalArgumentException e) {
             // Don't reveal if user exists - always return success
             logger.warn("Password reset requested for non-existent email: {}", request.getEmail());
@@ -269,7 +279,7 @@ public class AuthenticationController {
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(60 * 60); // 1 hour
         response.addCookie(accessTokenCookie);
-        
+
         // Refresh token cookie (HttpOnly, Secure in production)
         Cookie refreshTokenCookie = new Cookie("refreshToken", tokens.getRefreshToken());
         refreshTokenCookie.setHttpOnly(true);
@@ -277,10 +287,10 @@ public class AuthenticationController {
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7 days
         response.addCookie(refreshTokenCookie);
-        
+
         logger.debug("JWT tokens set in HttpOnly cookies");
     }
-    
+
     /**
      * Clear JWT token cookies
      */
@@ -290,16 +300,16 @@ public class AuthenticationController {
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
         response.addCookie(accessTokenCookie);
-        
+
         Cookie refreshTokenCookie = new Cookie("refreshToken", null);
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(0);
         response.addCookie(refreshTokenCookie);
-        
+
         logger.debug("JWT token cookies cleared");
     }
-    
+
     /**
      * クライアントIPアドレスを取得
      * プロキシ経由の場合も考慮

@@ -37,14 +37,19 @@ public class UserProfileController {
     public ResponseEntity<UserProfileDto> getCurrentUser() {
         logger.info("GET /users/me - Getting current user profile");
 
-        if (!executionContext.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
+        try {
+            if (!executionContext.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            String userId = executionContext.getCurrentUserId();
+            UserProfileDto profile = userProfileService.getUserProfile(userId);
+
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            logger.error("Failed to get current user profile", e);
+            return ResponseEntity.status(500).build();
         }
-
-        String userId = executionContext.getCurrentUserId();
-        UserProfileDto profile = userProfileService.getUserProfile(userId);
-
-        return ResponseEntity.ok(profile);
     }
 
     /**
@@ -96,14 +101,19 @@ public class UserProfileController {
     public ResponseEntity<?> getUserTenants() {
         logger.info("GET /users/me/tenants - Getting user tenants");
 
-        if (!executionContext.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
+        try {
+            if (!executionContext.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            String userId = executionContext.getCurrentUserId();
+            var tenants = userProfileService.getUserTenants(userId);
+
+            return ResponseEntity.ok(tenants);
+        } catch (Exception e) {
+            logger.error("Failed to get user tenants", e);
+            return ResponseEntity.status(500).build();
         }
-
-        String userId = executionContext.getCurrentUserId();
-        var tenants = userProfileService.getUserTenants(userId);
-
-        return ResponseEntity.ok(tenants);
     }
 
     /**
@@ -113,15 +123,20 @@ public class UserProfileController {
     public ResponseEntity<?> getUserLicenses() {
         logger.info("GET /users/me/licenses - Getting user licenses");
 
-        if (!executionContext.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
+        try {
+            if (!executionContext.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            String userId = executionContext.getCurrentUserId();
+            String tenantId = executionContext.getCurrentTenantId();
+
+            var licenses = userProfileService.getUserLicenses(userId, tenantId);
+
+            return ResponseEntity.ok(licenses);
+        } catch (Exception e) {
+            logger.error("Failed to get user licenses", e);
+            return ResponseEntity.status(500).build();
         }
-
-        String userId = executionContext.getCurrentUserId();
-        String tenantId = executionContext.getCurrentTenantId();
-
-        var licenses = userProfileService.getUserLicenses(userId, tenantId);
-
-        return ResponseEntity.ok(licenses);
     }
 }
