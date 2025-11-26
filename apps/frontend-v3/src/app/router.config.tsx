@@ -62,8 +62,16 @@ async function authLoader(): Promise<NavigationConfig> {
     return navigation;
   } catch (error) {
     // 401の場合、インターセプターで既にログアウト&リダイレクト済み
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      throw redirect('/login');
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        throw redirect('/login');
+      }
+      // ネットワークエラー（ERR_NETWORK, ERR_TOO_MANY_REDIRECTS等）の場合もログイン画面へ
+      // セッション確立失敗とみなす
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        console.warn('[authLoader] Network Error detected, redirecting to login', error);
+        throw redirect('/login');
+      }
     }
     throw error;
   }

@@ -75,15 +75,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         await get().fetchProfile();
       },
 
-      logout: () => {
+      logout: async () => {
         console.log('[DEBUG logout] Step 1: Starting logout...');
         const { tokens } = get();
         
-        console.log('[DEBUG logout] Step 2: Calling logout API (async)...');
-        // 1. バックエンドへログアウト通知(非同期・待たない)
-        authApi.logout(tokens?.refreshToken).catch((error) => {
+        console.log('[DEBUG logout] Step 2: Calling logout API (awaiting)...');
+        // 1. バックエンドへログアウト通知(同期的に待つ)
+        try {
+          await authApi.logout(tokens?.refreshToken);
+        } catch (error) {
           console.warn('Logout API call failed', error);
-        });
+        }
         
         console.log('[DEBUG logout] Step 3: Redirecting to /login (immediate)...');
         // 2. ログイン画面へリダイレクト（履歴を残さない）

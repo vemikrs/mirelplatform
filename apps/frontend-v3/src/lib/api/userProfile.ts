@@ -2,7 +2,7 @@
  * User Profile API
  */
 
-import { apiClient, getApiErrors } from './client';
+import { apiClient } from './client';
 
 export interface UserProfile {
   userId: string;
@@ -54,14 +54,8 @@ export interface LicenseInfo {
  * Get current user profile
  */
 export async function getUserProfile(): Promise<UserProfile> {
-  try {
-    const response = await apiClient.get<UserProfile>('/users/me');
-
-    return response.data;
-  } catch (error) {
-    const errors = getApiErrors(error);
-    throw new Error(errors.join(', '));
-  }
+  const response = await apiClient.get<UserProfile>('/users/me');
+  return response.data;
 }
 
 /**
@@ -70,17 +64,11 @@ export async function getUserProfile(): Promise<UserProfile> {
 export async function updateProfile(
   request: UpdateProfileRequest
 ): Promise<UserProfile> {
-  try {
-    const response = await apiClient.put<UserProfile>(
-      '/users/me',
-      request
-    );
-
-    return response.data;
-  } catch (error) {
-    const errors = getApiErrors(error);
-    throw new Error(errors.join(', '));
-  }
+  const response = await apiClient.put<UserProfile>(
+    '/users/me',
+    request
+  );
+  return response.data;
 }
 
 /**
@@ -89,41 +77,24 @@ export async function updateProfile(
 export async function updatePassword(
   request: UpdatePasswordRequest
 ): Promise<void> {
-  try {
-    await apiClient.put<void>(
-      '/users/me/password',
-      request
-    );
-  } catch (error) {
-    const errors = getApiErrors(error);
-    throw new Error(errors.join(', '));
-  }
+  await apiClient.put<void>(
+    '/users/me/password',
+    request
+  );
 }
 
 /**
  * Get user tenants
  */
 export async function getUserTenants(): Promise<TenantInfo[]> {
-  try {
-    const response = await apiClient.get<TenantInfo[]>('/users/me/tenants');
-
-    return response.data || [];
-  } catch (error) {
-    const errors = getApiErrors(error);
-    throw new Error(errors.join(', '));
-  }
+  const response = await apiClient.get<TenantInfo[]>('/users/me/tenants');
+  return response.data || [];
 }
 
 /**
  * Get user licenses
  */
 export async function getUserLicenses(): Promise<LicenseInfo[]> {
-  try {
-    const response = await apiClient.get<LicenseInfo[]>('/users/me/licenses');
-
-    return response.data || [];
-  } catch (error) {
-    const errors = getApiErrors(error);
-    throw new Error(errors.join(', '));
-  }
+  const response = await apiClient.get<LicenseInfo[]>('/users/me/licenses');
+  return response.data || [];
 }
