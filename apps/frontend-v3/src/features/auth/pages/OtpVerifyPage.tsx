@@ -5,11 +5,14 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mirel/ui';
+import { Button, Card, Input } from '@mirel/ui';
 import { useVerifyOtp, useResendOtp } from '@/lib/hooks/useOtp';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/lib/hooks/useTheme';
 
 export function OtpVerifyPage() {
+  // テーマを初期化
+  useTheme();
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [hasCheckedInitialOtpState, setHasCheckedInitialOtpState] = useState(false);
@@ -128,91 +131,87 @@ export function OtpVerifyPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md p-8">
         {/* ヘッダー */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">認証コードを入力</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            <strong>{otpState.email}</strong> に送信された6桁の認証コードを入力してください。
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2 text-foreground">認証コードを入力</h1>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">{otpState.email}</strong> に送信された6桁の認証コードを入力してください。
           </p>
           {otpState.expirationMinutes && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-muted-foreground">
               有効期限: {otpState.expirationMinutes}分
             </p>
           )}
         </div>
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="rounded-md shadow-sm space-y-4">
-            {/* OTPコード */}
-            <div>
-              <label htmlFor="otpCode" className="block text-sm font-medium text-gray-700">
-                認証コード（6桁）
-              </label>
-              <input
-                id="otpCode"
-                name="otpCode"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                required
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm text-center text-2xl tracking-widest font-mono"
-                placeholder="000000"
-                disabled={isVerifying}
-                autoFocus
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="otpCode" className="block text-sm font-medium mb-2 text-foreground">
+              認証コード（6桁）
+            </label>
+            <Input
+              id="otpCode"
+              name="otpCode"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              required
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+              className="w-full text-center text-2xl tracking-widest font-mono"
+              placeholder="000000"
+              disabled={isVerifying}
+              autoFocus
+            />
           </div>
 
           {/* エラーメッセージ */}
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded text-sm">
+              {error}
             </div>
           )}
 
           {/* 送信ボタン */}
-          <div className="space-y-3">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isVerifying || otpCode.length !== 6}
-            >
-              {isVerifying ? '検証中...' : '認証'}
-            </Button>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isVerifying || otpCode.length !== 6}
+          >
+            {isVerifying ? '検証中...' : '認証'}
+          </Button>
 
-            {/* 再送信ボタン */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleResend}
-              disabled={!canResend || isResending}
-            >
-              {isResending
-                ? '送信中...'
-                : canResend
-                ? '認証コードを再送信'
-                : `再送信まであと ${countdown}秒`}
-            </Button>
+          {/* 再送信ボタン */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleResend}
+            disabled={!canResend || isResending}
+          >
+            {isResending
+              ? '送信中...'
+              : canResend
+              ? '認証コードを再送信'
+              : `再送信まであと ${countdown}秒`}
+          </Button>
 
-            {/* キャンセルボタン */}
-            <Button
+          {/* キャンセルボタン */}
+          <div className="text-center">
+            <button
               type="button"
-              variant="ghost"
-              className="w-full"
               onClick={handleCancel}
+              className="text-sm text-muted-foreground hover:text-primary hover:underline"
             >
               キャンセル
-            </Button>
+            </button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
