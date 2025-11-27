@@ -87,8 +87,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           console.warn('Logout API call failed', error);
         }
         
+        // 2. authLoaderのキャッシュをクリア (重要: Cookie削除後の再アクセス時に必ずサーバー検証を実行)
+        console.log('[DEBUG logout] Step 2.5: Clearing authLoader cache...');
+        try {
+          const { clearAuthLoaderCache } = await import('@/app/router.config');
+          clearAuthLoaderCache();
+        } catch (error) {
+          console.warn('Failed to clear authLoader cache', error);
+        }
+        
         console.log('[DEBUG logout] Step 3: Redirecting to /login (immediate)...');
-        // 2. ログイン画面へリダイレクト（履歴を残さない）
+        // 3. ログイン画面へリダイレクト(履歴を残さない)
         // 即座にリダイレクトすることで、React の再レンダリングを防止
         window.location.replace('/login');
         

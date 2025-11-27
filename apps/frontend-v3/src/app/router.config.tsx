@@ -35,8 +35,17 @@ let cacheKey = '';
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5000; // 5秒
 
-/**
- * Authentication Loader
+/** * Clear authentication loader cache
+ * Should be called on logout to ensure fresh authentication check on next navigation
+ */
+export function clearAuthLoaderCache() {
+  cachedData = null;
+  cacheKey = '';
+  cacheTimestamp = 0;
+  console.log('[authLoader] Cache cleared');
+}
+
+/** * Authentication Loader
  * - HttpOnly Cookie を前提とし、サーバセッション (/users/me 系) を単一の真実とする
  * - 成功時は authStore.rehydrateFromServerSession() がストアを完全に再構築
  */
