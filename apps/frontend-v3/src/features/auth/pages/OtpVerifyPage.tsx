@@ -9,6 +9,7 @@ import { Button, Card, Input } from '@mirel/ui';
 import { useVerifyOtp, useResendOtp } from '@/lib/hooks/useOtp';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/lib/hooks/useTheme';
+import { getUserTenants, getUserLicenses } from '@/lib/api/userProfile';
 
 export function OtpVerifyPage() {
   // テーマを初期化
@@ -47,16 +48,35 @@ export function OtpVerifyPage() {
   }, [countdown]);
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // data is boolean | AuthenticationResponse (passed from useVerifyOtp onSuccess)
       
       if (typeof data === 'object' && data !== null && 'tokens' in data) {
         // It's AuthenticationResponse (Login success)
-        // setAuth expects (user, tenant, tokens)
-        // @ts-ignore - data is AuthenticationResponse
-        setAuth(data.user, data.currentTenant, data.tokens);
-        clearOtpState();
-        navigate('/home');
+        try {
+          // OTP検証成功時、tenants と licenses も取得してストアに保存
+          // これにより /home への遷移時に authLoader が再度取得する必要がなくなる
+          const [tenants, licenses] = await Promise.all([
+            getUserTenants(),
+            getUserLicenses(),
+          ]);
+
+          // @ts-expect-error - data is AuthenticationResponse
+          setAuth(data.user, data.currentTenant, data.tokens);
+          
+          // tenants と licenses を手動で設定
+          useAuthStore.setState({ tenants, licenses });
+          
+          clearOtpState();
+          navigate('/home', { replace: true });
+        } catch (err) {
+          console.error('Failed to fetch tenants/licenses after OTP login', err);
+          // エラーでもログインは成功しているので遷移
+          // @ts-expect-error - data is AuthenticationResponse
+          setAuth(data.user, data.currentTenant, data.tokens);
+          clearOtpState();
+          navigate('/home', { replace: true });
+        }
       } else if (data === true) {
         // It's boolean true (e.g. password reset verified)
         if (otpState?.purpose === 'LOGIN') {
