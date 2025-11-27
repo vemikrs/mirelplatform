@@ -45,9 +45,9 @@ export function PasswordResetRequestPage() {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Check your email</CardTitle>
+            <CardTitle>メールを確認してください</CardTitle>
             <CardDescription>
-              If an account exists with {email}, we've sent password reset instructions.
+              {email} のアカウントが存在する場合、パスワードリセットの手順を送信しました。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -55,7 +55,7 @@ export function PasswordResetRequestPage() {
               onClick={() => navigate('/login')}
               className="w-full"
             >
-              Return to login
+              ログイン画面に戻る
             </Button>
           </CardContent>
         </Card>
@@ -67,15 +67,15 @@ export function PasswordResetRequestPage() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Reset your password</CardTitle>
+          <CardTitle>パスワードをリセット</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you instructions to reset your password.
+            メールアドレスを入力してください。パスワードリセットの手順を送信します。
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium">メールアドレス</label>
               <Input
                 id="email"
                 type="email"
@@ -88,7 +88,7 @@ export function PasswordResetRequestPage() {
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-3 rounded">
                 {error}
               </div>
             )}
@@ -98,7 +98,7 @@ export function PasswordResetRequestPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Sending...' : 'Send reset instructions'}
+              {isLoading ? '送信中...' : 'リセット手順を送信'}
             </Button>
 
             <Button
@@ -107,7 +107,7 @@ export function PasswordResetRequestPage() {
               className="w-full"
               onClick={() => navigate('/login')}
             >
-              Back to login
+              ログイン画面に戻る
             </Button>
           </form>
         </CardContent>

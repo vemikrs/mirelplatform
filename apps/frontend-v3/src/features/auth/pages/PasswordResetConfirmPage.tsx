@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTheme } from '@/lib/hooks/useTheme';
 import { Button } from '@mirel/ui';
 import { Input } from '@mirel/ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mirel/ui';
 
 export function PasswordResetConfirmPage() {
+  // テーマを初期化
+  useTheme();
   const [searchParams] = useSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,7 +22,7 @@ export function PasswordResetConfirmPage() {
   useEffect(() => {
     // Verify token on mount
     if (!token) {
-      setError('Invalid reset link');
+      setError('無効なリセットリンクです');
       setTokenValid(false);
       return;
     }
@@ -29,12 +32,12 @@ export function PasswordResetConfirmPage() {
       .then(isValid => {
         setTokenValid(isValid);
         if (!isValid) {
-          setError('This reset link is invalid or has expired');
+          setError('このリセットリンクは無効または期限切れです');
         }
       })
       .catch(() => {
         setTokenValid(false);
-        setError('Failed to verify reset link');
+        setError('リセットリンクの確認に失敗しました');
       });
   }, [token]);
 
@@ -42,12 +45,12 @@ export function PasswordResetConfirmPage() {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('パスワードが一致しません');
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('パスワードは8文字以上である必要があります');
       return;
     }
 
@@ -68,7 +71,7 @@ export function PasswordResetConfirmPage() {
 
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || 'Failed to reset password');
+        throw new Error(text || 'パスワードのリセットに失敗しました');
       }
 
       setSuccess(true);
@@ -86,10 +89,10 @@ export function PasswordResetConfirmPage() {
 
   if (tokenValid === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
-            <div className="text-center">Verifying reset link...</div>
+            <div className="text-center">リセットリンクを確認中...</div>
           </CardContent>
         </Card>
       </div>
@@ -98,12 +101,12 @@ export function PasswordResetConfirmPage() {
 
   if (tokenValid === false) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Invalid reset link</CardTitle>
+            <CardTitle>無効なリセットリンク</CardTitle>
             <CardDescription>
-              This password reset link is invalid or has expired.
+              このパスワードリセットリンクは無効または期限切れです。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -111,7 +114,7 @@ export function PasswordResetConfirmPage() {
               onClick={() => navigate('/password-reset')}
               className="w-full"
             >
-              Request new reset link
+              新しいリセットリンクをリクエスト
             </Button>
           </CardContent>
         </Card>
@@ -121,12 +124,12 @@ export function PasswordResetConfirmPage() {
 
   if (success) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Password reset successful</CardTitle>
+            <CardTitle>パスワードリセット完了</CardTitle>
             <CardDescription>
-              Your password has been reset successfully. Redirecting to login...
+              パスワードが正常にリセットされました。ログイン画面にリダイレクトしています...
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -134,7 +137,7 @@ export function PasswordResetConfirmPage() {
               onClick={() => navigate('/login')}
               className="w-full"
             >
-              Go to login
+              ログイン画面へ
             </Button>
           </CardContent>
         </Card>
@@ -143,22 +146,22 @@ export function PasswordResetConfirmPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Set new password</CardTitle>
+          <CardTitle>新しいパスワードを設定</CardTitle>
           <CardDescription>
-            Enter your new password below.
+            新しいパスワードを入力してください。
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="newPassword" className="block text-sm font-medium">New Password</label>
+              <label htmlFor="newPassword" className="block text-sm font-medium">新しいパスワード</label>
               <Input
                 id="newPassword"
                 type="password"
-                placeholder="At least 8 characters"
+                placeholder="8文字以上"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -168,11 +171,11 @@ export function PasswordResetConfirmPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium">パスワード確認</label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your password"
+                placeholder="パスワードを再入力"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -182,7 +185,7 @@ export function PasswordResetConfirmPage() {
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-3 rounded">
                 {error}
               </div>
             )}
@@ -192,7 +195,7 @@ export function PasswordResetConfirmPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Resetting...' : 'Reset password'}
+              {isLoading ? 'リセット中...' : 'パスワードをリセット'}
             </Button>
           </form>
         </CardContent>
