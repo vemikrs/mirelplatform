@@ -189,7 +189,10 @@ public class WebSecurityConfig {
                     "/auth/otp/**",
                     "/auth/health",
                     "/auth/logout",
-                    "/auth/check"
+                    "/auth/check",
+                    "/login",  // フロントエンドログインページ（OAuth2のloginPage設定用）
+                    "/signup", // フロントエンド新規登録ページ
+                    "/auth/oauth2/success" // OAuth2コールバック後のフロントエンドページ
                 ).permitAll()
                 .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
                 .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
