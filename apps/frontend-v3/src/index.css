@@ -12,6 +12,36 @@
     min-height: 100%;
   }
   
+  /**
+   * ⚠️ Tailwind v4 制限への対応:
+   * 
+   * Tailwind v4では、tailwind.config.js の theme.extend.colors で定義した
+   * CSS変数ベースの色が bg-*, text-*, border-* ユーティリティとして生成されません。
+   * 
+   * 原因:
+   * - Tailwind v4はCSS-firstの設計で、@theme ディレクティブでのみテーマを定義可能
+   * - JavaScript configで 'hsl(var(--background))' のような値を定義しても無視される
+   * - @theme では var() による間接参照がサポートされていない
+   * 
+   * 解決策:
+   * - 以下のように明示的にユーティリティクラスを定義する必要がある
+   * - これらのクラスは packages/ui/src/theme/index.css で定義された
+   *   CSS変数 (--background, --card, --surface等) を参照
+   * 
+   * 参考: https://github.com/tailwindlabs/tailwindcss/discussions/18440
+   */
+  .bg-background {
+    background-color: hsl(var(--background)) !important;
+  }
+  
+  .bg-card {
+    background-color: hsl(var(--card)) !important;
+  }
+  
+  .bg-surface {
+    background-color: hsl(var(--surface)) !important;
+  }
+  
   /* Force bg-white to use standard white (Tailwind v4 oklch override) */
   .bg-white {
     background-color: #ffffff !important;

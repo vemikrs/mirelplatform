@@ -1,4 +1,17 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * Tailwind CSS v4 Configuration
+ * 
+ * ⚠️ 重要な制限事項:
+ * - Tailwind v4では、theme.extend.colors で定義したカスタム色が
+ *   ユーティリティクラス（bg-*, text-*, border-*）として自動生成されません
+ * - CSS変数ベースの色を使用する場合は、apps/frontend-v3/src/index.css で
+ *   明示的に .bg-background, .bg-card 等のクラスを定義する必要があります
+ * - または @theme ディレクティブを使用する必要がありますが、var()の間接参照は不可
+ * 
+ * 参考: https://github.com/tailwindlabs/tailwindcss/discussions/18440
+ * 
+ * @type {import('tailwindcss').Config}
+ */
 export default {
   darkMode: 'class',
   content: [
@@ -30,6 +43,9 @@ export default {
         xs: "475px",          // 追加ブレークポイント（小スマートフォン対応）
       },
       colors: {
+        // ⚠️ Tailwind v4 制限: 以下のカスタム色はユーティリティクラスとして生成されません
+        // bg-background, bg-card, bg-surface 等は src/index.css で明示的に定義されています
+        
         // Tailwind default colors (preserve white, black, gray for utility classes)
         white: '#ffffff',
         black: '#000000',
