@@ -182,18 +182,22 @@ public class WebSecurityConfig {
      */
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
-            // 共通パブリックエンドポイント
+            // 認証不要なAPIエンドポイント
             authz.requestMatchers(
                     "/auth/login",
                     "/auth/signup",
                     "/auth/otp/**",
                     "/auth/health",
                     "/auth/logout",
-                    "/auth/check",
-                    "/login",  // フロントエンドログインページ（OAuth2のloginPage設定用）
-                    "/signup", // フロントエンド新規登録ページ
-                    "/auth/oauth2/success" // OAuth2コールバック後のフロントエンドページ
+                    "/auth/check"
                 ).permitAll()
+                
+                // OAuth2関連エンドポイント（Spring Securityが処理）
+                .requestMatchers(
+                    "/login/oauth2/code/**",  // OAuth2コールバック
+                    "/oauth2/**"              // OAuth2認証フロー
+                ).permitAll()
+                
                 .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
                 .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                 .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
@@ -246,25 +250,27 @@ public class WebSecurityConfig {
         } else {
             log.info("Enabling session-based security context configuration");
             // JWT無効時はカスタム認証エンドポイント (/auth/otp/verify) を使用
-            // SecurityContextHolderFilterを有効化するためformLogin()を設定するが、
-            // ログインページは存在しないパスを指定してデフォルトのUIを無効化
-            http.formLogin(form -> form
-                    .loginPage("/auth/login-form")  // 存在しないパス
-                    .permitAll())
-                .sessionManagement(session -> session
+            // formLogin()は使用せず、認証エンドポイントで直接SecurityContextを設定
+            // 未認証時は401を返す（SPA構成のためリダイレクトしない）
+            http.sessionManagement(session -> session
                     .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .securityContext(securityContext -> securityContext
                     .securityContextRepository(securityContextRepository())
-                    .requireExplicitSave(false));  // SecurityContextHolderFilterが自動的にSecurityContextを保存
+                    .requireExplicitSave(false))  // SecurityContextHolderFilterが自動的にSecurityContextを保存
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        // SPA構成: 未認証時は401を返す（302リダイレクトしない）
+                        response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                    }));
         }
         
         // OAuth2ログイン設定（GitHub）
+        // SPA構成のため、loginPageは設定しない（未認証時は401を返す）
         http.oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
-                .failureHandler(oauth2FailureHandler)
-                .loginPage("/login"));
+                .failureHandler(oauth2FailureHandler));
     }
 
     /**
