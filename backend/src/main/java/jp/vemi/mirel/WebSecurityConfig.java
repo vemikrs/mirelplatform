@@ -265,8 +265,9 @@ public class WebSecurityConfig {
         }
         
         // OAuth2ログイン設定（GitHub）
-        // SPA構成のため、loginPageは設定しない（未認証時は401を返す）
+        // SPA構成: デフォルトログインページを無効化し、未認証時は401を返す
         http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/oauth2/authorization/github")  // デフォルトページ生成を抑制
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
