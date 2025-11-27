@@ -24,14 +24,23 @@ export const apiClient = axios.create({
 /**
  * Request interceptor
  * - Logs all requests in development mode
- * - Authentication is handled via HttpOnly Cookie (no Authorization header needed)
+ * - Adds Authorization header with JWT token if available
  */
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Dynamically import authStore to get JWT token
+    const { useAuthStore } = await import('@/stores/authStore');
+    const tokens = useAuthStore.getState().tokens;
+    
+    if (tokens?.accessToken) {
+      config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+    }
+    
     if (import.meta.env.DEV) {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
         data: config.data,
         withCredentials: config.withCredentials,
+        hasAuthHeader: !!config.headers.Authorization,
         cookies: document.cookie || '(no cookies visible - may be HttpOnly)',
       });
     }
