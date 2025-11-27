@@ -5,11 +5,14 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mirel/ui';
+import { useTheme } from '@/lib/hooks/useTheme';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@mirel/ui';
 import { useRequestOtp } from '@/lib/hooks/useOtp';
 import { useAuthStore } from '@/stores/authStore';
 
 export function OtpLoginPage() {
+  // テーマを初期化
+  useTheme();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -41,25 +44,21 @@ export function OtpLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8">
-        {/* ヘッダー */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">ログイン</h1>
-          <p className="mt-2 text-sm text-gray-600">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">ログイン</CardTitle>
+          <CardDescription className="text-center">
             メールアドレスを入力してください。認証コードを送信します。
-          </p>
-        </div>
-
-        {/* フォーム */}
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="rounded-md shadow-sm space-y-4">
-            {/* メールアドレス */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium">
                 メールアドレス
               </label>
-              <input
+              <Input
                 id="email"
                 name="email"
                 type="email"
@@ -67,22 +66,19 @@ export function OtpLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="your@email.com"
                 disabled={isPending}
               />
             </div>
-          </div>
 
-          {/* エラーメッセージ */}
-          {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+            {/* エラーメッセージ */}
+            {error && (
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-4 rounded">
+                {error}
+              </div>
+            )}
 
-          {/* 送信ボタン */}
-          <div>
+            {/* 送信ボタン */}
             <Button
               type="submit"
               className="w-full"
@@ -90,34 +86,34 @@ export function OtpLoginPage() {
             >
               {isPending ? '送信中...' : '認証コードを送信'}
             </Button>
-          </div>
 
-          {/* 既存ログインへのリンク */}
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-primary hover:underline"
-            >
-              パスワードでログイン
-            </button>
-          </div>
-        </form>
+            {/* 既存ログインへのリンク */}
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="text-primary hover:underline"
+              >
+                パスワードでログイン
+              </button>
+            </div>
+          </form>
 
-        {/* 新規登録リンク */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            アカウントをお持ちでないですか？{' '}
-            <button
-              type="button"
-              onClick={() => navigate('/signup')}
-              className="font-medium text-primary hover:underline"
-            >
-              新規登録
-            </button>
-          </p>
-        </div>
-      </div>
+          {/* 新規登録リンク */}
+          <div className="text-center mt-4">
+            <p className="text-sm text-muted-foreground">
+              アカウントをお持ちでないですか？{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/signup')}
+                className="font-medium text-primary hover:underline"
+              >
+                新規登録
+              </button>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
