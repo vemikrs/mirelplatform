@@ -26,6 +26,7 @@ import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
+import { TitleUpdater } from '@/components/TitleUpdater';
 import type { NavigationConfig } from './navigation.schema';
 
 // キャッシュ用の変数（同一セッション内での重複API呼び出しを防ぐ）
@@ -82,6 +83,14 @@ async function authLoader(): Promise<NavigationConfig> {
  * Defines application routes and navigation structure
  */
 export const router = createBrowserRouter([
+  {
+    element: (
+      <>
+        <TitleUpdater />
+        <Outlet />
+      </>
+    ),
+    children: [
   // Error Pages (static routes)
   {
     path: '/403',
@@ -95,18 +104,22 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+    handle: { title: 'ログイン' },
   },
   {
     path: '/signup',
     element: <SignupPage />,
+    handle: { title: '新規登録' },
   },
   {
     path: '/password-reset',
     element: <PasswordResetRequestPage />,
+    handle: { title: 'パスワードリセット' },
   },
   {
     path: '/password-reset/confirm',
     element: <PasswordResetConfirmPage />,
+    handle: { title: 'パスワードリセット確認' },
   },
   // OTP Authentication Routes
   {
@@ -139,6 +152,7 @@ export const router = createBrowserRouter([
     id: 'app-root',
     path: '/',
     element: <RootLayout />,
+    handle: { title: 'ホーム' },
     loader: authLoader,
     errorElement: <InternalServerErrorPage />,
     children: [
@@ -149,10 +163,12 @@ export const router = createBrowserRouter([
       {
         path: 'catalog',
         element: <UiCatalogPage />,
+        handle: { title: 'UIカタログ' },
       },
       {
         path: 'sitemap',
         element: <SiteMapPage />,
+        handle: { title: 'サイトマップ' },
       },
       {
         element: (
@@ -164,6 +180,7 @@ export const router = createBrowserRouter([
           {
             path: 'home',
             element: <HomePage />,
+            handle: { title: 'ホーム' },
           },
           {
             index: true,
@@ -172,14 +189,17 @@ export const router = createBrowserRouter([
           {
             path: 'promarker',
             element: <ProMarkerPageWithErrorBoundary />,
+            handle: { title: 'ProMarker - 払出画面' },
           },
           {
             path: 'promarker/stencils',
             element: <StencilListPage />,
+            handle: { title: 'ProMarker - ステンシル一覧' },
           },
           {
             path: 'promarker/editor/*',
             element: <StencilEditor />,
+            handle: { title: 'ProMarker - エディタ' },
           },
           {
             path: 'settings/profile',
@@ -203,4 +223,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFoundPage />,
   },
+    ]
+  }
 ]);

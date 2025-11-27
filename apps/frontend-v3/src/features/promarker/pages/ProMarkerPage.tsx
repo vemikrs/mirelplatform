@@ -97,7 +97,7 @@ export function ProMarkerPage() {
 
   useEffect(() => {
     // Set page title for E2E test verification
-    document.title = 'ProMarker - 払出画面';
+    // document.title = 'ProMarker - 払出画面'; // Managed by router handle now
 
     // Prevent double execution in React 18 Strict Mode
     let cancelled = false;
