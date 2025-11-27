@@ -27,7 +27,7 @@ export function OtpVerifyPage() {
     if (hasCheckedInitialOtpState) return;
 
     if (!otpState || !otpState.email) {
-      navigate('/auth/otp-login');
+      navigate('/login');
     }
 
     setHasCheckedInitialOtpState(true);
@@ -120,7 +120,7 @@ export function OtpVerifyPage() {
 
   const handleCancel = () => {
     clearOtpState();
-    navigate('/auth/otp-login');
+    navigate('/login');
   };
 
   if (!otpState) {

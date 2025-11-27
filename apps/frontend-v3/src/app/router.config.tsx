@@ -8,12 +8,11 @@ import { StencilEditor } from '@/features/stencil-editor/components/StencilEdito
 import { StencilListPage } from '@/features/stencil-editor/pages/StencilListPage';
 import { SaaSStatusPage } from '@/features/saas-status';
 import { 
-  LoginPage, 
   SignupPage, 
   PasswordResetRequestPage, 
   PasswordResetConfirmPage,
 } from '@/features/auth';
-import { OtpLoginPage } from '@/features/auth/pages/OtpLoginPage';
+import { UnifiedLoginPage } from '@/features/auth/pages/UnifiedLoginPage';
 import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
 import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage';
 import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
@@ -112,7 +111,7 @@ export const router = createBrowserRouter([
   // Auth Routes (no authentication required)
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <UnifiedLoginPage />,
     handle: { title: 'ログイン' },
   },
   {
@@ -131,10 +130,6 @@ export const router = createBrowserRouter([
     handle: { title: 'パスワードリセット確認' },
   },
   // OTP Authentication Routes
-  {
-    path: '/auth/otp-login',
-    element: <OtpLoginPage />,
-  },
   {
     path: '/auth/otp-verify',
     element: <OtpVerifyPage />,
