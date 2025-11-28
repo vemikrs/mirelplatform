@@ -20,6 +20,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense.LicenseTier;
+import jp.vemi.mirel.foundation.abst.dao.entity.FeatureFlag;
+import jp.vemi.mirel.foundation.abst.dao.entity.FeatureFlag.FeatureStatus;
+import jp.vemi.mirel.foundation.abst.dao.entity.FeatureFlag.LicenseResolveStrategy;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.entity.User;
 
@@ -154,5 +158,114 @@ public class CsvTestDataLoader {
         }
         
         return users;
+    }
+    
+    /**
+     * FeatureFlagエンティティのリストを生成
+     * 
+     * @return FeatureFlagのリスト
+     */
+    public static List<FeatureFlag> loadFeatureFlags() {
+        List<Map<String, String>> csvData = loadCsv("testdata/feature-flags.csv");
+        List<FeatureFlag> featureFlags = new ArrayList<>();
+        
+        for (Map<String, String> row : csvData) {
+            try {
+                FeatureFlag flag = new FeatureFlag();
+                flag.setId(row.get("id"));
+                flag.setFeatureKey(row.get("feature_key"));
+                flag.setFeatureName(row.get("feature_name"));
+                flag.setDescription(row.get("description"));
+                flag.setApplicationId(row.get("application_id"));
+                flag.setStatus(parseFeatureStatus(row.get("status")));
+                flag.setInDevelopment(Boolean.parseBoolean(row.get("in_development")));
+                flag.setRequiredLicenseTier(parseLicenseTier(row.get("required_license_tier")));
+                flag.setEnabledByDefault(Boolean.parseBoolean(row.get("enabled_by_default")));
+                flag.setRolloutPercentage(parseInteger(row.get("rollout_percentage"), 100));
+                flag.setLicenseResolveStrategy(parseLicenseResolveStrategy(row.get("license_resolve_strategy")));
+                flag.setEnabledForUserIds(parseJsonArrayOrNull(row.get("enabled_for_user_ids")));
+                flag.setEnabledForTenantIds(parseJsonArrayOrNull(row.get("enabled_for_tenant_ids")));
+                flag.setDisabledForUserIds(parseJsonArrayOrNull(row.get("disabled_for_user_ids")));
+                flag.setDisabledForTenantIds(parseJsonArrayOrNull(row.get("disabled_for_tenant_ids")));
+                flag.setTargetSegments(parseJsonArrayOrNull(row.get("target_segments")));
+                flag.setMetadata(parseJsonArrayOrNull(row.get("metadata")));
+                flag.setDeleteFlag(false);
+                
+                featureFlags.add(flag);
+            } catch (Exception e) {
+                log.error("Failed to parse FeatureFlag row: {}", row, e);
+            }
+        }
+        
+        return featureFlags;
+    }
+    
+    /**
+     * FeatureStatus を解析
+     */
+    private static FeatureStatus parseFeatureStatus(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return FeatureStatus.STABLE;
+        }
+        try {
+            return FeatureStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown FeatureStatus: {}, defaulting to STABLE", value);
+            return FeatureStatus.STABLE;
+        }
+    }
+    
+    /**
+     * LicenseTier を解析（空の場合はnull）
+     */
+    private static LicenseTier parseLicenseTier(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LicenseTier.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown LicenseTier: {}, defaulting to null", value);
+            return null;
+        }
+    }
+    
+    /**
+     * LicenseResolveStrategy を解析
+     */
+    private static LicenseResolveStrategy parseLicenseResolveStrategy(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return LicenseResolveStrategy.TENANT_PRIORITY;
+        }
+        try {
+            return LicenseResolveStrategy.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown LicenseResolveStrategy: {}, defaulting to TENANT_PRIORITY", value);
+            return LicenseResolveStrategy.TENANT_PRIORITY;
+        }
+    }
+    
+    /**
+     * 整数を解析（デフォルト値あり）
+     */
+    private static Integer parseInteger(String value, int defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+    
+    /**
+     * JSON配列文字列を解析（空の場合はnull）
+     */
+    private static String parseJsonArrayOrNull(String value) {
+        if (value == null || value.trim().isEmpty() || "[]".equals(value.trim())) {
+            return null;
+        }
+        return value.trim();
     }
 }
