@@ -141,7 +141,7 @@ public class DatabaseUtil implements ApplicationContextAware {
             if (existingUser == null) {
                 userRepo.save(user);
             } else {
-                // 既存ユーザーの場合、username/emailがnullなら更新
+                // 既存ユーザーの場合、nullなフィールドを更新
                 boolean needUpdate = false;
                 if (existingUser.getUsername() == null) {
                     existingUser.setUsername(user.getUsername());
@@ -149,6 +149,11 @@ public class DatabaseUtil implements ApplicationContextAware {
                 }
                 if (existingUser.getEmail() == null) {
                     existingUser.setEmail(user.getEmail());
+                    needUpdate = true;
+                }
+                // rolesがnullの場合はCSVから読み込んだ値で更新
+                if (existingUser.getRoles() == null && user.getRoles() != null) {
+                    existingUser.setRoles(user.getRoles());
                     needUpdate = true;
                 }
                 if (needUpdate) {

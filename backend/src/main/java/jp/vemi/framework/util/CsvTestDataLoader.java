@@ -149,6 +149,7 @@ public class CsvTestDataLoader {
                 user.setLastName(row.get("lastName"));
                 user.setIsActive(Boolean.parseBoolean(row.get("isActive")));
                 user.setEmailVerified(Boolean.parseBoolean(row.get("emailVerified")));
+                user.setRoles(row.get("roles")); // roles カラムを読み込み
                 user.setLastLoginAt(now);
                 
                 users.add(user);

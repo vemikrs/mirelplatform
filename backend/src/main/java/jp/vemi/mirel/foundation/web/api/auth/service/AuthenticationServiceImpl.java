@@ -12,6 +12,7 @@ import jp.vemi.mirel.security.jwt.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,8 +21,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 認証サービス実装.
@@ -119,7 +123,7 @@ public class AuthenticationServiceImpl {
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, List.of()
+                    user.getUserId(), null, buildAuthoritiesFromUser(user)
                 )
             );
         } else {
@@ -160,7 +164,7 @@ public class AuthenticationServiceImpl {
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                 new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, List.of()
+                    user.getUserId(), null, buildAuthoritiesFromUser(user)
                 )
             );
         } else {
@@ -489,5 +493,33 @@ public class AuthenticationServiceImpl {
                 .displayName(tenant.getDisplayName())
                 .build() : null)
             .build();
+    }
+
+    /**
+     * ユーザーのロール文字列からSpring Security権限リストを生成
+     * ロールはカンマ(,)またはパイプ(|)で区切られた文字列
+     * 
+     * @param user ユーザー
+     * @return 権限リスト
+     */
+    private List<SimpleGrantedAuthority> buildAuthoritiesFromUser(User user) {
+        String roles = user.getRoles();
+        if (roles == null || roles.isBlank()) {
+            // デフォルトでUSERロールを付与
+            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        
+        // カンマまたはパイプで区切り
+        return Arrays.stream(roles.split("[,|]"))
+            .map(String::trim)
+            .filter(role -> !role.isEmpty())
+            .map(role -> {
+                // ROLE_ プレフィックスがない場合は追加
+                if (!role.startsWith("ROLE_")) {
+                    return new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
+                }
+                return new SimpleGrantedAuthority(role.toUpperCase());
+            })
+            .collect(Collectors.toList());
     }
 }

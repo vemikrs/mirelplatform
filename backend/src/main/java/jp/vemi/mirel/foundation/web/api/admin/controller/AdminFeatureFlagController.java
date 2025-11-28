@@ -40,6 +40,7 @@ public class AdminFeatureFlagController {
      * フィーチャーフラグ一覧取得
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<FeatureFlagListResponse> listFeatureFlags(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,

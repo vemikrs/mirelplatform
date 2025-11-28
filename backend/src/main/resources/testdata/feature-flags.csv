@@ -1,9 +1,9 @@
 id,feature_key,feature_name,description,application_id,status,in_development,required_license_tier,enabled_by_default,rollout_percentage,license_resolve_strategy,enabled_for_user_ids,enabled_for_tenant_ids,disabled_for_user_ids,disabled_for_tenant_ids,target_segments,metadata
-ff-pm-001,promarker.basic_generation,基本コード生成,単一ファイルのコード生成機能,promarker,STABLE,false,FREE,true,100,TENANT_PRIORITY,,,,,[]
-ff-pm-002,promarker.multi_file_generation,複数ファイル生成,複数ファイルの一括コード生成,promarker,STABLE,false,PRO,true,100,TENANT_PRIORITY,,,,,[]
-ff-pm-003,promarker.stencil_editor,ステンシルエディタ,カスタムテンプレート編集・バージョン管理,promarker,STABLE,false,PRO,true,100,TENANT_PRIORITY,,,,,[]
-ff-pm-004,promarker.custom_stencil_upload,カスタムステンシルアップロード,独自ステンシルのアップロード機能,promarker,BETA,false,MAX,true,100,TENANT_PRIORITY,,,,,[]
-ff-sys-001,users_tenants_management,ユーザ & テナント管理,認証・権限・テナントスコープ統合管理,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[]
-ff-sys-002,themes_switcher,テーマスイッチャ,ブランド毎のテーマ・配色切替,mirelplatform,ALPHA,true,,true,100,TENANT_PRIORITY,,,,,[]
-ff-sys-003,menu_nav_management,メニュー/ナビ集中管理,統一メニュー管理システム,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[]
-ff-sys-004,context_management,コンテキスト管理,利用者・テナント・業務文脈の状態共有,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[]
+ff-pm-001,promarker.basic_generation,基本コード生成,単一ファイルのコード生成機能,promarker,STABLE,false,FREE,true,100,TENANT_PRIORITY,,,,,[],
+ff-pm-002,promarker.multi_file_generation,複数ファイル生成,複数ファイルの一括コード生成,promarker,STABLE,false,PRO,true,100,TENANT_PRIORITY,,,,,[],
+ff-pm-003,promarker.stencil_editor,ステンシルエディタ,カスタムテンプレート編集・バージョン管理,promarker,STABLE,false,PRO,true,100,TENANT_PRIORITY,,,,,[],
+ff-pm-004,promarker.custom_stencil_upload,カスタムステンシルアップロード,独自ステンシルのアップロード機能,promarker,BETA,false,MAX,true,100,TENANT_PRIORITY,,,,,[],
+ff-sys-001,users_tenants_management,ユーザ & テナント管理,認証・権限・テナントスコープ統合管理,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[],
+ff-sys-002,themes_switcher,テーマスイッチャ,ブランド毎のテーマ・配色切替,mirelplatform,ALPHA,true,,true,100,TENANT_PRIORITY,,,,,[],
+ff-sys-003,menu_nav_management,メニュー/ナビ集中管理,統一メニュー管理システム,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[],
+ff-sys-004,context_management,コンテキスト管理,利用者・テナント・業務文脈の状態共有,mirelplatform,PLANNING,true,,true,100,TENANT_PRIORITY,,,,,[],
