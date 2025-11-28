@@ -21,6 +21,7 @@ const DialogOverlay = React.forwardRef<
     style={{ 
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       zIndex: 110,
+      pointerEvents: 'auto',
       ...style 
     }}
     {...props}
@@ -31,7 +32,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, style, ...props }, ref) => (
+>(({ className, children, style, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -48,6 +49,26 @@ const DialogContent = React.forwardRef<
         isolation: 'isolate',
         ...style
       })}
+      onPointerDownOutside={(e) => {
+        // Selectやその他のPortal要素のクリックを許可
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-radix-select-content]') || 
+            target.closest('[role="listbox"]') ||
+            target.closest('[data-radix-popper-content-wrapper]')) {
+          e.preventDefault();
+        }
+        onPointerDownOutside?.(e);
+      }}
+      onInteractOutside={(e) => {
+        // Selectやその他のPortal要素のインタラクションを許可
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-radix-select-content]') || 
+            target.closest('[role="listbox"]') ||
+            target.closest('[data-radix-popper-content-wrapper]')) {
+          e.preventDefault();
+        }
+        onInteractOutside?.(e);
+      }}
       {...props}
     >
       {children}
