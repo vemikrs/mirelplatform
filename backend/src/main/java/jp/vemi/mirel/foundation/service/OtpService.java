@@ -195,6 +195,8 @@ public class OtpService {
         SystemUser systemUser = systemUserRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
         
+        log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
+        
         // 有効なOTPトークン取得
         OtpToken token = otpTokenRepository
             .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
@@ -203,10 +205,15 @@ public class OtpService {
         
         if (token == null) {
             otpVerifyFailedCounter.increment();
+            log.warn("OTP検証失敗: トークンが見つからないか期限切れ - email={}, purpose={}, systemUserId={}", 
+                email, purpose, systemUser.getId());
             logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false, 
                 "トークンが見つからないか期限切れ", ipAddress, userAgent, null);
             return false;
         }
+        
+        log.info("OTPトークン発見: tokenId={}, expiresAt={}, attemptCount={}/{}", 
+            token.getId(), token.getExpiresAt(), token.getAttemptCount(), token.getMaxAttempts());
         
         // 試行回数チェック
         if (token.getAttemptCount() >= token.getMaxAttempts()) {
@@ -220,9 +227,13 @@ public class OtpService {
         String otpHash = hashOtp(otpCode);
         token.incrementAttemptCount();
         
+        log.info("OTPコード検証: 入力={}, 入力Hash={}, 保存Hash={}", 
+            otpCode, otpHash.substring(0, 16) + "...", token.getOtpHash().substring(0, 16) + "...");
+        
         if (!token.getOtpHash().equals(otpHash)) {
             otpTokenRepository.save(token);
             otpVerifyFailedCounter.increment();
+            log.warn("OTP検証失敗: コード不一致 - email={}, attemptCount={}", email, token.getAttemptCount());
             logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false, 
                 "OTPコード不一致", ipAddress, userAgent, null);
             return false;

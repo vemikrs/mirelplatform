@@ -4,6 +4,7 @@
 package jp.vemi.framework.util;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -84,7 +85,7 @@ public class DatabaseUtil implements ApplicationContextAware {
 
     /**
      * SaaS認証テストデータを初期化 (開発環境のみ)
-     * - SystemUser: admin@example.com / user@example.com (password: password123)
+     * - SystemUser: CSVから読み込み (admin, user01-user10)
      * - Tenant: default, enterprise-001
      * - User: 各SystemUserに紐づくアプリケーションユーザー
      * - UserTenant: テナント参加情報
@@ -98,41 +99,14 @@ public class DatabaseUtil implements ApplicationContextAware {
         ApplicationLicenseRepository licenseRepo = getApplicationLicenseRepository();
         PasswordEncoder passwordEncoder = getPasswordEncoder();
 
-        // 既にデータがあればスキップ -> 既存データがある場合も補正のためにチェックを行うように変更
-        // if (systemUserRepo.count() > 0) {
-        // return;
-        // }
-
         Instant now = Instant.now();
-        String encodedPassword = passwordEncoder.encode("password123");
 
-        // 1. SystemUsers
-        UUID adminSystemUserId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
-        if (!systemUserRepo.existsById(adminSystemUserId)) {
-            SystemUser adminSystemUser = new SystemUser();
-            adminSystemUser.setId(adminSystemUserId);
-            adminSystemUser.setUsername("admin");
-            adminSystemUser.setEmail("admin@example.com");
-            adminSystemUser.setPasswordHash(encodedPassword);
-            adminSystemUser.setEmailVerified(true);
-            adminSystemUser.setIsActive(true);
-            adminSystemUser.setAccountLocked(false);
-            adminSystemUser.setFailedLoginAttempts(0);
-            systemUserRepo.save(adminSystemUser);
-        }
-
-        UUID userSystemUserId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
-        if (!systemUserRepo.existsById(userSystemUserId)) {
-            SystemUser userSystemUser = new SystemUser();
-            userSystemUser.setId(userSystemUserId);
-            userSystemUser.setUsername("user");
-            userSystemUser.setEmail("user@example.com");
-            userSystemUser.setPasswordHash(encodedPassword);
-            userSystemUser.setEmailVerified(true);
-            userSystemUser.setIsActive(true);
-            userSystemUser.setAccountLocked(false);
-            userSystemUser.setFailedLoginAttempts(0);
-            systemUserRepo.save(userSystemUser);
+        // 1. SystemUsers (CSVから読み込み)
+        List<SystemUser> systemUsers = CsvTestDataLoader.loadSystemUsers(passwordEncoder);
+        for (SystemUser systemUser : systemUsers) {
+            if (!systemUserRepo.existsById(systemUser.getId())) {
+                systemUserRepo.save(systemUser);
+            }
         }
 
         // 2. Tenants
@@ -154,61 +128,27 @@ public class DatabaseUtil implements ApplicationContextAware {
             tenantRepo.save(enterpriseTenant);
         }
 
-        // 3. Users (Application Data)
-        // Admin User
-        User adminUser = userRepo.findById("user-admin-001").orElse(new User());
-        boolean needSaveAdmin = false;
-        if (adminUser.getUserId() == null) {
-            adminUser.setUserId("user-admin-001");
-            adminUser.setSystemUserId(adminSystemUserId);
-            adminUser.setTenantId("default");
-            adminUser.setDisplayName("Admin User");
-            adminUser.setFirstName("Admin");
-            adminUser.setLastName("User");
-            adminUser.setIsActive(true);
-            adminUser.setEmailVerified(true);
-            adminUser.setLastLoginAt(now);
-            needSaveAdmin = true;
-        }
-        // Ensure username/email are set (fix for null username issue)
-        if (adminUser.getUsername() == null) {
-            adminUser.setUsername("admin");
-            needSaveAdmin = true;
-        }
-        if (adminUser.getEmail() == null) {
-            adminUser.setEmail("admin@example.com");
-            needSaveAdmin = true;
-        }
-        if (needSaveAdmin) {
-            userRepo.save(adminUser);
-        }
-
-        // Regular User
-        User regularUser = userRepo.findById("user-regular-001").orElse(new User());
-        boolean needSaveUser = false;
-        if (regularUser.getUserId() == null) {
-            regularUser.setUserId("user-regular-001");
-            regularUser.setSystemUserId(userSystemUserId);
-            regularUser.setTenantId("default");
-            regularUser.setDisplayName("Regular User");
-            regularUser.setFirstName("Regular");
-            regularUser.setLastName("User");
-            regularUser.setIsActive(true);
-            regularUser.setEmailVerified(true);
-            regularUser.setLastLoginAt(now);
-            needSaveUser = true;
-        }
-        // Ensure username/email are set (fix for null username issue)
-        if (regularUser.getUsername() == null) {
-            regularUser.setUsername("user");
-            needSaveUser = true;
-        }
-        if (regularUser.getEmail() == null) {
-            regularUser.setEmail("user@example.com");
-            needSaveUser = true;
-        }
-        if (needSaveUser) {
-            userRepo.save(regularUser);
+        // 3. Users (Application Data - CSVから読み込み)
+        List<User> users = CsvTestDataLoader.loadUsers();
+        for (User user : users) {
+            User existingUser = userRepo.findById(user.getUserId()).orElse(null);
+            if (existingUser == null) {
+                userRepo.save(user);
+            } else {
+                // 既存ユーザーの場合、username/emailがnullなら更新
+                boolean needUpdate = false;
+                if (existingUser.getUsername() == null) {
+                    existingUser.setUsername(user.getUsername());
+                    needUpdate = true;
+                }
+                if (existingUser.getEmail() == null) {
+                    existingUser.setEmail(user.getEmail());
+                    needUpdate = true;
+                }
+                if (needUpdate) {
+                    userRepo.save(existingUser);
+                }
+            }
         }
 
         // 4. UserTenant (Associations)
@@ -223,15 +163,20 @@ public class DatabaseUtil implements ApplicationContextAware {
             userTenantRepo.save(utAdminDefault);
         }
 
-        if (!userTenantRepo.existsById("ut-user-default")) {
-            UserTenant utUserDefault = new UserTenant();
-            utUserDefault.setId("ut-user-default");
-            utUserDefault.setUserId("user-regular-001");
-            utUserDefault.setTenantId("default");
-            utUserDefault.setRoleInTenant("MEMBER");
-            utUserDefault.setIsDefault(true);
-            utUserDefault.setJoinedAt(now);
-            userTenantRepo.save(utUserDefault);
+        // user01-user10をdefaultテナントに追加
+        for (int i = 1; i <= 10; i++) {
+            String userId = String.format("user-regular-%03d", i);
+            String utId = String.format("ut-user-default-%03d", i);
+            if (!userTenantRepo.existsById(utId)) {
+                UserTenant ut = new UserTenant();
+                ut.setId(utId);
+                ut.setUserId(userId);
+                ut.setTenantId("default");
+                ut.setRoleInTenant("MEMBER");
+                ut.setIsDefault(true);
+                ut.setJoinedAt(now);
+                userTenantRepo.save(ut);
+            }
         }
 
         if (!userTenantRepo.existsById("ut-admin-enterprise")) {

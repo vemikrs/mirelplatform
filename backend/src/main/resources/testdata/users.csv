@@ -1,0 +1,13 @@
+userId,systemUserId,tenantId,username,email,displayName,firstName,lastName,isActive,emailVerified
+user-admin-001,550e8400-e29b-41d4-a716-446655440000,default,admin,admin@example.com,Admin User,Admin,User,true,true
+user-regular-001,550e8400-e29b-41d4-a716-446655440001,default,user01,user01@example.com,Regular User 01,Test,User01,true,true
+user-regular-002,550e8400-e29b-41d4-a716-446655440002,default,user02,user02@example.com,Regular User 02,Test,User02,true,true
+user-regular-003,550e8400-e29b-41d4-a716-446655440003,default,user03,user03@example.com,Regular User 03,Test,User03,true,true
+user-regular-004,550e8400-e29b-41d4-a716-446655440004,default,user04,user04@example.com,Regular User 04,Test,User04,true,true
+user-regular-005,550e8400-e29b-41d4-a716-446655440005,default,user05,user05@example.com,Regular User 05,Test,User05,true,true
+user-regular-006,550e8400-e29b-41d4-a716-446655440006,default,user06,user06@example.com,Regular User 06,Test,User06,true,true
+user-regular-007,550e8400-e29b-41d4-a716-446655440007,default,user07,user07@example.com,Regular User 07,Test,User07,true,true
+user-regular-008,550e8400-e29b-41d4-a716-446655440008,default,user08,user08@example.com,Regular User 08,Test,User08,true,true
+user-regular-009,550e8400-e29b-41d4-a716-446655440009,default,user09,user09@example.com,Regular User 09,Test,User09,true,true
+user-regular-010,550e8400-e29b-41d4-a716-44665544000a,default,user10,user10@example.com,Regular User 10,Test,User10,true,true
+

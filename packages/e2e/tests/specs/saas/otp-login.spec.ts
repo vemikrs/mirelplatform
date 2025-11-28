@@ -14,11 +14,24 @@ import { test, expect } from '@playwright/test';
  * - Frontend running on http://localhost:5173
  * - MailHog running on http://localhost:8025
  * - Test user: user@example.com
+ * 
+ * Note: Retries disabled due to rate limiting (6 requests per 60 seconds)
  */
 
 test.describe('OTP Login Flow', () => {
   
   test('should complete full OTP login flow and load user data', async ({ page, request }) => {
+    test.setTimeout(60000); // Increase timeout for rate limit handling
+    
+    // Use existing test user (required for OTP verify)
+    const testEmail = 'user01@example.com';
+    
+    // ============================================
+    // Step 0: Clear MailHog messages
+    // ============================================
+    await request.delete('http://localhost:8025/api/v1/messages');
+    console.log('[E2E] MailHog messages cleared');
+    
     // ============================================
     // Step 1: Navigate to login page
     // ============================================
@@ -39,8 +52,8 @@ test.describe('OTP Login Flow', () => {
       { timeout: 10000 }
     );
 
-    await page.fill('input[type="email"]', 'user@example.com');
-    await page.click('button:has-text("Send")');
+    await page.fill('input[type="email"]', testEmail);
+    await page.click('button:has-text("認証コードを送信")');
 
     const otpRequestResponse = await otpRequestPromise;
     const otpRequestData = await otpRequestResponse.json();
@@ -59,15 +72,21 @@ test.describe('OTP Login Flow', () => {
     
     console.log('[E2E] MailHog messages count:', mailhogData.items?.length);
     
+    // Since we cleared MailHog before the test, the first (and only) email is our OTP
     const latestEmail = mailhogData.items?.[0];
     expect(latestEmail).toBeDefined();
     
     const emailBody = latestEmail.Content.Body;
-    const otpCodeMatch = emailBody.match(/\d{6}/);
+    console.log('[E2E] Email Body (first 500 chars):', emailBody.substring(0, 500));
+    
+    // Extract OTP from HTML: <div class="code">XXXXXX</div>
+    // The email body is quoted-printable encoded, so we need to match within HTML
+    const otpCodeMatch = emailBody.match(/<div class=3D"code">(\d{6})<\/div>/);
     expect(otpCodeMatch).not.toBeNull();
     
-    const otpCode = otpCodeMatch![0];
-    console.log('[E2E] Extracted OTP Code:', otpCode);
+    const otpCode = otpCodeMatch![1];
+    console.log('[E2E] Extracted OTP Code from HTML:', otpCode);
+    console.log('[E2E] Full regex match:', otpCodeMatch);
 
     // ============================================
     // Step 5: Navigate to OTP verify page
@@ -81,6 +100,9 @@ test.describe('OTP Login Flow', () => {
     const otpInputs = page.locator('input[type="text"]');
     const inputCount = await otpInputs.count();
     
+    console.log('[E2E] OTP input fields count:', inputCount);
+    console.log('[E2E] OTP Code to enter:', otpCode);
+    
     if (inputCount === 6) {
       // Separate inputs for each digit
       for (let i = 0; i < 6; i++) {
@@ -90,6 +112,9 @@ test.describe('OTP Login Flow', () => {
       // Single input field
       await otpInputs.first().fill(otpCode);
     }
+
+    // Wait for input to be filled
+    await page.waitForTimeout(500);
 
     // ============================================
     // Step 7: Submit OTP and monitor API calls
@@ -109,6 +134,7 @@ test.describe('OTP Login Flow', () => {
       { timeout: 10000 }
     );
 
+    // Click submit button
     await page.click('button[type="submit"]');
 
     // ============================================
@@ -119,11 +145,13 @@ test.describe('OTP Login Flow', () => {
     
     console.log('[E2E] OTP Verify Response:', otpVerifyData);
     expect(otpVerifyData).toHaveProperty('data');
-    expect(otpVerifyData.data).toHaveProperty('accessToken');
+    expect(otpVerifyData.data).toHaveProperty('tokens');
+    expect(otpVerifyData.data.tokens).toHaveProperty('accessToken');
     expect(otpVerifyData.data).toHaveProperty('user');
+    expect(otpVerifyData.data).toHaveProperty('currentTenant');
 
     // ============================================
-    // Step 9: Verify tenants/licenses API calls
+    // Step 9: Verify tenants/licenses API calls with Authorization header
     // ============================================
     try {
       const tenantsResponse = await tenantsPromise;
@@ -132,8 +160,16 @@ test.describe('OTP Login Flow', () => {
       console.log('[E2E] Tenants Response Status:', tenantsResponse.status());
       console.log('[E2E] Licenses Response Status:', licensesResponse.status());
 
+      // Check for Authorization header (main fix verification)
+      const tenantsRequest = tenantsResponse.request();
+      const headers = tenantsRequest.headers();
+      console.log('[E2E] Tenants Request Headers:', headers);
+      
+      expect(headers['authorization']).toBeDefined();
+      expect(headers['authorization']).toMatch(/^Bearer\s+[\w-]+\.[\w-]+\.[\w-]+$/);
+      
       // EXPECTED: 200 OK with JWT in Authorization header
-      // ACTUAL (BUG): 302 redirect to GitHub OAuth
+      // ACTUAL (BUG BEFORE FIX): 302 redirect to GitHub OAuth
       
       if (tenantsResponse.status() === 302) {
         const location = tenantsResponse.headers()['location'];
@@ -165,49 +201,11 @@ test.describe('OTP Login Flow', () => {
     await expect(page).toHaveURL(/\/home/);
 
     // ============================================
-    // Step 11: Verify user is authenticated
+    // Step 11: Verify user is authenticated and redirected to /home
     // ============================================
-    await expect(page.locator('text=Regular User')).toBeVisible();
-  });
-
-  test('should show JWT token in Authorization header after OTP login', async ({ page, request }) => {
-    // Navigate and complete OTP login (abbreviated)
-    await page.goto('http://localhost:5173/login');
-    await page.fill('input[type="email"]', 'user@example.com');
-    await page.click('button:has-text("Send")');
-
-    await page.waitForTimeout(2000);
-
-    const mailhogResponse = await request.get('http://localhost:8025/api/v2/messages');
-    const mailhogData = await mailhogResponse.json();
-    const otpCode = mailhogData.items[0].Content.Body.match(/\d{6}/)[0];
-
-    await page.waitForURL(/\/auth\/otp-verify/);
-    const otpInputs = page.locator('input[type="text"]');
-    const inputCount = await otpInputs.count();
+    await page.waitForURL(/\/home/);
     
-    if (inputCount === 6) {
-      for (let i = 0; i < 6; i++) {
-        await otpInputs.nth(i).fill(otpCode[i]);
-      }
-    } else {
-      await otpInputs.first().fill(otpCode);
-    }
-
-    // Monitor network request headers
-    page.on('request', request => {
-      if (request.url().includes('/mapi/users/me/tenants')) {
-        const headers = request.headers();
-        console.log('[E2E] Tenants Request Headers:', headers);
-        
-        // EXPECTED: Authorization: Bearer <JWT>
-        // ACTUAL (BUG): Authorization header missing or invalid
-        expect(headers['authorization']).toMatch(/^Bearer\s+[\w-]+\.[\w-]+\.[\w-]+$/);
-      }
-    });
-
-    await page.click('button[type="submit"]');
-    
-    await page.waitForURL('http://localhost:5173/home', { timeout: 10000 });
+    // Verify user display name is visible (using first match)
+    await expect(page.locator('text=Regular User').first()).toBeVisible();
   });
 });
