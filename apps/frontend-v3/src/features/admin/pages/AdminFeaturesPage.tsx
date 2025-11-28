@@ -14,14 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
-  Label,
+  FormLabel,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Textarea,
-  Switch,
   SectionHeading,
 } from '@mirel/ui';
 import { 
@@ -51,13 +49,13 @@ import {
   type UpdateFeatureFlagRequest,
 } from '@/lib/api/features';
 
-// Status badge configuration
-const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: string }> = {
-  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'green' },
-  BETA: { icon: <Beaker className="size-3.5" />, color: 'yellow' },
-  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'orange' },
-  PLANNING: { icon: <Clock className="size-3.5" />, color: 'gray' },
-  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'red' },
+// Status badge configuration - using valid Badge variant colors
+const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: 'success' | 'warning' | 'info' | 'neutral' | 'destructive' }> = {
+  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'success' },
+  BETA: { icon: <Beaker className="size-3.5" />, color: 'warning' },
+  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'info' },
+  PLANNING: { icon: <Clock className="size-3.5" />, color: 'neutral' },
+  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'destructive' },
 };
 
 export function AdminFeaturesPage() {
@@ -164,7 +162,7 @@ export function AdminFeaturesPage() {
               value={statusFilter} 
               onValueChange={(v) => setStatusFilter(v as FeatureStatus | 'ALL')}
             >
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="ステータス" />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +178,7 @@ export function AdminFeaturesPage() {
               value={inDevFilter === undefined ? 'ALL' : inDevFilter.toString()}
               onValueChange={(v) => setInDevFilter(v === 'ALL' ? undefined : v === 'true')}
             >
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="開発状態" />
               </SelectTrigger>
               <SelectContent>
@@ -267,7 +265,7 @@ export function AdminFeaturesPage() {
       <FeatureFormDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        onSubmit={(data) => createMutation.mutate(data)}
+        onSubmit={(data) => createMutation.mutate(data as CreateFeatureFlagRequest)}
         isLoading={createMutation.isPending}
         title="新規フィーチャーフラグ作成"
       />
@@ -332,7 +330,7 @@ function FeatureRow({ feature, onEdit, onDelete }: FeatureRowProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-medium truncate">{feature.featureName}</span>
-          <Badge variant={status.color as 'green' | 'yellow' | 'neutral'} className="gap-1">
+          <Badge variant={status.color} className="gap-1">
             {status.icon}
             {getStatusLabel(feature.status)}
           </Badge>
@@ -448,7 +446,7 @@ function FeatureFormDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="featureKey">機能キー *</Label>
+                <FormLabel htmlFor="featureKey">機能キー *</FormLabel>
                 <Input
                   id="featureKey"
                   value={formData.featureKey}
@@ -462,7 +460,7 @@ function FeatureFormDialog({
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="featureName">機能名 *</Label>
+                <FormLabel htmlFor="featureName">機能名 *</FormLabel>
                 <Input
                   id="featureName"
                   value={formData.featureName}
@@ -474,19 +472,20 @@ function FeatureFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">説明</Label>
-              <Textarea
+              <FormLabel htmlFor="description">説明</FormLabel>
+              <textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="この機能の説明..."
                 rows={2}
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="applicationId">アプリケーションID *</Label>
+                <FormLabel htmlFor="applicationId">アプリケーションID *</FormLabel>
                 <Select
                   value={formData.applicationId}
                   onValueChange={(v) => setFormData({ ...formData, applicationId: v })}
@@ -501,7 +500,7 @@ function FeatureFormDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="status">ステータス</Label>
+                <FormLabel htmlFor="status">ステータス</FormLabel>
                 <Select
                   value={formData.status}
                   onValueChange={(v) => setFormData({ ...formData, status: v as FeatureStatus })}
@@ -522,7 +521,7 @@ function FeatureFormDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="requiredLicenseTier">必要ライセンス</Label>
+                <FormLabel htmlFor="requiredLicenseTier">必要ライセンス</FormLabel>
                 <Select
                   value={formData.requiredLicenseTier ?? 'NONE'}
                   onValueChange={(v) => setFormData({ 
@@ -543,7 +542,7 @@ function FeatureFormDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rolloutPercentage">ロールアウト比率</Label>
+                <FormLabel htmlFor="rolloutPercentage">ロールアウト比率</FormLabel>
                 <Input
                   id="rolloutPercentage"
                   type="number"
@@ -560,32 +559,36 @@ function FeatureFormDialog({
 
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
-                <Switch
+                <input
+                  type="checkbox"
                   id="enabledByDefault"
                   checked={formData.enabledByDefault}
-                  onCheckedChange={(v) => setFormData({ ...formData, enabledByDefault: v })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, enabledByDefault: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <Label htmlFor="enabledByDefault">デフォルトで有効</Label>
+                <FormLabel htmlFor="enabledByDefault">デフォルトで有効</FormLabel>
               </div>
               <div className="flex items-center gap-2">
-                <Switch
+                <input
+                  type="checkbox"
                   id="inDevelopment"
                   checked={formData.inDevelopment}
-                  onCheckedChange={(v) => setFormData({ ...formData, inDevelopment: v })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, inDevelopment: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <Label htmlFor="inDevelopment">開発中</Label>
+                <FormLabel htmlFor="inDevelopment">開発中</FormLabel>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="metadata">メタデータ (JSON)</Label>
-              <Textarea
+              <FormLabel htmlFor="metadata">メタデータ (JSON)</FormLabel>
+              <textarea
                 id="metadata"
                 value={formData.metadata}
-                onChange={(e) => setFormData({ ...formData, metadata: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, metadata: e.target.value })}
                 placeholder='{"key": "value"}'
                 rows={3}
-                className="font-mono text-sm"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-mono"
               />
             </div>
           </div>
