@@ -1,4 +1,6 @@
-import { Card } from '@mirel/ui';
+import { Card, Badge, Button } from '@mirel/ui';
+import { AlertTriangle, CheckCircle, Circle, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 /**
  * SaaS実装ステータスページ
@@ -7,7 +9,33 @@ import { Card } from '@mirel/ui';
 export function SaaSStatusPage() {
   return (
     <div className="container mx-auto p-8 max-w-6xl">
-      <h1 className="text-4xl font-bold mb-8">ProMarker SaaS化対応 実装状況</h1>
+      {/* Developer Warning Banner */}
+      <div 
+        className="mb-8 p-4 rounded-xl border flex items-start gap-3"
+        style={{
+          background: 'hsl(var(--warning) / 0.1)',
+          borderColor: 'hsl(var(--warning) / 0.3)',
+        }}
+      >
+        <AlertTriangle className="size-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <h3 className="font-semibold text-amber-800">開発者向けページ</h3>
+          <p className="text-sm text-amber-700 mt-1">
+            このページはSaaS化実装の進捗状況を開発チーム・ステークホルダーと共有するためのものです。
+            実装完了後は削除または非公開化を検討してください。
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-bold">ProMarker SaaS化対応 実装状況</h1>
+        <Button asChild variant="outline">
+          <Link to="/admin/features">
+            フィーチャーフラグ管理
+            <ArrowRight className="size-4 ml-2" />
+          </Link>
+        </Button>
+      </div>
 
       {/* Phase 1: データモデル */}
       <Card className="mb-6 p-6">
@@ -120,27 +148,98 @@ export function SaaSStatusPage() {
 
       {/* Phase 4: フロントエンド */}
       <Card className="mb-6 p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🔄 Phase 4: フロントエンド実装（進行中）</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-green-600">✅ Phase 4: フロントエンド実装（完了）</h2>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+            <CheckCircle className="size-4 text-green-500" />
             <span>authStore（Zustand）実装</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+            <CheckCircle className="size-4 text-green-500" />
             <span>ログイン画面（/login）</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-400">○</span>
-            <span>ヘッダー実装（TenantSwitcher, LicenseBadge, UserMenu）</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">○</span>
+            <CheckCircle className="size-4 text-green-500" />
             <span>サインアップ画面（/signup）</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-400">○</span>
+            <CheckCircle className="size-4 text-green-500" />
+            <span>OTP認証（Email + 6桁コード）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>OAuth2ログイン（GitHub）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>設定画面（Profile, Security）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>ホームダッシュボード（ライセンス・機能表示）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>フィーチャーフラグ管理画面（/admin/features）</span>
+            <Badge variant="success" className="text-xs">新機能</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Circle className="size-4 text-gray-400" />
             <span>管理画面（Users/Tenants/Licenses）</span>
+            <Badge variant="neutral" className="text-xs">計画中</Badge>
+          </div>
+        </div>
+      </Card>
+
+      {/* Feature Flag System */}
+      <Card className="mb-6 p-6">
+        <h2 className="text-2xl font-semibold mb-4 text-green-600">✅ フィーチャーフラグ管理システム</h2>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>FeatureFlag エンティティ（mir_feature_flag テーブル）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>FeatureFlagRepository 実装</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>FeatureFlagService CRUD操作</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>AdminFeatureFlagController（/admin/features）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>FeatureController（/features/available, /features/in-development）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>ExecutionContext.hasFeature() メソッド</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>CSV初期データ投入（8件のフィーチャーフラグ）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>ステータス管理（STABLE/BETA/ALPHA/PLANNING/DEPRECATED）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-4 text-green-500" />
+            <span>ライセンスティア連携（FREE/TRIAL/PRO/MAX）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Circle className="size-4 text-gray-400" />
+            <span>カナリアリリース（rolloutPercentage）</span>
+            <Badge variant="neutral" className="text-xs">Phase 2+</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Circle className="size-4 text-gray-400" />
+            <span>ライセンス解決戦略（licenseResolveStrategy）</span>
+            <Badge variant="neutral" className="text-xs">Phase 2+</Badge>
           </div>
         </div>
       </Card>
