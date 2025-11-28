@@ -93,6 +93,7 @@ public class OtpController {
                 .requestId(requestId)
                 .message("認証コードをメールに送信しました")
                 .expirationMinutes(otpProperties.getExpirationMinutes())
+                .resendCooldownSeconds(otpProperties.getResendCooldownSeconds())
                 .build();
             
             return ResponseEntity.ok(ApiResponse.<OtpResponseDto>builder()

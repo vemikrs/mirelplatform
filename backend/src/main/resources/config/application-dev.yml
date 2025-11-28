@@ -78,17 +78,20 @@ auth:
 jwt:
   secret: dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LTEyMzQ1Njc4OTBhYmNkZWY=
 
-# 開発環境用OTP設定 (有効期限を長めに)
+# 開発環境用OTP設定 (有効期限を長めに、E2Eテスト考慮)
 otp:
   expiration-minutes: 10
+  resend-cooldown-seconds: 10  # 再送信クールダウン(秒)
 
-# 開発環境用レート制限 (緩和)
+# 開発環境用レート制限 (緩和 - E2Eテスト考慮)
 rate-limit:
   otp:
-    request-per-minute: 10
+    request-per-minute: 6  # 60秒間に6回までリクエスト可能
     verify-per-minute: 20
 
 # 開発環境用メール設定 (MailHog)
+# 注: spring.mail は JavaMailSender Bean 生成用
+# email.provider は アプリケーション層のメール送信先制御用
 email:
   provider: smtp
   smtp:

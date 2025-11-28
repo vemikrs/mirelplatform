@@ -28,4 +28,9 @@ public class OtpResponseDto {
      * 有効期限（分）
      */
     private Integer expirationMinutes;
+    
+    /**
+     * 再送信クールダウン（秒）
+     */
+    private Integer resendCooldownSeconds;
 }
