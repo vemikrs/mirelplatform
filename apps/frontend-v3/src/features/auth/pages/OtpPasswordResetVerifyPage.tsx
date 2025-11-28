@@ -26,6 +26,9 @@ export function OtpPasswordResetVerifyPage() {
   useEffect(() => {
     if (!otpState || otpState.purpose !== 'PASSWORD_RESET') {
       navigate('/auth/password-reset');
+    } else {
+      // OTP状態から再送信カウントダウンを設定
+      setCountdown(otpState.resendCooldownSeconds ?? 60);
     }
   }, [otpState, navigate]);
 
@@ -52,7 +55,7 @@ export function OtpPasswordResetVerifyPage() {
   const { mutate: resendOtp, isPending: isResending } = useResendOtp({
     onSuccess: () => {
       setCanResend(false);
-      setCountdown(60);
+      setCountdown(otpState?.resendCooldownSeconds ?? 60);
       alert('認証コードを再送信しました');
     },
     onError: (errors) => {

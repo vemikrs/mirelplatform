@@ -12,6 +12,7 @@ interface OtpState {
   requestId: string | null;
   expiresAt: Date | null;
   expirationMinutes: number | null;
+  resendCooldownSeconds: number | null;
 }
 
 interface AuthState {
@@ -38,7 +39,7 @@ interface AuthState {
   updateUser: (updatedUser: Partial<UserProfile>) => void;
   
   // OTP Actions
-  setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => void;
+  setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number, resendCooldownSeconds?: number) => void;
   clearOtpState: () => void;
   isOtpExpired: () => boolean;
 }
@@ -177,7 +178,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         set({ user: { ...user, ...updatedUser } });
       },
       
-      setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number) => {
+      setOtpState: (email: string, purpose: OtpPurpose, requestId: string, expirationMinutes: number, resendCooldownSeconds?: number) => {
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + expirationMinutes);
         
@@ -188,6 +189,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             requestId,
             expiresAt,
             expirationMinutes,
+            resendCooldownSeconds: resendCooldownSeconds ?? null,
           },
         });
       },

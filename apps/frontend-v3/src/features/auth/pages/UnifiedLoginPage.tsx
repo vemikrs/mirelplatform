@@ -37,7 +37,7 @@ export function UnifiedLoginPage() {
   // OTP送信処理
   const { mutate: requestOtp, isPending: isOtpPending } = useRequestOtp({
     onSuccess: (data) => {
-      setOtpState(email, 'LOGIN', data.requestId, data.expirationMinutes);
+      setOtpState(email, 'LOGIN', data.requestId, data.expirationMinutes, data.resendCooldownSeconds);
       navigate('/auth/otp-verify');
     },
     onError: (errors) => {

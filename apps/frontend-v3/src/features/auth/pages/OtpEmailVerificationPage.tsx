@@ -29,6 +29,9 @@ export function OtpEmailVerificationPage() {
       if (!emailFromUrl) {
         navigate('/signup');
       }
+    } else {
+      // OTP状態から再送信カウントダウンを設定
+      setCountdown(otpState.resendCooldownSeconds ?? 60);
     }
   }, [otpState, emailFromUrl, navigate]);
 
@@ -58,7 +61,7 @@ export function OtpEmailVerificationPage() {
   const { mutate: resendOtp, isPending: isResending } = useResendOtp({
     onSuccess: () => {
       setCanResend(false);
-      setCountdown(60);
+      setCountdown(otpState?.resendCooldownSeconds ?? 60);
       alert('認証コードを再送信しました');
     },
     onError: (errors) => {

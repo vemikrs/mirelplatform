@@ -32,6 +32,9 @@ export function OtpVerifyPage() {
 
     if (!otpState || !otpState.email) {
       navigate('/login');
+    } else {
+      // OTP状態から再送信カウントダウンを設定
+      setCountdown(otpState.resendCooldownSeconds ?? 60);
     }
 
     setHasCheckedInitialOtpState(true);
@@ -54,15 +57,16 @@ export function OtpVerifyPage() {
       if (typeof data === 'object' && data !== null && 'tokens' in data) {
         // It's AuthenticationResponse (Login success)
         try {
+          // まずトークンをストアにセット(これにより apiClient がトークンを使用可能)
+          // @ts-expect-error - data is AuthenticationResponse
+          setAuth(data.user, data.currentTenant, data.tokens);
+          
           // OTP検証成功時、tenants と licenses も取得してストアに保存
           // これにより /home への遷移時に authLoader が再度取得する必要がなくなる
           const [tenants, licenses] = await Promise.all([
             getUserTenants(),
             getUserLicenses(),
           ]);
-
-          // @ts-expect-error - data is AuthenticationResponse
-          setAuth(data.user, data.currentTenant, data.tokens);
           
           // tenants と licenses を手動で設定
           useAuthStore.setState({ tenants, licenses });
@@ -72,8 +76,6 @@ export function OtpVerifyPage() {
         } catch (err) {
           console.error('Failed to fetch tenants/licenses after OTP login', err);
           // エラーでもログインは成功しているので遷移
-          // @ts-expect-error - data is AuthenticationResponse
-          setAuth(data.user, data.currentTenant, data.tokens);
           clearOtpState();
           navigate('/home', { replace: true });
         }
@@ -101,7 +103,7 @@ export function OtpVerifyPage() {
     onSuccess: () => {
       setError(null);
       setCanResend(false);
-      setCountdown(60);
+      setCountdown(otpState?.resendCooldownSeconds ?? 60);
       alert('認証コードを再送信しました');
     },
     onError: (errors) => {

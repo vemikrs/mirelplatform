@@ -17,7 +17,7 @@ export function OtpPasswordResetPage() {
 
   const { mutate: requestOtp, isPending } = useRequestOtp({
     onSuccess: (data) => {
-      setOtpState(email, 'PASSWORD_RESET', data.requestId, data.expirationMinutes);
+      setOtpState(email, 'PASSWORD_RESET', data.requestId, data.expirationMinutes, data.resendCooldownSeconds);
       navigate('/auth/password-reset-verify');
     },
     onError: (errors) => {

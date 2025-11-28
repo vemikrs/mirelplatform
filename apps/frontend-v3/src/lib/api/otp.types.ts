@@ -39,6 +39,7 @@ export interface OtpResponseData {
   requestId: string;
   message: string;
   expirationMinutes: number;
+  resendCooldownSeconds?: number;
 }
 
 /**

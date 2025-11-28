@@ -21,7 +21,7 @@ import { getApiErrors } from '@/lib/api/client';
  * sendOtp({ email: 'user@example.com', purpose: 'LOGIN' });
  */
 export function useRequestOtp(options?: {
-  onSuccess?: (data: { requestId: string; expirationMinutes: number }) => void;
+  onSuccess?: (data: { requestId: string; expirationMinutes: number; resendCooldownSeconds?: number }) => void;
   onError?: (errors: string[]) => void;
 }) {
   return useMutation({
@@ -31,6 +31,7 @@ export function useRequestOtp(options?: {
         options?.onSuccess?.({
           requestId: response.data.requestId,
           expirationMinutes: response.data.expirationMinutes,
+          resendCooldownSeconds: response.data.resendCooldownSeconds,
         });
       } else if (response.errors.length > 0) {
         options?.onError?.(response.errors);
@@ -101,14 +102,17 @@ export function useVerifyOtp(options?: {
  * resend({ email: 'user@example.com', purpose: 'LOGIN' });
  */
 export function useResendOtp(options?: {
-  onSuccess?: (expirationMinutes: number) => void;
+  onSuccess?: (data: { expirationMinutes: number; resendCooldownSeconds?: number }) => void;
   onError?: (errors: string[]) => void;
 }) {
   return useMutation({
     mutationFn: resendOtp,
     onSuccess: (response) => {
       if (response.data) {
-        options?.onSuccess?.(response.data.expirationMinutes);
+        options?.onSuccess?.({
+          expirationMinutes: response.data.expirationMinutes,
+          resendCooldownSeconds: response.data.resendCooldownSeconds,
+        });
       } else if (response.errors.length > 0) {
         options?.onError?.(response.errors);
       }
