@@ -18,6 +18,7 @@ import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage
 import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
+import { AdminFeaturesPage } from '@/features/admin';
 import { ProtectedRoute } from '@/components/auth';
 import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
@@ -212,6 +213,12 @@ export const router = createBrowserRouter([
           {
             path: 'settings/security',
             element: <SecurityPage />,
+          },
+          // Admin routes (requires ADMIN role)
+          {
+            path: 'admin/features',
+            element: <AdminFeaturesPage />,
+            handle: { title: '管理 - フィーチャーフラグ' },
           },
           // Backward compatibility route for E2E tests
           {

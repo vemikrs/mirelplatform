@@ -17,11 +17,13 @@ import org.springframework.stereotype.Component;
 import jp.vemi.mirel.foundation.abst.dao.entity.TenantSystemMaster;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantSystemMasterRepository;
 import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense;
+import jp.vemi.mirel.foundation.abst.dao.entity.FeatureFlag;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.entity.Tenant;
 import jp.vemi.mirel.foundation.abst.dao.entity.User;
 import jp.vemi.mirel.foundation.abst.dao.entity.UserTenant;
 import jp.vemi.mirel.foundation.abst.dao.repository.ApplicationLicenseRepository;
+import jp.vemi.mirel.foundation.abst.dao.repository.FeatureFlagRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
@@ -60,6 +62,10 @@ public class DatabaseUtil implements ApplicationContextAware {
 
     private static ApplicationLicenseRepository getApplicationLicenseRepository() {
         return context.getBean(ApplicationLicenseRepository.class);
+    }
+
+    private static FeatureFlagRepository getFeatureFlagRepository() {
+        return context.getBean(FeatureFlagRepository.class);
     }
 
     private static PasswordEncoder getPasswordEncoder() {
@@ -135,7 +141,7 @@ public class DatabaseUtil implements ApplicationContextAware {
             if (existingUser == null) {
                 userRepo.save(user);
             } else {
-                // 既存ユーザーの場合、username/emailがnullなら更新
+                // 既存ユーザーの場合、nullなフィールドを更新
                 boolean needUpdate = false;
                 if (existingUser.getUsername() == null) {
                     existingUser.setUsername(user.getUsername());
@@ -143,6 +149,11 @@ public class DatabaseUtil implements ApplicationContextAware {
                 }
                 if (existingUser.getEmail() == null) {
                     existingUser.setEmail(user.getEmail());
+                    needUpdate = true;
+                }
+                // rolesがnullの場合はCSVから読み込んだ値で更新
+                if (existingUser.getRoles() == null && user.getRoles() != null) {
+                    existingUser.setRoles(user.getRoles());
                     needUpdate = true;
                 }
                 if (needUpdate) {
@@ -225,6 +236,23 @@ public class DatabaseUtil implements ApplicationContextAware {
             tenantProLicense.setGrantedAt(now);
             tenantProLicense.setExpiresAt(now.plusSeconds(90 * 24 * 3600)); // 3 months
             licenseRepo.save(tenantProLicense);
+        }
+
+        // 6. FeatureFlags
+        initializeFeatureFlagData();
+    }
+
+    /**
+     * フィーチャーフラグ初期データを投入 (CSVから読み込み)
+     */
+    public static void initializeFeatureFlagData() {
+        FeatureFlagRepository featureFlagRepo = getFeatureFlagRepository();
+        
+        List<FeatureFlag> featureFlags = CsvTestDataLoader.loadFeatureFlags();
+        for (FeatureFlag flag : featureFlags) {
+            if (!featureFlagRepo.existsById(flag.getId())) {
+                featureFlagRepo.save(flag);
+            }
         }
     }
 

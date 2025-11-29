@@ -62,3 +62,6 @@ packages/e2e/traces/
 
 ### History Files ###
 .history/
+
+### Temp Files ###
+tmp/

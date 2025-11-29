@@ -32,9 +32,11 @@ import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
 import jp.vemi.mirel.security.CookieOrHeaderBearerTokenResolver;
+import jp.vemi.mirel.security.jwt.JwtAuthoritiesConverter;
 import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 
 @Configuration
 @EnableWebSecurity
@@ -56,6 +58,9 @@ public class WebSecurityConfig {
     
     @Autowired
     private OAuth2AuthenticationFailureHandler oauth2FailureHandler;
+    
+    @Autowired
+    private JwtAuthoritiesConverter jwtAuthoritiesConverter;
 
     /**
      * Spring Securityのセキュリティフィルタチェーンを構成します。
@@ -241,10 +246,16 @@ public class WebSecurityConfig {
         log.info("Configuring authentication: method={}, jwtSupported={}", authMethod, jwtSupported);
         if ("jwt".equals(authMethod) && jwtSupported) {
             log.info("Enabling JWT resource server configuration");
+            
+            // JWT の roles クレームを GrantedAuthority に変換するコンバーター
+            JwtAuthenticationConverter jwtAuthConverter = new JwtAuthenticationConverter();
+            jwtAuthConverter.setJwtGrantedAuthoritiesConverter(jwtAuthoritiesConverter);
+            
             http.oauth2ResourceServer(oauth2 -> oauth2
                     .bearerTokenResolver(new CookieOrHeaderBearerTokenResolver()) // Cookie対応
                     .jwt(jwt -> jwt
-                            .decoder(authenticationService.getJwtDecoder())))
+                            .decoder(authenticationService.getJwtDecoder())
+                            .jwtAuthenticationConverter(jwtAuthConverter)))
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         } else {

@@ -60,6 +60,18 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        // ExecutionContext解決処理（エラーがあっても続行）
+        resolveExecutionContext(request);
+
+        // フィルターチェーン実行（セキュリティ例外等はそのまま伝播）
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * ExecutionContextを解決する
+     * エラーがあってもリクエスト処理は続行する
+     */
+    private void resolveExecutionContext(HttpServletRequest request) {
         try {
             // Spring Securityからユーザ IDを取得
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -75,7 +87,6 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                 if (context == null) {
                     // ExecutionContext取得失敗時はスキップ
                     logger.debug("ExecutionContext not available, skipping context resolution");
-                    filterChain.doFilter(request, response);
                     return;
                 }
 
@@ -122,11 +133,10 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                     logger.warn("{\"event\":\"executionContext.userNotFound\",\"userId\":\"{}\"}", userId);
                 }
             }
-
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
-            logger.error("Error in ExecutionContextFilter", e);
-            filterChain.doFilter(request, response);
+            // ExecutionContext解決中のエラーはログして続行
+            // リクエスト処理自体は続行する（セキュリティチェック等は別途行われる）
+            logger.error("Error resolving ExecutionContext", e);
         }
     }
 
