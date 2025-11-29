@@ -25,59 +25,65 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OAuth2AuthenticationFailureHandler単体テスト")
 class OAuth2AuthenticationFailureHandlerTest {
-    
+
     @Mock
     private HttpServletRequest request;
-    
+
     @Mock
     private HttpServletResponse response;
-    
+
     @InjectMocks
     private OAuth2AuthenticationFailureHandler handler;
-    
+
     @BeforeEach
     void setUp() {
         // appBaseUrlを設定
         ReflectionTestUtils.setField(handler, "appBaseUrl", "http://localhost:5173");
+
+        // encodeRedirectURLのスタブ化 (DefaultRedirectStrategyで使用される)
+        org.mockito.Mockito.lenient().when(response.encodeRedirectURL(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
-    
+
     @Test
     @DisplayName("認証失敗: OAuth2エラーでリダイレクト")
     void testOnAuthenticationFailure_OAuth2Error() throws Exception {
         // Given: OAuth2認証エラー
         OAuth2Error error = new OAuth2Error("invalid_request", "Invalid request", null);
         AuthenticationException exception = new OAuth2AuthenticationException(error);
-        
+
         // When: 認証失敗ハンドラーを実行
         handler.onAuthenticationFailure(request, response, exception);
-        
+
         // Then: エラー付きログインページにリダイレクト
         verify(response).sendRedirect("http://localhost:5173/login?error=oauth2");
     }
-    
+
     @Test
     @DisplayName("認証失敗: 一般的な認証エラー")
     void testOnAuthenticationFailure_GeneralAuthenticationError() throws Exception {
         // Given: 一般的な認証エラー
-        AuthenticationException exception = new AuthenticationException("Authentication failed") {};
-        
+        AuthenticationException exception = new AuthenticationException("Authentication failed") {
+        };
+
         // When: 認証失敗ハンドラーを実行
         handler.onAuthenticationFailure(request, response, exception);
-        
+
         // Then: エラー付きログインページにリダイレクト
         verify(response).sendRedirect("http://localhost:5173/login?error=oauth2");
     }
-    
+
     @Test
     @DisplayName("認証失敗: カスタムappBaseUrl")
     void testOnAuthenticationFailure_CustomBaseUrl() throws Exception {
         // Given: カスタムappBaseUrl
         ReflectionTestUtils.setField(handler, "appBaseUrl", "https://example.com");
-        AuthenticationException exception = new AuthenticationException("Authentication failed") {};
-        
+        AuthenticationException exception = new AuthenticationException("Authentication failed") {
+        };
+
         // When: 認証失敗ハンドラーを実行
         handler.onAuthenticationFailure(request, response, exception);
-        
+
         // Then: カスタムURLでリダイレクト
         verify(response).sendRedirect("https://example.com/login?error=oauth2");
     }

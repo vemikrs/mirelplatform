@@ -247,7 +247,7 @@ public class DatabaseUtil implements ApplicationContextAware {
      */
     public static void initializeFeatureFlagData() {
         FeatureFlagRepository featureFlagRepo = getFeatureFlagRepository();
-        
+
         List<FeatureFlag> featureFlags = CsvTestDataLoader.loadFeatureFlags();
         for (FeatureFlag flag : featureFlags) {
             if (!featureFlagRepo.existsById(flag.getId())) {

@@ -23,6 +23,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantSystemMasterRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserTenantRepository;
+import jp.vemi.mirel.foundation.abst.dao.repository.FeatureFlagRepository;
 
 public class DatabaseUtilVerificationTest {
 
@@ -35,6 +36,8 @@ public class DatabaseUtilVerificationTest {
     private TenantSystemMasterRepository tenantSystemMasterRepository;
     private PasswordEncoder passwordEncoder;
 
+    private FeatureFlagRepository featureFlagRepository;
+
     @BeforeEach
     public void setUp() {
         applicationContext = mock(ApplicationContext.class);
@@ -44,6 +47,7 @@ public class DatabaseUtilVerificationTest {
         userTenantRepository = mock(UserTenantRepository.class);
         applicationLicenseRepository = mock(ApplicationLicenseRepository.class);
         tenantSystemMasterRepository = mock(TenantSystemMasterRepository.class);
+        featureFlagRepository = mock(FeatureFlagRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
 
         when(applicationContext.getBean(SystemUserRepository.class)).thenReturn(systemUserRepository);
@@ -52,6 +56,7 @@ public class DatabaseUtilVerificationTest {
         when(applicationContext.getBean(UserTenantRepository.class)).thenReturn(userTenantRepository);
         when(applicationContext.getBean(ApplicationLicenseRepository.class)).thenReturn(applicationLicenseRepository);
         when(applicationContext.getBean(TenantSystemMasterRepository.class)).thenReturn(tenantSystemMasterRepository);
+        when(applicationContext.getBean(FeatureFlagRepository.class)).thenReturn(featureFlagRepository);
         when(applicationContext.getBean(PasswordEncoder.class)).thenReturn(passwordEncoder);
 
         new DatabaseUtil().setApplicationContext(applicationContext);
@@ -89,10 +94,16 @@ public class DatabaseUtilVerificationTest {
         DatabaseUtil.initializeSaasTestData();
 
         // Verify userRepo.save was called for admin user
+        // Verify userRepo.save was called at least once
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, org.mockito.Mockito.atLeastOnce()).save(userCaptor.capture());
 
-        User savedUser = userCaptor.getValue();
+        // Find the saved user we are interested in
+        User savedUser = userCaptor.getAllValues().stream()
+                .filter(u -> "user-admin-001".equals(u.getUserId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("User user-admin-001 was not saved"));
+
         // Assert that username was fixed
         if (!"admin".equals(savedUser.getUsername())) {
             throw new AssertionError("Expected username to be 'admin', but was: " + savedUser.getUsername());

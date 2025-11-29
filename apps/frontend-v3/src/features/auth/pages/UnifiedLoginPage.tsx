@@ -174,6 +174,7 @@ export function UnifiedLoginPage() {
           {/* パスワードログイン展開式 */}
           <div className="mt-4">
             <button
+              id="password-login-toggle"
               type="button"
               onClick={() => setShowPasswordLogin(!showPasswordLogin)}
               className="w-full text-sm text-muted-foreground hover:text-primary hover:underline"

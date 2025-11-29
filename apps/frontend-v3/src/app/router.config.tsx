@@ -24,6 +24,11 @@ import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
+import { SchemaHomePage } from '@/features/schema/pages/SchemaHomePage';
+import { SchemaRecordListPage } from '@/features/schema/pages/SchemaRecordListPage';
+import { SchemaRecordDetailPage } from '@/features/schema/pages/SchemaRecordDetailPage';
+import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefinePage';
+import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -224,6 +229,41 @@ export const router = createBrowserRouter([
           {
             path: 'mirel/mste',
             element: <ProMarkerPageWithErrorBoundary />,
+          },
+        ],
+      },
+      {
+        path: 'apps/schema',
+        children: [
+          {
+            index: true,
+            element: <SchemaHomePage />,
+            handle: { title: 'Schema - Home' },
+          },
+          {
+            path: 'models',
+            element: <SchemaModelDefinePage />,
+            handle: { title: 'Schema - Model Definition' },
+          },
+          {
+            path: 'records',
+            element: <SchemaRecordListPage />,
+            handle: { title: 'Schema - Records' },
+          },
+          {
+            path: 'records/:modelId/new',
+            element: <SchemaRecordDetailPage />,
+            handle: { title: 'Schema - New Record' },
+          },
+          {
+            path: 'records/:modelId/:recordId',
+            element: <SchemaRecordDetailPage />,
+            handle: { title: 'Schema - Edit Record' },
+          },
+          {
+            path: 'codes',
+            element: <SchemaCodeMasterPage />,
+            handle: { title: 'Schema - Code Master' },
           },
         ],
       },

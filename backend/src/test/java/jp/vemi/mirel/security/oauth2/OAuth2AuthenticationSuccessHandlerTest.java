@@ -35,58 +35,62 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OAuth2AuthenticationSuccessHandler単体テスト")
 class OAuth2AuthenticationSuccessHandlerTest {
-    
+
     @Mock
     private JwtService jwtService;
 
     @Mock
     private ObjectProvider<JwtService> jwtServiceProvider;
-    
+
     @Mock
     private SystemUserRepository systemUserRepository;
-    
+
     @Mock
     private HttpServletRequest request;
-    
+
     @Mock
     private HttpServletResponse response;
-    
+
     @Mock
     private Authentication authentication;
-    
+
     @Mock
     private OAuth2User oauth2User;
-    
+
     @InjectMocks
     private OAuth2AuthenticationSuccessHandler handler;
-    
+
     private Map<String, Object> githubAttributes;
     private SystemUser systemUser;
     private String testToken;
-    
+
     @BeforeEach
     void setUp() {
         // appBaseUrlを設定
         ReflectionTestUtils.setField(handler, "appBaseUrl", "http://localhost:5173");
-        
+
+        // encodeRedirectURLのスタブ化 (DefaultRedirectStrategyで使用される)
+        org.mockito.Mockito.lenient().when(response.encodeRedirectURL(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         // GitHubユーザー属性
         githubAttributes = new HashMap<>();
         githubAttributes.put("id", 12345L);
         githubAttributes.put("login", "testuser");
         githubAttributes.put("email", "test@example.com");
         githubAttributes.put("avatar_url", "https://github.com/avatar.jpg");
-        
+
         // SystemUser
         systemUser = new SystemUser();
         systemUser.setId(UUID.randomUUID());
         systemUser.setEmail("test@example.com");
         systemUser.setOauth2Provider("github");
         systemUser.setOauth2ProviderId("12345");
-        
+
         // テスト用JWTトークン
         testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token";
     }
-    
+
     @Test
     @DisplayName("認証成功: JWT発行とリダイレクト")
     void testOnAuthenticationSuccess_Success() throws Exception {
@@ -97,14 +101,14 @@ class OAuth2AuthenticationSuccessHandlerTest {
                 .thenReturn(Optional.of(systemUser));
         when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         when(jwtService.generateToken(any(Authentication.class))).thenReturn(testToken);
-        
+
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
-        
+
         // Then: リダイレクトURL検証
         verify(response).sendRedirect("http://localhost:5173/auth/oauth2/success?token=" + testToken);
     }
-    
+
     @Test
     @DisplayName("認証失敗: SystemUserが見つからない")
     void testOnAuthenticationSuccess_UserNotFound() throws Exception {
@@ -113,16 +117,16 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(oauth2User.getAttributes()).thenReturn(githubAttributes);
         when(systemUserRepository.findByOauth2ProviderAndOauth2ProviderId(anyString(), anyString()))
                 .thenReturn(Optional.empty());
-        when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
-        
+        lenient().when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
+
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
-        
+
         // Then: エラー付きログインページにリダイレクト
         verify(response).sendRedirect("http://localhost:5173/login?error=user_not_found");
         verify(jwtService, never()).generateToken(any());
     }
-    
+
     @Test
     @DisplayName("認証失敗: JWT生成エラー")
     void testOnAuthenticationSuccess_JwtGenerationError() throws Exception {
@@ -134,28 +138,28 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(jwtServiceProvider.getIfAvailable()).thenReturn(jwtService);
         when(jwtService.generateToken(any(Authentication.class)))
                 .thenThrow(new RuntimeException("JWT generation failed"));
-        
+
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
-        
+
         // Then: エラー付きログインページにリダイレクト
         verify(response).sendRedirect("http://localhost:5173/login?error=oauth2");
     }
-    
+
     @Test
     @DisplayName("認証失敗: Principal型が不正")
     void testOnAuthenticationSuccess_InvalidPrincipalType() throws Exception {
         // Given: OAuth2User以外のPrincipal
         when(authentication.getPrincipal()).thenReturn("invalid-principal");
-        
+
         // When: 認証成功ハンドラーを実行
         handler.onAuthenticationSuccess(request, response, authentication);
-        
+
         // Then: エラー付きログインページにリダイレクト
         verify(response).sendRedirect("http://localhost:5173/login?error=oauth2");
         verify(jwtService, never()).generateToken(any());
     }
-    
+
     @Test
     @DisplayName("認証成功: カスタムappBaseUrl")
     void testOnAuthenticationSuccess_CustomBaseUrl() throws Exception {
