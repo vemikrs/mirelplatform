@@ -163,7 +163,7 @@ public class DatabaseUtil implements ApplicationContextAware {
         }
 
         // 4. UserTenant (Associations)
-        if (!userTenantRepo.existsById("ut-admin-default")) {
+        if (!userTenantRepo.findByUserIdAndTenantId("user-admin-001", "default").isPresent()) {
             UserTenant utAdminDefault = new UserTenant();
             utAdminDefault.setId("ut-admin-default");
             utAdminDefault.setUserId("user-admin-001");
@@ -178,7 +178,7 @@ public class DatabaseUtil implements ApplicationContextAware {
         for (int i = 1; i <= 10; i++) {
             String userId = String.format("user-regular-%03d", i);
             String utId = String.format("ut-user-default-%03d", i);
-            if (!userTenantRepo.existsById(utId)) {
+            if (!userTenantRepo.findByUserIdAndTenantId(userId, "default").isPresent()) {
                 UserTenant ut = new UserTenant();
                 ut.setId(utId);
                 ut.setUserId(userId);
@@ -190,7 +190,7 @@ public class DatabaseUtil implements ApplicationContextAware {
             }
         }
 
-        if (!userTenantRepo.existsById("ut-admin-enterprise")) {
+        if (!userTenantRepo.findByUserIdAndTenantId("user-admin-001", "enterprise-001").isPresent()) {
             UserTenant utAdminEnterprise = new UserTenant();
             utAdminEnterprise.setId("ut-admin-enterprise");
             utAdminEnterprise.setUserId("user-admin-001");

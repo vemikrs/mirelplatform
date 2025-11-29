@@ -18,10 +18,12 @@ test.describe('認証機能 Smoke E2E（簡易版）', () => {
       // ページタイトル確認
       await expect(page).toHaveTitle(/ProMarker|mirelplatform/i);
       
-      // フォーム要素の表示確認
-      await expect(loginPage.usernameOrEmailInput).toBeVisible();
-      await expect(loginPage.passwordInput).toBeVisible();
-      await expect(loginPage.loginButton).toBeVisible();
+      // OTPフォーム要素の表示確認
+      await expect(loginPage.otpEmailInput).toBeVisible();
+      await expect(loginPage.otpSubmitButton).toBeVisible();
+      
+      // パスワードログイン切り替えボタンの表示確認
+      await expect(loginPage.passwordToggle).toBeVisible();
       
       // ヘッダーテキスト確認
       await expect(page.locator('h1')).toContainText('mirelplatform');
@@ -35,32 +37,27 @@ test.describe('認証機能 Smoke E2E（簡易版）', () => {
       await expect(loginPage.githubLoginButton).toContainText('GitHub');
     });
     
-    test('OTPログインリンクが表示される', async ({ page }) => {
+    test('OTPログインフォームが表示される', async ({ page }) => {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
       
-      await expect(loginPage.otpLoginLink).toBeVisible();
-      await expect(loginPage.otpLoginLink).toContainText('OTP');
+      await expect(loginPage.otpEmailInput).toBeVisible();
+      await expect(loginPage.otpSubmitButton).toBeVisible();
     });
     
   });
   
   test.describe('ページ遷移', () => {
     
-    test('OTPログインリンクをクリックするとOTPログインページに遷移', async ({ page }) => {
-      const loginPage = new LoginPage(page);
-      await loginPage.goto();
-      
-      await loginPage.clickOtpLogin();
-      
-      // URLの確認
-      await page.waitForURL('**/auth/otp-login', { timeout: 10000 });
-      await expect(page).toHaveURL(/\/auth\/otp-login/);
-    });
+    // OTPログインリンクのテストは削除（メイン画面に統合されたため）
     
     test('パスワードリセットリンクをクリックするとパスワードリセットページに遷移', async ({ page }) => {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
+      
+      // パスワードフォームを表示
+      await loginPage.passwordToggle.click();
+      await loginPage.passwordResetLink.waitFor({ state: 'visible' });
       
       await loginPage.clickPasswordReset();
       
