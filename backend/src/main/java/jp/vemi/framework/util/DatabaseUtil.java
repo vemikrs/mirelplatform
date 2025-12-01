@@ -6,7 +6,6 @@ package jp.vemi.framework.util;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

@@ -22,10 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * JWT トークンに roles クレームが含まれ、正しく GrantedAuthority に変換されることを検証。
  */
 @SpringBootTest(properties = {
-    "auth.method=jwt",
-    "auth.jwt.enabled=true",
-    "auth.jwt.secret=test-secret-key-that-is-at-least-32-characters-long",
-    "spring.main.allow-bean-definition-overriding=true"
+        "auth.method=jwt",
+        "auth.jwt.enabled=true",
+        "auth.jwt.secret=test-secret-key-that-is-at-least-32-characters-long",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 @DisplayName("JWT ロール変換 統合テスト")
 class JwtRoleConversionIntegrationTest {
@@ -49,26 +49,24 @@ class JwtRoleConversionIntegrationTest {
     void jwtWithAdminRole_ShouldHaveAdminAuthority() {
         // Given: ADMIN ロールを持つ認証情報
         Authentication mockAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-            "user-admin-001",
-            null,
-            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))
-        );
+                "user-admin-001",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER")));
 
         // When: JWT トークンを生成
         String token = jwtService.generateToken(mockAuth);
 
         // Then: トークンをデコードしてロールを確認
         Jwt jwt = jwtService.decodeToken(token);
-        
-        @SuppressWarnings("unchecked")
+
         List<String> roles = jwt.getClaim("roles");
         assertThat(roles).containsExactlyInAnyOrder("ROLE_ADMIN", "ROLE_USER");
 
         // And: JwtAuthenticationConverter で正しく変換される
         Authentication convertedAuth = jwtAuthenticationConverter.convert(jwt);
         assertThat(convertedAuth.getAuthorities())
-            .extracting("authority")
-            .containsExactlyInAnyOrder("ROLE_ADMIN", "ROLE_USER");
+                .extracting("authority")
+                .containsExactlyInAnyOrder("ROLE_ADMIN", "ROLE_USER");
     }
 
     @Test
@@ -76,26 +74,24 @@ class JwtRoleConversionIntegrationTest {
     void jwtWithUserRole_ShouldHaveUserAuthority() {
         // Given: USER ロールのみを持つ認証情報
         Authentication mockAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-            "user-regular-001",
-            null,
-            List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+                "user-regular-001",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
         // When: JWT トークンを生成
         String token = jwtService.generateToken(mockAuth);
 
         // Then: トークンをデコードしてロールを確認
         Jwt jwt = jwtService.decodeToken(token);
-        
-        @SuppressWarnings("unchecked")
+
         List<String> roles = jwt.getClaim("roles");
         assertThat(roles).containsExactly("ROLE_USER");
 
         // And: JwtAuthenticationConverter で正しく変換される
         Authentication convertedAuth = jwtAuthenticationConverter.convert(jwt);
         assertThat(convertedAuth.getAuthorities())
-            .extracting("authority")
-            .containsExactly("ROLE_USER");
+                .extracting("authority")
+                .containsExactly("ROLE_USER");
     }
 
     @Test
@@ -103,18 +99,16 @@ class JwtRoleConversionIntegrationTest {
     void jwtWithNoRoles_ShouldHaveEmptyAuthorities() {
         // Given: ロールを持たない認証情報
         Authentication mockAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-            "user-no-role",
-            null,
-            List.of()
-        );
+                "user-no-role",
+                null,
+                List.of());
 
         // When: JWT トークンを生成
         String token = jwtService.generateToken(mockAuth);
 
         // Then: トークンをデコードしてロールを確認
         Jwt jwt = jwtService.decodeToken(token);
-        
-        @SuppressWarnings("unchecked")
+
         List<String> roles = jwt.getClaim("roles");
         assertThat(roles).isEmpty();
 
@@ -128,10 +122,9 @@ class JwtRoleConversionIntegrationTest {
     void hasRoleAdmin_WithAdminAuthority_ShouldPass() {
         // Given: ADMIN ロールを持つ認証情報
         Authentication mockAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-            "user-admin-001",
-            null,
-            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-        );
+                "user-admin-001",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
         // When: JWT トークンを生成してデコード
         String token = jwtService.generateToken(mockAuth);
@@ -140,6 +133,6 @@ class JwtRoleConversionIntegrationTest {
 
         // Then: ROLE_ADMIN を持っている
         assertThat(convertedAuth.getAuthorities())
-            .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
     }
 }

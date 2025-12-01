@@ -9,5 +9,7 @@ import jp.vemi.mirel.apps.schema.domain.entity.SchDicModel;
 
 @Repository
 public interface SchDicModelRepository extends JpaRepository<SchDicModel, SchDicModel.PK> {
-    List<SchDicModel> findByPkModelId(String modelId);
+    List<SchDicModel> findByPk_ModelIdAndTenantId(String modelId, String tenantId);
+
+    void deleteByPk_ModelIdAndTenantId(String modelId, String tenantId);
 }

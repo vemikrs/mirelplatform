@@ -17,27 +17,25 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * OTPログイン統合テスト: /auth/otp/request -> /auth/otp/verify 
+ * OTPログイン統合テスト: /auth/otp/request -> /auth/otp/verify
  * principal が User.userId になり、認証情報が正しく設定されることを検証する。
  * 
  * Note: フルエンドツーエンドの検証（/users/me等）はスモークテストで実施
  */
 @SpringBootTest(properties = {
-    "mirel.security.enabled=true",
-    "auth.method=session",
-    "spring.main.allow-bean-definition-overriding=true"
+        "mirel.security.enabled=true",
+        "auth.method=session",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 @AutoConfigureMockMvc
 @DisplayName("OTPログイン統合テスト")
@@ -71,6 +69,7 @@ class OtpLoginIntegrationTest {
          */
         static class TestEmailService implements EmailService {
             volatile String lastOtpCode;
+
             @Override
             public void sendTemplateEmail(String to, String subject, String template, Map<String, Object> model) {
                 if ("otp-login".equals(template)) {
@@ -80,10 +79,12 @@ class OtpLoginIntegrationTest {
                     }
                 }
             }
+
             @Override
             public void sendPlainTextEmail(String to, String subject, String body) {
                 // not used
             }
+
             @Override
             public void sendHtmlEmail(String to, String subject, String htmlBody) {
                 // not used
@@ -129,8 +130,8 @@ class OtpLoginIntegrationTest {
         MvcResult requestResult = mockMvc.perform(post("/auth/otp/request")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestPayload))
-            .andExpect(status().isOk())
-            .andReturn();
+                .andExpect(status().isOk())
+                .andReturn();
 
         String requestBody = requestResult.getResponse().getContentAsString();
         assertThat(requestBody).as("OTPリクエストレスポンスにrequestIdが含まれる").contains("requestId");
@@ -138,13 +139,14 @@ class OtpLoginIntegrationTest {
 
         // 2) verify OTP - 成功ステータスのみ確認（レスポンスbodyは環境依存で空の場合がある）
         MockHttpSession session = (MockHttpSession) requestResult.getRequest().getSession();
-        String verifyPayload = String.format("{\"model\":{\"email\":\"%s\",\"otpCode\":\"%s\",\"purpose\":\"LOGIN\"}}", email, testEmailService.lastOtpCode);
+        String verifyPayload = String.format("{\"model\":{\"email\":\"%s\",\"otpCode\":\"%s\",\"purpose\":\"LOGIN\"}}",
+                email, testEmailService.lastOtpCode);
         MvcResult verifyResult = mockMvc.perform(post("/auth/otp/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(verifyPayload)
                 .session(session))
-            .andExpect(status().isOk())  // 200が返ることを確認
-            .andReturn();
+                .andExpect(status().isOk()) // 200が返ることを確認
+                .andReturn();
 
         // Note: OTP検証が成功していることは200ステータスで確認
         // セッション永続化とフルエンドツーエンドの動作検証はスモークテストで実施

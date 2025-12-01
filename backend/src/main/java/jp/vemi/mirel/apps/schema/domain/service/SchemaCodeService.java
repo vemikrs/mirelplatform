@@ -18,20 +18,26 @@ public class SchemaCodeService {
     private final SchDicCodeRepository schDicCodeRepository;
 
     public List<SchDicCode> findByGroupId(String groupId) {
-        return schDicCodeRepository.findByPkGroupId(groupId);
+        return schDicCodeRepository.findByPk_GroupIdAndTenantId(groupId, TenantContext.getTenantId());
     }
 
     public void save(List<SchDicCode> codes) {
+        String tenantId = TenantContext.getTenantId();
         codes.forEach(code -> {
             if (code.getTenantId() == null) {
-                code.setTenantId(TenantContext.getTenantId());
+                code.setTenantId(tenantId);
+            } else if (!code.getTenantId().equals(tenantId)) {
+                throw new SecurityException("Cannot save code for another tenant");
             }
         });
         schDicCodeRepository.saveAll(codes);
     }
 
     public void deleteByGroupId(String groupId) {
-        List<SchDicCode> codes = schDicCodeRepository.findByPkGroupId(groupId);
-        schDicCodeRepository.deleteAll(codes);
+        schDicCodeRepository.deleteByPk_GroupIdAndTenantId(groupId, TenantContext.getTenantId());
+    }
+
+    public List<String> getGroupList() {
+        return schDicCodeRepository.findDistinctGroupIds(TenantContext.getTenantId());
     }
 }

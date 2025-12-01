@@ -4,7 +4,6 @@
 package jp.vemi.mirel;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
@@ -49,16 +48,16 @@ public class WebSecurityConfig {
 
     @Autowired
     private Mipla2SecurityProperties securityProperties;
-    
+
     @Autowired
     private CustomOAuth2UserService customOAuth2UserService;
-    
+
     @Autowired
     private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
-    
+
     @Autowired
     private OAuth2AuthenticationFailureHandler oauth2FailureHandler;
-    
+
     @Autowired
     private JwtAuthoritiesConverter jwtAuthoritiesConverter;
 
@@ -99,8 +98,10 @@ public class WebSecurityConfig {
      * CORS設定を行います。
      * 開発環境でフロントエンドからのAPIアクセスを許可します。
      *
-     * @param http セキュリティ設定
-     * @throws Exception 設定中に例外が発生した場合
+     * @param http
+     *            セキュリティ設定
+     * @throws Exception
+     *             設定中に例外が発生した場合
      */
     private void configureCors(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -118,7 +119,7 @@ public class WebSecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -133,12 +134,15 @@ public class WebSecurityConfig {
      * @throws Exception
      *             設定中に例外が発生した場合
      */
-    // CodeQL [java/spring-disabled-csrf-protection] - CSRF protection is configurable via Mipla2SecurityProperties
-    // Default is ENABLED (csrfEnabled=true). Development mode can disable via application-dev.yml for testing.
+    // CodeQL [java/spring-disabled-csrf-protection] - CSRF protection is
+    // configurable via Mipla2SecurityProperties
+    // Default is ENABLED (csrfEnabled=true). Development mode can disable via
+    // application-dev.yml for testing.
     // This is intentional design for flexibility in different environments.
-    @SuppressWarnings({"lgtm[java/spring-disabled-csrf-protection]"})
+    @SuppressWarnings({ "lgtm[java/spring-disabled-csrf-protection]" })
     private void configureCsrf(HttpSecurity http) throws Exception {
-        // NOTE: CSRF protection is enabled by default (Mipla2SecurityProperties.csrfEnabled=true)
+        // NOTE: CSRF protection is enabled by default
+        // (Mipla2SecurityProperties.csrfEnabled=true)
         // Development environment can override this setting in application-dev.yml
         http.csrf(csrf -> {
             if (!securityProperties.isCsrfEnabled()) {
@@ -147,13 +151,15 @@ public class WebSecurityConfig {
                 csrf.ignoringRequestMatchers(
                         "/auth/login",
                         "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
-                        "/login/oauth2/code/**",  // OAuth2コールバックをCSRF除外
-                        "/oauth2/**")             // OAuth2認証エンドポイントをCSRF除外
+                        "/login/oauth2/code/**", // OAuth2コールバックをCSRF除外
+                        "/oauth2/**") // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler());
-                
+                        .csrfTokenRequestHandler(
+                                new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler());
+
                 // CSRFトークンをCookieに書き込むためのフィルターを追加
-                http.addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.authentication.www.BasicAuthenticationFilter.class);
+                http.addFilterAfter(new CsrfCookieFilter(),
+                        org.springframework.security.web.authentication.www.BasicAuthenticationFilter.class);
             }
         });
     }
@@ -165,9 +171,11 @@ public class WebSecurityConfig {
      */
     private static class CsrfCookieFilter extends org.springframework.web.filter.OncePerRequestFilter {
         @Override
-        protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain filterChain)
+        protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+                jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain filterChain)
                 throws jakarta.servlet.ServletException, java.io.IOException {
-            org.springframework.security.web.csrf.CsrfToken csrfToken = (org.springframework.security.web.csrf.CsrfToken) request.getAttribute(org.springframework.security.web.csrf.CsrfToken.class.getName());
+            org.springframework.security.web.csrf.CsrfToken csrfToken = (org.springframework.security.web.csrf.CsrfToken) request
+                    .getAttribute(org.springframework.security.web.csrf.CsrfToken.class.getName());
             if (csrfToken != null) {
                 // Render the token value to a cookie by causing the deferred token to be loaded
                 csrfToken.getToken();
@@ -194,33 +202,31 @@ public class WebSecurityConfig {
                     "/auth/otp/**",
                     "/auth/health",
                     "/auth/logout",
-                    "/auth/check"
-                ).permitAll()
-                
-                // OAuth2関連エンドポイント（Spring Securityが処理）
-                .requestMatchers(
-                    "/login/oauth2/code/**",  // OAuth2コールバック
-                    "/oauth2/**"              // OAuth2認証フロー
-                ).permitAll()
-                
-                .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
-                .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
-                .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
-                .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
-                .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
+                    "/auth/check").permitAll()
+
+                    // OAuth2関連エンドポイント（Spring Securityが処理）
+                    .requestMatchers(
+                            "/login/oauth2/code/**", // OAuth2コールバック
+                            "/oauth2/**" // OAuth2認証フロー
+            ).permitAll()
+
+                    .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
+                    .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
+                    .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
+                    .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
+                    .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
 
             // 認証必須エンドポイント
             authz.requestMatchers(
                     "/auth/me",
                     "/auth/switch-tenant",
-                    "/auth/refresh"
-                ).authenticated();
+                    "/auth/refresh").authenticated();
 
             // セキュリティ無効時は全てのAPIをパブリックに
             if (!securityProperties.isEnabled()) {
                 authz.requestMatchers("/commons/**").permitAll()
-                    .requestMatchers("/apps/*/api/**").permitAll()
-                    .anyRequest().permitAll(); // ゲストモード：全てのリクエストを許可
+                        .requestMatchers("/apps/*/api/**").permitAll()
+                        .anyRequest().permitAll(); // ゲストモード：全てのリクエストを許可
             } else {
                 // セキュリティ有効時のみ認証を要求
                 authz.anyRequest().authenticated();
@@ -246,11 +252,11 @@ public class WebSecurityConfig {
         log.info("Configuring authentication: method={}, jwtSupported={}", authMethod, jwtSupported);
         if ("jwt".equals(authMethod) && jwtSupported) {
             log.info("Enabling JWT resource server configuration");
-            
+
             // JWT の roles クレームを GrantedAuthority に変換するコンバーター
             JwtAuthenticationConverter jwtAuthConverter = new JwtAuthenticationConverter();
             jwtAuthConverter.setJwtGrantedAuthoritiesConverter(jwtAuthoritiesConverter);
-            
+
             http.oauth2ResourceServer(oauth2 -> oauth2
                     .bearerTokenResolver(new CookieOrHeaderBearerTokenResolver()) // Cookie対応
                     .jwt(jwt -> jwt
@@ -265,20 +271,21 @@ public class WebSecurityConfig {
             // 未認証時は401を返す（SPA構成のためリダイレクトしない）
             http.sessionManagement(session -> session
                     .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .securityContext(securityContext -> securityContext
-                    .securityContextRepository(securityContextRepository())
-                    .requireExplicitSave(false))  // SecurityContextHolderFilterが自動的にSecurityContextを保存
-                .exceptionHandling(exceptions -> exceptions
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        // SPA構成: 未認証時は401を返す（302リダイレクトしない）
-                        response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                    }));
+                    .securityContext(securityContext -> securityContext
+                            .securityContextRepository(securityContextRepository())
+                            .requireExplicitSave(false)) // SecurityContextHolderFilterが自動的にSecurityContextを保存
+                    .exceptionHandling(exceptions -> exceptions
+                            .authenticationEntryPoint((request, response, authException) -> {
+                                // SPA構成: 未認証時は401を返す（302リダイレクトしない）
+                                response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED,
+                                        "Unauthorized");
+                            }));
         }
-        
+
         // OAuth2ログイン設定（GitHub）
         // SPA構成: デフォルトログインページを無効化し、未認証時は401を返す
         http.oauth2Login(oauth2 -> oauth2
-                .loginPage("/oauth2/authorization/github")  // デフォルトページ生成を抑制
+                .loginPage("/oauth2/authorization/github") // デフォルトページ生成を抑制
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
@@ -321,9 +328,8 @@ public class WebSecurityConfig {
     @Bean
     public org.springframework.security.web.context.SecurityContextRepository securityContextRepository() {
         return new org.springframework.security.web.context.DelegatingSecurityContextRepository(
-            new org.springframework.security.web.context.RequestAttributeSecurityContextRepository(),
-            new org.springframework.security.web.context.HttpSessionSecurityContextRepository()
-        );
+                new org.springframework.security.web.context.RequestAttributeSecurityContextRepository(),
+                new org.springframework.security.web.context.HttpSessionSecurityContextRepository());
     }
 
     @Bean

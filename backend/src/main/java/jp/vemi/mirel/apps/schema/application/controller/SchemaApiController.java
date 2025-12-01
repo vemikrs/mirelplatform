@@ -55,6 +55,7 @@ public class SchemaApiController {
                 case "save":
                     String saveModelId = (String) content.get("modelId");
                     String saveRecordId = (String) content.get("recordId");
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> recordData = (Map<String, Object>) content.get("record");
                     SchRecord savedRecord = schemaEngine.saveRecord(saveModelId, saveRecordId, recordData);
                     response.setData(Map.of("recordId", savedRecord.getId()));
@@ -102,6 +103,10 @@ public class SchemaApiController {
                 case "deleteCode":
                     String deleteCodeGroupId = (String) content.get("codeGroupId");
                     codeMaintenanceEngine.deleteCodeGroup(deleteCodeGroupId);
+                    break;
+                case "listCodeGroups":
+                    List<String> groups = codeMaintenanceEngine.getGroupList();
+                    response.setData(Map.of("groups", groups));
                     break;
                 default:
                     response.setErrors(List.of("Unknown path: " + path));

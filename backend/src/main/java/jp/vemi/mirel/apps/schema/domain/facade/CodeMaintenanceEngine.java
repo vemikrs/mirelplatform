@@ -25,4 +25,8 @@ public class CodeMaintenanceEngine {
     public void deleteCodeGroup(String groupId) {
         schemaCodeService.deleteByGroupId(groupId);
     }
+
+    public List<String> getGroupList() {
+        return schemaCodeService.getGroupList();
+    }
 }
