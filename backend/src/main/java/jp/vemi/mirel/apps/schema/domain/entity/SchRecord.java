@@ -3,14 +3,15 @@ package jp.vemi.mirel.apps.schema.domain.entity;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -38,8 +39,8 @@ public class SchRecord {
     @Column(name = "schema")
     private String schema;
 
-    @Type(JsonBinaryType.class)
     @Column(name = "record_data", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> recordData;
 
     @Column(name = "text")
