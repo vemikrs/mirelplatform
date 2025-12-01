@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { schemaApi } from '../api/schemaApi';
 import type { SchDicModel } from '../types/schema';
 import { DynamicForm } from '../components/DynamicForm';
@@ -40,23 +40,30 @@ export const SchemaRecordDetailPage: React.FC = () => {
       navigate('/apps/schema/records');
     } catch (error) {
       console.error('Failed to save record:', error);
-      alert('Failed to save record');
+      alert('レコードの保存に失敗しました');
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-6 text-muted-foreground">読み込み中...</div>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">
-        {recordId === 'new' ? 'New Record' : 'Edit Record'}
-      </h1>
-      <DynamicForm
-        fields={fields}
-        data={data}
-        onChange={setData}
-        onSubmit={handleSubmit}
-      />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Link to="/apps/schema/records" className="text-muted-foreground hover:text-foreground">
+          ← 戻る
+        </Link>
+        <h1 className="text-2xl font-bold text-foreground">
+          {recordId === 'new' ? '新規レコード作成' : 'レコード編集'}
+        </h1>
+      </div>
+      <div className="p-6 border border-border rounded-lg bg-card shadow-sm">
+        <DynamicForm
+          fields={fields}
+          data={data}
+          onChange={setData}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import type { SchemaApiRequest, SchemaApiResponse } from '../types/schema';
+import type { SchemaApiResponse } from '../types/schema';
 
 const BASE_URL = '/apps/schema/api';
 
@@ -28,7 +28,8 @@ export const schemaApi = {
   saveSchema: (modelId: string, modelName: string, isHiddenModel: boolean, fields: any[]) =>
     request('saveSchema', { modelId, modelName, isHiddenModel, fields }),
   deleteModel: (modelId: string) => request('deleteModel', { modelId }),
-  listCode: (id: string) => request('listCode', { id }),
+  listCodeGroups: () => request('listCodeGroups', {}),
+  listCode: (groupId: string) => request('listCode', { id: groupId }),
   saveCode: (groupId: string, details: any[]) => request('saveCode', { groupId, details }),
   deleteCode: (codeGroupId: string) => request('deleteCode', { codeGroupId }),
 };
