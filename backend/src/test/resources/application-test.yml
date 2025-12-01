@@ -1,26 +1,26 @@
 # Test configuration
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    password:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: false
+    show-sql: true
   h2:
     console:
       enabled: false
   batch:
     jdbc:
-      initialize-schema: never  # Disable batch schema initialization
+      initialize-schema: never # Disable batch schema initialization
   session:
     jdbc:
-      initialize-schema: never  # Disable session schema initialization
+      initialize-schema: never # Disable session schema initialization
   sql:
     init:
-      mode: never  # Disable database initialization for tests
+      mode: never # Disable database initialization for tests
 
 # Disable security for tests
 mirel:
