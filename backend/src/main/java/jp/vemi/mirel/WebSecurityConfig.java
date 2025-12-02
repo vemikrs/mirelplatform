@@ -151,6 +151,7 @@ public class WebSecurityConfig {
                 csrf.ignoringRequestMatchers(
                         "/auth/login",
                         "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
+                        "/api/auth/device/**", // デバイスフロー認証エンドポイント（CLI用）
                         "/login/oauth2/code/**", // OAuth2コールバックをCSRF除外
                         "/oauth2/**") // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -203,6 +204,13 @@ public class WebSecurityConfig {
                     "/auth/health",
                     "/auth/logout",
                     "/auth/check").permitAll()
+
+                    // デバイスフロー認証エンドポイント（CLI用）
+                    .requestMatchers(
+                            "/api/auth/device/code",
+                            "/api/auth/device/token",
+                            "/api/auth/device/verify"
+                    ).permitAll()
 
                     // OAuth2関連エンドポイント（Spring Securityが処理）
                     .requestMatchers(
