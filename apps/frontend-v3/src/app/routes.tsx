@@ -6,5 +6,9 @@ import { router } from './router.config.tsx';
  * Used in App.tsx to enable routing
  */
 export function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <RouterProvider 
+      router={router} 
+    />
+  );
 }

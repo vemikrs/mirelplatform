@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
+
 import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
+import { LoginPage } from '../../pages/auth/login.page';
 import { STENCIL_V3_TEST_DATA } from '../../fixtures/promarker-v3.fixture';
 
 /**
@@ -22,7 +24,7 @@ test.describe('ProMarker v3 Stencil Selection', () => {
         data: { content: {} },
         timeout: 5000 // Reduced timeout for faster failure detection
       });
-      backendAvailable = response.ok();
+      backendAvailable = response.ok() || response.status() === 401;
       if (backendAvailable) {
         console.log('Stencil master data loaded successfully');
       } else {
@@ -38,6 +40,14 @@ test.describe('ProMarker v3 Stencil Selection', () => {
     // WSL2 Crash Prevention: Skip all tests if backend is not available
     test.skip(!backendAvailable, 'Backend not available - skipping to prevent WSL2 resource exhaustion');
     
+    // Increase timeout for login
+    test.setTimeout(60000);
+
+    // Perform login
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'password123');
+
     promarkerPage = new ProMarkerV3Page(page);
     await promarkerPage.navigate();
     

@@ -1,5 +1,5 @@
 import { Button } from '@mirel/ui';
-import { ArrowRight, Eraser, FileJson, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowRight, Eraser, FileJson, Loader2, RefreshCw, Edit3 } from 'lucide-react';
 
 interface ActionButtonsProps {
   onGenerate: () => void | Promise<void>;
@@ -7,6 +7,7 @@ interface ActionButtonsProps {
   onClearStencil: () => void | Promise<void>;
   onReloadStencilMaster: () => void | Promise<void>;
   onJsonEdit: () => void | Promise<void>;
+  onManageStencils: () => void | Promise<void>;
   generateDisabled?: boolean;
   generateLoading?: boolean;
   reloadLoading?: boolean;
@@ -23,6 +24,7 @@ export function ActionButtons({
   onClearStencil,
   onReloadStencilMaster,
   onJsonEdit,
+  onManageStencils,
   generateDisabled = false,
   generateLoading = false,
   reloadLoading = false,
@@ -72,6 +74,16 @@ export function ActionButtons({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <Button
+          data-testid="manage-stencils-btn"
+          variant="outline"
+          onClick={onManageStencils}
+          disabled={generateLoading}
+        >
+          <Edit3 className="mr-2 size-4" />
+          ステンシル管理
+        </Button>
+
         <Button
           data-testid="reload-stencil-btn"
           variant="ghost"

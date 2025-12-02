@@ -18,17 +18,31 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: true, // Enable Cookie-based authentication
 });
 
 /**
  * Request interceptor
  * - Logs all requests in development mode
- * - Can add authentication tokens here
+ * - Adds Authorization header with JWT token if available
  */
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Dynamically import authStore to get JWT token
+    const { useAuthStore } = await import('@/stores/authStore');
+    const tokens = useAuthStore.getState().tokens;
+    
+    if (tokens?.accessToken) {
+      config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+    }
+    
     if (import.meta.env.DEV) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+        data: config.data,
+        withCredentials: config.withCredentials,
+        hasAuthHeader: !!config.headers.Authorization,
+        cookies: document.cookie || '(no cookies visible - may be HttpOnly)',
+      });
     }
     return config;
   },
@@ -43,11 +57,16 @@ apiClient.interceptors.request.use(
  * - Logs responses in development mode
  * - Handles global error scenarios
  * - Does NOT throw on API-level errors (errors array)
+ * - Handles 401 Unauthorized globally by clearing auth and redirecting to login
  */
 apiClient.interceptors.response.use(
   (response: AxiosResponse<ApiResponse<unknown>>) => {
     if (import.meta.env.DEV) {
-      console.log(`[API Response] ${response.config.url}`, response.data);
+      console.log(`[API Response] ${response.config.url}`, {
+        status: response.status,
+        data: response.data,
+        setCookieHeader: response.headers['set-cookie'] || '(none)',
+      });
     }
     
     // Check for API-level errors
@@ -57,7 +76,32 @@ apiClient.interceptors.response.use(
     
     return response;
   },
-  (error: AxiosError<ApiResponse<unknown>>) => {
+  async (error: AxiosError<ApiResponse<unknown>>) => {
+    // Handle 401 Unauthorized globally
+    if (error.response?.status === 401) {
+      console.error('[401 Unauthorized]', {
+        url: error.config?.url,
+        method: error.config?.method,
+        withCredentials: error.config?.withCredentials,
+        currentPath: window.location.pathname,
+      });
+      
+      // Avoid infinite loop: don't redirect if already on login page
+      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/auth/')) {
+        // Dynamically import to avoid circular dependency
+        const { useAuthStore } = await import('@/stores/authStore');
+        const { clearAuth } = useAuthStore.getState();
+        clearAuth();
+        
+        // Redirect to login with current path as returnUrl
+        const currentPath = window.location.pathname + window.location.search;
+        console.log('[401 Redirect]', { to: `/login?returnUrl=${encodeURIComponent(currentPath)}` });
+        window.location.href = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+      }
+      
+      return Promise.reject(error);
+    }
+    
     // Network error or HTTP error
     if (error.response) {
       // HTTP error (4xx, 5xx)

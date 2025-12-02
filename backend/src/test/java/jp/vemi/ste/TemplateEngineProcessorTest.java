@@ -16,7 +16,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
 @ActiveProfiles("test")
+@org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 public class TemplateEngineProcessorTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.mail.javamail.JavaMailSender javaMailSender;
 
     @Autowired(required = false)
     private ResourcePatternResolver resourcePatternResolver;
@@ -35,33 +39,33 @@ public class TemplateEngineProcessorTest {
         if (resourcePatternResolver == null) {
             resourcePatternResolver = new PathMatchingResourcePatternResolver();
         }
-        
+
         processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
     }
 
     @Test
     public void testGetStencilTemplateFiles() throws Exception {
         System.out.println("=== Testing layered template search ===");
-        
+
         // リフレクションを使ってprivateメソッドを呼び出し
         java.lang.reflect.Method method = TemplateEngineProcessor.class.getDeclaredMethod("getStencilTemplateFiles");
         method.setAccessible(true);
-        
+
         @SuppressWarnings("unchecked")
         List<String> templateFiles = (List<String>) method.invoke(processor);
-        
+
         // ログ出力
         System.out.println("=== Layered Template Search Test Results ===");
         System.out.println("Found " + templateFiles.size() + " template files:");
-        
+
         for (String file : templateFiles) {
             System.out.println("  - " + file);
         }
-        
+
         // アサーション
         assertNotNull(templateFiles, "Template files should not be null");
         assertTrue(templateFiles.size() >= 0, "Template files list should be valid");
-        
+
         System.out.println("Test completed!");
     }
 }

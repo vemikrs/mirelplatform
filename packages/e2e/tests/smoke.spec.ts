@@ -1,10 +1,27 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from './pages/auth/login.page';
 
 /**
  * Smoke test for ProMarker v3 application
  * Basic verification that the application is accessible and responsive
  */
 test.describe('ProMarker Smoke Test', () => {
+  test.beforeEach(async ({ page }) => {
+    // Listen for console logs
+    page.on('console', msg => console.log(`[Browser Console] ${msg.text()}`));
+
+    // Increase timeout for login
+    test.setTimeout(60000);
+
+    // Perform login
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'password123');
+    
+    // Debug cookies
+    const cookies = await page.context().cookies();
+    console.log('[Smoke Test] Cookies after login:', JSON.stringify(cookies, null, 2));
+  });
   test('should load ProMarker page and perform basic assertion', async ({ page }) => {
     // Navigate to ProMarker v3 page (React frontend)
     await page.goto('/promarker');

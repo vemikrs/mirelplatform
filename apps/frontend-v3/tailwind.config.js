@@ -1,8 +1,23 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * Tailwind CSS v4 Configuration
+ * 
+ * ⚠️ 重要な制限事項:
+ * - Tailwind v4では、theme.extend.colors で定義したカスタム色が
+ *   ユーティリティクラス（bg-*, text-*, border-*）として自動生成されません
+ * - CSS変数ベースの色を使用する場合は、apps/frontend-v3/src/index.css で
+ *   明示的に .bg-background, .bg-card 等のクラスを定義する必要があります
+ * - または @theme ディレクティブを使用する必要がありますが、var()の間接参照は不可
+ * 
+ * 参考: https://github.com/tailwindlabs/tailwindcss/discussions/18440
+ * 
+ * @type {import('tailwindcss').Config}
+ */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     container: {
@@ -28,6 +43,26 @@ export default {
         xs: "475px",          // 追加ブレークポイント（小スマートフォン対応）
       },
       colors: {
+        // ⚠️ Tailwind v4 制限: 以下のカスタム色はユーティリティクラスとして生成されません
+        // bg-background, bg-card, bg-surface 等は src/index.css で明示的に定義されています
+        
+        // Tailwind default colors (preserve white, black, gray for utility classes)
+        white: '#ffffff',
+        black: '#000000',
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+          950: '#030712',
+        },
+        // Custom semantic colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -134,6 +169,10 @@ export default {
         'liquid-fast': 'var(--liquid-duration-fast)',
         'liquid-normal': 'var(--liquid-duration-normal)',
         'liquid-slow': 'var(--liquid-duration-slow)',
+      },
+      zIndex: {
+        '110': '110',  // Dialog Overlay用
+        '120': '120',  // Dialog Content用
       },
       keyframes: {
         'toast-in': {

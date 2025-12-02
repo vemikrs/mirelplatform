@@ -26,13 +26,17 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 
-@SpringBootTest
+@SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
 @ActiveProfiles("test")
+@org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @TestPropertySource(properties = {
-    "spring.session.jdbc.initialize-schema=never",
-    "spring.sql.init.mode=never"
+        "spring.session.jdbc.initialize-schema=never",
+        "spring.sql.init.mode=never"
 })
 public class SuggestServiceImpTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.mail.javamail.JavaMailSender javaMailSender;
 
     @Autowired
     SuggestServiceImp service;
@@ -43,7 +47,7 @@ public class SuggestServiceImpTest {
     @MockBean
     ResourcePatternResolver resolver; // engine内部呼び出しの null 回避
 
-    private MsteStencil make(String cd, String name, String kind){
+    private MsteStencil make(String cd, String name, String kind) {
         MsteStencil s = new MsteStencil();
         s.stencilCd = cd;
         s.stencilName = name;
@@ -52,12 +56,11 @@ public class SuggestServiceImpTest {
     }
 
     @BeforeEach
-    void setup(){
+    void setup() {
         // デフォルト: categories + items for /samples
         List<MsteStencil> all = Arrays.asList(
                 make("/samples", "Sample Stencils", "0"),
-                make("/samples/hello-world", "Hello World Generator", "1")
-        );
+                make("/samples/hello-world", "Hello World Generator", "1"));
         Mockito.when(repository.findAll()).thenReturn(all);
         Mockito.when(repository.findByStencilCd(anyString(), anyString()))
                 .thenAnswer(inv -> {
@@ -70,13 +73,13 @@ public class SuggestServiceImpTest {
                 });
     }
 
-    private ApiResponse<SuggestResult> invoke(SuggestParameter p){
+    private ApiResponse<SuggestResult> invoke(SuggestParameter p) {
         return service.invoke(ApiRequest.<SuggestParameter>builder().model(p).build());
     }
 
     @Test
     @DisplayName("初期ロード: selectFirstIfWildcard=false で全未選択")
-    void initialLoad(){
+    void initialLoad() {
         ApiResponse<SuggestResult> resp = invoke(SuggestParameter.builder()
                 .stencilCategory("*")
                 .stencilCd("*")
@@ -95,7 +98,7 @@ public class SuggestServiceImpTest {
 
     @Test
     @DisplayName("カテゴリ auto-select → ステンシル/serial cascade")
-    void categoryAutoSelect(){
+    void categoryAutoSelect() {
         ApiResponse<SuggestResult> resp = invoke(SuggestParameter.builder()
                 .stencilCategory("*")
                 .stencilCd("*")
@@ -116,7 +119,7 @@ public class SuggestServiceImpTest {
     class SerialPhase {
         @Test
         @DisplayName("serial=* かつ selectFirstIfWildcard=false で params 未取得")
-        void serialPending(){
+        void serialPending() {
             ApiResponse<SuggestResult> resp = invoke(SuggestParameter.builder()
                     .stencilCategory("/samples")
                     .stencilCd("/samples/hello-world")
@@ -131,7 +134,7 @@ public class SuggestServiceImpTest {
         }
     }
 
-    private SuggestResult extract(ApiResponse<SuggestResult> resp){
+    private SuggestResult extract(ApiResponse<SuggestResult> resp) {
         // ModelWrapper(data.model) の取り出し (unsafe cast 前提)
         Object data = resp.getData();
         try {

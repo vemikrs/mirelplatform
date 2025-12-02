@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: mirelplatform-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - mirel-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mirelplatform-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - mirel-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: mirelplatform-postgres
+    environment:
+      POSTGRES_DB: mirelplatform
+      POSTGRES_USER: mirel
+      POSTGRES_PASSWORD: mirel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mirel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mirel-network
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  mirel-network:
+    driver: bridge

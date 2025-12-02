@@ -12,8 +12,7 @@ backend.log
 frontend.log
 
 ### Database & Storage ###
-data/
-**/data/
+backend/data/
 
 ### STS ###
 .apt_generated
@@ -62,3 +61,6 @@ packages/e2e/traces/
 
 ### History Files ###
 .history/
+
+### Temp Files ###
+tmp/

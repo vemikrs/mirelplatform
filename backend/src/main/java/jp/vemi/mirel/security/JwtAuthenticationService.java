@@ -3,6 +3,7 @@
  */
 package jp.vemi.mirel.security;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import jp.vemi.mirel.security.jwt.JwtService;
 
 @Service
+@ConditionalOnProperty(name = "auth.method", havingValue = "jwt", matchIfMissing = true)
 public class JwtAuthenticationService implements AuthenticationService {
 
     private final AuthenticationManager authenticationManager;

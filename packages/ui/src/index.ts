@@ -41,6 +41,23 @@ export {
   DialogTitle,
   DialogDescription,
 } from './components/Dialog'
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './components/DropdownMenu'
 export { SectionHeading } from './components/SectionHeading'
 export { StepIndicator, type StepState, type StepIndicatorStep } from './components/StepIndicator'
 export { Skeleton } from './components/Skeleton'
@@ -57,6 +74,13 @@ export {
 } from './components/Toast'
 export { Toaster } from './components/Toaster'
 export { useToast, toast } from './components/use-toast'
+export { Alert, AlertTitle, AlertDescription, type AlertProps } from './components/Alert'
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion'
+export { Combobox, type ComboboxOption } from './components/combobox'
+export { Avatar, type AvatarProps } from './components/Avatar'
 
 // Utils
 export { cn } from './lib/utils'
+export * from './components/Table';
+export * from './components/DataTable';

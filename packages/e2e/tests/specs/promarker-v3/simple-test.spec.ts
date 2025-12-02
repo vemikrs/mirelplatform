@@ -1,4 +1,7 @@
+
 import { test, expect } from '@playwright/test';
+import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
+import { LoginPage } from '../../pages/auth/login.page';
 
 /**
  * Simplified Form Validation Test
@@ -14,7 +17,7 @@ test.describe('ProMarker v3 Form Validation - Simple', () => {
         data: { content: {} },
         timeout: 5000,
       });
-      backendAvailable = resp.ok();
+      backendAvailable = resp.ok() || resp.status() === 401;
       console.log(`[simple-test] Reload result: ${resp.status()}, available: ${backendAvailable}`);
     } catch (error) {
       console.error('[simple-test] Backend not available:', error);
@@ -26,8 +29,17 @@ test.describe('ProMarker v3 Form Validation - Simple', () => {
     test.skip(!backendAvailable, 'Backend not available - skipping');
     test.setTimeout(30000);
     
-    // Navigate to ProMarker page
-    await page.goto('http://localhost:5173/promarker');
+    // Increase timeout for login
+    test.setTimeout(120000);
+    test.slow();
+
+    // Perform login
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'password123');
+
+    const promarkerPage = new ProMarkerV3Page(page);
+    await promarkerPage.navigate();
     
     // Wait for page heading (SectionHeading renders heading role)
     await expect(page.getByRole('heading', { name: /ProMarker/ })).toBeVisible({ timeout: 10000 });

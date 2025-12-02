@@ -1,0 +1,12 @@
+id,username,email,password_hash,email_verified,is_active,account_locked,created_at,updated_at
+550e8400-e29b-41d4-a716-446655440000,admin,admin@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440001,user01,user01@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440002,user02,user02@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440003,user03,user03@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440004,user04,user04@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440005,user05,user05@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440006,user06,user06@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440007,user07,user07@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440008,user08,user08@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-446655440009,user09,user09@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00
+550e8400-e29b-41d4-a716-44665544000a,user10,user10@example.com,$2a$10$x.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z.y.z,true,true,false,2023-01-01T00:00:00,2023-01-01T00:00:00

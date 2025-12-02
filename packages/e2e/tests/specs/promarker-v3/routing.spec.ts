@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
+
 import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
+import { LoginPage } from '../../pages/auth/login.page';
 
 /**
  * ProMarker v3 Routing E2E Tests
@@ -18,7 +20,7 @@ test.describe('ProMarker v3 Routing', () => {
         data: { content: {} },
         timeout: 5000,
       });
-      backendAvailable = resp.ok();
+      backendAvailable = resp.ok() || resp.status() === 401;
       console.log(`[routing] Reload result: ${resp.status()}, available: ${backendAvailable}`);
     } catch (error) {
       console.error('[routing] Backend not available:', error);
@@ -28,6 +30,15 @@ test.describe('ProMarker v3 Routing', () => {
   
   test.beforeEach(async ({ page }) => {
     test.skip(!backendAvailable, 'Backend not available - skipping');
+    
+    // Increase timeout for login
+    test.setTimeout(60000);
+
+    // Perform login
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'password123');
+    
     promarkerPage = new ProMarkerV3Page(page);
   });
   

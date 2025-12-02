@@ -3,7 +3,7 @@ import * as React from 'react'
 import { cn } from '../lib/utils'
 
 export interface SectionHeadingProps extends React.HTMLAttributes<HTMLDivElement> {
-  eyebrow?: string
+  eyebrow?: React.ReactNode
   title: string
   description?: string
   actions?: React.ReactNode
