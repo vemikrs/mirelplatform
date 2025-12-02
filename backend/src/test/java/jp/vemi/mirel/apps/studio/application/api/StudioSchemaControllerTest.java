@@ -23,14 +23,38 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(StudioSchemaController.class)
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
+
+@WebMvcTest(controllers = StudioSchemaController.class, excludeAutoConfiguration = {
+        SecurityAutoConfiguration.class,
+        SecurityFilterAutoConfiguration.class,
+        OAuth2ClientAutoConfiguration.class,
+        OAuth2ResourceServerAutoConfiguration.class
+})
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class StudioSchemaControllerTest {
+
+    @Configuration
+    @EnableAutoConfiguration
+    @Import(StudioSchemaController.class)
+    static class TestConfig {
+    }
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
     private SchemaManageService schemaManageService;
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;

@@ -40,6 +40,8 @@ class StudioModelServiceTest {
         String name = "New Model";
         String description = "Description";
 
+        when(headerRepository.save(any(StuModelHeader.class))).thenAnswer(i -> i.getArguments()[0]);
+
         StuModelHeader created = service.createDraft(name, description);
 
         assertThat(created).isNotNull();
