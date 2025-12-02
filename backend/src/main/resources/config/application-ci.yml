@@ -1,0 +1,93 @@
+# application-ci.yml - CI Environment Configuration
+# H2 インメモリデータベース使用（PostgreSQL不要）
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: false  # CI環境では無効
+  session:
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/session/jdbc/schema-h2.sql
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop  # CI環境では毎回再作成
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+  # CI環境ではメール送信をモック
+  mail:
+    host: localhost
+    port: 25
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  # CI環境用OAuth2設定（ダミー値）
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: dummy-ci-client-id
+            client-secret: dummy-ci-client-secret
+
+logging:
+  level:
+    jp.vemi.mirel: INFO
+    jp.vemi.framework: INFO
+    jp.vemi.ste: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN
+
+mirel:
+  storage-dir: ./build/test-storage
+  stencil:
+    layers:
+      user: ${mirel.storage-dir}/apps/promarker/stencil/user
+      standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
+      samples: classpath:/promarker/stencil/samples
+    auto-deploy-samples: false  # CI環境ではサンプルを自動デプロイしない
+
+# CI環境でのセキュリティ設定
+mipla2:
+  security:
+    api:
+      enabled: true
+      csrf-enabled: false  # E2Eテスト考慮でCSRF無効
+
+# JWT authentication method
+auth:
+  method: jwt
+  jwt:
+    enabled: true
+    secret: ci-test-secret-key-for-github-actions-only-12345678901234567890abcdef
+
+# CI環境用OTP設定
+otp:
+  enabled: true
+  expiration-minutes: 10
+  resend-cooldown-seconds: 5
+
+# CI環境用レート制限（テスト用に緩和）
+rate-limit:
+  otp:
+    request-per-minute: 10
+    verify-per-minute: 30
+  redis:
+    fallback-to-memory: true  # Redisなしでメモリフォールバック
+
+# CI環境用メール設定
+email:
+  provider: smtp
+  smtp:
+    host: localhost
+    port: 25

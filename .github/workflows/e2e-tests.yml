@@ -161,7 +161,7 @@ jobs:
           echo "Starting backend service..."
           echo "Working directory: $(pwd)"
           echo "Gradlew location: $(ls -la ./gradlew)"
-          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=ci SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
@@ -350,7 +350,7 @@ jobs:
       - name: Start services
         run: |
           echo "Starting backend service..."
-          SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=ci SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
