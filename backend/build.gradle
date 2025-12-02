@@ -64,6 +64,7 @@ dependencies {
     
     // Azure Communication Services (メール送信)
     implementation 'com.azure:azure-communication-email:1.0.0'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.15.2'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     compileOnly 'org.projectlombok:lombok:1.18.30'
