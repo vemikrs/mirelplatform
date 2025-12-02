@@ -9,18 +9,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 
-import jp.vemi.framework.util.DatabaseUtil;
+import jp.vemi.framework.util.DataSeeder;
 
 @Configuration
 @Order(20)
-@DependsOn("databaseUtil")
+@DependsOn("dataSeeder")
 public class DatabaseInitializer {
 
-  @Bean
-  public ApplicationRunner initializer() {
-    return args -> {
-      DatabaseUtil.initializeDefaultTenant();
-      DatabaseUtil.initializeSaasTestData();
-    };
-  }
+    @Bean
+    public ApplicationRunner initializer() {
+        return args -> {
+            DataSeeder.initializeDefaultTenant();
+            DataSeeder.initializeSaasTestData();
+            DataSeeder.initializeSchemaSampleData();
+        };
+    }
 }

@@ -26,7 +26,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
-import jp.vemi.framework.util.DatabaseUtil;
+import jp.vemi.framework.util.DataSeeder;
 import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
@@ -84,7 +84,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             AuthenticationService authenticationService) throws Exception {
-        DatabaseUtil.initializeDefaultTenant();
+        DataSeeder.initializeDefaultTenant();
 
         configureCors(http);
         configureCsrf(http);
