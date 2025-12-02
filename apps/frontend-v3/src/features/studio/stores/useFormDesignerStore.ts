@@ -15,9 +15,12 @@ export interface Widget {
 }
 
 interface FormDesignerState {
+  modelId: string | null;
+  modelName: string;
   widgets: Widget[];
   selectedWidgetId: string | null;
   
+  setModelInfo: (id: string | null, name: string) => void;
   addWidget: (widget: Widget) => void;
   removeWidget: (id: string) => void;
   updateWidget: (id: string, updates: Partial<Widget>) => void;
@@ -26,8 +29,12 @@ interface FormDesignerState {
 }
 
 export const useFormDesignerStore = create<FormDesignerState>((set) => ({
+  modelId: null,
+  modelName: 'Untitled Form',
   widgets: [],
   selectedWidgetId: null,
+
+  setModelInfo: (id, name) => set({ modelId: id, modelName: name }),
 
   addWidget: (widget) => set((state) => ({ 
     widgets: [...state.widgets, widget],

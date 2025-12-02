@@ -29,6 +29,7 @@ import { SchemaRecordListPage } from '@/features/schema/pages/SchemaRecordListPa
 import { SchemaRecordDetailPage } from '@/features/schema/pages/SchemaRecordDetailPage';
 import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefinePage';
 import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
+import { StudioPage } from '@/features/studio/pages/StudioPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -264,6 +265,16 @@ export const router = createBrowserRouter([
             path: 'codes',
             element: <SchemaCodeMasterPage />,
             handle: { title: 'Schema - Code Master' },
+          },
+        ],
+      },
+      {
+        path: 'apps/studio',
+        children: [
+          {
+            index: true,
+            element: <StudioPage />,
+            handle: { title: 'Studio - Form Designer' },
           },
         ],
       },
