@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { schemaApi } from '../api/schemaApi';
 import type { SchDicCode } from '../types/schema';
 import { CodeGroupList } from '../components/CodeGroupList';
 import { CodeValueEditor } from '../components/CodeValueEditor';
+import { SchemaLayout } from '../components/layout/SchemaLayout';
 
 export const SchemaCodeMasterPage: React.FC = () => {
   const [groups, setGroups] = useState<string[]>([]);
@@ -82,39 +82,38 @@ export const SchemaCodeMasterPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-[calc(100vh-4rem)]">
-      <div className="flex items-center gap-4 p-4 border-b border-border bg-background">
-        <Link to="/apps/schema" className="text-muted-foreground hover:text-foreground">
-          ← 戻る
-        </Link>
-        <h1 className="text-xl font-bold text-foreground">コードマスタ管理</h1>
-      </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        <CodeGroupList
-          groups={groups}
-          selectedGroupId={selectedGroupId}
-          onSelect={setSelectedGroupId}
-          onCreate={handleCreateGroup}
-        />
+    <SchemaLayout>
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-4 p-4 border-b border-border bg-background">
+          <h1 className="text-xl font-bold text-foreground">コードマスタ管理</h1>
+        </div>
         
-        {loading ? (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            読み込み中...
-          </div>
-        ) : selectedGroupId ? (
-          <CodeValueEditor
-            groupId={selectedGroupId === 'new_group' ? '' : selectedGroupId}
-            codes={codes}
-            onSave={handleSave}
-            onDeleteGroup={handleDeleteGroup}
+        <div className="flex flex-1 overflow-hidden">
+          <CodeGroupList
+            groups={groups}
+            selectedGroupId={selectedGroupId}
+            onSelect={setSelectedGroupId}
+            onCreate={handleCreateGroup}
           />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            左側のリストからグループを選択するか、新規作成してください
-          </div>
-        )}
+          
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              読み込み中...
+            </div>
+          ) : selectedGroupId ? (
+            <CodeValueEditor
+              groupId={selectedGroupId === 'new_group' ? '' : selectedGroupId}
+              codes={codes}
+              onSave={handleSave}
+              onDeleteGroup={handleDeleteGroup}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              左側のリストからグループを選択するか、新規作成してください
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </SchemaLayout>
   );
 };

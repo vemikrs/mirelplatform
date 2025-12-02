@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SchDicModel } from '../types/schema';
+
 
 interface ModelSelectorProps {
   models: { value: string; text: string }[];
