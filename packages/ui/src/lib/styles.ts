@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 /**
  * オーバーレイコンポーネント（Dialog, Popover, DropdownMenu等）の

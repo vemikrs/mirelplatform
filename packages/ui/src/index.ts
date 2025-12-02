@@ -82,3 +82,5 @@ export { Avatar, type AvatarProps } from './components/Avatar'
 
 // Utils
 export { cn } from './lib/utils'
+export * from './components/Table';
+export * from './components/DataTable';
