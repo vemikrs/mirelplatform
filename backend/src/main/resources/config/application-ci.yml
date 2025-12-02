@@ -56,6 +56,8 @@ mirel:
       standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
       samples: classpath:/promarker/stencil/samples
     auto-deploy-samples: false  # CI環境ではサンプルを自動デプロイしない
+  database:
+    initialize: false  # CI環境ではデータベース初期化を無効化（H2互換性のため）
 
 # CI環境でのセキュリティ設定
 mipla2:
