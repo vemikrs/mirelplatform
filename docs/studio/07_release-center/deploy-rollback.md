@@ -98,6 +98,18 @@ Release Center
 
 ---
 
+## 9. Hotfix（緊急修正）フロー
+
+本番環境での致命的な不具合に対し、開発中の Draft（次期バージョン）を経由せずに修正を適用するフロー。
+
+1. **Hotfix Branch 作成**: 現在の Prod Release から Hotfix 用の作業領域を作成。
+2. **修正適用**: 最小限の修正（Flow/Form/Script）のみを適用。
+3. **Hotfix Release 作成**: バージョン番号をパッチアップ（例: `1.3.0` → `1.3.1`）。
+4. **Deploy**: Prod 環境へ即時適用。
+5. **Merge Back**: 修正内容を現在の Draft（次期バージョン開発ライン）へ自動マージ。
+
+---
+
 ## 関連ドキュメント
 
 - [差分検出アルゴリズム](./diff-algorithm.md)
