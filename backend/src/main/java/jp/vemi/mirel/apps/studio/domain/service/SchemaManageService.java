@@ -16,15 +16,10 @@ import java.util.List;
 @Service
 public class SchemaManageService {
 
-    private final StudioModelService studioModelService;
-    private final SchemaEngineService schemaEngine;
-
-    public SchemaManageService(
-            StudioModelService studioModelService,
-            SchemaEngineService schemaEngine) {
-        this.studioModelService = studioModelService;
-        this.schemaEngine = schemaEngine;
-    }
+    @org.springframework.beans.factory.annotation.Autowired
+    private StudioModelService studioModelService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private SchemaEngineService schemaEngine;
 
     /**
      * Create a new model draft.

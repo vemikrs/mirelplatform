@@ -19,13 +19,10 @@ import java.util.NoSuchElementException;
 @Service
 public class StudioModelService {
 
-    private final StuModelHeaderRepository headerRepository;
-    private final StuFieldRepository fieldRepository;
-
-    public StudioModelService(StuModelHeaderRepository headerRepository, StuFieldRepository fieldRepository) {
-        this.headerRepository = headerRepository;
-        this.fieldRepository = fieldRepository;
-    }
+    @org.springframework.beans.factory.annotation.Autowired
+    private StuModelHeaderRepository headerRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private StuFieldRepository fieldRepository;
 
     /**
      * Create a new model draft.

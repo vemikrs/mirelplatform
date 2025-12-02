@@ -12,11 +12,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/studio/schema")
 public class StudioSchemaController {
 
-    private final SchemaManageService schemaManageService;
-
-    public StudioSchemaController(SchemaManageService schemaManageService) {
-        this.schemaManageService = schemaManageService;
-    }
+    @org.springframework.beans.factory.annotation.Autowired
+    private SchemaManageService schemaManageService;
 
     @PostMapping("/draft")
     public String createDraft(@RequestBody CreateDraftRequest request) {
