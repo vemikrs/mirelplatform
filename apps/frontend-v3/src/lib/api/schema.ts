@@ -13,6 +13,7 @@ export interface StuField {
   maxValue?: number;
   minLength?: number;
   maxLength?: number;
+  options?: string; // JSON string
   sortOrder: number;
   layout?: string; // JSON string
 }

@@ -1,14 +1,16 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '@mirel/ui';
+import { Type, Hash, Calendar, CheckSquare, List, AlignLeft, CircleDot } from 'lucide-react';
 import type { WidgetType } from '../../stores/useFormDesignerStore';
 
 interface PaletteItemProps {
   type: WidgetType;
   label: string;
+  icon: React.ReactNode;
 }
 
-const PaletteItem: React.FC<PaletteItemProps> = ({ type, label }) => {
+const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `palette-${type}`,
     data: {
@@ -23,7 +25,8 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label }) => {
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="mb-2 cursor-move">
-      <Card className="p-3 text-sm font-medium hover:bg-gray-50 transition-colors">
+      <Card className="p-3 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2">
+        {icon}
         {label}
       </Card>
     </div>
@@ -31,14 +34,6 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label }) => {
 };
 
 export const WidgetPalette: React.FC = () => {
-  const widgets: { type: WidgetType; label: string }[] = [
-    { type: 'text', label: 'Text Input' },
-    { type: 'number', label: 'Number Input' },
-    { type: 'date', label: 'Date Picker' },
-    { type: 'boolean', label: 'Checkbox' },
-    { type: 'select', label: 'Select Box' },
-  ];
-
   return (
     <div className="w-64 border-r bg-white flex flex-col h-full">
       <div className="p-4 border-b">
@@ -46,9 +41,13 @@ export const WidgetPalette: React.FC = () => {
         <p className="text-xs text-gray-500 mt-1">Drag to add to canvas</p>
       </div>
       <div className="p-4 flex-1 overflow-y-auto">
-        {widgets.map((w) => (
-          <PaletteItem key={w.type} type={w.type} label={w.label} />
-        ))}
+        <PaletteItem type="text" label="Text Input" icon={<Type className="size-4" />} />
+        <PaletteItem type="textarea" label="Text Area" icon={<AlignLeft className="size-4" />} />
+        <PaletteItem type="number" label="Number Input" icon={<Hash className="size-4" />} />
+        <PaletteItem type="date" label="Date Picker" icon={<Calendar className="size-4" />} />
+        <PaletteItem type="boolean" label="Checkbox" icon={<CheckSquare className="size-4" />} />
+        <PaletteItem type="select" label="Dropdown" icon={<List className="size-4" />} />
+        <PaletteItem type="radio" label="Radio Group" icon={<CircleDot className="size-4" />} />
       </div>
     </div>
   );

@@ -18,7 +18,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
       let validator: any;
       switch (w.type) {
         case 'text':
+        case 'textarea':
         case 'select':
+        case 'radio':
           validator = z.string();
           if (w.required) validator = validator.min(1, { message: 'Required' });
           else validator = validator.optional();
@@ -27,7 +29,6 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
           if (w.maxLength) validator = (validator as z.ZodString).max(w.maxLength, { message: `Max length is ${w.maxLength}` });
           if (w.validationRegex) {
              try {
-               // Validate regex validity
                new RegExp(w.validationRegex);
                validator = (validator as z.ZodString).regex(new RegExp(w.validationRegex), { message: 'Invalid format' });
              } catch (e) {
@@ -35,12 +36,10 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
              }
           }
           break;
+        // ... (number, boolean, date cases remain same)
         case 'number':
-          validator = z.coerce.number(); // Handle string input for numbers
-          if (w.required) validator = validator.min(1, { message: 'Required' }); // This might be wrong for number 0, but usually required means not empty/null. z.coerce.number() turns empty string to 0? No, to NaN usually or 0.
-          // Actually z.coerce.number() on empty string is 0. So required check is tricky.
-          // Better approach: z.string().min(1).pipe(z.coerce.number()) or similar.
-          // For now, let's assume simple required check.
+          validator = z.coerce.number();
+          if (w.required) validator = validator.min(1, { message: 'Required' });
           
           if (w.minValue !== undefined) validator = (validator as z.ZodNumber).min(w.minValue, { message: `Min value is ${w.minValue}` });
           if (w.maxValue !== undefined) validator = (validator as z.ZodNumber).max(w.maxValue, { message: `Max value is ${w.maxValue}` });
@@ -52,18 +51,14 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
           if (!w.required) validator = validator.optional();
           break;
         case 'date':
-           validator = z.string(); // Date input returns string
+           validator = z.string();
            if (w.required) validator = validator.min(1, { message: 'Required' });
            else validator = validator.optional();
            break;
         default:
           validator = z.any();
       }
-      // Use fieldCode for validation schema key if available, else label (fallback)
-      // Ideally we should always use fieldCode or ID.
-      // For now, let's use fieldCode if available, otherwise fallback to ID to ensure uniqueness.
-      const key = (w as any).fieldCode || w.id; // Cast to any to allow fieldCode if not in Widget type
-      shape[key] = validator;
+      // ...
     });
     return z.object(shape);
   }, [widgets]);
@@ -88,29 +83,51 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
             {widget.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           
-          {/* Render input based on type */}
           {(() => {
             const key = (widget as any).fieldCode || widget.id;
             switch (widget.type) {
               case 'text':
                 return <Input {...register(key)} placeholder={widget.label} />;
+              case 'textarea':
+                return <textarea {...register(key)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder={widget.label} />;
               case 'number':
                 return <Input type="number" {...register(key)} placeholder={widget.label} />;
               case 'date':
                 return <Input type="date" {...register(key)} />;
               case 'boolean':
-                // Note: Checkbox component is not imported, assuming it exists or needs to be added.
-                // For a simple boolean input, a native checkbox can be used.
-                return <input type="checkbox" {...register(key)} />;
-              case 'select':
-                // Note: This uses a native HTML select, not the @mirel/ui Select component structure.
-                // If @mirel/ui Select is intended, its specific structure for options would be needed.
                 return (
-                  <select {...register(key)}>
+                    <div className="flex items-center space-x-2">
+                        <input type="checkbox" {...register(key)} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                        <span className="text-sm text-muted-foreground">Yes</span>
+                    </div>
+                );
+              case 'select':
+                return (
+                  <select {...register(key)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                     <option value="">Select...</option>
-                    <option value="Option 1">Option 1</option>
-                    <option value="Option 2">Option 2</option>
+                    {(widget.options || []).map((opt, i) => (
+                        <option key={i} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
+                );
+              case 'radio':
+                return (
+                    <div className="space-y-2">
+                        {(widget.options || []).map((opt, i) => (
+                            <div key={i} className="flex items-center space-x-2">
+                                <input 
+                                    type="radio" 
+                                    value={opt.value} 
+                                    {...register(key)} 
+                                    id={`${key}-${opt.value}`}
+                                    className="aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                                <label htmlFor={`${key}-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    {opt.label}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
                 );
               default:
                 return <Input {...register(key)} />;

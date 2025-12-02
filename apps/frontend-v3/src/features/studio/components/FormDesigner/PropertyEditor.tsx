@@ -112,6 +112,62 @@ export const PropertyEditor: React.FC = () => {
                 </div>
               </div>
           )}
+
+          {(selectedWidget.type === 'select' || selectedWidget.type === 'radio') && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Options</label>
+              <div className="space-y-2">
+                {(selectedWidget.options || []).map((option, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input 
+                      placeholder="Label" 
+                      value={option.label} 
+                      onChange={(e) => {
+                        const newOptions = [...(selectedWidget.options || [])];
+                        if (newOptions[index]) {
+                            newOptions[index] = { ...newOptions[index], label: e.target.value };
+                            updateWidget(selectedWidget.id, { options: newOptions });
+                        }
+                      }}
+                    />
+                    <Input 
+                      placeholder="Value" 
+                      value={option.value} 
+                      onChange={(e) => {
+                        const newOptions = [...(selectedWidget.options || [])];
+                        if (newOptions[index]) {
+                            newOptions[index] = { ...newOptions[index], value: e.target.value };
+                            updateWidget(selectedWidget.id, { options: newOptions });
+                        }
+                      }}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => {
+                        const newOptions = [...(selectedWidget.options || [])];
+                        newOptions.splice(index, 1);
+                        updateWidget(selectedWidget.id, { options: newOptions });
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => {
+                    const newOptions = [...(selectedWidget.options || []), { label: 'New Option', value: 'new_option' }];
+                    updateWidget(selectedWidget.id, { options: newOptions });
+                  }}
+                >
+                  Add Option
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pt-4 border-t">

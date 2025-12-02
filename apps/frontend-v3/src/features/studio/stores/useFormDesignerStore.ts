@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type WidgetType = 'text' | 'number' | 'date' | 'boolean' | 'select';
+export type WidgetType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'textarea' | 'radio';
 
 export interface Widget {
   id: string;
@@ -8,6 +8,7 @@ export interface Widget {
   label: string;
   fieldCode: string;
   required: boolean;
+  options?: { label: string; value: string }[];
   validationRegex?: string;
   minValue?: number;
   maxValue?: number;

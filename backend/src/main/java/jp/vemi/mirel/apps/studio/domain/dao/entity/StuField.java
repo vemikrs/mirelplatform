@@ -48,6 +48,9 @@ public class StuField {
     @Column(name = "layout", columnDefinition = "TEXT")
     private String layout;
 
+    @Column(name = "options", columnDefinition = "TEXT")
+    private String options;
+
     @Column(name = "validation_regex", length = 512)
     private String validationRegex;
 

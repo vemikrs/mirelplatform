@@ -49,6 +49,7 @@ export const StudioPage: React.FC = () => {
           maxValue: field.maxValue,
           minLength: field.minLength,
           maxLength: field.maxLength,
+          options: field.options ? JSON.parse(field.options) : undefined,
           ...layout,
         };
       });
@@ -73,6 +74,7 @@ export const StudioPage: React.FC = () => {
         maxValue: w.maxValue,
         minLength: w.minLength,
         maxLength: w.maxLength,
+        options: w.options ? JSON.stringify(w.options) : undefined,
         sortOrder: index,
         layout: JSON.stringify({ x: w.x, y: w.y, w: w.w, h: w.h }),
       }));
