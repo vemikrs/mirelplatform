@@ -40,6 +40,16 @@ spring:
             client-id: dummy-ci-client-id
             client-secret: dummy-ci-client-secret
 
+# CI環境ではActuatorエンドポイントを露出（ヘルスチェック用）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
 logging:
   level:
     jp.vemi.mirel: INFO

@@ -205,7 +205,7 @@ public class WebSecurityConfig {
                     "/auth/logout",
                     "/auth/check").permitAll()
 
-                    // デバイスフロー認証エンドポイント（CLI用）
+                    // デバイスフロー認証エンドポイント(CLI用)
                     .requestMatchers(
                             "/api/auth/device/code",
                             "/api/auth/device/token",
@@ -219,6 +219,7 @@ public class WebSecurityConfig {
             ).permitAll()
 
                     .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
+                    .requestMatchers("/actuator/**").permitAll() // Actuator endpoints for health checks
                     .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                     .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
                     .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
