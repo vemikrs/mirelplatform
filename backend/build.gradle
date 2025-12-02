@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.3.0'
+    implementation 'org.springframework.boot:spring-boot-starter-aop:3.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-batch:3.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-cache:3.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-groovy-templates:3.3.0'
@@ -51,10 +52,19 @@ dependencies {
     implementation 'org.freemarker:freemarker:2.3.31'
     implementation 'com.codeborne:selenide:7.5.1'
     implementation 'org.hibernate.orm:hibernate-core:6.6.1.Final'
-    implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+    // implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0' // Managed by Spring Boot
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    
+    // Redis (分散レート制限・セッション管理)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.3.0'
+    implementation 'io.lettuce:lettuce-core:6.3.2.RELEASE'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.12.0'
+    
+    // Azure Communication Services (メール送信)
+    implementation 'com.azure:azure-communication-email:1.0.0'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.15.2'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     compileOnly 'org.projectlombok:lombok:1.18.30'

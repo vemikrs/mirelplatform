@@ -4,7 +4,6 @@
  */
 import { StreamLanguage, LanguageSupport } from '@codemirror/language';
 import type { StringStream } from '@codemirror/language';
-import { tags as t } from '@lezer/highlight';
 
 interface FTLState {
   inDirective: boolean;

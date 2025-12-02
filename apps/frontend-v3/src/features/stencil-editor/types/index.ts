@@ -45,6 +45,7 @@ export interface StencilVersion {
   createdAt: string;
   createdBy: string;
   isActive: boolean;
+  changes?: string;
 }
 
 // API Request/Response types

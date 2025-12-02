@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { cn } from '../lib/utils'
+import { getOverlayStyle } from '../lib/styles'
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
@@ -8,7 +9,7 @@ const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
 const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
+  React.ComponentRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, style, ...props }, ref) => (
   <DialogPrimitive.Overlay
@@ -20,6 +21,7 @@ const DialogOverlay = React.forwardRef<
     style={{ 
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       zIndex: 110,
+      pointerEvents: 'auto',
       ...style 
     }}
     {...props}
@@ -28,9 +30,9 @@ const DialogOverlay = React.forwardRef<
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, style, ...props }, ref) => (
+>(({ className, children, style, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -39,15 +41,33 @@ const DialogContent = React.forwardRef<
         'fixed grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg',
         className
       )}
-      style={{
+      style={getOverlayStyle('dialog', {
         left: '50%',
         top: '50%',
         transform: 'translate(-50%, -50%)',
         zIndex: 120,
         isolation: 'isolate',
-        backgroundColor: 'hsl(var(--background))',
-        color: 'hsl(var(--foreground))',
         ...style
+      })}
+      onPointerDownOutside={(e) => {
+        // Selectやその他のPortal要素のクリックを許可
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-radix-select-content]') || 
+            target.closest('[role="listbox"]') ||
+            target.closest('[data-radix-popper-content-wrapper]')) {
+          e.preventDefault();
+        }
+        onPointerDownOutside?.(e);
+      }}
+      onInteractOutside={(e) => {
+        // Selectやその他のPortal要素のインタラクションを許可
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-radix-select-content]') || 
+            target.closest('[role="listbox"]') ||
+            target.closest('[data-radix-popper-content-wrapper]')) {
+          e.preventDefault();
+        }
+        onInteractOutside?.(e);
       }}
       {...props}
     >
@@ -76,7 +96,7 @@ const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
 DialogFooter.displayName = 'DialogFooter'
 
 const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
+  React.ComponentRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
@@ -88,7 +108,7 @@ const DialogTitle = React.forwardRef<
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 
 const DialogDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description

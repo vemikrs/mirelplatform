@@ -1,6 +1,8 @@
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, SectionHeading } from '@mirel/ui'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Workflow, Code, Sparkles } from 'lucide-react'
+import { LicenseSection } from '../components/LicenseSection'
+import { AvailableFeaturesSection, InDevelopmentSection } from '../components/FeatureSection'
 
 const modules = [
   {
@@ -22,6 +24,7 @@ const modules = [
     detailDescription: 'BPMN 連携やWebhookにより複雑な業務シナリオをオーケストレーション。',
     icon: <Workflow className="size-7 text-primary/80" />,
     status: '設計中',
+    link: '/sitemap',
   },
 ]
 
@@ -179,6 +182,13 @@ export function HomePage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* License & Features Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <LicenseSection />
+        <AvailableFeaturesSection />
+        <InDevelopmentSection />
       </div>
 
       {/* Bottom Info Section */}

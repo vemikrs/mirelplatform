@@ -1,0 +1,13 @@
+id,user_id,tenant_id,role_in_tenant,is_default,joined_at,version,delete_flag,create_user_id,create_date,update_user_id,update_date
+ut-admin-default,user-admin-001,default,ADMIN,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-001,user-regular-001,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-002,user-regular-002,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-003,user-regular-003,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-004,user-regular-004,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-005,user-regular-005,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-006,user-regular-006,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-007,user-regular-007,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-008,user-regular-008,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-009,user-regular-009,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-user-default-010,user-regular-010,default,MEMBER,true,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+ut-admin-enterprise,user-admin-001,enterprise-001,ADMIN,false,2023-01-01T00:00:00Z,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00

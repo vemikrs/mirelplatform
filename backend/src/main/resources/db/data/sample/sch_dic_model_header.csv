@@ -1,0 +1,3 @@
+model_id,model_name,description,is_hidden,model_type,tenant_id,version,created_at,created_by,updated_at,updated_by
+sample_supplier_master,仕入先マスタ（サンプル）,Sample Supplier Master,false,master,default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
+sample_order_mgmt,注文管理（サンプル）,Sample Order Management,false,transaction,default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin

@@ -150,19 +150,20 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       if (currentIndex === -1) return;
 
       const currentNode = flattenedNodes[currentIndex];
+      if (!currentNode) return;
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
           if (currentIndex < flattenedNodes.length - 1) {
-            setFocusedPath(flattenedNodes[currentIndex + 1].path);
+            setFocusedPath(flattenedNodes[currentIndex + 1]!.path);
           }
           break;
 
         case 'ArrowUp':
           e.preventDefault();
           if (currentIndex > 0) {
-            setFocusedPath(flattenedNodes[currentIndex - 1].path);
+            setFocusedPath(flattenedNodes[currentIndex - 1]!.path);
           }
           break;
 
@@ -208,7 +209,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     if (!focusedPath && flattenedNodes.length > 0) {
       // Use setTimeout to defer state update to next tick
       const timer = setTimeout(() => {
-        setFocusedPath(flattenedNodes[0].path);
+        const firstNode = flattenedNodes[0];
+        if (firstNode) {
+          setFocusedPath(firstNode.path);
+        }
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -445,7 +449,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       tabIndex={0}
       onFocus={() => {
         if (!focusedPath && flattenedNodes.length > 0) {
-          setFocusedPath(flattenedNodes[0].path);
+          const firstNode = flattenedNodes[0];
+          if (firstNode) {
+            setFocusedPath(firstNode.path);
+          }
         }
       }}
     >
@@ -494,7 +501,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         )}
       </div>
       <div className="group">
-        {fileTree.children?.map((node) => renderNode(node))}
+        {(fileTree.children || []).map((node) => renderNode(node))}
         {creatingIn === '/' && (
           <div 
             className="flex items-center gap-1 px-2 py-1 bg-primary/5"

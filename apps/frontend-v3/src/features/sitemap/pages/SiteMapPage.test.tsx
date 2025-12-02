@@ -13,6 +13,7 @@ const mockNavigation: NavigationConfig = {
   secondary: [],
   quickLinks: [],
   globalActions: [],
+  inDevelopment: [],
 }
 
 vi.mock('react-router-dom', async () => {

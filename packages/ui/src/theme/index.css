@@ -1,6 +1,19 @@
 /* Import Liquid Design System inspired tokens */
 @import "./liquid-tokens.css";
 
+/**
+ * ⚠️ Tailwind v4 との互換性に関する注意:
+ * 
+ * 以下で定義されるCSS変数（--background, --card, --surface等）は、
+ * Tailwind v4のJavaScript config (tailwind.config.js) では
+ * ユーティリティクラスとして自動生成されません。
+ * 
+ * これらの変数を bg-*, text-*, border-* クラスとして使用するには、
+ * apps/frontend-v3/src/index.css で明示的にクラス定義が必要です。
+ * 
+ * 例: .bg-card { background-color: hsl(var(--card)) !important; }
+ */
+
 @layer base {
   :root {
     color-scheme: light;

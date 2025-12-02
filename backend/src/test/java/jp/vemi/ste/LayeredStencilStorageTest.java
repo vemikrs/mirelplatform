@@ -29,16 +29,20 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
 @ActiveProfiles("test")
+@org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LayeredStencilStorageTest {
 
     @Autowired
     private ResourcePatternResolver resourcePatternResolver;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.mail.javamail.JavaMailSender javaMailSender;
+
     private static final String TEST_STENCIL_CATEGORY = "/test-layer";
     private static final String TEST_STENCIL_ID = "/test-layer/test-stencil";
     private static final String TEST_SERIAL_NO = "250104A";
-    
+
     private static Path testStencilPath;
 
     @BeforeEach
@@ -47,17 +51,17 @@ public class LayeredStencilStorageTest {
             // 既に作成済み
             return;
         }
-        
+
         System.out.println("=== Setting up test stencil in user layer ===");
-        
+
         // ユーザーレイヤーにテストステンシルを作成
         String userLayerDir = StorageConfig.getUserStencilDir();
         testStencilPath = Paths.get(userLayerDir, "test-layer", "test-stencil", TEST_SERIAL_NO);
-        
+
         // ディレクトリ作成
         Files.createDirectories(testStencilPath);
         System.out.println("Created test stencil directory: " + testStencilPath);
-        
+
         // stencil-settings.yml を作成
         Path settingsFile = testStencilPath.resolve("stencil-settings.yml");
         try (FileWriter writer = new FileWriter(settingsFile.toFile())) {
@@ -88,7 +92,7 @@ public class LayeredStencilStorageTest {
             writer.write("    vendor: \"Test Vendor\"\n");
         }
         System.out.println("Created stencil-settings.yml: " + settingsFile);
-        
+
         // テンプレートファイルを作成
         Path templateFile = testStencilPath.resolve("template.ftl");
         try (FileWriter writer = new FileWriter(templateFile.toFile())) {
@@ -102,7 +106,7 @@ public class LayeredStencilStorageTest {
             writer.write("}\n");
         }
         System.out.println("Created template.ftl: " + templateFile);
-        
+
         System.out.println("=== Test stencil setup completed ===");
     }
 
@@ -132,13 +136,13 @@ public class LayeredStencilStorageTest {
     @Order(1)
     public void testUserLayerStencilExists() {
         System.out.println("=== Test 1: Verify test stencil exists in user layer ===");
-        
+
         File settingsFile = testStencilPath.resolve("stencil-settings.yml").toFile();
         assertTrue(settingsFile.exists(), "stencil-settings.yml should exist in user layer");
-        
+
         File templateFile = testStencilPath.resolve("template.ftl").toFile();
         assertTrue(templateFile.exists(), "template.ftl should exist in user layer");
-        
+
         System.out.println("✓ Test stencil files exist");
     }
 
@@ -146,24 +150,24 @@ public class LayeredStencilStorageTest {
     @Order(2)
     public void testGetSerialNosFindsUserLayerStencil() {
         System.out.println("=== Test 2: getSerialNos() should find serial number in user layer ===");
-        
+
         // SteContextを作成 (serialNoは指定しない)
         SteContext context = SteContext.standard(TEST_STENCIL_ID, "");
-        
+
         // TemplateEngineProcessorを作成
         TemplateEngineProcessor processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
-        
+
         // getSerialNos()を呼び出し
         List<String> serialNos = processor.getSerialNos();
-        
+
         System.out.println("Found serial numbers: " + serialNos);
-        
+
         // アサーション
         assertNotNull(serialNos, "Serial numbers list should not be null");
         assertFalse(serialNos.isEmpty(), "Serial numbers list should not be empty");
-        assertTrue(serialNos.contains(TEST_SERIAL_NO), 
-            "Serial numbers should contain " + TEST_SERIAL_NO + ", but found: " + serialNos);
-        
+        assertTrue(serialNos.contains(TEST_SERIAL_NO),
+                "Serial numbers should contain " + TEST_SERIAL_NO + ", but found: " + serialNos);
+
         System.out.println("✓ getSerialNos() correctly found: " + TEST_SERIAL_NO);
     }
 
@@ -171,11 +175,11 @@ public class LayeredStencilStorageTest {
     @Order(3)
     public void testTemplateEngineProcessorCreationWithUserLayerStencil() {
         System.out.println("=== Test 3: TemplateEngineProcessor should successfully load user layer stencil ===");
-        
+
         // SteContextを作成 (serialNoを明示的に指定)
         SteContext context = SteContext.standard(TEST_STENCIL_ID, TEST_SERIAL_NO);
         context.put("message", "Hello from test");
-        
+
         // TemplateEngineProcessorを作成 - エラーが発生しないことを確認
         assertDoesNotThrow(() -> {
             TemplateEngineProcessor processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
@@ -188,26 +192,26 @@ public class LayeredStencilStorageTest {
     @Order(4)
     public void testGetStencilSettingsFromUserLayer() throws Exception {
         System.out.println("=== Test 4: getStencilSettings() should load settings from user layer ===");
-        
+
         // SteContextを作成
         SteContext context = SteContext.standard(TEST_STENCIL_ID, TEST_SERIAL_NO);
-        
+
         // TemplateEngineProcessorを作成
         TemplateEngineProcessor processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
-        
+
         // getStencilSettings()を呼び出し
         var settings = processor.getStencilSettings();
-        
+
         // アサーション
         assertNotNull(settings, "Stencil settings should not be null");
         assertNotNull(settings.getStencil(), "Stencil should not be null");
         assertNotNull(settings.getStencil().getConfig(), "Stencil config should not be null");
-        
+
         var config = settings.getStencil().getConfig();
         assertEquals(TEST_STENCIL_ID, config.getId(), "Stencil ID should match");
         assertEquals(TEST_SERIAL_NO, config.getSerial(), "Serial number should match");
         assertEquals("Test Layer Stencil", config.getName(), "Stencil name should match");
-        
+
         System.out.println("✓ Stencil settings loaded correctly:");
         System.out.println("  ID: " + config.getId());
         System.out.println("  Serial: " + config.getSerial());
@@ -218,59 +222,59 @@ public class LayeredStencilStorageTest {
     @Order(5)
     public void testExistingUserStencilSerialDetection() {
         System.out.println("=== Test 5: Test existing user stencil (springboot/service) ===");
-        
+
         // 実際に存在するユーザーステンシルをテスト
-        String existingStencilId = "/springboot/service";
-        String expectedSerial = "221208A";
-        
+        String existingStencilId = "/springboot/spring-boot-service";
+        String expectedSerial = "250101A";
+
         // SteContextを作成
         SteContext context = SteContext.standard(existingStencilId, "");
-        
+
         // TemplateEngineProcessorを作成
         TemplateEngineProcessor processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
-        
+
         // getSerialNos()を呼び出し
         List<String> serialNos = processor.getSerialNos();
-        
+
         System.out.println("Found serial numbers for " + existingStencilId + ": " + serialNos);
-        
+
         // アサーション
         assertNotNull(serialNos, "Serial numbers list should not be null");
-        assertFalse(serialNos.isEmpty(), 
-            "Serial numbers list should not be empty for existing stencil " + existingStencilId);
-        assertTrue(serialNos.contains(expectedSerial), 
-            "Serial numbers should contain " + expectedSerial + " for existing stencil, but found: " + serialNos);
-        
+        assertFalse(serialNos.isEmpty(),
+                "Serial numbers list should not be empty for existing stencil " + existingStencilId);
+        assertTrue(serialNos.contains(expectedSerial),
+                "Serial numbers should contain " + expectedSerial + " for existing stencil, but found: " + serialNos);
+
         System.out.println("✓ Existing user stencil serial detected: " + expectedSerial);
     }
-    
+
     @Test
     @Order(6)
     public void testSampleStencilSerialDetection() {
         System.out.println("=== Test 6: Test sample stencil (samples/hello-world) ===");
-        
+
         // サンプルステンシルをテスト
         String sampleStencilId = "/samples/hello-world";
         String expectedSerial = "250913A";
-        
+
         // SteContextを作成
         SteContext context = SteContext.standard(sampleStencilId, "");
-        
+
         // TemplateEngineProcessorを作成
         TemplateEngineProcessor processor = TemplateEngineProcessor.create(context, resourcePatternResolver);
-        
+
         // getSerialNos()を呼び出し
         List<String> serialNos = processor.getSerialNos();
-        
+
         System.out.println("Found serial numbers for " + sampleStencilId + ": " + serialNos);
-        
+
         // アサーション
         assertNotNull(serialNos, "Serial numbers list should not be null");
-        assertFalse(serialNos.isEmpty(), 
-            "Serial numbers list should not be empty for sample stencil " + sampleStencilId);
-        assertTrue(serialNos.contains(expectedSerial), 
-            "Serial numbers should contain " + expectedSerial + " for sample stencil, but found: " + serialNos);
-        
+        assertFalse(serialNos.isEmpty(),
+                "Serial numbers list should not be empty for sample stencil " + sampleStencilId);
+        assertTrue(serialNos.contains(expectedSerial),
+                "Serial numbers should contain " + expectedSerial + " for sample stencil, but found: " + serialNos);
+
         System.out.println("✓ Sample stencil serial detected: " + expectedSerial);
     }
 }

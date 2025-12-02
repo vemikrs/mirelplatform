@@ -13,7 +13,16 @@
         }
       },
       "isBackground": true,
-      "problemMatcher": [],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "起動状況を監視中",
+          "endsPattern": "(全サービスが正常に起動しました|起動監視がタイムアウトしました)"
+        }
+      },
       "runOptions": {
         "instanceLimit": 1
       },
@@ -232,6 +241,26 @@
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "UI: Typecheck",
+      "type": "shell",
+      "command": "pnpm --filter @mirel/ui typecheck",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$tsc",
       "presentation": {
         "echo": true,
         "reveal": "always",
