@@ -25,6 +25,7 @@
     "@lezer/highlight": "^1.2.3",
     "@mirel/ui": "workspace:*",
     "@tanstack/react-query": "^5.90.11",
+    "@tanstack/react-table": "^8.21.3",
     "@uiw/codemirror-theme-vscode": "^4.25.3",
     "@uiw/react-codemirror": "^4.25.3",
     "axios": "^1.13.2",
