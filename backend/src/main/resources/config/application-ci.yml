@@ -39,6 +39,14 @@ spring:
           github:
             client-id: dummy-ci-client-id
             client-secret: dummy-ci-client-secret
+  # CI環境でもRedisを設定（軽量のスタンドアロンモード）
+  # RateLimitServiceがRedisTemplateに依存するため完全無効化はできない
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 1000ms
+      # 接続失敗時はRateLimitServiceがメモリフォールバックする
 
 # CI環境ではActuatorエンドポイントを露出（ヘルスチェック用）
 management:
@@ -49,6 +57,9 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    redis:
+      enabled: false  # CI環境ではRedisヘルスチェックを無効化（失敗しても起動できるように）
 
 logging:
   level:
