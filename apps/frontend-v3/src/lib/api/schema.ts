@@ -5,6 +5,7 @@ export interface StuField {
   fieldId: string;
   modelId?: string;
   fieldName: string;
+  fieldCode: string;
   fieldType: string;
   isRequired: boolean;
   sortOrder: number;
@@ -58,4 +59,30 @@ export const getSchemas = async () => {
 export const getSchema = async (modelId: string) => {
   const response = await apiClient.get<ApiResponse<SchemaDetail>>(`/api/studio/schema/${modelId}`);
   return response.data;
+};
+
+// Data API
+export const listData = async (modelId: string) => {
+  const response = await apiClient.get<any[]>(`/api/studio/data/${modelId}`);
+  return response.data;
+};
+
+export const getData = async (modelId: string, recordId: string) => {
+  const response = await apiClient.get<any>(`/api/studio/data/${modelId}/${recordId}`);
+  return response.data;
+};
+
+export const createData = async (modelId: string, data: any) => {
+  const response = await apiClient.post<void>(`/api/studio/data/${modelId}`, data);
+  return response;
+};
+
+export const updateData = async (modelId: string, recordId: string, data: any) => {
+  const response = await apiClient.put<void>(`/api/studio/data/${modelId}/${recordId}`, data);
+  return response;
+};
+
+export const deleteData = async (modelId: string, recordId: string) => {
+  const response = await apiClient.delete<void>(`/api/studio/data/${modelId}/${recordId}`);
+  return response;
 };

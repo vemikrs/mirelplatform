@@ -79,7 +79,7 @@ public class DynamicEntityService {
 
         List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
         Map<String, StuField> fieldMap = fields.stream()
-                .collect(Collectors.toMap(StuField::getFieldName, f -> f));
+                .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
 
         StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (id, created_at, updated_at");
         StringBuilder values = new StringBuilder("VALUES (?, ?, ?");
@@ -122,7 +122,7 @@ public class DynamicEntityService {
 
         List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
         Map<String, StuField> fieldMap = fields.stream()
-                .collect(Collectors.toMap(StuField::getFieldName, f -> f));
+                .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
 
         StringBuilder sql = new StringBuilder("UPDATE " + tableName + " SET updated_at = ?");
         List<Object> params = new ArrayList<>();

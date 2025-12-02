@@ -62,8 +62,8 @@ public class SchemaEngineService {
         sql.append("id UUID PRIMARY KEY, ");
 
         for (StuField field : fields) {
-            validateName(field.getFieldName());
-            sql.append(field.getFieldName()).append(" ");
+            validateName(field.getFieldCode());
+            sql.append(field.getFieldCode()).append(" ");
             sql.append(mapToSqlType(field.getFieldType()));
 
             if (Boolean.TRUE.equals(field.getIsRequired())) {

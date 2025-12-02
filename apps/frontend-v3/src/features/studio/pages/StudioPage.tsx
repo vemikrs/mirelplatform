@@ -41,6 +41,7 @@ export const StudioPage: React.FC = () => {
           id: field.fieldId,
           type: field.fieldType.toLowerCase() as any, // TODO: strict type mapping
           label: field.fieldName,
+          fieldCode: field.fieldCode,
           required: field.isRequired,
           ...layout,
         };
@@ -58,6 +59,7 @@ export const StudioPage: React.FC = () => {
       const fields = widgets.map((w, index) => ({
         fieldId: w.id,
         fieldName: w.label,
+        fieldCode: w.fieldCode,
         fieldType: w.type.toUpperCase(),
         isRequired: w.required,
         sortOrder: index,
@@ -140,6 +142,9 @@ export const StudioPage: React.FC = () => {
             </Button>
           </div>
           <div className="w-px h-6 bg-gray-200 mx-2" />
+          <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/data`)} disabled={!modelId} className="gap-2">
+            Data
+          </Button>
           <Button size="sm" onClick={handleSave} className="gap-2">
             <Save className="size-4" />
             Save

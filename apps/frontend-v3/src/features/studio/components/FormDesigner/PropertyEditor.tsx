@@ -24,7 +24,7 @@ export const PropertyEditor: React.FC = () => {
       
       <div className="p-4 flex-1 overflow-y-auto space-y-6">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Label</label>
+          <label className="text-sm font-medium">Label</label>
           <Input 
             value={selectedWidget.label} 
             onChange={(e) => updateWidget(selectedWidget.id, { label: e.target.value })}
@@ -32,7 +32,16 @@ export const PropertyEditor: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Type</label>
+          <label className="text-sm font-medium">Field Code</label>
+          <Input 
+            value={selectedWidget.fieldCode || ''} 
+            onChange={(e) => updateWidget(selectedWidget.id, { fieldCode: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">Database column name (alphanumeric)</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Type</label>
              <div className="p-2 bg-gray-100 rounded text-sm text-gray-600">
                 {selectedWidget.type}
              </div>

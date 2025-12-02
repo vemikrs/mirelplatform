@@ -6,6 +6,7 @@ export interface Widget {
   id: string;
   type: WidgetType;
   label: string;
+  fieldCode: string;
   required: boolean;
   // Grid layout properties
   x: number;

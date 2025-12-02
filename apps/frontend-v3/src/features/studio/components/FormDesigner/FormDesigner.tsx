@@ -44,6 +44,7 @@ export const FormDesigner: React.FC = () => {
             id: nanoid(),
             type,
             label: `New ${type}`,
+            fieldCode: `fld_${nanoid(8)}`,
             required: false,
             x: 0, 
             y: 0,

@@ -31,6 +31,8 @@ import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefine
 import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
 import { StudioPage } from '@/features/studio/pages/StudioPage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
+import { StudioDataListPage } from '@/features/studio/pages/StudioDataListPage';
+import { StudioDataEditPage } from '@/features/studio/pages/StudioDataEditPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -286,6 +288,16 @@ export const router = createBrowserRouter([
             path: ':modelId',
             element: <StudioPage />,
             handle: { title: 'Studio - Edit Form' },
+          },
+          {
+            path: ':modelId/data',
+            element: <StudioDataListPage />,
+            handle: { title: 'Studio - Data List' },
+          },
+          {
+            path: ':modelId/data/:recordId',
+            element: <StudioDataEditPage />,
+            handle: { title: 'Studio - Edit Data' },
           },
         ],
       },

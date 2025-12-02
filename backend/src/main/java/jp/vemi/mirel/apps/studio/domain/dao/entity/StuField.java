@@ -30,6 +30,9 @@ public class StuField {
     @Column(name = "field_name", nullable = false, length = 255)
     private String fieldName;
 
+    @Column(name = "field_code", nullable = false, length = 64)
+    private String fieldCode;
+
     /**
      * Type: STRING, NUMBER, DATE, BOOLEAN, JSON, etc.
      */
