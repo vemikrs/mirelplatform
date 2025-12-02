@@ -19,12 +19,12 @@ import {
 } from '@/lib/api/features';
 
 // Status configuration
-const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: string; label: string }> = {
-  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'green', label: '安定版' },
-  BETA: { icon: <Beaker className="size-3.5" />, color: 'yellow', label: 'ベータ' },
-  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'orange', label: 'アルファ' },
-  PLANNING: { icon: <Clock className="size-3.5" />, color: 'gray', label: '計画中' },
-  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'red', label: '非推奨' },
+const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: 'neutral' | 'outline' | 'destructive' | 'info' | 'success' | 'warning'; label: string }> = {
+  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'success', label: '安定版' },
+  BETA: { icon: <Beaker className="size-3.5" />, color: 'warning', label: 'ベータ' },
+  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'warning', label: 'アルファ' },
+  PLANNING: { icon: <Clock className="size-3.5" />, color: 'neutral', label: '計画中' },
+  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'destructive', label: '非推奨' },
 };
 
 interface FeatureItemProps {
@@ -56,7 +56,7 @@ function FeatureItem({ feature, showApp = false }: FeatureItemProps) {
           </Badge>
         )}
         <Badge 
-          variant={status.color as 'green' | 'yellow' | 'neutral'} 
+          variant={status.color} 
           className="text-xs"
         >
           {status.label}
