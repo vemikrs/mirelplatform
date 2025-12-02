@@ -75,11 +75,12 @@ public class SchemaApiController {
                     String saveSchemaModelId = (String) content.get("modelId");
                     String modelName = (String) content.get("modelName");
                     Boolean isHidden = (Boolean) content.get("isHiddenModel");
+                    String modelType = (String) content.get("modelType");
                     List<Map<String, Object>> fieldsMap = (List<Map<String, Object>>) content.get("fields");
                     List<SchDicModel> fields = fieldsMap.stream()
                             .map(f -> objectMapper.convertValue(f, SchDicModel.class))
                             .toList();
-                    dictionaryMaintenanceEngine.saveModel(saveSchemaModelId, modelName, isHidden, fields);
+                    dictionaryMaintenanceEngine.saveModel(saveSchemaModelId, modelName, isHidden, modelType, fields);
                     response.setMessages(List.of("保存しました。"));
                     break;
                 case "deleteModel":

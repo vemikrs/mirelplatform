@@ -24,6 +24,7 @@ export interface SchRecord {
 
 export interface SchDicModel {
   modelId: string;
+  modelType?: 'transaction' | 'master'; // Added for separation
   fieldId: string;
   isKey?: boolean;
   fieldName?: string;

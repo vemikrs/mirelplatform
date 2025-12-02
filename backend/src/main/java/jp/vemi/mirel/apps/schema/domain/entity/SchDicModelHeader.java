@@ -41,6 +41,9 @@ public class SchDicModelHeader {
     @Column(name = "is_hidden")
     private Boolean isHidden;
 
+    @Column(name = "model_type")
+    private String modelType;
+
     @Column(name = "tenant_id", nullable = false)
     private String tenantId;
 

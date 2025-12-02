@@ -19,11 +19,13 @@ public class DictionaryMaintenanceEngine {
         return schemaModelService.findModels(modelId);
     }
 
-    public void saveModel(String modelId, String modelName, Boolean isHidden, List<SchDicModel> fields) {
+    public void saveModel(String modelId, String modelName, Boolean isHidden, String modelType,
+            List<SchDicModel> fields) {
         SchDicModelHeader header = SchDicModelHeader.builder()
                 .modelId(modelId)
                 .modelName(modelName)
                 .isHidden(isHidden)
+                .modelType(modelType)
                 .build();
         schemaModelService.saveHeader(header);
         schemaModelService.saveModel(fields);
