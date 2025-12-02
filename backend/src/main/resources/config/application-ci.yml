@@ -60,6 +60,8 @@ management:
   health:
     redis:
       enabled: false  # CI環境ではRedisヘルスチェックを無効化（失敗しても起動できるように）
+    mail:
+      enabled: false  # CI環境ではメールヘルスチェックを無効化
 
 logging:
   level:
