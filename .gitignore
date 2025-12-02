@@ -12,8 +12,7 @@ backend.log
 frontend.log
 
 ### Database & Storage ###
-data/
-**/data/
+backend/data/
 
 ### STS ###
 .apt_generated
