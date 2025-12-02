@@ -1,9 +1,9 @@
 /*
  * Copyright(c) 2025 mirelplatform All Right Reserved.
  */
-package jp.vemi.mirel.apps.mste.domain.dao.repository;
+package jp.vemi.mirel.apps.studio.domain.dao.repository;
 
-import jp.vemi.mirel.apps.mste.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StuModelHeaderRepositoryTest {
 
     @org.springframework.boot.SpringBootConfiguration
-    @org.springframework.data.jpa.repository.config.EnableJpaRepositories(basePackages = "jp.vemi.mirel.apps.mste.domain.dao.repository")
-    @org.springframework.boot.autoconfigure.domain.EntityScan(basePackages = "jp.vemi.mirel.apps.mste.domain.dao.entity")
+    @org.springframework.data.jpa.repository.config.EnableJpaRepositories(basePackages = "jp.vemi.mirel.apps.studio.domain.dao.repository")
+    @org.springframework.boot.autoconfigure.domain.EntityScan(basePackages = "jp.vemi.mirel.apps.studio.domain.dao.entity")
     static class Config {
     }
 

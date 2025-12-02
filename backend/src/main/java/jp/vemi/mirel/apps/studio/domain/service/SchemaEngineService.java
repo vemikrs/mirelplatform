@@ -1,10 +1,10 @@
 /*
  * Copyright(c) 2025 mirelplatform All Right Reserved.
  */
-package jp.vemi.mirel.apps.mste.domain.service;
+package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.mste.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.mste.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

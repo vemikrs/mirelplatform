@@ -1,7 +1,7 @@
 /*
  * Copyright(c) 2025 mirelplatform All Right Reserved.
  */
-package jp.vemi.mirel.apps.mste.domain.dao.entity;
+package jp.vemi.mirel.apps.studio.domain.dao.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * Studio Model Header Entity
  */
 @Entity
-@Table(name = "mste_model_header")
+@Table(name = "stu_model_header")
 @Getter
 @Setter
 public class StuModelHeader {

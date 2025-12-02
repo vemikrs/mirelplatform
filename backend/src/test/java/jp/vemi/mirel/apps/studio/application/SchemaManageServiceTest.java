@@ -1,13 +1,13 @@
 /*
  * Copyright(c) 2025 mirelplatform All Right Reserved.
  */
-package jp.vemi.mirel.apps.mste.application;
+package jp.vemi.mirel.apps.studio.application;
 
-import jp.vemi.mirel.apps.mste.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.mste.domain.dao.entity.StuModelHeader;
-import jp.vemi.mirel.apps.mste.domain.dao.repository.StuFieldRepository;
-import jp.vemi.mirel.apps.mste.domain.dao.repository.StuModelHeaderRepository;
-import jp.vemi.mirel.apps.mste.domain.service.SchemaEngineService;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
+import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderRepository;
+import jp.vemi.mirel.apps.studio.domain.service.SchemaEngineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
