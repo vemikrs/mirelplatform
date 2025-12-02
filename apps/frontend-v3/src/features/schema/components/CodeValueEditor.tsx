@@ -41,7 +41,7 @@ export const CodeValueEditor: React.FC<CodeValueEditorProps> = ({
 
   const handleChange = (index: number, field: keyof SchDicCode, value: any) => {
     const newCodes = [...codes];
-    newCodes[index] = { ...newCodes[index], [field]: value };
+    newCodes[index] = { ...newCodes[index], [field]: value } as SchDicCode;
     setCodes(newCodes);
   };
 
