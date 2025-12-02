@@ -34,6 +34,87 @@ public class SchemaManageService {
     }
 
     /**
+     * Create a new model draft.
+     *
+     * @param name
+     *            Model name
+     * @param description
+     *            Model description
+     * @return The created model ID
+     */
+    @Transactional
+    public String createDraft(String name, String description) {
+        StuModelHeader model = new StuModelHeader();
+        model.setModelId(java.util.UUID.randomUUID().toString());
+        model.setModelName(name);
+        model.setDescription(description);
+        model.setStatus("DRAFT");
+        model.setVersion(1);
+
+        headerRepository.save(model);
+        return model.getModelId();
+    }
+
+    /**
+     * Update a model draft.
+     *
+     * @param modelId
+     *            Model ID
+     * @param name
+     *            Model name
+     * @param description
+     *            Model description
+     * @param fields
+     *            List of fields
+     */
+    @Transactional
+    public void updateDraft(String modelId, String name, String description, List<StuField> fields) {
+        StuModelHeader model = headerRepository.findById(modelId)
+                .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
+
+        if ("PUBLISHED".equals(model.getStatus())) {
+            throw new IllegalStateException("Cannot update published model. Create a new version.");
+        }
+
+        model.setModelName(name);
+        model.setDescription(description);
+        headerRepository.save(model);
+
+        // Replace fields
+        List<StuField> existingFields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+        fieldRepository.deleteAll(existingFields);
+
+        for (StuField field : fields) {
+            field.setFieldId(java.util.UUID.randomUUID().toString());
+            field.setModelId(modelId);
+            fieldRepository.save(field);
+        }
+    }
+
+    /**
+     * Delete a model.
+     *
+     * @param modelId
+     *            Model ID
+     */
+    @Transactional
+    public void deleteModel(String modelId) {
+        StuModelHeader model = headerRepository.findById(modelId)
+                .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
+
+        // If published, we might want to drop the table too.
+        // For Phase 1, we will drop the table if it exists.
+        if ("PUBLISHED".equals(model.getStatus())) {
+            // TODO: Implement drop table logic in SchemaEngineService if needed.
+            // For now, we just delete metadata.
+        }
+
+        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+        fieldRepository.deleteAll(fields);
+        headerRepository.delete(model);
+    }
+
+    /**
      * Publish a model, creating the physical table.
      *
      * @param modelId
