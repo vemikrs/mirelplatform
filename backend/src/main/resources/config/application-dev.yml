@@ -1,29 +1,24 @@
 # application-dev.yml - Development Environment Configuration
+# PostgreSQL (docker-compose.dev.yml) を使用
 spring:
   datasource:
-    url: jdbc:h2:file:./data/mireldb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=MySQL;LOCK_TIMEOUT=10000
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://localhost:5432/mirelplatform
+    driver-class-name: org.postgresql.Driver
+    username: mirel
+    password: mirel
   session:
     jdbc:
-      schema: classpath:org/springframework/session/jdbc/schema-h2.sql
+      schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        hbm2ddl:
-          halt_on_error: false
-        connection:
-          isolation: 2  # REPEATABLE_READ for MySQL compatibility
         jdbc:
-          batch_size: 1  # Minimize batch conflicts
+          lob:
+            non_contextual_creation: true
     show-sql: true
-  h2:
-    console:
-      enabled: true
   # Spring Boot Mail設定（JavaMailSender Bean生成用）
   mail:
     host: localhost

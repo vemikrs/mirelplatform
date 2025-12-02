@@ -84,7 +84,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             AuthenticationService authenticationService) throws Exception {
-        DataSeeder.initializeDefaultTenant();
+        // データ初期化は DatabaseInitializer で行う（ここでは行わない）
 
         configureCors(http);
         configureCsrf(http);
