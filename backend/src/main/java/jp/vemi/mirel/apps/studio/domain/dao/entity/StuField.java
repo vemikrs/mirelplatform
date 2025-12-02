@@ -45,8 +45,23 @@ public class StuField {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
-    @Column(name = "layout", length = 1000)
+    @Column(name = "layout", columnDefinition = "TEXT")
     private String layout;
+
+    @Column(name = "validation_regex", length = 512)
+    private String validationRegex;
+
+    @Column(name = "min_value")
+    private Double minValue;
+
+    @Column(name = "max_value")
+    private Double maxValue;
+
+    @Column(name = "min_length")
+    private Integer minLength;
+
+    @Column(name = "max_length")
+    private Integer maxLength;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

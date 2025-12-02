@@ -47,15 +47,71 @@ export const PropertyEditor: React.FC = () => {
              </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-            <input 
-                type="checkbox" 
-                id="required"
-                checked={selectedWidget.required}
-                onChange={(e) => updateWidget(selectedWidget.id, { required: e.target.checked })}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <label htmlFor="required" className="text-sm font-medium text-gray-700">Required</label>
+        <div className="flex items-center gap-2">
+          <input 
+            type="checkbox" 
+            id="required"
+            checked={selectedWidget.required}
+            onChange={(e) => updateWidget(selectedWidget.id, { required: e.target.checked })}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="required" className="text-sm font-medium text-gray-700">Required</label>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          <h4 className="text-sm font-semibold text-gray-900">Validation</h4>
+          
+          {(selectedWidget.type === 'text' || selectedWidget.type === 'select') && (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Regex Pattern</label>
+                <Input 
+                  value={selectedWidget.validationRegex || ''} 
+                  onChange={(e) => updateWidget(selectedWidget.id, { validationRegex: e.target.value })}
+                  placeholder="e.g. ^[A-Z]+$"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Min Length</label>
+                  <Input 
+                    type="number"
+                    value={selectedWidget.minLength || ''} 
+                    onChange={(e) => updateWidget(selectedWidget.id, { minLength: e.target.value ? Number(e.target.value) : undefined })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Max Length</label>
+                  <Input 
+                    type="number"
+                    value={selectedWidget.maxLength || ''} 
+                    onChange={(e) => updateWidget(selectedWidget.id, { maxLength: e.target.value ? Number(e.target.value) : undefined })}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {selectedWidget.type === 'number' && (
+             <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Min Value</label>
+                  <Input 
+                    type="number"
+                    value={selectedWidget.minValue || ''} 
+                    onChange={(e) => updateWidget(selectedWidget.id, { minValue: e.target.value ? Number(e.target.value) : undefined })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Max Value</label>
+                  <Input 
+                    type="number"
+                    value={selectedWidget.maxValue || ''} 
+                    onChange={(e) => updateWidget(selectedWidget.id, { maxValue: e.target.value ? Number(e.target.value) : undefined })}
+                  />
+                </div>
+              </div>
+          )}
         </div>
 
         <div className="pt-4 border-t">

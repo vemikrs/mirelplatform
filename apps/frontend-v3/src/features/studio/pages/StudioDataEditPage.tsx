@@ -6,6 +6,7 @@ import { Button, Card } from '@mirel/ui';
 import { ArrowLeft } from 'lucide-react';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
 import type { Widget } from '../stores/useFormDesignerStore';
+import { toast } from 'sonner';
 
 export const StudioDataEditPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
@@ -35,8 +36,13 @@ export const StudioDataEditPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studio-data', modelId] });
+      toast.success('Record saved successfully');
       navigate(`/apps/studio/${modelId}/data`);
     },
+    onError: (error) => {
+        console.error('Failed to save record', error);
+        toast.error('Failed to save record');
+    }
   });
 
   if (!schema || (isLoadingRecord && !isNew)) {

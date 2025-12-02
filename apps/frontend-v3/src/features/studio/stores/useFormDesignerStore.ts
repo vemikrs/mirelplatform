@@ -8,6 +8,11 @@ export interface Widget {
   label: string;
   fieldCode: string;
   required: boolean;
+  validationRegex?: string;
+  minValue?: number;
+  maxValue?: number;
+  minLength?: number;
+  maxLength?: number;
   // Grid layout properties
   x: number;
   y: number;

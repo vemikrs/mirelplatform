@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listData, deleteData, getSchema } from '@/lib/api/schema';
 import { Button, Card } from '@mirel/ui';
-import { Plus, Edit, Trash, ArrowLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const StudioDataListPage: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
@@ -22,11 +23,18 @@ export const StudioDataListPage: React.FC = () => {
     enabled: !!modelId,
   });
 
+
+
   const deleteMutation = useMutation({
     mutationFn: (recordId: string) => deleteData(modelId!, recordId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studio-data', modelId] });
+      toast.success('Record deleted successfully');
     },
+    onError: (error) => {
+        console.error('Failed to delete record', error);
+        toast.error('Failed to delete record');
+    }
   });
 
   if (isLoading || !schema) {
@@ -75,24 +83,15 @@ export const StudioDataListPage: React.FC = () => {
                   ))}
                   <td className="px-6 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => navigate(`/apps/studio/${modelId}/data/${record.id}`)}
-                      >
-                        <Edit className="size-4" />
+                      <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}/data/${record.id}`)}>
+                        <Edit2 className="size-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => {
-                          if (confirm('Are you sure?')) {
-                            deleteMutation.mutate(record.id);
-                          }
-                        }}
-                      >
-                        <Trash className="size-4" />
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        if (confirm('Are you sure you want to delete this record?')) {
+                          deleteMutation.mutate(record.id);
+                        }
+                      }}>
+                        <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </div>
                   </td>

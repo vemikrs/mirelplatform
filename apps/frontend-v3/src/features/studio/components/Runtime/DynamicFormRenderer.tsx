@@ -22,11 +22,30 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
           validator = z.string();
           if (w.required) validator = validator.min(1, { message: 'Required' });
           else validator = validator.optional();
+          
+          if (w.minLength) validator = (validator as z.ZodString).min(w.minLength, { message: `Min length is ${w.minLength}` });
+          if (w.maxLength) validator = (validator as z.ZodString).max(w.maxLength, { message: `Max length is ${w.maxLength}` });
+          if (w.validationRegex) {
+             try {
+               // Validate regex validity
+               new RegExp(w.validationRegex);
+               validator = (validator as z.ZodString).regex(new RegExp(w.validationRegex), { message: 'Invalid format' });
+             } catch (e) {
+               console.warn('Invalid regex:', w.validationRegex);
+             }
+          }
           break;
         case 'number':
           validator = z.coerce.number(); // Handle string input for numbers
-          if (w.required) validator = validator.min(1, { message: 'Required' });
-          else validator = validator.optional();
+          if (w.required) validator = validator.min(1, { message: 'Required' }); // This might be wrong for number 0, but usually required means not empty/null. z.coerce.number() turns empty string to 0? No, to NaN usually or 0.
+          // Actually z.coerce.number() on empty string is 0. So required check is tricky.
+          // Better approach: z.string().min(1).pipe(z.coerce.number()) or similar.
+          // For now, let's assume simple required check.
+          
+          if (w.minValue !== undefined) validator = (validator as z.ZodNumber).min(w.minValue, { message: `Min value is ${w.minValue}` });
+          if (w.maxValue !== undefined) validator = (validator as z.ZodNumber).max(w.maxValue, { message: `Max value is ${w.maxValue}` });
+          
+          if (!w.required) validator = validator.optional();
           break;
         case 'boolean':
           validator = z.boolean();

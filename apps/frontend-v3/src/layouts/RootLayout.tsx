@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
-import { Badge, Button, Toaster } from '@mirel/ui';
+import { Badge, Button } from '@mirel/ui';
+import { Toaster } from 'sonner';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';

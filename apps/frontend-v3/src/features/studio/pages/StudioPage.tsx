@@ -6,6 +6,7 @@ import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
 import { useFormDesignerStore, type Widget } from '../stores/useFormDesignerStore';
 import { Button, Card } from '@mirel/ui';
 import { Eye, Edit, Save, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { createDraft, updateDraft, getSchema } from '@/lib/api/schema';
 import { useNavigate } from 'react-router-dom';
 
@@ -43,6 +44,11 @@ export const StudioPage: React.FC = () => {
           label: field.fieldName,
           fieldCode: field.fieldCode,
           required: field.isRequired,
+          validationRegex: field.validationRegex,
+          minValue: field.minValue,
+          maxValue: field.maxValue,
+          minLength: field.minLength,
+          maxLength: field.maxLength,
           ...layout,
         };
       });
@@ -62,44 +68,41 @@ export const StudioPage: React.FC = () => {
         fieldCode: w.fieldCode,
         fieldType: w.type.toUpperCase(),
         isRequired: w.required,
+        validationRegex: w.validationRegex,
+        minValue: w.minValue,
+        maxValue: w.maxValue,
+        minLength: w.minLength,
+        maxLength: w.maxLength,
         sortOrder: index,
         layout: JSON.stringify({ x: w.x, y: w.y, w: w.w, h: w.h }),
       }));
 
       if (modelId) {
-        const res = await updateDraft(modelId, {
+        await updateDraft(modelId, {
           name: modelName,
           fields,
         });
-        if (res.errors && res.errors.length > 0) {
-            alert(`Failed to save: ${res.errors.join(', ')}`);
-        } else {
-            alert('Saved successfully!');
-        }
+        toast.success('Form saved successfully');
       } else {
-        const name = window.prompt('Enter form name', modelName);
+        const name = prompt('Enter form name', modelName);
         if (!name) return;
-        
-        const res = await createDraft({
+        const result = await createDraft({
           name,
         });
-        
-        if (res.data) {
-            setModelInfo(res.data, name);
-            // After creating, we should also update with fields because createDraft only takes name/desc
-            await updateDraft(res.data, {
-                name,
-                fields
-            });
-            alert('Created and saved successfully!');
-            navigate(`/apps/studio/${res.data}`);
-        } else {
-             alert(`Failed to create: ${res.errors?.join(', ') || 'Unknown error'}`);
+        if (result.data) {
+           setModelInfo(result.data, name);
+           // Update with fields
+           await updateDraft(result.data, {
+             name,
+             fields,
+           });
+           navigate(`/apps/studio/${result.data}`);
+           toast.success('Form created successfully');
         }
       }
-    } catch (e) {
-      console.error(e);
-      alert('An error occurred while saving.');
+    } catch (error) {
+      console.error('Failed to save', error);
+      toast.error('Failed to save form');
     }
   };
 

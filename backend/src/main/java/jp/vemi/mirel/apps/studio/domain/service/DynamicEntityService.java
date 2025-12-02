@@ -81,6 +81,8 @@ public class DynamicEntityService {
         Map<String, StuField> fieldMap = fields.stream()
                 .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
 
+        validateData(data, fieldMap);
+
         StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (id, created_at, updated_at");
         StringBuilder values = new StringBuilder("VALUES (?, ?, ?");
         List<Object> params = new ArrayList<>();
@@ -124,6 +126,8 @@ public class DynamicEntityService {
         Map<String, StuField> fieldMap = fields.stream()
                 .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
 
+        validateData(data, fieldMap);
+
         StringBuilder sql = new StringBuilder("UPDATE " + tableName + " SET updated_at = ?");
         List<Object> params = new ArrayList<>();
         params.add(LocalDateTime.now());
@@ -157,6 +161,55 @@ public class DynamicEntityService {
         String tableName = "dyn_" + modelId;
         String sql = "DELETE FROM " + tableName + " WHERE id = ?";
         jdbcTemplate.update(sql, UUID.fromString(id));
+    }
+
+    private void validateData(Map<String, Object> data, Map<String, StuField> fieldMap) {
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            StuField field = fieldMap.get(key);
+
+            if (field == null)
+                continue; // Ignore unknown fields or handle as error
+
+            if (Boolean.TRUE.equals(field.getIsRequired()) && (value == null || value.toString().isEmpty())) {
+                throw new IllegalArgumentException("Field " + field.getFieldName() + " is required");
+            }
+
+            if (value != null) {
+                String strValue = value.toString();
+
+                if ("NUMBER".equals(field.getFieldType())) {
+                    try {
+                        double numValue = Double.parseDouble(strValue);
+                        if (field.getMinValue() != null && numValue < field.getMinValue()) {
+                            throw new IllegalArgumentException(
+                                    "Field " + field.getFieldName() + " must be >= " + field.getMinValue());
+                        }
+                        if (field.getMaxValue() != null && numValue > field.getMaxValue()) {
+                            throw new IllegalArgumentException(
+                                    "Field " + field.getFieldName() + " must be <= " + field.getMaxValue());
+                        }
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Field " + field.getFieldName() + " must be a number");
+                    }
+                } else if ("STRING".equals(field.getFieldType()) || "TEXT".equals(field.getFieldType())) {
+                    if (field.getMinLength() != null && strValue.length() < field.getMinLength()) {
+                        throw new IllegalArgumentException("Field " + field.getFieldName() + " must be at least "
+                                + field.getMinLength() + " characters");
+                    }
+                    if (field.getMaxLength() != null && strValue.length() > field.getMaxLength()) {
+                        throw new IllegalArgumentException("Field " + field.getFieldName() + " must be at most "
+                                + field.getMaxLength() + " characters");
+                    }
+                    if (field.getValidationRegex() != null && !field.getValidationRegex().isEmpty()) {
+                        if (!Pattern.matches(field.getValidationRegex(), strValue)) {
+                            throw new IllegalArgumentException("Field " + field.getFieldName() + " format is invalid");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void validateName(String name) {

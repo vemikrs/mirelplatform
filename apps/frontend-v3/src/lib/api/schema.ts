@@ -8,6 +8,11 @@ export interface StuField {
   fieldCode: string;
   fieldType: string;
   isRequired: boolean;
+  validationRegex?: string;
+  minValue?: number;
+  maxValue?: number;
+  minLength?: number;
+  maxLength?: number;
   sortOrder: number;
   layout?: string; // JSON string
 }
