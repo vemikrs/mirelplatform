@@ -36,3 +36,26 @@ export const publishSchema = async (modelId: string) => {
   const response = await apiClient.post<ApiResponse<void>>(`/api/studio/schema/${modelId}/publish`);
   return response.data;
 };
+
+export interface SchemaSummary {
+  modelId: string;
+  modelName: string;
+  description?: string;
+  status: string;
+  version: number;
+  updatedAt: string;
+}
+
+export interface SchemaDetail extends SchemaSummary {
+  fields: StuField[];
+}
+
+export const getSchemas = async () => {
+  const response = await apiClient.get<ApiResponse<SchemaSummary[]>>('/api/studio/schema');
+  return response.data;
+};
+
+export const getSchema = async (modelId: string) => {
+  const response = await apiClient.get<ApiResponse<SchemaDetail>>(`/api/studio/schema/${modelId}`);
+  return response.data;
+};

@@ -79,8 +79,54 @@ public class SchemaManageService {
      * @param modelId
      *            The model ID to publish
      */
+    /**
+     * Publish a model, creating the physical table.
+     *
+     * @param modelId
+     *            The model ID to publish
+     */
     @Transactional
     public void publish(String modelId) {
         studioModelService.publish(modelId, schemaEngine);
+    }
+
+    /**
+     * List all models.
+     * 
+     * @return List of model summaries
+     */
+    public List<jp.vemi.mirel.apps.studio.application.dto.SchemaSummaryResponse> listModels() {
+        return studioModelService.findAll().stream().map(header -> {
+            jp.vemi.mirel.apps.studio.application.dto.SchemaSummaryResponse response = new jp.vemi.mirel.apps.studio.application.dto.SchemaSummaryResponse();
+            response.setModelId(header.getModelId());
+            response.setModelName(header.getModelName());
+            response.setDescription(header.getDescription());
+            response.setStatus(header.getStatus());
+            response.setVersion(header.getVersion());
+            response.setUpdatedAt(header.getUpdatedAt());
+            return response;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get model detail.
+     * 
+     * @param modelId
+     *            Model ID
+     * @return Model detail
+     */
+    public jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse getModel(String modelId) {
+        StuModelHeader header = studioModelService.getModel(modelId);
+        List<StuField> fields = studioModelService.getFields(modelId);
+
+        jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse response = new jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse();
+        response.setModelId(header.getModelId());
+        response.setModelName(header.getModelName());
+        response.setDescription(header.getDescription());
+        response.setStatus(header.getStatus());
+        response.setVersion(header.getVersion());
+        response.setUpdatedAt(header.getUpdatedAt());
+        response.setFields(fields);
+        return response;
     }
 }

@@ -148,6 +148,15 @@ public class StudioModelService {
     }
 
     /**
+     * Find all models.
+     * 
+     * @return List of models
+     */
+    public List<StuModelHeader> findAll() {
+        return headerRepository.findAll();
+    }
+
+    /**
      * Save model.
      * 
      * @param model

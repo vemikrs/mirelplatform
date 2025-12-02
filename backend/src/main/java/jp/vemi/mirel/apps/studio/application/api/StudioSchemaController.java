@@ -34,4 +34,14 @@ public class StudioSchemaController {
     public void publish(@PathVariable String modelId) {
         schemaManageService.publish(modelId);
     }
+
+    @GetMapping
+    public java.util.List<jp.vemi.mirel.apps.studio.application.dto.SchemaSummaryResponse> list() {
+        return schemaManageService.listModels();
+    }
+
+    @GetMapping("/{modelId}")
+    public jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse get(@PathVariable String modelId) {
+        return schemaManageService.getModel(modelId);
+    }
 }

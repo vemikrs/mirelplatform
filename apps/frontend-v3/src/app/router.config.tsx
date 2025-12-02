@@ -30,6 +30,7 @@ import { SchemaRecordDetailPage } from '@/features/schema/pages/SchemaRecordDeta
 import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefinePage';
 import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
 import { StudioPage } from '@/features/studio/pages/StudioPage';
+import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -273,8 +274,18 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
+            element: <StudioHomePage />,
+            handle: { title: 'Studio - Home' },
+          },
+          {
+            path: 'new',
             element: <StudioPage />,
-            handle: { title: 'Studio - Form Designer' },
+            handle: { title: 'Studio - New Form' },
+          },
+          {
+            path: ':modelId',
+            element: <StudioPage />,
+            handle: { title: 'Studio - Edit Form' },
           },
         ],
       },

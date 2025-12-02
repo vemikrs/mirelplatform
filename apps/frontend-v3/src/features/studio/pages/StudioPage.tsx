@@ -1,14 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FormDesigner } from '../components/FormDesigner/FormDesigner';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
-import { useFormDesignerStore } from '../stores/useFormDesignerStore';
+import { useFormDesignerStore, type Widget } from '../stores/useFormDesignerStore';
 import { Button, Card } from '@mirel/ui';
-import { Eye, Edit, Save } from 'lucide-react';
-import { createDraft, updateDraft } from '@/lib/api/schema';
+import { Eye, Edit, Save, ArrowLeft } from 'lucide-react';
+import { createDraft, updateDraft, getSchema } from '@/lib/api/schema';
+import { useNavigate } from 'react-router-dom';
 
 export const StudioPage: React.FC = () => {
+  const { modelId: paramModelId } = useParams<{ modelId: string }>();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
-  const { widgets, modelId, modelName, setModelInfo } = useFormDesignerStore();
+  const { widgets, modelId, modelName, setModelInfo, setWidgets } = useFormDesignerStore();
+
+  // Load schema if modelId is present
+  const { data: schema, isLoading } = useQuery({
+    queryKey: ['studio-schema', paramModelId],
+    queryFn: () => paramModelId ? getSchema(paramModelId) : Promise.resolve(null),
+    enabled: !!paramModelId,
+  });
+
+  useEffect(() => {
+    if (paramModelId && schema?.data) {
+      const data = schema.data;
+      setModelInfo(data.modelId, data.modelName);
+      
+      const loadedWidgets: Widget[] = data.fields.map((field: any) => {
+        let layout = { x: 0, y: 0, w: 4, h: 2 };
+        try {
+          if (field.layout) {
+            layout = JSON.parse(field.layout);
+          }
+        } catch (e) {
+          console.warn('Failed to parse layout for field', field.fieldId);
+        }
+
+        return {
+          id: field.fieldId,
+          type: field.fieldType.toLowerCase() as any, // TODO: strict type mapping
+          label: field.fieldName,
+          required: field.isRequired,
+          ...layout,
+        };
+      });
+      setWidgets(loadedWidgets);
+    } else if (!paramModelId) {
+      // Reset for new form
+      setModelInfo(null, 'Untitled Form');
+      setWidgets([]);
+    }
+  }, [paramModelId, schema, setModelInfo, setWidgets]);
 
   const handleSave = async () => {
     try {
@@ -47,6 +90,7 @@ export const StudioPage: React.FC = () => {
                 fields
             });
             alert('Created and saved successfully!');
+            navigate(`/apps/studio/${res.data}`);
         } else {
              alert(`Failed to create: ${res.errors?.join(', ') || 'Unknown error'}`);
         }
@@ -57,13 +101,22 @@ export const StudioPage: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="h-full flex items-center justify-center">Loading...</div>;
+  }
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Toolbar */}
       <div className="h-14 border-b bg-white flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <h1 className="font-semibold text-lg">Form Designer</h1>
-          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">v1.0</span>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/apps/studio')}>
+            <ArrowLeft className="size-4" />
+          </Button>
+          <h1 className="font-semibold text-lg">{modelName}</h1>
+          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+            {modelId ? 'v' + (schema?.data?.version || 1) : 'New'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
