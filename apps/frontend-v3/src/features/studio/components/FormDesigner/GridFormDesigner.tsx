@@ -3,7 +3,6 @@ import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { useFormDesignerStore } from '../../stores/useFormDesignerStore';
-import { Card } from '@mirel/ui';
 
 export const GridFormDesigner: React.FC = () => {
   const { widgets, setWidgets } = useFormDesignerStore();

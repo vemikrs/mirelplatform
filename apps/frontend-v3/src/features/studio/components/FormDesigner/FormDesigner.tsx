@@ -2,10 +2,9 @@ import React from 'react';
 import { useFormDesignerStore } from '../../stores/useFormDesignerStore';
 import type { Widget, WidgetType } from '../../stores/useFormDesignerStore';
 import { DndContext, type DragEndEvent, useSensor, useSensors, PointerSensor, DragOverlay, defaultDropAnimationSideEffects, type DragStartEvent } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { WidgetPalette } from './WidgetPalette';
 import { PropertyEditor } from './PropertyEditor';
-import { SortableWidget } from './SortableWidget';
+import { GridFormDesigner } from './GridFormDesigner';
 import { nanoid } from 'nanoid';
 import { Card } from '@mirel/ui';
 
@@ -55,12 +54,12 @@ export const FormDesigner: React.FC = () => {
         return;
     }
 
-    // Handle reordering
-    if (active.id !== over.id) {
-      const oldIndex = widgets.findIndex((w) => w.id === active.id);
-      const newIndex = widgets.findIndex((w) => w.id === over.id);
-      setWidgets(arrayMove(widgets, oldIndex, newIndex));
-    }
+    // Handle reordering - NOT SUPPORTED IN GRID MODE YET via dnd-kit
+    // if (active.id !== over.id) {
+    //   const oldIndex = widgets.findIndex((w) => w.id === active.id);
+    //   const newIndex = widgets.findIndex((w) => w.id === over.id);
+    //   setWidgets(arrayMove(widgets, oldIndex, newIndex));
+    // }
   };
 
   const dropAnimation = {
@@ -89,28 +88,7 @@ export const FormDesigner: React.FC = () => {
             className="bg-white min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg"
             onClick={() => selectWidget(null)}
           >
-            <SortableContext items={widgets} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-1 gap-4">
-                    {widgets.map(widget => (
-                        <SortableWidget 
-                            key={widget.id} 
-                            widget={widget} 
-                            isSelected={selectedWidgetId === widget.id}
-                            onClick={() => {
-                                selectWidget(widget.id);
-                            }}
-                        />
-                    ))}
-                </div>
-                {widgets.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg m-8 pointer-events-none">
-                        <div className="text-center text-gray-400">
-                            <p className="text-lg font-medium">Empty Form</p>
-                            <p className="text-sm">Drag widgets from the left palette to start building</p>
-                        </div>
-                    </div>
-                )}
-            </SortableContext>
+             <GridFormDesigner />
           </div>
         </div>
 
