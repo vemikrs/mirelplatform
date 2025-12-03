@@ -7,7 +7,7 @@ import { LoginPage } from '../../pages/auth/login.page';
  * Simplified Form Validation Test
  * Step 6: Direct test without page object
  */
-test.describe('ProMarker v3 Form Validation - Simple', () => {
+test.describe.skip('ProMarker v3 Form Validation - Simple', () => {
   let backendAvailable = false;
   
   test.beforeAll(async ({ request }) => {

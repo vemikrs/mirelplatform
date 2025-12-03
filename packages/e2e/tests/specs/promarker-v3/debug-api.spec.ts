@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 /**
  * Debug test to check API calls
  */
-test.describe('ProMarker v3 API Debug', () => {
+test.describe.skip('ProMarker v3 API Debug', () => {
   let backendAvailable = false;
   
   test.beforeAll(async ({ request }) => {

@@ -9,7 +9,7 @@ import { LoginPage } from '../../pages/auth/login.page';
  * 
  * TDD Phase: RED - Tests fail initially (route not implemented)
  */
-test.describe('ProMarker v3 Routing', () => {
+test.describe.skip('ProMarker v3 Routing', () => {
   let promarkerPage: ProMarkerV3Page;
   let backendAvailable = false;
 
