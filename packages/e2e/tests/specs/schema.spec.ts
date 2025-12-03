@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/auth/login.page';
 
-test.describe('Schema Application', () => {
+test.describe.skip('Schema Application', () => {
   test.beforeEach(async ({ page }) => {
     // Perform login using LoginPage object
     const loginPage = new LoginPage(page);

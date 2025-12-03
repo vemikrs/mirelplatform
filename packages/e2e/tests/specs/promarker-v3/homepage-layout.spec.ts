@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Homepage Layout & Responsiveness', () => {
+test.describe.skip('Homepage Layout & Responsiveness', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });

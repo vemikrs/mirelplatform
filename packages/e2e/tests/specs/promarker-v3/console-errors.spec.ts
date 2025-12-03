@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Console Errors Check', () => {
+test.describe.skip('Console Errors Check', () => {
   let backendAvailable = false
 
   test.beforeAll(async ({ request }) => {

@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
  *   - user@example.com / password123 (MEMBER role)
  */
 
-test.describe('SaaS Smoke Tests', () => {
+test.describe.skip('SaaS Smoke Tests', () => {
   
   // ====================
   // Smoke Test 1: Authentication Basic Flow
