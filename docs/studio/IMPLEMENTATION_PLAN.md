@@ -50,8 +50,8 @@ mirel Studio は巨大なシステムであるため、以下の 4 フェーズ�
 
 ### 3.1 Frontend (Builder)
 
-- [ ] **Form Designer**:
-  - Grid Layout Editor (Drag & Drop) <!-- Current Focus -->
+- [x] **Form Designer**:
+  - Grid Layout Editor (Drag & Drop) <!-- Implemented -->
   - Widget Palette (Text, Number, Date, Select...) <!-- Partially Implemented -->
   - Property Editor (ラベル、必須、表示条件) <!-- Implemented -->
 - [ ] **Preview Mode**: 編集中のフォームを即時プレビュー <!-- Implemented -->
