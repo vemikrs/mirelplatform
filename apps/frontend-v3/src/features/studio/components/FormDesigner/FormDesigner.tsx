@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import { Card } from '@mirel/ui';
 
 export const FormDesigner: React.FC = () => {
-  const { addWidget } = useFormDesignerStore();
+  const { addWidget, selectWidget } = useFormDesignerStore();
   const [activeDragItem, setActiveDragItem] = React.useState<{ type: WidgetType; label: string } | null>(null);
   
   const sensors = useSensors(
