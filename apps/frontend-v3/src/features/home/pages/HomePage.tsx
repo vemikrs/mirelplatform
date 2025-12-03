@@ -26,6 +26,16 @@ const modules = [
     status: '設計中',
     link: '/sitemap',
   },
+  {
+    id: 'studio',
+    title: 'Studio',
+    subtitle: 'ノーコード開発環境',
+    description: 'データモデルとフォームを視覚的に定義',
+    detailDescription: 'ドラッグ＆ドロップで業務アプリの画面とデータを素早く構築。',
+    icon: <Sparkles className="size-7 text-primary/80" />,
+    status: 'Beta',
+    link: '/apps/studio',
+  },
 ]
 
 export function HomePage() {
