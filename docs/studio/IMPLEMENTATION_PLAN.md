@@ -52,15 +52,15 @@ mirel Studio は巨大なシステムであるため、以下の 4 フェーズ�
 
 - [x] **Form Designer**:
   - Grid Layout Editor (Drag & Drop) <!-- Implemented -->
-  - Widget Palette (Text, Number, Date, Select...) <!-- Partially Implemented -->
+  - Widget Palette (Text, Number, Date, Select...) <!-- Implemented -->
   - Property Editor (ラベル、必須、表示条件) <!-- Implemented -->
-- [ ] **Preview Mode**: 編集中のフォームを即時プレビュー <!-- Implemented -->
+- [x] **Preview Mode**: 編集中のフォームを即時プレビュー <!-- Implemented -->
 
 ### 3.2 Frontend (Runtime)
 
-- [ ] **Dynamic Form Renderer**: Form JSON 定義を解釈して React コンポーネントを展開するエンジン <!-- Implemented -->
-- [ ] **Data Binding**: Runtime API とフォーム入力値の双方向バインディング <!-- Implemented -->
-- [ ] **Validation**: モデル定義およびフォーム定義に基づくクライアントサイドバリデーション <!-- Partially Implemented -->
+- [x] **Dynamic Form Renderer**: Form JSON 定義を解釈して React コンポーネントを展開するエンジン <!-- Implemented -->
+- [x] **Data Binding**: Runtime API とフォーム入力値の双方向バインディング <!-- Implemented -->
+- [x] **Validation**: モデル定義およびフォーム定義に基づくクライアントサイドバリデーション <!-- Implemented -->
 
 ### 3.3 成果物
 
