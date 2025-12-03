@@ -71,7 +71,7 @@ describe('useFormDesignerStore', () => {
     useFormDesignerStore.getState().updateWidget('1', { label: 'Updated Label' });
 
     const state = useFormDesignerStore.getState();
-    expect(state.widgets[0].label).toBe('Updated Label');
+    expect(state.widgets[0]?.label).toBe('Updated Label');
   });
 
   it('selects a widget', () => {

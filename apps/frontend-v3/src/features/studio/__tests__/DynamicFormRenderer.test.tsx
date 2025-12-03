@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
 import { describe, it, expect, vi } from 'vitest';
 import type { Widget } from '../stores/useFormDesignerStore';

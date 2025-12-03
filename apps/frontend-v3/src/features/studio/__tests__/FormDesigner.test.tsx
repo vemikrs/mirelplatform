@@ -1,9 +1,6 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { FormDesigner } from '../components/FormDesigner/FormDesigner';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useFormDesignerStore } from '../stores/useFormDesignerStore';
-import userEvent from '@testing-library/user-event';
 
 // Mock dnd-kit to avoid complex drag simulation issues in unit tests if possible,
 // or use it as is if it works with jsdom.

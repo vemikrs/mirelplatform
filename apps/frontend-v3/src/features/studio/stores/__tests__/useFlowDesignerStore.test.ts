@@ -49,7 +49,7 @@ describe('useFlowDesignerStore', () => {
     });
 
     expect(result.current.flowId).toBe('flow-1');
-    expect(result.current.nodes[0].data.label).toBe('Loaded Node');
+    expect(result.current.nodes[0]?.data.label).toBe('Loaded Node');
   });
 
   it('should save new flow to API', async () => {

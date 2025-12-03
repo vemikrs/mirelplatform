@@ -12,7 +12,7 @@ import {
   type OnEdgesChange,
   type OnConnect,
 } from 'reactflow';
-import { createFlow, updateFlow, getFlows, type Flow } from '../../../lib/api/flow';
+import { createFlow, updateFlow, getFlows } from '../../../lib/api/flow';
 
 interface FlowDesignerState {
   flowId: string | null;
@@ -72,7 +72,7 @@ export const useFlowDesignerStore = create<FlowDesignerState>((set, get) => ({
     try {
       const response = await getFlows(modelId);
       const flows = response.data;
-      if (flows && flows.length > 0) {
+      if (flows && flows.length > 0 && flows[0]) {
         // For now, just load the first one
         const flow = flows[0];
         const definition = JSON.parse(flow.definition);
