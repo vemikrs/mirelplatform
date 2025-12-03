@@ -19,3 +19,19 @@ export const updateData = (modelId: string, id: string, data: any) => {
 export const deleteData = (modelId: string, id: string) => {
   return client.delete(`/api/studio/data/${modelId}/${id}`);
 };
+
+export const exportDataCsv = (modelId: string) => {
+  return client.get(`/api/studio/data/${modelId}/export`, {
+    responseType: 'blob',
+  });
+};
+
+export const importDataCsv = (modelId: string, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return client.post(`/api/studio/data/${modelId}/import`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};

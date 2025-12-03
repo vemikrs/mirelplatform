@@ -217,4 +217,102 @@ public class DynamicEntityService {
             throw new IllegalArgumentException("Invalid name: " + name);
         }
     }
+
+    /**
+     * Export data as CSV.
+     *
+     * @param modelId
+     *            The model ID
+     * @return CSV content as byte array
+     */
+    public byte[] exportCsv(String modelId) {
+        List<Map<String, Object>> data = findAll(modelId);
+        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+
+        if (fields.isEmpty()) {
+            return new byte[0];
+        }
+
+        com.fasterxml.jackson.dataformat.csv.CsvMapper mapper = new com.fasterxml.jackson.dataformat.csv.CsvMapper();
+        com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder schemaBuilder = com.fasterxml.jackson.dataformat.csv.CsvSchema
+                .builder();
+
+        // Add columns based on fields
+        for (StuField field : fields) {
+            schemaBuilder.addColumn(field.getFieldCode());
+        }
+
+        // Add id column if not present (usually good to have for updates, but maybe
+        // optional for export)
+        // For now, let's stick to defined fields + id
+        schemaBuilder.addColumn("id");
+
+        com.fasterxml.jackson.dataformat.csv.CsvSchema schema = schemaBuilder.build().withHeader();
+
+        try {
+            return mapper.writer(schema).writeValueAsBytes(data);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to export CSV", e);
+        }
+    }
+
+    /**
+     * Import data from CSV.
+     *
+     * @param modelId
+     *            The model ID
+     * @param csvData
+     *            CSV content
+     */
+    @Transactional
+    public void importCsv(String modelId, byte[] csvData) {
+        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+        if (fields.isEmpty()) {
+            throw new IllegalArgumentException("Model has no fields defined");
+        }
+
+        com.fasterxml.jackson.dataformat.csv.CsvMapper mapper = new com.fasterxml.jackson.dataformat.csv.CsvMapper();
+        com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder schemaBuilder = com.fasterxml.jackson.dataformat.csv.CsvSchema
+                .builder();
+
+        for (StuField field : fields) {
+            schemaBuilder.addColumn(field.getFieldCode());
+        }
+        schemaBuilder.addColumn("id"); // Optional ID for updates
+
+        com.fasterxml.jackson.dataformat.csv.CsvSchema schema = schemaBuilder.build().withHeader();
+
+        try {
+            com.fasterxml.jackson.databind.MappingIterator<Map<String, Object>> it = mapper
+                    .readerFor(Map.class)
+                    .with(schema)
+                    .readValues(csvData);
+
+            while (it.hasNext()) {
+                Map<String, Object> row = it.next();
+                // If ID exists and is valid, update. Otherwise insert.
+                String idStr = (String) row.get("id");
+                if (idStr != null && !idStr.isEmpty()) {
+                    // Try to find existing
+                    if (findById(modelId, idStr) != null) {
+                        update(modelId, idStr, row);
+                    } else {
+                        // ID provided but not found, treat as new insert with that ID?
+                        // Or just insert as new. Let's insert as new but we need to handle the ID.
+                        // For simplicity, let's assume import is mostly for new data or bulk updates
+                        // where ID matches.
+                        // If ID is present but not found, we can insert it with that ID if we modify
+                        // insert() to accept ID.
+                        // Current insert() generates ID. Let's just ignore ID if not found and create
+                        // new.
+                        insert(modelId, row);
+                    }
+                } else {
+                    insert(modelId, row);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to import CSV", e);
+        }
+    }
 }

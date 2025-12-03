@@ -45,4 +45,25 @@ public class DataController {
         dynamicEntityService.delete(modelId, id);
         return ApiResponse.success();
     }
+
+    @GetMapping("/{modelId}/export")
+    public org.springframework.http.ResponseEntity<byte[]> exportCsv(@PathVariable String modelId) {
+        byte[] csvData = dynamicEntityService.exportCsv(modelId);
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=" + modelId + ".csv")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "text/csv")
+                .body(csvData);
+    }
+
+    @PostMapping("/{modelId}/import")
+    public ApiResponse<Void> importCsv(@PathVariable String modelId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            dynamicEntityService.importCsv(modelId, file.getBytes());
+            return ApiResponse.success();
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read file", e);
+        }
+    }
 }

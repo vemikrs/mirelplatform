@@ -105,10 +105,49 @@ export const StudioDataListPage: React.FC = () => {
           </Button>
           <h1 className="font-semibold text-lg">Data Browser: {model?.header?.modelName}</h1>
         </div>
-        <Button onClick={() => navigate(`/apps/studio/${modelId}/data/new`)} className="gap-2">
-          <Plus className="size-4" />
-          New Record
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+            if (modelId) {
+              import('@/lib/api/data').then(({ exportDataCsv }) => {
+                exportDataCsv(modelId).then((response) => {
+                  const url = window.URL.createObjectURL(new Blob([response.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', `${modelId}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                });
+              });
+            }
+          }}>
+            Export CSV
+          </Button>
+          <div className="relative">
+            <input
+              type="file"
+              accept=".csv"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && modelId) {
+                  import('@/lib/api/data').then(({ importDataCsv }) => {
+                    importDataCsv(modelId, file).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ['data', modelId] });
+                      toast.success('CSV Imported');
+                    }).catch(() => toast.error('Import failed'));
+                  });
+                }
+                e.target.value = ''; // Reset
+              }}
+            />
+            <Button variant="outline">Import CSV</Button>
+          </div>
+          <Button onClick={() => navigate(`/apps/studio/${modelId}/data/new`)} className="gap-2">
+            <Plus className="size-4" />
+            New Record
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-8 bg-muted/30">
