@@ -3,9 +3,13 @@ import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { useFormDesignerStore } from '../../stores/useFormDesignerStore';
+import { useDroppable } from '@dnd-kit/core';
 
 export const GridFormDesigner: React.FC = () => {
   const { widgets, setWidgets } = useFormDesignerStore();
+  const { setNodeRef } = useDroppable({
+    id: 'grid-designer-drop-area',
+  });
 
   const layout = widgets.map((w) => ({
     i: w.id,
@@ -33,7 +37,7 @@ export const GridFormDesigner: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-8 overflow-auto bg-gray-100">
+    <div className="flex-1 p-8 overflow-auto bg-gray-100" ref={setNodeRef}>
       <div className="bg-white min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg mx-auto">
         <GridLayout
           className="layout"

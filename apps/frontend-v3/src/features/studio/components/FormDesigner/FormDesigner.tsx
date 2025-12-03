@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import { Card } from '@mirel/ui';
 
 export const FormDesigner: React.FC = () => {
-  const { widgets, addWidget, setWidgets, selectWidget, selectedWidgetId } = useFormDesignerStore();
+  const { addWidget } = useFormDesignerStore();
   const [activeDragItem, setActiveDragItem] = React.useState<{ type: WidgetType; label: string } | null>(null);
   
   const sensors = useSensors(
@@ -37,8 +37,20 @@ export const FormDesigner: React.FC = () => {
     if (!over) return;
 
     // Handle drop from palette
-    if (active.data.current?.isPaletteItem) {
+    if (active.data.current?.isPaletteItem && over && over.id === 'grid-designer-drop-area') {
         const type = active.data.current.type as WidgetType;
+        
+        // Calculate grid position
+        // This is a simplified calculation. Ideally we should get the drop coordinates relative to the grid.
+        // For now, we'll default to 0,0 or find the first available spot (if we had a helper for that).
+        // To do it properly, we need the drop event coordinates which are not easily accessible in handleDragEnd from dnd-kit 
+        // without some extra work (e.g. using a modifier or accessing the event directly if possible).
+        // However, dnd-kit's DragEndEvent doesn't give clientX/Y directly in a simple way for this calculation 
+        // unless we use the `activatorEvent`.
+        
+        // Let's try to get a rough estimate or just add to the bottom for now.
+        // A better approach for "drop at position" requires measuring the grid container.
+        
         const newWidget: Widget = {
             id: nanoid(),
             type,
@@ -46,9 +58,9 @@ export const FormDesigner: React.FC = () => {
             fieldCode: `fld_${nanoid(8)}`,
             required: false,
             x: 0, 
-            y: 0,
-            w: 1,
-            h: 1
+            y: Infinity, // Put at the bottom
+            w: 4,
+            h: 2
         };
         addWidget(newWidget);
         return;
