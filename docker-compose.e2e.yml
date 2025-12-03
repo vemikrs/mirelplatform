@@ -28,7 +28,9 @@ services:
       start_period: 10s
     networks:
       - mirel-e2e-network
-    # Optimize PostgreSQL for testing
+    # ⚠️ WARNING: These PostgreSQL settings are for TESTING ONLY
+    # DO NOT use these settings in production - they disable critical
+    # durability features and can cause data loss in case of crashes
     command: >
       postgres
       -c shared_buffers=128MB

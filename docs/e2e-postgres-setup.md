@@ -36,7 +36,7 @@ E2E Test Environment (docker-compose.e2e.yml)
 または
 
 ```bash
-docker-compose -f docker-compose.e2e.yml up -d
+docker compose -f docker-compose.e2e.yml up -d
 ```
 
 ### 2. サービス状態の確認
@@ -63,7 +63,7 @@ pnpm exec playwright test
 または
 
 ```bash
-docker-compose -f docker-compose.e2e.yml down -v
+docker compose -f docker-compose.e2e.yml down -v
 ```
 
 ## 接続情報
@@ -135,18 +135,18 @@ PostgreSQL が起動完了するまで待つ:
 
 ```bash
 # ヘルスチェック
-docker-compose -f docker-compose.e2e.yml exec postgres-e2e pg_isready -U mirel_e2e
+docker compose -f docker-compose.e2e.yml exec postgres-e2e pg_isready -U mirel_e2e
 ```
 
 ### サービスログの確認
 
 ```bash
 # 全サービスのログ
-docker-compose -f docker-compose.e2e.yml logs
+docker compose -f docker-compose.e2e.yml logs
 
 # 特定サービスのログ
-docker-compose -f docker-compose.e2e.yml logs postgres-e2e
-docker-compose -f docker-compose.e2e.yml logs redis-e2e
+docker compose -f docker-compose.e2e.yml logs postgres-e2e
+docker compose -f docker-compose.e2e.yml logs redis-e2e
 ```
 
 ## パフォーマンス最適化
