@@ -81,6 +81,11 @@ mirel:
     auto-deploy-samples: false  # CI環境ではサンプルを自動デプロイしない
   database:
     initialize: false  # CI環境ではデータベース初期化を無効化（H2互換性のため）
+  apps:
+    mste:
+      # CI環境: テスト実行のため起動時にリロードしない
+      # 各テストケースで必要に応じて手動リロード
+      auto-reload-stencil-on-startup: false
 
 # CI環境でのセキュリティ設定
 mipla2:

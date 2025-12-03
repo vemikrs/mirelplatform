@@ -82,6 +82,11 @@ mirel:
     auto-deploy-samples: true  # E2E環境ではサンプルを自動デプロイ
   database:
     initialize: true  # E2E環境ではデータベース初期化を有効化（テストユーザー作成）
+  apps:
+    mste:
+      # E2E環境: 起動時に必ずステンシルマスタをリロード
+      # テストケース実行前にステンシルが利用可能な状態にする
+      auto-reload-stencil-on-startup: true
 
 # E2E環境でのセキュリティ設定
 mipla2:

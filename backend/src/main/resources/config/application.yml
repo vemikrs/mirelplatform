@@ -71,6 +71,12 @@ mipla2:
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
   # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
+  apps:
+    mste:
+      # ProMarker起動時のステンシルマスタ自動リロード設定
+      # 開発環境: true (デフォルト) - 起動時に自動リロード
+      # 本番環境: false - 手動リロードのみ許可
+      auto-reload-stencil-on-startup: ${MIREL_MSTE_AUTO_RELOAD_ON_STARTUP:true}
 
 # OTP設定
 otp:

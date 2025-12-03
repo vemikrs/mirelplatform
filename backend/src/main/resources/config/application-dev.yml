@@ -53,6 +53,11 @@ mirel:
       standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
       samples: classpath:/promarker/stencil/samples
     auto-deploy-samples: true
+  apps:
+    mste:
+      # 開発環境: 起動時に必ずステンシルマスタをリロード
+      # クラスパス変更・ファイル更新を即座に反映
+      auto-reload-stencil-on-startup: true
 
 # Development-only: Security configuration for SaaS authentication testing
 # CSRF is disabled for development convenience
