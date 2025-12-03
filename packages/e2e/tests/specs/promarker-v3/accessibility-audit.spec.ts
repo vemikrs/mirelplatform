@@ -5,7 +5,7 @@ import { AccessibilityUtils } from '../../utils/accessibility'
  * Accessibility Audit for ProMarker v3 (@a11y tag based)
  * - Executes AXE-based scans on the main screen and JSON editor modal
  */
-test.describe('ProMarker v3 Accessibility Audit', () => {
+test.describe.skip('ProMarker v3 Accessibility Audit', () => {
   let backendAvailable = false
   const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
 

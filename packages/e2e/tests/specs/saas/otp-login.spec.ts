@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  * Prerequisites:
  * - Backend running on http://localhost:3000
  * - Frontend running on http://localhost:5173
- * - MailHog running on http://localhost:8025
+ * - MailHog API URL: process.env.MAILHOG_API_URL || 'http://localhost:8026'
  * - Test user: user@example.com
  * 
  * Note: Retries disabled due to rate limiting (6 requests per 60 seconds)
@@ -26,10 +26,14 @@ test.describe('OTP Login Flow', () => {
     // Use existing test user (required for OTP verify)
     const testEmail = 'user01@example.com';
     
+    // Get MailHog API URL from environment variable (CI uses 8026, local may use 8025)
+    const mailhogApiUrl = process.env.MAILHOG_API_URL || 'http://localhost:8026';
+    console.log('[E2E] Using MailHog API URL:', mailhogApiUrl);
+    
     // ============================================
     // Step 0: Clear MailHog messages
     // ============================================
-    await request.delete('http://localhost:8025/api/v1/messages');
+    await request.delete(`${mailhogApiUrl}/api/v1/messages`);
     console.log('[E2E] MailHog messages cleared');
     
     // ============================================
@@ -67,7 +71,7 @@ test.describe('OTP Login Flow', () => {
     // ============================================
     await page.waitForTimeout(2000); // Wait for email delivery
 
-    const mailhogResponse = await request.get('http://localhost:8025/api/v2/messages');
+    const mailhogResponse = await request.get(`${mailhogApiUrl}/api/v2/messages`);
     const mailhogData = await mailhogResponse.json();
     
     console.log('[E2E] MailHog messages count:', mailhogData.items?.length);

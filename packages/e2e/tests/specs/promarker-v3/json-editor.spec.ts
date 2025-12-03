@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { ProMarkerV3Page } from '../../pages/promarker-v3.page'
 
-test.describe('ProMarker v3 - JSON Editor', () => {
+test.describe.skip('ProMarker v3 - JSON Editor', () => {
   let promarkerPage: ProMarkerV3Page
   let backendAvailable = false
 

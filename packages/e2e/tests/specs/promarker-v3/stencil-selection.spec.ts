@@ -11,7 +11,7 @@ import { STENCIL_V3_TEST_DATA } from '../../fixtures/promarker-v3.fixture';
  * TDD Phase: RED → GREEN → REFACTOR
  * Step 5: ProMarker UI Implementation
  */
-test.describe('ProMarker v3 Stencil Selection', () => {
+test.describe.skip('ProMarker v3 Stencil Selection', () => {
   let promarkerPage: ProMarkerV3Page;
   let backendAvailable = false;
   

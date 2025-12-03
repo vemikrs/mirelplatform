@@ -31,11 +31,11 @@ export default defineConfig({
     ['list']
   ],
   
-  /* Start dev servers automatically for local/CI E2E runs */
-  webServer: [
+  /* Start dev servers automatically for local E2E runs only (CI handles server startup separately) */
+  webServer: process.env.CI ? undefined : [
     {
-      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun"',
-      url: 'http://localhost:3000/mipla2/swagger-ui.html',
+      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun"',
+      url: 'http://localhost:3000/mipla2/actuator/health',
       reuseExistingServer: true,
       timeout: 180_000
     },

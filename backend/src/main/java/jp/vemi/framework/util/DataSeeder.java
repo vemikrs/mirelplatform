@@ -23,44 +23,35 @@ public class DataSeeder implements ApplicationContextAware {
         return context.getBean(DataLoader.class);
     }
 
-    public static void initializeDefaultTenant() {
-        // This might still be needed if it's not in CSV, or can be moved to CSV?
-        // The previous implementation had logic to check/create default tenant with
-        // specific JWK URI.
-        // If we move this to CSV (mir_tenant_system_master.csv), we can remove this
-        // method or make it call dataLoader.
-        // For now, let's keep the specific logic if it's complex, or try to move it.
-        // The user said "load system data, sample data".
-        // Let's assume we should use DataLoader for everything possible.
-        // But `initializeDefaultTenant` had logic for `TenantSystemMaster` which is a
-        // bit special (key/value).
-        // Let's leave it as is for now, or move it to CSV if possible.
-        // Actually, `TenantSystemMaster` is just a table. I can create
-        // `mir_tenant_system_master.csv`.
-        getDataLoader().loadSystemData();
-    }
-
     /**
-     * SaaS認証テストデータを初期化 (開発環境のみ)
+     * システムデータを初期化（CSVから読み込み）
+     * DataLoader内で重複ロード防止済み
      */
-    public static void initializeSaasTestData() {
-        // Already handled by loadSystemData called above?
-        // Or we can separate them.
-        // The user asked for "resources/db/data/system" and "sample".
-        // initializeDefaultTenant is likely system data.
-        // initializeSaasTestData is also system data.
-        // initializeSchemaSampleData is sample data.
-
-        // Let's consolidate.
-        // But DatabaseInitializer calls them separately.
-        // We can make them idempotent.
+    public static void initializeSystemData() {
         getDataLoader().loadSystemData();
     }
 
     /**
      * スキーマサンプルデータを初期化 (CSVから読み込み)
+     * DataLoader内で重複ロード防止済み
      */
-    public static void initializeSchemaSampleData() {
+    public static void initializeSampleData() {
         getDataLoader().loadSampleData();
+    }
+
+    // 後方互換性のためのエイリアス
+    @Deprecated
+    public static void initializeDefaultTenant() {
+        initializeSystemData();
+    }
+
+    @Deprecated
+    public static void initializeSaasTestData() {
+        // システムデータに統合済み、何もしない
+    }
+
+    @Deprecated
+    public static void initializeSchemaSampleData() {
+        initializeSampleData();
     }
 }

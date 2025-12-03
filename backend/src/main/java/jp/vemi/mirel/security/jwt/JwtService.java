@@ -123,4 +123,39 @@ public class JwtService {
             return false;
         }
     }
+
+    /**
+     * CLI向けJWTトークンを生成します。
+     * デバイスフロー認証で使用される長期有効なトークンを生成します。
+     * 
+     * @param userId ユーザーID
+     * @param scope 要求されたスコープ
+     * @param clientId クライアントID
+     * @param roles ユーザーのロール一覧
+     * @return JWTトークン
+     */
+    public String generateCliToken(String userId, String scope, String clientId, java.util.List<String> roles) {
+        if (!authProperties.getJwt().isEnabled() || encoder == null) {
+            throw new IllegalStateException("JWT is disabled. Enable auth.jwt.enabled in application.yml");
+        }
+
+        Instant now = Instant.now();
+        // CLIトークンは24時間有効
+        long cliExpiry = 86400;
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("self")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(cliExpiry))
+                .subject(userId)
+                .claim("roles", roles)
+                .claim("scope", scope != null ? scope : "")
+                .claim("client_id", clientId)
+                .build();
+
+        // HS256アルゴリズムを明示的に指定
+        JwsHeader header = JwsHeader.with(() -> "HS256").build();
+
+        return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+    }
 }
