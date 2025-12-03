@@ -1,29 +1,31 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getData, createData, updateData, getSchema } from '@/lib/api/schema';
+import { getDataById, createData, updateData } from '@/lib/api/data';
+import { getModel } from '@/lib/api/model';
 import { Button, Card } from '@mirel/ui';
 import { ArrowLeft } from 'lucide-react';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
-import type { Widget } from '../stores/useFormDesignerStore';
 import { toast } from 'sonner';
 
 export const StudioDataEditPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
+  const isNew = !recordId || recordId === 'new';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNew = !recordId || recordId === 'new';
 
-  const { data: schema } = useQuery({
-    queryKey: ['studio-schema', modelId],
-    queryFn: () => modelId ? getSchema(modelId) : Promise.resolve(null),
+  // Fetch Model Definition
+  const { data: modelResponse } = useQuery({
+    queryKey: ['model', modelId],
+    queryFn: () => modelId ? getModel(modelId) : Promise.resolve(null),
     enabled: !!modelId,
   });
 
-  const { data: record, isLoading: isLoadingRecord } = useQuery({
-    queryKey: ['studio-data', modelId, recordId],
-    queryFn: () => (modelId && !isNew) ? getData(modelId, recordId!) : Promise.resolve(null),
-    enabled: !!modelId && !isNew,
+  // Fetch Data if editing
+  const { data: recordResponse, isLoading } = useQuery({
+    queryKey: ['data', modelId, recordId],
+    queryFn: () => (!isNew && modelId && recordId) ? getDataById(modelId, recordId) : Promise.resolve(null),
+    enabled: !isNew && !!modelId && !!recordId,
   });
 
   const mutation = useMutation({
@@ -35,59 +37,60 @@ export const StudioDataEditPage: React.FC = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-data', modelId] });
-      toast.success('Record saved successfully');
+      queryClient.invalidateQueries({ queryKey: ['data', modelId] });
+      toast.success(isNew ? 'Record created' : 'Record updated');
       navigate(`/apps/studio/${modelId}/data`);
     },
-    onError: (error) => {
-        console.error('Failed to save record', error);
-        toast.error('Failed to save record');
-    }
+    onError: () => {
+      toast.error('Failed to save record');
+    },
   });
 
-  if (!schema || (isLoadingRecord && !isNew)) {
-    return <div className="p-8 text-center">Loading...</div>;
-  }
+  const model = modelResponse?.data;
+  const record = recordResponse?.data;
 
-  // Convert schema fields to widgets for renderer
-  const widgets: Widget[] = schema.data?.fields.map((field: any) => {
-     let layout = { x: 0, y: 0, w: 4, h: 2 };
-     try {
-       if (field.layout) {
-         layout = JSON.parse(field.layout);
-       }
-     } catch (e) {
-       // ignore
-     }
-     return {
-       id: field.fieldId,
-       type: field.fieldType.toLowerCase() as any,
-       label: field.fieldName,
-       fieldCode: field.fieldCode,
-       required: field.isRequired,
-       ...layout,
-     };
-  }) || [];
+
+  const onSubmit = (data: any) => {
+    mutation.mutate(data);
+  };
+
+  if (!modelId) return <div>Invalid Model ID</div>;
+  if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <div className="flex items-center gap-2 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}/data`)}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{isNew ? 'New Record' : 'Edit Record'}</h1>
-          <p className="text-muted-foreground">{schema.data?.modelName}</p>
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}/data`)}>
+            <ArrowLeft className="size-4" />
+          </Button>
+          <h1 className="font-semibold text-lg">
+            {isNew ? 'New Record' : 'Edit Record'}
+          </h1>
         </div>
+        {/* <Button onClick={form.handleSubmit(onSubmit)} disabled={mutation.isPending} className="gap-2">
+          <Save className="size-4" />
+          Save
+        </Button> */}
       </div>
 
-      <Card className="p-6">
-        <DynamicFormRenderer 
-          widgets={widgets} 
-          defaultValues={record || {}}
-          onSubmit={(data) => mutation.mutate(data)} 
-        />
-      </Card>
+      <div className="flex-1 overflow-auto p-8 bg-muted/30">
+        <Card className="max-w-3xl mx-auto p-6">
+          {model && (
+            <DynamicFormRenderer
+              widgets={model.fields.map((f: any) => ({
+                id: f.fieldCode,
+                type: f.fieldType === 'NUMBER' ? 'number' : 'text', // Simple mapping for now
+                label: f.fieldName,
+                x: 0, y: 0, w: 12, h: 1, // Default layout
+                ...f, // Pass other props like validation
+              }))}
+              defaultValues={record}
+              onSubmit={onSubmit}
+            />
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

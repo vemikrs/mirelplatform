@@ -1,9 +1,16 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listData, deleteData, getSchema } from '@/lib/api/schema';
+import { getData, deleteData } from '@/lib/api/data';
+import { getModel } from '@/lib/api/model';
 import { Button, Card } from '@mirel/ui';
-import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Edit, ArrowLeft } from 'lucide-react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  createColumnHelper,
+} from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 export const StudioDataListPage: React.FC = () => {
@@ -11,118 +18,136 @@ export const StudioDataListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: schema } = useQuery({
-    queryKey: ['studio-schema', modelId],
-    queryFn: () => modelId ? getSchema(modelId) : Promise.resolve(null),
+  // Fetch Model Definition to know columns
+  const { data: modelResponse } = useQuery({
+    queryKey: ['model', modelId],
+    queryFn: () => modelId ? getModel(modelId) : Promise.resolve(null),
     enabled: !!modelId,
   });
 
-  const { data: records, isLoading } = useQuery({
-    queryKey: ['studio-data', modelId],
-    queryFn: () => modelId ? listData(modelId) : Promise.resolve([]),
+  // Fetch Data
+  const { data: dataResponse, isLoading } = useQuery({
+    queryKey: ['data', modelId],
+    queryFn: () => modelId ? getData(modelId) : Promise.resolve(null),
     enabled: !!modelId,
   });
-
-
 
   const deleteMutation = useMutation({
-    mutationFn: (recordId: string) => deleteData(modelId!, recordId),
+    mutationFn: (id: string) => deleteData(modelId!, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-data', modelId] });
-      toast.success('Record deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['data', modelId] });
+      toast.success('Record deleted');
     },
-    onError: (error) => {
-        console.error('Failed to delete record', error);
-        toast.error('Failed to delete record');
-    }
   });
 
-  if (isLoading || !schema) {
-    return (
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-          </div>
-          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
-        </div>
-        <Card className="p-6 space-y-4">
-           {[1, 2, 3].map(i => (
-             <div key={i} className="h-12 w-full bg-gray-100 rounded animate-pulse" />
-           ))}
-        </Card>
-      </div>
-    );
-  }
+  const model = modelResponse?.data;
+  const data = dataResponse?.data || [];
 
-  const fields = schema.data?.fields || [];
-  const displayFields = fields.slice(0, 5); // Show first 5 fields
+  // Dynamic Columns
+  const columns = React.useMemo(() => {
+    if (!model?.fields) return [];
+    
+    const helper = createColumnHelper<any>();
+    
+    const fieldCols = model.fields.map((field: any) => 
+      helper.accessor(field.fieldCode, {
+        header: field.fieldName,
+        cell: info => info.getValue(),
+      })
+    );
+
+    const actionCol = helper.display({
+      id: 'actions',
+      header: 'Actions',
+      cell: (info) => (
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(`/apps/studio/${modelId}/data/${info.row.original.id}`)}
+          >
+            <Edit className="size-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="text-red-500 hover:bg-red-50"
+            onClick={() => {
+              if (confirm('Are you sure?')) {
+                deleteMutation.mutate(info.row.original.id);
+              }
+            }}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      ),
+    });
+
+    return [...fieldCols, actionCol];
+  }, [model, modelId, navigate, deleteMutation]);
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  if (!modelId) return <div>Invalid Model ID</div>;
+  if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/apps/studio')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}`)}>
             <ArrowLeft className="size-4" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{schema.data?.modelName} Data</h1>
-            <p className="text-muted-foreground">Manage records</p>
-          </div>
+          <h1 className="font-semibold text-lg">Data Browser: {model?.header?.modelName}</h1>
         </div>
         <Button onClick={() => navigate(`/apps/studio/${modelId}/data/new`)} className="gap-2">
           <Plus className="size-4" />
-          Add Record
+          New Record
         </Button>
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-500 font-medium border-b">
-              <tr>
-                {displayFields.map(field => (
-                  <th key={field.fieldId} className="px-6 py-3">{field.fieldName}</th>
+      <div className="flex-1 overflow-auto p-8 bg-muted/30">
+        <Card className="max-w-6xl mx-auto overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted text-muted-foreground uppercase">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th key={header.id} className="px-6 py-3 font-medium">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
                 ))}
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {records?.map((record: any) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  {displayFields.map(field => (
-                    <td key={field.fieldId} className="px-6 py-3">
-                      {String(record[(field as any).fieldCode] || '')}
+              </thead>
+              <tbody className="divide-y divide-border">
+                {table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className="bg-card hover:bg-muted/50">
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-foreground">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {data.length === 0 && (
+                  <tr>
+                    <td colSpan={columns.length} className="px-6 py-8 text-center text-muted-foreground">
+                      No data found.
                     </td>
-                  ))}
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}/data/${record.id}`)}>
-                        <Edit2 className="size-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        if (confirm('Are you sure you want to delete this record?')) {
-                          deleteMutation.mutate(record.id);
-                        }
-                      }}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {records?.length === 0 && (
-                <tr>
-                  <td colSpan={displayFields.length + 1} className="px-6 py-12 text-center text-muted-foreground">
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -79,11 +79,18 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues || {},
   });
+
+  React.useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues);
+    }
+  }, [defaultValues, reset]);
 
   const layout = widgets.map((w) => ({
     i: w.id,

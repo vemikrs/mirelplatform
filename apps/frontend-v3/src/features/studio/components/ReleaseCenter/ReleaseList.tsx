@@ -9,7 +9,7 @@ interface ReleaseListProps {
 
 export const ReleaseList: React.FC<ReleaseListProps> = ({ releases }) => {
   if (!releases || releases.length === 0) {
-    return <div className="text-gray-500 text-center py-8">No releases found.</div>;
+    return <div className="text-muted-foreground text-center py-8">No releases found.</div>;
   }
 
   return (
@@ -17,12 +17,12 @@ export const ReleaseList: React.FC<ReleaseListProps> = ({ releases }) => {
       {releases.map((release) => (
         <Card key={release.releaseId} className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full text-blue-600 dark:text-blue-400">
               <Tag className="size-5" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Version {release.version}</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="size-3" />
                 <span>{new Date(release.createdAt).toLocaleString()}</span>
               </div>

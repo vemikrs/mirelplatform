@@ -34,7 +34,7 @@ export const ReleasePage: React.FC = () => {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Toolbar */}
-      <div className="h-14 border-b bg-white flex items-center justify-between px-4">
+      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}`)}>
             <ArrowLeft className="size-4" />
@@ -50,7 +50,7 @@ export const ReleasePage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-8 bg-gray-50">
+      <div className="flex-1 overflow-auto p-8 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           {isLoading ? (
             <div>Loading...</div>
