@@ -321,7 +321,8 @@ public class WebSecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        // BCryptPasswordEncoder を直接使用（プレフィックス不要）
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 
     /**
