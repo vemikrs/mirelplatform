@@ -127,7 +127,7 @@ show_status() {
     print_color "$NC" "    Port: 5433"
     print_color "$NC" "    Database: mirelplatform_e2e"
     print_color "$NC" "    User: mirel_e2e"
-    print_color "$NC" "    Password: mirel_e2e_password"
+    print_color "$NC" "    Password: ********"
     print_color "$NC" "    JDBC URL: jdbc:postgresql://localhost:5433/mirelplatform_e2e"
     
     print_color "$YELLOW" "  Redis:"
