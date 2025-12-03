@@ -4,6 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button, Input } from '@mirel/ui';
 import type { Widget } from '../../stores/useFormDesignerStore';
+import GridLayout from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 interface DynamicFormRendererProps {
   widgets: Widget[];
@@ -47,13 +50,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
           if (w.maxValue !== undefined) validator = (validator as z.ZodNumber).max(w.maxValue, { message: `Max value is ${w.maxValue}` });
           
           if (w.required) {
-             validator = validator.min(1, { message: 'Required' }); // For number, min(1) might not be correct for required check if 0 is valid.
-             // Usually required number means not NaN/undefined. z.coerce.number() handles string->number.
-             // If empty string, z.coerce.number() might result in 0 or error depending on zod version?
-             // Actually z.coerce.number() turns "" into 0.
-             // If we want to enforce presence, we might need to check if it was provided.
-             // But for now, let's assume min(1) is for value.
-             // If required, we probably want to ensure it's not empty.
+             validator = validator.min(1, { message: 'Required' });
           } else {
              validator = validator.optional();
           }
@@ -88,13 +85,31 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
     defaultValues: defaultValues || {},
   });
 
+  const layout = widgets.map((w) => ({
+    i: w.id,
+    x: w.x,
+    y: w.y,
+    w: w.w,
+    h: w.h,
+    static: true // Make items static (non-draggable/resizable)
+  }));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <GridLayout
+        className="layout"
+        layout={layout}
+        cols={12}
+        rowHeight={30}
+        width={800}
+        isDraggable={false}
+        isResizable={false}
+      >
       {widgets.map((widget) => {
         const key = (widget as any).fieldCode || widget.id;
         return (
-        <div key={widget.id} className="space-y-2">
-          <label htmlFor={key} className="text-sm font-medium">
+        <div key={widget.id} className="space-y-1 bg-white">
+          <label htmlFor={key} className="text-sm font-medium block">
             {widget.label}
             {widget.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -104,7 +119,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
               case 'text':
                 return <Input id={key} {...register(key)} placeholder={widget.label} />;
               case 'textarea':
-                return <textarea id={key} {...register(key)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder={widget.label} />;
+                return <textarea id={key} {...register(key)} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder={widget.label} />;
               case 'number':
                 return <Input id={key} type="number" {...register(key)} placeholder={widget.label} />;
               case 'date':
@@ -126,11 +141,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
                   </select>
                 );
               case 'radio':
-                // Radio group doesn't use a single ID for label usually, but we can wrap or use fieldset/legend.
-                // For now, keeping as is, but maybe wrap in fieldset if needed for a11y.
-                // The label above acts as group label.
                 return (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                         {(widget.options || []).map((opt, i) => (
                             <div key={i} className="flex items-center space-x-2">
                                 <input 
@@ -160,10 +172,13 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
         </div>
         );
       })}
+      </GridLayout>
 
-      <Button type="submit" className="mt-4">
-        Submit
-      </Button>
+      <div className="mt-8 pt-4 border-t">
+        <Button type="submit">
+            Submit
+        </Button>
+      </div>
     </form>
   );
 };
