@@ -74,18 +74,18 @@ mirel Studio は巨大なシステムであるため、以下の 4 フェーズ�
 
 ### 4.1 Frontend (Builder)
 
-- [ ] **Flow Designer**:
-  - Node-based Editor (React Flow 採用想定)
-  - Node Palette (Start, End, If, Update, Email, API Call)
-  - Condition Editor (条件式ビルダー)
+- [x] **Flow Designer**:
+  - Node-based Editor (React Flow 採用想定) <!-- Implemented -->
+  - Node Palette (Start, End, If, Update, Email, API Call) <!-- Implemented -->
+  - Condition Editor (条件式ビルダー) <!-- Deferred to Phase 4 or later enhancement -->
 
 ### 4.2 Backend (Runtime)
 
-- [ ] **Flow Execution Engine**:
-  - フロー定義 JSON の解析と実行
-  - トランザクション管理機構
-  - 変数スコープ管理
-- [ ] **Event Bus Integration**: `onCreate`, `onUpdate` 等のイベントフック実装
+- [x] **Flow Execution Engine**:
+  - フロー定義 JSON の解析と実行 <!-- Implemented -->
+  - トランザクション管理機構 <!-- Basic Implementation -->
+  - 変数スコープ管理 <!-- Basic Implementation -->
+- [ ] **Event Bus Integration**: `onCreate`, `onUpdate` 等のイベントフック実装 <!-- Planned for next steps -->
 
 ### 4.3 成果物
 
