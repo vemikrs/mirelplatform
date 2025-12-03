@@ -10,10 +10,13 @@ import { toast } from 'sonner';
 import { createDraft, updateDraft, getSchema } from '@/lib/api/schema';
 import { useNavigate } from 'react-router-dom';
 
+import { FlowDesignerContainer } from '../components/FlowDesigner/FlowDesignerContainer';
+import { Workflow } from 'lucide-react';
+
 export const StudioPage: React.FC = () => {
   const { modelId: paramModelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [mode, setMode] = useState<'edit' | 'preview' | 'flow'>('edit');
   const { widgets, modelId, modelName, setModelInfo, setWidgets } = useFormDesignerStore();
 
   // Load schema if modelId is present
@@ -134,7 +137,16 @@ export const StudioPage: React.FC = () => {
               className="gap-2"
             >
               <Edit className="size-4" />
-              Edit
+              Form
+            </Button>
+            <Button 
+              variant={mode === 'flow' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setMode('flow')}
+              className="gap-2"
+            >
+              <Workflow className="size-4" />
+              Flow
             </Button>
             <Button 
               variant={mode === 'preview' ? 'secondary' : 'ghost'} 
@@ -159,9 +171,9 @@ export const StudioPage: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {mode === 'edit' ? (
-          <FormDesigner />
-        ) : (
+        {mode === 'edit' && <FormDesigner />}
+        {mode === 'flow' && <FlowDesignerContainer />}
+        {mode === 'preview' && (
           <div className="h-full overflow-auto p-8 bg-gray-50 flex justify-center">
             <Card className="w-full max-w-2xl p-8 bg-white shadow-sm h-fit">
               <h2 className="text-xl font-bold mb-6">Preview Form</h2>
