@@ -153,6 +153,41 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       
+      - name: Start E2E services (PostgreSQL, Redis, MailHog)
+        run: |
+          echo "Starting E2E services with docker-compose..."
+          docker compose -f docker-compose.e2e.yml up -d
+          echo "Waiting for services to be healthy..."
+          # Wait for PostgreSQL to be ready
+          for i in {1..30}; do
+            if docker compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
+              echo "✅ PostgreSQL is ready!"
+              break
+            fi
+            echo "Attempt $i/30: Waiting for PostgreSQL..."
+            sleep 2
+            if [ $i -eq 30 ]; then
+              echo "❌ PostgreSQL failed to start"
+              docker compose -f docker-compose.e2e.yml logs postgres-e2e
+              exit 1
+            fi
+          done
+          # Wait for Redis to be ready
+          for i in {1..15}; do
+            if docker compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
+              echo "✅ Redis is ready!"
+              break
+            fi
+            echo "Attempt $i/15: Waiting for Redis..."
+            sleep 1
+            if [ $i -eq 15 ]; then
+              echo "❌ Redis failed to start"
+              docker compose -f docker-compose.e2e.yml logs redis-e2e
+              exit 1
+            fi
+          done
+          echo "✅ All E2E services are healthy!"
+      
       - name: Build backend
         run: ./gradlew :backend:build -x test
       
@@ -161,7 +196,16 @@ jobs:
           echo "Starting backend service..."
           echo "Working directory: $(pwd)"
           echo "Gradlew location: $(ls -la ./gradlew)"
-          SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=e2e \
+          SERVER_PORT=3000 \
+          DATABASE_URL=jdbc:postgresql://localhost:5433/mirelplatform_e2e \
+          DATABASE_USER=mirel_e2e \
+          DATABASE_PASS=mirel_e2e_password \
+          REDIS_HOST=localhost \
+          REDIS_PORT=6380 \
+          SMTP_HOST=localhost \
+          SMTP_PORT=1026 \
+          ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
@@ -266,6 +310,8 @@ jobs:
           pkill -f "gradlew.*bootRun" || true
           pkill -f "npm run dev" || true
           pkill -f "nuxt" || true
+          echo "Stopping E2E Docker services..."
+          docker compose -f docker-compose.e2e.yml down -v || true
           echo "Services stopped"
 
   accessibility-audit:
@@ -344,13 +390,57 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       
+      - name: Start E2E services (PostgreSQL, Redis, MailHog)
+        run: |
+          echo "Starting E2E services with docker-compose..."
+          docker compose -f docker-compose.e2e.yml up -d
+          echo "Waiting for services to be healthy..."
+          # Wait for PostgreSQL to be ready
+          for i in {1..30}; do
+            if docker compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
+              echo "✅ PostgreSQL is ready!"
+              break
+            fi
+            echo "Attempt $i/30: Waiting for PostgreSQL..."
+            sleep 2
+            if [ $i -eq 30 ]; then
+              echo "❌ PostgreSQL failed to start"
+              docker compose -f docker-compose.e2e.yml logs postgres-e2e
+              exit 1
+            fi
+          done
+          # Wait for Redis to be ready
+          for i in {1..15}; do
+            if docker compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
+              echo "✅ Redis is ready!"
+              break
+            fi
+            echo "Attempt $i/15: Waiting for Redis..."
+            sleep 1
+            if [ $i -eq 15 ]; then
+              echo "❌ Redis failed to start"
+              docker compose -f docker-compose.e2e.yml logs redis-e2e
+              exit 1
+            fi
+          done
+          echo "✅ All E2E services are healthy!"
+      
       - name: Build backend
         run: ./gradlew :backend:build -x test
       
       - name: Start services
         run: |
           echo "Starting backend service..."
-          SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 ./gradlew :backend:bootRun > backend.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=e2e \
+          SERVER_PORT=3000 \
+          DATABASE_URL=jdbc:postgresql://localhost:5433/mirelplatform_e2e \
+          DATABASE_USER=mirel_e2e \
+          DATABASE_PASS=mirel_e2e_password \
+          REDIS_HOST=localhost \
+          REDIS_PORT=6380 \
+          SMTP_HOST=localhost \
+          SMTP_PORT=1026 \
+          ./gradlew :backend:bootRun > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
@@ -422,4 +512,6 @@ jobs:
           pkill -f "gradlew.*bootRun" || true
           pkill -f "npm run dev" || true
           pkill -f "nuxt" || true
+          echo "Stopping E2E Docker services..."
+          docker compose -f docker-compose.e2e.yml down -v || true
           echo "Services stopped"

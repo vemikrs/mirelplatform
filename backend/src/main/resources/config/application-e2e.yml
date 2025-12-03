@@ -1,32 +1,31 @@
 # application-e2e.yml - E2E Test Environment Configuration
-# H2 インメモリデータベース使用（PostgreSQL互換モード）
+# PostgreSQL データベース使用（docker-compose.e2e.yml）
 # テストユーザー・データを自動生成
 spring:
   datasource:
-    url: jdbc:h2:mem:e2edb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
-  h2:
-    console:
-      enabled: true  # E2E環境ではデバッグ用に有効
-      path: /h2-console
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/mirelplatform_e2e}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATABASE_USER:mirel_e2e}
+    password: ${DATABASE_PASS:mirel_e2e_password}
   session:
     jdbc:
       initialize-schema: always
-      schema: classpath:org/springframework/session/jdbc/schema-h2.sql
+      schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: create-drop  # E2E環境では毎回再作成
     properties:
       hibernate:
         format_sql: false
         show_sql: false
-  # E2E環境ではメール送信をモック
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  # E2E環境ではメール送信をモック（docker-compose.e2e.yml MailHog）
   mail:
-    host: localhost
-    port: 1025
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1026}
     properties:
       mail:
         smtp:
@@ -41,12 +40,12 @@ spring:
           github:
             client-id: dummy-e2e-client-id
             client-secret: dummy-e2e-client-secret
-  # E2E環境でもRedisを設定（軽量のスタンドアロンモード）
+  # E2E環境用Redis設定（docker-compose.e2e.yml）
   # RateLimitServiceがRedisTemplateに依存するため完全無効化はできない
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
       timeout: 1000ms
       # 接続失敗時はRateLimitServiceがメモリフォールバックする
 
@@ -112,9 +111,9 @@ rate-limit:
   redis:
     fallback-to-memory: true  # Redisなしでメモリフォールバック
 
-# E2E環境用メール設定
+# E2E環境用メール設定（docker-compose.e2e.yml MailHog）
 email:
   provider: smtp
   smtp:
-    host: localhost
-    port: 1025
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1026}
