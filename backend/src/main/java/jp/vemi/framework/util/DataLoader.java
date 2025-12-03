@@ -22,11 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,9 +43,28 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
  * 汎用CSVデータローダー.
  * resources/db/data 配下のCSVファイルを読み込み、ファイル名をテーブル名としてデータをINSERTします。
  * JDBCメタデータを使用してカラム型を取得し、適切な型変換を行います。
+ * 
+ * <p>投入モード:
+ * <ul>
+ *   <li>INSERT_ONLY: ON CONFLICT DO NOTHING (既存データはスキップ)</li>
+ *   <li>UPSERT: ON CONFLICT DO UPDATE (既存データは更新)</li>
+ *   <li>CLEAN_INSERT: TRUNCATE後にINSERT (全データ削除してから投入)</li>
+ * </ul>
  */
 @Component
 public class DataLoader {
+
+    /**
+     * データ投入モード
+     */
+    public enum LoadMode {
+        /** 既存データはスキップ (ON CONFLICT DO NOTHING) */
+        INSERT_ONLY,
+        /** 既存データは更新 (ON CONFLICT DO UPDATE) */
+        UPSERT,
+        /** テーブルをクリアしてから投入 (TRUNCATE CASCADE) */
+        CLEAN_INSERT
+    }
 
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
     private final JdbcTemplate jdbcTemplate;
@@ -51,11 +72,16 @@ public class DataLoader {
     private final CsvMapper csvMapper;
     
     /** テーブルごとのカラム型情報キャッシュ */
-    private final Map<String, Map<String, ColumnInfo>> tableColumnCache = new ConcurrentHashMap<>();
-    
+    private final Map<String, Map<String, ColumnInfo>> tableColumnCache = new ConcurrentHashMap<>();    
+    /** テーブル主キー情報キャッシュ */
+    private final Map<String, List<String>> tablePrimaryKeyCache = new ConcurrentHashMap<>();    
     /** データロード済みフラグ（重複ロード防止） */
     private volatile boolean systemDataLoaded = false;
     private volatile boolean sampleDataLoaded = false;
+    
+    /** デフォルトのデータ投入モード (環境変数で上書き可能) */
+    @Value("${mirel.data.load-mode:INSERT_ONLY}")
+    private String defaultLoadMode;
 
     public DataLoader(JdbcTemplate jdbcTemplate, DataSource dataSource) {
         this.jdbcTemplate = jdbcTemplate;
@@ -69,11 +95,19 @@ public class DataLoader {
      */
     @Transactional
     public synchronized void loadSystemData() {
-        if (systemDataLoaded) {
+        loadSystemData(getDefaultLoadMode());
+    }
+
+    /**
+     * システムデータをロードします (投入モード指定)
+     */
+    @Transactional
+    public synchronized void loadSystemData(LoadMode mode) {
+        if (systemDataLoaded && mode != LoadMode.CLEAN_INSERT) {
             log.debug("System data already loaded, skipping");
             return;
         }
-        loadDataFromLocation("classpath:db/data/system/*.csv");
+        loadDataFromLocation("classpath:db/data/system/*.csv", mode);
         systemDataLoaded = true;
     }
 
@@ -83,18 +117,44 @@ public class DataLoader {
      */
     @Transactional
     public synchronized void loadSampleData() {
-        if (sampleDataLoaded) {
+        loadSampleData(getDefaultLoadMode());
+    }
+
+    /**
+     * サンプルデータをロードします (投入モード指定)
+     */
+    @Transactional
+    public synchronized void loadSampleData(LoadMode mode) {
+        if (sampleDataLoaded && mode != LoadMode.CLEAN_INSERT) {
             log.debug("Sample data already loaded, skipping");
             return;
         }
-        loadDataFromLocation("classpath:db/data/sample/*.csv");
+        loadDataFromLocation("classpath:db/data/sample/*.csv", mode);
         sampleDataLoaded = true;
     }
 
+    /**
+     * デフォルト投入モードを取得
+     */
+    private LoadMode getDefaultLoadMode() {
+        try {
+            return LoadMode.valueOf(defaultLoadMode.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid load mode '{}', using INSERT_ONLY", defaultLoadMode);
+            return LoadMode.INSERT_ONLY;
+        }
+    }
+
     private void loadDataFromLocation(String locationPattern) {
+        loadDataFromLocation(locationPattern, getDefaultLoadMode());
+    }
+
+    private void loadDataFromLocation(String locationPattern, LoadMode mode) {
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
             Resource[] resources = resolver.getResources(locationPattern);
+            
+            log.info("Loading data with mode: {}", mode);
 
             for (Resource resource : resources) {
                 String filename = resource.getFilename();
@@ -111,7 +171,7 @@ public class DataLoader {
                 }
                 
                 log.info("Loading data for table: {} from {}", tableName, filename);
-                loadCsvToTable(resource, tableName);
+                loadCsvToTable(resource, tableName, mode);
             }
         } catch (IOException e) {
             log.error("Failed to load data from location: {}", locationPattern, e);
@@ -182,12 +242,66 @@ public class DataLoader {
         return columnInfoMap;
     }
 
+    /**
+     * テーブルの主キー情報を取得（キャッシュ付き）
+     */
+    private List<String> getPrimaryKeys(String tableName) {
+        return tablePrimaryKeyCache.computeIfAbsent(tableName, this::fetchPrimaryKeys);
+    }
+
+    /**
+     * JDBCメタデータから主キー情報を取得
+     */
+    private List<String> fetchPrimaryKeys(String tableName) {
+        List<String> primaryKeys = new ArrayList<>();
+        
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData metaData = conn.getMetaData();
+            String normalizedTableName = tableName.toLowerCase();
+            
+            try (ResultSet rs = metaData.getPrimaryKeys(null, null, normalizedTableName)) {
+                while (rs.next()) {
+                    String columnName = rs.getString("COLUMN_NAME").toLowerCase();
+                    primaryKeys.add(columnName);
+                    log.trace("Primary key column: {} for table {}", columnName, tableName);
+                }
+            }
+        } catch (SQLException e) {
+            log.warn("Failed to fetch primary keys for table: {}", tableName, e);
+        }
+        
+        return primaryKeys;
+    }
+
+    /**
+     * テーブルをTRUNCATEする (CLEAN_INSERTモード用)
+     */
+    private void truncateTable(String tableName) {
+        try {
+            String sql = String.format("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", tableName);
+            log.info("Truncating table: {}", tableName);
+            jdbcTemplate.execute(sql);
+        } catch (Exception e) {
+            log.error("Failed to truncate table: {}", tableName, e);
+            throw new RuntimeException("Failed to truncate table: " + tableName, e);
+        }
+    }
+
     private void loadCsvToTable(Resource resource, String tableName) {
+        loadCsvToTable(resource, tableName, LoadMode.INSERT_ONLY);
+    }
+
+    private void loadCsvToTable(Resource resource, String tableName, LoadMode mode) {
         // 先にカラム情報を取得
         Map<String, ColumnInfo> columnInfo = getColumnInfo(tableName);
         if (columnInfo.isEmpty()) {
             log.warn("Skipping table {} - no column information available", tableName);
             return;
+        }
+        
+        // CLEAN_INSERTモードの場合、先にテーブルをTRUNCATE
+        if (mode == LoadMode.CLEAN_INSERT) {
+            truncateTable(tableName);
         }
         
         try (InputStream is = resource.getInputStream()) {
@@ -208,7 +322,7 @@ public class DataLoader {
                 if (row.isEmpty()) {
                     continue;
                 }
-                if (insertRow(tableName, row, columnInfo)) {
+                if (insertRow(tableName, row, columnInfo, mode)) {
                     insertedCount++;
                 } else {
                     skippedCount++;
@@ -222,7 +336,7 @@ public class DataLoader {
         }
     }
 
-    private boolean insertRow(String tableName, Map<String, String> row, Map<String, ColumnInfo> columnInfo) {
+    private boolean insertRow(String tableName, Map<String, String> row, Map<String, ColumnInfo> columnInfo, LoadMode mode) {
         if (row.isEmpty()) {
             return false;
         }
@@ -251,21 +365,60 @@ public class DataLoader {
             return false;
         }
 
-        String sql = String.format("INSERT INTO %s (%s) VALUES (%s)",
+        // 主キー情報を取得してON CONFLICT句を構築
+        List<String> primaryKeys = getPrimaryKeys(tableName);
+        String onConflictClause = buildOnConflictClause(mode, primaryKeys, columns);
+
+        String sql = String.format("INSERT INTO %s (%s) VALUES (%s)%s",
                 tableName,
                 String.join(", ", columns),
-                String.join(", ", placeholders));
+                String.join(", ", placeholders),
+                onConflictClause);
 
         try {
-            jdbcTemplate.update(sql, values.toArray());
+            int rowsAffected = jdbcTemplate.update(sql, values.toArray());
+            if (rowsAffected == 0 && !primaryKeys.isEmpty() && mode != LoadMode.UPSERT) {
+                log.debug("Skipping duplicate record for table {} (ON CONFLICT triggered)", tableName);
+                return false;
+            }
             return true;
-        } catch (org.springframework.dao.DuplicateKeyException e) {
-            log.debug("Skipping duplicate record for table {}", tableName);
-            return false;
         } catch (Exception e) {
-            log.error("Failed to insert row into {}: columns={}, values={}", tableName, columns, values, e);
+            log.error("Failed to insert row into {}: columns={}, values={}, sql={}", tableName, columns, values, sql, e);
             throw e;
         }
+    }
+
+    /**
+     * モードに応じたON CONFLICT句を構築
+     */
+    private String buildOnConflictClause(LoadMode mode, List<String> primaryKeys, List<String> columns) {
+        if (primaryKeys.isEmpty()) {
+            return "";
+        }
+        
+        return switch (mode) {
+            case INSERT_ONLY -> String.format(" ON CONFLICT (%s) DO NOTHING", 
+                String.join(", ", primaryKeys));
+            
+            case UPSERT -> {
+                // 主キー以外のカラムをUPDATEする
+                List<String> updateColumns = columns.stream()
+                    .filter(col -> !primaryKeys.contains(col))
+                    .map(col -> String.format("%s = EXCLUDED.%s", col, col))
+                    .collect(Collectors.toList());
+                
+                if (updateColumns.isEmpty()) {
+                    yield String.format(" ON CONFLICT (%s) DO NOTHING", 
+                        String.join(", ", primaryKeys));
+                }
+                
+                yield String.format(" ON CONFLICT (%s) DO UPDATE SET %s",
+                    String.join(", ", primaryKeys),
+                    String.join(", ", updateColumns));
+            }
+            
+            case CLEAN_INSERT -> ""; // TRUNCATEしてるので競合なし
+        };
     }
 
     /**
