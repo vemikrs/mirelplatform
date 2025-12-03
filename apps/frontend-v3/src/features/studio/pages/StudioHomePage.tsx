@@ -17,7 +17,7 @@ export const StudioHomePage: React.FC = () => {
   }
 
   if (error) {
-    return <div className="p-8 text-center text-red-500">Error loading schemas</div>;
+    return <div className="p-8 text-center text-destructive">Error loading schemas</div>;
   }
 
   const handleCreateNew = () => {
@@ -76,7 +76,7 @@ export const StudioHomePage: React.FC = () => {
 
         {/* Empty State */}
         {(!schemas?.data || schemas.data.length === 0) && (
-          <div className="col-span-full py-12 text-center bg-gray-50 rounded-lg border border-dashed">
+          <div className="col-span-full py-12 text-center bg-muted/30 rounded-lg border border-dashed border-border">
             <p className="text-muted-foreground mb-4">No forms created yet</p>
             <Button variant="outline" onClick={handleCreateNew}>
               Create your first form

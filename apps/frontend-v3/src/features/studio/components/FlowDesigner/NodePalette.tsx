@@ -20,7 +20,7 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
       onDragStart={(event) => onDragStart(event, type)}
       draggable
     >
-      <Card className="p-3 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2">
+      <Card className="p-3 text-sm font-medium hover:bg-muted transition-colors flex items-center gap-2">
         {icon}
         {label}
       </Card>
@@ -30,10 +30,10 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
 
 export const NodePalette: React.FC = () => {
   return (
-    <div className="w-64 border-r bg-white flex flex-col h-full">
+    <div className="w-64 border-r bg-background flex flex-col h-full">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-gray-900">Flow Nodes</h3>
-        <p className="text-xs text-gray-500 mt-1">Drag to add to flow</p>
+        <h3 className="font-semibold text-foreground">Flow Nodes</h3>
+        <p className="text-xs text-muted-foreground mt-1">Drag to add to flow</p>
       </div>
       <div className="p-4 flex-1 overflow-y-auto">
         <PaletteItem type="input" label="Start" icon={<Play className="size-4" />} />

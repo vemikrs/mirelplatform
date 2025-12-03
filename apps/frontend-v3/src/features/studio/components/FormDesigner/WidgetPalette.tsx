@@ -25,7 +25,7 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="mb-2 cursor-move">
-      <Card className="p-3 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2">
+      <Card className="p-3 text-sm font-medium hover:bg-muted transition-colors flex items-center gap-2">
         {icon}
         {label}
       </Card>
@@ -35,10 +35,10 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
 
 export const WidgetPalette: React.FC = () => {
   return (
-    <div className="w-64 border-r bg-white flex flex-col h-full">
+    <div className="w-64 border-r bg-background flex flex-col h-full">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-gray-900">Widgets</h3>
-        <p className="text-xs text-gray-500 mt-1">Drag to add to canvas</p>
+        <h3 className="font-semibold text-foreground">Widgets</h3>
+        <p className="text-xs text-muted-foreground mt-1">Drag to add to canvas</p>
       </div>
       <div className="p-4 flex-1 overflow-y-auto">
         <PaletteItem type="text" label="Text Input" icon={<Type className="size-4" />} />

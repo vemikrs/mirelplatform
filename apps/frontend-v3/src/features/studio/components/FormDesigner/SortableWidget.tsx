@@ -34,15 +34,15 @@ export const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isSelect
         onClick();
       }}
       className={`
-        p-4 mb-2 border rounded cursor-move bg-white
-        ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}
+        p-4 mb-2 border rounded cursor-move bg-card
+        ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}
       `}
     >
       <div className="flex justify-between items-center">
         <span className="font-medium">{widget.label}</span>
-        <span className="text-xs text-gray-400 uppercase">{widget.type}</span>
+        <span className="text-xs text-muted-foreground uppercase">{widget.type}</span>
       </div>
-      {widget.required && <span className="text-xs text-red-500 mt-1 block">Required</span>}
+      {widget.required && <span className="text-xs text-destructive mt-1 block">Required</span>}
     </div>
   );
 };

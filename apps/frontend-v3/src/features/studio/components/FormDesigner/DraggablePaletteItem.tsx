@@ -26,10 +26,10 @@ export const DraggablePaletteItem: React.FC<DraggablePaletteItemProps> = ({ type
       style={style}
       {...listeners}
       {...attributes}
-      className="p-3 mb-2 border border-gray-200 rounded bg-white shadow-sm cursor-move hover:border-blue-400 hover:shadow-md transition-all"
+      className="p-3 mb-2 border border-border rounded bg-card shadow-sm cursor-move hover:border-primary hover:shadow-md transition-all"
     >
-      <div className="text-sm font-medium text-gray-700">{label}</div>
-      <div className="text-xs text-gray-400 mt-1 capitalize">{type}</div>
+      <div className="text-sm font-medium text-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1 capitalize">{type}</div>
     </div>
   );
 };
