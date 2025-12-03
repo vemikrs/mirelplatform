@@ -1,0 +1,67 @@
+version: '3.8'
+
+# E2E Test Environment - Docker Compose Configuration
+# Used by GitHub Actions and local E2E tests
+# Provides PostgreSQL, Redis, and MailHog services for testing
+
+services:
+  postgres-e2e:
+    image: postgres:15-alpine
+    container_name: mirelplatform-postgres-e2e
+    environment:
+      POSTGRES_DB: mirelplatform_e2e
+      POSTGRES_USER: mirel_e2e
+      POSTGRES_PASSWORD: mirel_e2e_password
+      # Optimize for faster test execution
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5433:5432"  # Use different port to avoid conflict with dev environment
+    volumes:
+      # Use tmpfs for faster I/O in test environment
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mirel_e2e -d mirelplatform_e2e"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mirel-e2e-network
+    # Optimize PostgreSQL for testing
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c max_connections=100
+      -c fsync=off
+      -c synchronous_commit=off
+      -c full_page_writes=off
+
+  redis-e2e:
+    image: redis:7-alpine
+    container_name: mirelplatform-redis-e2e
+    ports:
+      - "6380:6379"  # Use different port to avoid conflict with dev environment
+    command: redis-server --appendonly no --save ""
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - mirel-e2e-network
+
+  mailhog-e2e:
+    image: mailhog/mailhog:latest
+    container_name: mirelplatform-mailhog-e2e
+    ports:
+      - "1026:1025"  # SMTP - different port to avoid conflict
+      - "8026:8025"  # Web UI - different port to avoid conflict
+    networks:
+      - mirel-e2e-network
+
+networks:
+  mirel-e2e-network:
+    driver: bridge
