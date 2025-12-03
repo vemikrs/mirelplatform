@@ -179,6 +179,9 @@ export const StudioPage: React.FC = () => {
           <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/data`)} disabled={!modelId} className="gap-2">
             Data
           </Button>
+          <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/releases`)} disabled={!modelId} className="gap-2">
+            Releases
+          </Button>
           <Button size="sm" onClick={handleSave} className="gap-2">
             <Save className="size-4" />
             Save

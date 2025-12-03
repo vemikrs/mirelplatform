@@ -33,6 +33,7 @@ import { StudioPage } from '@/features/studio/pages/StudioPage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
 import { StudioDataListPage } from '@/features/studio/pages/StudioDataListPage';
 import { StudioDataEditPage } from '@/features/studio/pages/StudioDataEditPage';
+import { ReleasePage } from '@/features/studio/pages/ReleasePage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -288,6 +289,10 @@ export const router = createBrowserRouter([
             path: ':modelId',
             element: <StudioPage />,
             handle: { title: 'Studio - Edit Form' },
+          },
+          {
+            path: ':modelId/releases',
+            element: <ReleasePage />,
           },
           {
             path: ':modelId/data',
