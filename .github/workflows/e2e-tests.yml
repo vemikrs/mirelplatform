@@ -156,11 +156,11 @@ jobs:
       - name: Start E2E services (PostgreSQL, Redis, MailHog)
         run: |
           echo "Starting E2E services with docker-compose..."
-          docker-compose -f docker-compose.e2e.yml up -d
+          docker compose -f docker-compose.e2e.yml up -d
           echo "Waiting for services to be healthy..."
           # Wait for PostgreSQL to be ready
           for i in {1..30}; do
-            if docker-compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
+            if docker compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
               echo "✅ PostgreSQL is ready!"
               break
             fi
@@ -168,13 +168,13 @@ jobs:
             sleep 2
             if [ $i -eq 30 ]; then
               echo "❌ PostgreSQL failed to start"
-              docker-compose -f docker-compose.e2e.yml logs postgres-e2e
+              docker compose -f docker-compose.e2e.yml logs postgres-e2e
               exit 1
             fi
           done
           # Wait for Redis to be ready
           for i in {1..15}; do
-            if docker-compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
+            if docker compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
               echo "✅ Redis is ready!"
               break
             fi
@@ -182,7 +182,7 @@ jobs:
             sleep 1
             if [ $i -eq 15 ]; then
               echo "❌ Redis failed to start"
-              docker-compose -f docker-compose.e2e.yml logs redis-e2e
+              docker compose -f docker-compose.e2e.yml logs redis-e2e
               exit 1
             fi
           done
@@ -311,7 +311,7 @@ jobs:
           pkill -f "npm run dev" || true
           pkill -f "nuxt" || true
           echo "Stopping E2E Docker services..."
-          docker-compose -f docker-compose.e2e.yml down -v || true
+          docker compose -f docker-compose.e2e.yml down -v || true
           echo "Services stopped"
 
   accessibility-audit:
@@ -393,11 +393,11 @@ jobs:
       - name: Start E2E services (PostgreSQL, Redis, MailHog)
         run: |
           echo "Starting E2E services with docker-compose..."
-          docker-compose -f docker-compose.e2e.yml up -d
+          docker compose -f docker-compose.e2e.yml up -d
           echo "Waiting for services to be healthy..."
           # Wait for PostgreSQL to be ready
           for i in {1..30}; do
-            if docker-compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
+            if docker compose -f docker-compose.e2e.yml exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e; then
               echo "✅ PostgreSQL is ready!"
               break
             fi
@@ -405,13 +405,13 @@ jobs:
             sleep 2
             if [ $i -eq 30 ]; then
               echo "❌ PostgreSQL failed to start"
-              docker-compose -f docker-compose.e2e.yml logs postgres-e2e
+              docker compose -f docker-compose.e2e.yml logs postgres-e2e
               exit 1
             fi
           done
           # Wait for Redis to be ready
           for i in {1..15}; do
-            if docker-compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
+            if docker compose -f docker-compose.e2e.yml exec -T redis-e2e redis-cli ping | grep -q PONG; then
               echo "✅ Redis is ready!"
               break
             fi
@@ -419,7 +419,7 @@ jobs:
             sleep 1
             if [ $i -eq 15 ]; then
               echo "❌ Redis failed to start"
-              docker-compose -f docker-compose.e2e.yml logs redis-e2e
+              docker compose -f docker-compose.e2e.yml logs redis-e2e
               exit 1
             fi
           done
@@ -513,5 +513,5 @@ jobs:
           pkill -f "npm run dev" || true
           pkill -f "nuxt" || true
           echo "Stopping E2E Docker services..."
-          docker-compose -f docker-compose.e2e.yml down -v || true
+          docker compose -f docker-compose.e2e.yml down -v || true
           echo "Services stopped"

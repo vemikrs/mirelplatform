@@ -27,7 +27,7 @@ COMPOSE_FILE="$PROJECT_ROOT/docker-compose.e2e.yml"
 
 # Function to check if services are running
 check_services_status() {
-    if docker-compose -f "$COMPOSE_FILE" ps | grep -q "Up"; then
+    if docker compose -f "$COMPOSE_FILE" ps | grep -q "Up"; then
         return 0
     else
         return 1
@@ -38,7 +38,7 @@ check_services_status() {
 wait_for_postgres() {
     print_color "$YELLOW" "⏳ PostgreSQL起動待機中..."
     for i in {1..30}; do
-        if docker-compose -f "$COMPOSE_FILE" exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e &>/dev/null; then
+        if docker compose -f "$COMPOSE_FILE" exec -T postgres-e2e pg_isready -U mirel_e2e -d mirelplatform_e2e &>/dev/null; then
             print_color "$GREEN" "✅ PostgreSQL準備完了!"
             return 0
         fi
@@ -46,7 +46,7 @@ wait_for_postgres() {
         sleep 2
     done
     print_color "$RED" "❌ PostgreSQL起動タイムアウト"
-    docker-compose -f "$COMPOSE_FILE" logs postgres-e2e
+    docker compose -f "$COMPOSE_FILE" logs postgres-e2e
     return 1
 }
 
@@ -54,7 +54,7 @@ wait_for_postgres() {
 wait_for_redis() {
     print_color "$YELLOW" "⏳ Redis起動待機中..."
     for i in {1..15}; do
-        if docker-compose -f "$COMPOSE_FILE" exec -T redis-e2e redis-cli ping 2>/dev/null | grep -q PONG; then
+        if docker compose -f "$COMPOSE_FILE" exec -T redis-e2e redis-cli ping 2>/dev/null | grep -q PONG; then
             print_color "$GREEN" "✅ Redis準備完了!"
             return 0
         fi
@@ -62,7 +62,7 @@ wait_for_redis() {
         sleep 1
     done
     print_color "$RED" "❌ Redis起動タイムアウト"
-    docker-compose -f "$COMPOSE_FILE" logs redis-e2e
+    docker compose -f "$COMPOSE_FILE" logs redis-e2e
     return 1
 }
 
@@ -79,7 +79,7 @@ start_services() {
     
     # Start services
     cd "$PROJECT_ROOT"
-    docker-compose -f docker-compose.e2e.yml up -d
+    docker compose -f docker-compose.e2e.yml up -d
     
     # Wait for services to be ready
     if ! wait_for_postgres; then
@@ -101,7 +101,7 @@ stop_services() {
     print_color "$BLUE" "🛑 E2Eサービス停止中..."
     
     cd "$PROJECT_ROOT"
-    docker-compose -f docker-compose.e2e.yml down -v
+    docker compose -f docker-compose.e2e.yml down -v
     
     print_color "$GREEN" "✅ E2Eサービスを停止しました"
 }
@@ -118,7 +118,7 @@ restart_services() {
 show_status() {
     print_color "$BLUE" "📊 E2Eサービス状態:"
     cd "$PROJECT_ROOT"
-    docker-compose -f docker-compose.e2e.yml ps
+    docker compose -f docker-compose.e2e.yml ps
     
     echo ""
     print_color "$BLUE" "📝 接続情報:"
