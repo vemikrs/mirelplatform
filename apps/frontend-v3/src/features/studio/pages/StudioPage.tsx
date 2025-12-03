@@ -13,11 +13,14 @@ import { useNavigate } from 'react-router-dom';
 import { FlowDesignerContainer } from '../components/FlowDesigner/FlowDesignerContainer';
 import { Workflow } from 'lucide-react';
 
+import { useFlowDesignerStore } from '../stores/useFlowDesignerStore';
+
 export const StudioPage: React.FC = () => {
   const { modelId: paramModelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
   const [mode, setMode] = useState<'edit' | 'preview' | 'flow'>('edit');
   const { widgets, modelId, modelName, setModelInfo, setWidgets } = useFormDesignerStore();
+  const { loadFlow, saveFlow } = useFlowDesignerStore();
 
   // Load schema if modelId is present
   const { data: schema, isLoading } = useQuery({
@@ -57,12 +60,17 @@ export const StudioPage: React.FC = () => {
         };
       });
       setWidgets(loadedWidgets);
+      
+      // Load flow if in flow mode
+      if (mode === 'flow') {
+        loadFlow(data.modelId);
+      }
     } else if (!paramModelId) {
       // Reset for new form
       setModelInfo(null, 'Untitled Form');
       setWidgets([]);
     }
-  }, [paramModelId, schema, setModelInfo, setWidgets]);
+  }, [paramModelId, schema, setModelInfo, setWidgets, mode, loadFlow]);
 
   const handleSave = async () => {
     try {
@@ -83,11 +91,16 @@ export const StudioPage: React.FC = () => {
       }));
 
       if (modelId) {
+        // Save Form
         await updateDraft(modelId, {
           name: modelName,
           fields,
         });
-        toast.success('Form saved successfully');
+        
+        // Save Flow
+        await saveFlow(modelId, modelName);
+        
+        toast.success('Form and Flow saved successfully');
       } else {
         const name = prompt('Enter form name', modelName);
         if (!name) return;
@@ -101,6 +114,10 @@ export const StudioPage: React.FC = () => {
              name,
              fields,
            });
+           
+           // Create initial Flow
+           await saveFlow(result.data, name);
+           
            navigate(`/apps/studio/${result.data}`);
            toast.success('Form created successfully');
         }
