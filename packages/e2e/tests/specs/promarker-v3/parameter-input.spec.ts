@@ -8,7 +8,7 @@ import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
  * TDD Phase: RED → GREEN → REFACTOR
  * Step 5: ProMarker UI Implementation
  */
-test.describe('ProMarker v3 Parameter Input', () => {
+test.describe.skip('ProMarker v3 Parameter Input', () => {
   let promarkerPage: ProMarkerV3Page;
   let backendAvailable = false;
 

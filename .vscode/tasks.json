@@ -132,6 +132,64 @@
       }
     },
     {
+      "label": "Backend: Start with CLEAN_INSERT",
+      "type": "shell",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=CLEAN_INSERT'",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "JAVA_HOME": "${env:HOME}/.sdkman/candidates/java/current",
+          "PATH": "${env:HOME}/.local/bin:${env:HOME}/.sdkman/candidates/java/current/bin:${env:HOME}/.nvm/versions/node/v22.20.0/bin:/mnt/d/apps/gradle/gradle-8.0.2/bin:${env:PATH}"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Backend: Start with UPSERT",
+      "type": "shell",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=UPSERT'",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "JAVA_HOME": "${env:HOME}/.sdkman/candidates/java/current",
+          "PATH": "${env:HOME}/.local/bin:${env:HOME}/.sdkman/candidates/java/current/bin:${env:HOME}/.nvm/versions/node/v22.20.0/bin:/mnt/d/apps/gradle/gradle-8.0.2/bin:${env:PATH}"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "Frontend-v3: Start Vite",
       "type": "shell",
       "command": "fuser -k 5173/tcp 2>/dev/null || true; pnpm --filter frontend-v3 dev",

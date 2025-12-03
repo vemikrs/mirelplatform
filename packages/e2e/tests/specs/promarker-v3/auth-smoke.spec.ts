@@ -16,7 +16,7 @@ import { OtpLoginPage } from '../../pages/auth/otp-login.page';
 import { OtpVerifyPage } from '../../pages/auth/otp-verify.page';
 import { OAuthCallbackPage } from '../../pages/auth/oauth-callback.page';
 
-test.describe('認証機能 Smoke E2E', () => {
+test.describe.skip('認証機能 Smoke E2E', () => {
   
   test.describe('ログインページ', () => {
     

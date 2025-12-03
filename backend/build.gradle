@@ -41,6 +41,7 @@ dependencies {
     implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
     implementation 'com.h2database:h2:2.1.214'
+    runtimeOnly 'org.postgresql:postgresql:42.7.3'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.google.guava:guava:31.1-jre'
@@ -64,7 +65,10 @@ dependencies {
     
     // Azure Communication Services (メール送信)
     implementation 'com.azure:azure-communication-email:1.0.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.15.2'
+
+    // Jackson CSV support (バージョンはSpring Bootの依存管理に従う)
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
+    
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     compileOnly 'org.projectlombok:lombok:1.18.30'

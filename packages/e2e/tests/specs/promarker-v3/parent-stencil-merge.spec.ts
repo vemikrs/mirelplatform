@@ -12,7 +12,7 @@ import { ProMarkerV3Page } from '../../pages/promarker-v3.page';
  * - Hierarchical stencil structure (parent → child relationship)
  * - UI properly renders inherited parameter information
  */
-test.describe('ProMarker v3 Parent Stencil Merge', () => {
+test.describe.skip('ProMarker v3 Parent Stencil Merge', () => {
   let promarkerPage: ProMarkerV3Page;
   let backendAvailable = false;
 

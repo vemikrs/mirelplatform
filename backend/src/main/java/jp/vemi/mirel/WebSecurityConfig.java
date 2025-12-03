@@ -84,7 +84,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             AuthenticationService authenticationService) throws Exception {
-        DataSeeder.initializeDefaultTenant();
+        // データ初期化は DatabaseInitializer で行う（ここでは行わない）
 
         configureCors(http);
         configureCsrf(http);
@@ -151,6 +151,7 @@ public class WebSecurityConfig {
                 csrf.ignoringRequestMatchers(
                         "/auth/login",
                         "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
+                        "/api/auth/device/**", // デバイスフロー認証エンドポイント（CLI用）
                         "/login/oauth2/code/**", // OAuth2コールバックをCSRF除外
                         "/oauth2/**") // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -204,6 +205,13 @@ public class WebSecurityConfig {
                     "/auth/logout",
                     "/auth/check").permitAll()
 
+                    // デバイスフロー認証エンドポイント(CLI用)
+                    .requestMatchers(
+                            "/api/auth/device/code",
+                            "/api/auth/device/token",
+                            "/api/auth/device/verify"
+                    ).permitAll()
+
                     // OAuth2関連エンドポイント（Spring Securityが処理）
                     .requestMatchers(
                             "/login/oauth2/code/**", // OAuth2コールバック
@@ -211,6 +219,7 @@ public class WebSecurityConfig {
             ).permitAll()
 
                     .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
+                    .requestMatchers("/actuator/**").permitAll() // Actuator endpoints for health checks
                     .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                     .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
                     .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
@@ -312,7 +321,8 @@ public class WebSecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        // BCryptPasswordEncoder を直接使用（プレフィックス不要）
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 
     /**

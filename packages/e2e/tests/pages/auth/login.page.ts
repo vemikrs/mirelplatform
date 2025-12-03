@@ -55,42 +55,20 @@ export class LoginPage extends BasePage {
    * @param password - パスワード
    */
   async login(usernameOrEmail: string, password: string) {
-    console.log('[LoginPage] Starting login flow...');
+    console.log('[LoginPage] Starting login...');
     
-    // Wait for the page content to load
-    await this.page.waitForLoadState('domcontentloaded');
-    
-    // Check if form is already visible
+    // パスワードログインフォームが非表示の場合、トグルボタンをクリック
     if (!await this.usernameOrEmailInput.isVisible()) {
-      console.log('[LoginPage] Password form not visible. Checking for toggle button...');
-      // Try to find the toggle button to show it
-      if (await this.passwordToggle.isVisible()) {
-        console.log('[LoginPage] Toggle button found. Clicking...');
-        await this.passwordToggle.click();
-      } else {
-        console.log('[LoginPage] Toggle button NOT found.');
-        // Log all buttons to debug
-        const buttons = await this.page.locator('button').allInnerTexts();
-        console.log('[LoginPage] Available buttons:', buttons);
-        
-        // Dump HTML
-        const content = await this.page.content();
-        console.log('[LoginPage] Page Content (truncated):', content.substring(0, 2000));
-        console.log('[LoginPage] Page Content (buttons area):', content.match(/<button.*?>.*?<\/button>/g));
-      }
-    } else {
-      console.log('[LoginPage] Password form is already visible.');
+      console.log('[LoginPage] Clicking password login toggle...');
+      await this.passwordToggle.click();
+      await this.usernameOrEmailInput.waitFor({ state: 'visible', timeout: 5000 });
     }
 
-    // Wait for form to appear
-    console.log('[LoginPage] Waiting for username input...');
-    await this.usernameOrEmailInput.waitFor({ state: 'visible', timeout: 10000 });
-    
+    // 認証情報を入力
     await this.usernameOrEmailInput.fill(usernameOrEmail);
     await this.passwordInput.fill(password);
     
-    // Wait for login request to complete
-    console.log('[LoginPage] Submitting login form...');
+    // ログイン実行
     const loginResponsePromise = this.page.waitForResponse(resp => resp.url().includes('/auth/login') && resp.status() === 200);
     await this.loginButton.click();
     await loginResponsePromise;

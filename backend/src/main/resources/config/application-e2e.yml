@@ -1,0 +1,124 @@
+# application-e2e.yml - E2E Test Environment Configuration
+# PostgreSQL データベース使用（docker-compose.e2e.yml）
+# テストユーザー・データを自動生成
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/mirelplatform_e2e}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATABASE_USER:mirel_e2e}
+    password: ${DATABASE_PASS:mirel_e2e_password}
+  session:
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop  # E2E環境では毎回再作成
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  # E2E環境ではメール送信をモック（docker-compose.e2e.yml MailHog）
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1026}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  # E2E環境用OAuth2設定（ダミー値）
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: dummy-e2e-client-id
+            client-secret: dummy-e2e-client-secret
+  # E2E環境用Redis設定（docker-compose.e2e.yml）
+  # RateLimitServiceがRedisTemplateに依存するため完全無効化はできない
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      timeout: 1000ms
+      # 接続失敗時はRateLimitServiceがメモリフォールバックする
+
+# E2E環境ではActuatorエンドポイントを露出（ヘルスチェック用）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false  # E2E環境ではRedisヘルスチェックを無効化（失敗しても起動できるように）
+    mail:
+      enabled: false  # E2E環境ではメールヘルスチェックを無効化
+
+logging:
+  level:
+    jp.vemi.mirel: DEBUG
+    jp.vemi.framework: DEBUG
+    jp.vemi.ste: DEBUG
+    org.springframework.security: INFO
+    org.hibernate: WARN
+
+mirel:
+  storage-dir: ./build/e2e-storage
+  stencil:
+    layers:
+      user: ${mirel.storage-dir}/apps/promarker/stencil/user
+      standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
+      samples: classpath:/promarker/stencil/samples
+    auto-deploy-samples: true  # E2E環境ではサンプルを自動デプロイ
+  database:
+    initialize: true  # E2E環境ではデータベース初期化を有効化（テストユーザー作成）
+  apps:
+    mste:
+      # E2E環境: 起動時に必ずステンシルマスタをリロード
+      # テストケース実行前にステンシルが利用可能な状態にする
+      auto-reload-stencil-on-startup: true
+
+# E2E環境でのセキュリティ設定
+mipla2:
+  security:
+    api:
+      enabled: true
+      csrf-enabled: false  # E2Eテスト考慮でCSRF無効
+
+# JWT authentication method
+auth:
+  method: jwt
+  jwt:
+    enabled: true
+    secret: e2e-test-secret-key-for-local-testing-only-12345678901234567890abcdef
+
+# E2E環境用OTP設定
+otp:
+  enabled: true
+  expiration-minutes: 10
+  resend-cooldown-seconds: 5
+
+# E2E環境用レート制限（テスト用に緩和）
+rate-limit:
+  otp:
+    request-per-minute: 10
+    verify-per-minute: 30
+  redis:
+    fallback-to-memory: true  # Redisなしでメモリフォールバック
+
+# E2E環境用メール設定（docker-compose.e2e.yml MailHog）
+email:
+  provider: smtp
+  smtp:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1026}

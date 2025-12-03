@@ -18,4 +18,13 @@ public class LoginRequest {
     private String password;
     
     private String tenantId; // オプション: 初回テナント指定
+    
+    /**
+     * toString()でパスワードをマスク
+     */
+    @Override
+    public String toString() {
+        return "LoginRequest(usernameOrEmail=" + usernameOrEmail 
+            + ", password=***MASKED***, tenantId=" + tenantId + ")";
+    }
 }
