@@ -9,17 +9,17 @@ export const PropertyEditor: React.FC = () => {
 
   if (!selectedWidget) {
     return (
-      <div className="w-80 border-l bg-white flex flex-col h-full p-6 items-center justify-center text-gray-400 text-center">
+      <div className="w-80 border-l bg-background flex flex-col h-full p-6 items-center justify-center text-muted-foreground text-center">
         <p>Select a widget to edit its properties</p>
       </div>
     );
   }
 
   return (
-    <div className="w-80 border-l bg-white flex flex-col h-full">
+    <div className="w-80 border-l bg-background flex flex-col h-full">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-gray-900">Properties</h3>
-        <p className="text-xs text-gray-500 mt-1">ID: {selectedWidget.id}</p>
+        <h3 className="font-semibold text-foreground">Properties</h3>
+        <p className="text-xs text-muted-foreground mt-1">ID: {selectedWidget.id}</p>
       </div>
       
       <div className="p-4 flex-1 overflow-y-auto space-y-6">
@@ -42,7 +42,7 @@ export const PropertyEditor: React.FC = () => {
 
         <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Type</label>
-             <div className="p-2 bg-gray-100 rounded text-sm text-gray-600">
+             <div className="p-2 bg-muted rounded text-sm text-muted-foreground">
                 {selectedWidget.type}
              </div>
         </div>
@@ -53,13 +53,13 @@ export const PropertyEditor: React.FC = () => {
             id="required"
             checked={selectedWidget.required}
             onChange={(e) => updateWidget(selectedWidget.id, { required: e.target.checked })}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
           />
-          <label htmlFor="required" className="text-sm font-medium text-gray-700">Required</label>
+          <label htmlFor="required" className="text-sm font-medium text-foreground">Required</label>
         </div>
 
         <div className="border-t pt-4 space-y-4">
-          <h4 className="text-sm font-semibold text-gray-900">Validation</h4>
+          <h4 className="text-sm font-semibold text-foreground">Validation</h4>
           
           {(selectedWidget.type === 'text' || selectedWidget.type === 'select') && (
             <>

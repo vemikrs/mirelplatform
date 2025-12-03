@@ -135,18 +135,18 @@ export const StudioPage: React.FC = () => {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Toolbar */}
-      <div className="h-14 border-b bg-white flex items-center justify-between px-4">
+      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/apps/studio')}>
             <ArrowLeft className="size-4" />
           </Button>
           <h1 className="font-semibold text-lg">{modelName}</h1>
-          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+          <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">
             {modelId ? 'v' + (schema?.data?.version || 1) : 'New'}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+          <div className="bg-muted p-1 rounded-lg flex gap-1">
             <Button 
               variant={mode === 'edit' ? 'secondary' : 'ghost'} 
               size="sm"
@@ -175,7 +175,7 @@ export const StudioPage: React.FC = () => {
               Preview
             </Button>
           </div>
-          <div className="w-px h-6 bg-gray-200 mx-2" />
+          <div className="w-px h-6 bg-border mx-2" />
           <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/data`)} disabled={!modelId} className="gap-2">
             Data
           </Button>
@@ -194,8 +194,8 @@ export const StudioPage: React.FC = () => {
         {mode === 'edit' && <FormDesigner />}
         {mode === 'flow' && <FlowDesignerContainer />}
         {mode === 'preview' && (
-          <div className="h-full overflow-auto p-8 bg-gray-50 flex justify-center">
-            <Card className="w-full max-w-2xl p-8 bg-white shadow-sm h-fit">
+          <div className="h-full overflow-auto p-8 bg-muted/30 flex justify-center">
+            <Card className="w-full max-w-2xl p-8 bg-card shadow-sm h-fit">
               <h2 className="text-xl font-bold mb-6">Preview Form</h2>
               <DynamicFormRenderer 
                 widgets={widgets} 

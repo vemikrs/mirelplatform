@@ -37,8 +37,8 @@ export const GridFormDesigner: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-8 overflow-auto bg-gray-100" ref={setNodeRef}>
-      <div className="bg-white min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg mx-auto">
+    <div className="flex-1 p-8 overflow-auto bg-muted/30" ref={setNodeRef}>
+      <div className="bg-card min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg mx-auto">
         <GridLayout
           className="layout"
           layout={layout}
@@ -49,17 +49,17 @@ export const GridFormDesigner: React.FC = () => {
           draggableHandle=".drag-handle"
         >
           {widgets.map((widget) => (
-            <div key={widget.id} className="border border-gray-200 bg-white rounded shadow-sm group relative">
+            <div key={widget.id} className="border border-border bg-card rounded shadow-sm group relative">
                {/* Drag Handle */}
-              <div className="drag-handle absolute top-0 left-0 right-0 h-6 bg-gray-50 cursor-move flex items-center px-2 border-b border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                 <span className="text-xs text-gray-400">Drag</span>
+              <div className="drag-handle absolute top-0 left-0 right-0 h-6 bg-muted/50 cursor-move flex items-center px-2 border-b border-border opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                 <span className="text-xs text-muted-foreground">Drag</span>
               </div>
               
               <div className="p-4 h-full flex flex-col pt-8">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  {widget.label} {widget.required && <span className="text-red-500">*</span>}
+                <label className="text-sm font-medium text-foreground mb-1 block">
+                  {widget.label} {widget.required && <span className="text-destructive">*</span>}
                 </label>
-                <div className="flex-1 bg-gray-50 rounded border border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400">
+                <div className="flex-1 bg-muted/20 rounded border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
                   {widget.type}
                 </div>
               </div>

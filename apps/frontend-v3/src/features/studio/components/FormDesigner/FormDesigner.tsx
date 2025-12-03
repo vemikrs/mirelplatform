@@ -85,7 +85,7 @@ export const FormDesigner: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-gray-100">
+    <div className="flex h-full bg-muted/30">
       <DndContext 
         sensors={sensors} 
         onDragStart={handleDragStart}
@@ -97,7 +97,7 @@ export const FormDesigner: React.FC = () => {
         {/* Canvas */}
         <div className="flex-1 p-8 overflow-auto flex justify-center">
           <div 
-            className="bg-white min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg"
+            className="bg-card min-h-[800px] w-full max-w-4xl shadow-sm p-8 relative rounded-lg"
             onClick={() => selectWidget(null)}
           >
              <GridFormDesigner />
@@ -109,7 +109,7 @@ export const FormDesigner: React.FC = () => {
 
         <DragOverlay dropAnimation={dropAnimation}>
             {activeDragItem ? (
-                 <Card className="p-3 text-sm font-medium bg-white shadow-lg opacity-80 w-48">
+                 <Card className="p-3 text-sm font-medium bg-popover shadow-lg opacity-80 w-48">
                     {activeDragItem.label}
                  </Card>
             ) : null}
