@@ -78,4 +78,63 @@ class DynamicEntityServiceTest {
 
         verify(jdbcTemplate).update(eq("DELETE FROM dyn_test_model WHERE id = ?"), any(UUID.class));
     }
+
+    @Test
+    void insert_shouldThrowException_whenRequiredFieldIsMissing() {
+        String modelId = "test_model";
+        Map<String, Object> data = new HashMap<>();
+        // Missing "name"
+
+        StuField field = new StuField();
+        field.setFieldCode("name");
+        field.setFieldName("Name");
+        field.setIsRequired(true);
+        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+
+        try {
+            service.insert(modelId, data);
+        } catch (IllegalArgumentException e) {
+            assert e.getMessage().equals("Field Name is required");
+        }
+    }
+
+    @Test
+    void insert_shouldThrowException_whenMinValueViolated() {
+        String modelId = "test_model";
+        Map<String, Object> data = new HashMap<>();
+        data.put("age", "10");
+
+        StuField field = new StuField();
+        field.setFieldCode("age");
+        field.setFieldName("Age");
+        field.setFieldType("NUMBER");
+        field.setMinValue(18.0);
+        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+
+        try {
+            service.insert(modelId, data);
+        } catch (IllegalArgumentException e) {
+            assert e.getMessage().equals("Field Age must be >= 18.0");
+        }
+    }
+
+    @Test
+    void insert_shouldThrowException_whenRegexViolated() {
+        String modelId = "test_model";
+        Map<String, Object> data = new HashMap<>();
+        data.put("code", "abc");
+
+        StuField field = new StuField();
+        field.setFieldCode("code");
+        field.setFieldName("Code");
+        field.setFieldType("STRING");
+        field.setValidationRegex("^[0-9]+$");
+        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+
+        try {
+            service.insert(modelId, data);
+        } catch (IllegalArgumentException e) {
+            assert e.getMessage().equals("Field Code format is invalid");
+        }
+    }
 }

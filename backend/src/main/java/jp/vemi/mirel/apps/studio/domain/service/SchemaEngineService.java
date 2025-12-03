@@ -86,6 +86,8 @@ public class SchemaEngineService {
         return switch (studioType) {
             case "STRING" -> "VARCHAR(255)";
             case "TEXT" -> "TEXT";
+            case "TEXTAREA" -> "TEXT";
+            case "RADIO" -> "VARCHAR(255)";
             case "NUMBER" -> "NUMERIC";
             case "INTEGER" -> "INTEGER";
             case "BOOLEAN" -> "BOOLEAN";

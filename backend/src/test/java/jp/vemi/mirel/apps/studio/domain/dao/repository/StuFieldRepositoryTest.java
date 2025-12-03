@@ -40,6 +40,7 @@ class StuFieldRepositoryTest {
         field1.setFieldId(UUID.randomUUID().toString());
         field1.setModelId(modelId);
         field1.setFieldName("Field 1");
+        field1.setFieldCode("field1");
         field1.setFieldType("STRING");
         field1.setIsRequired(true);
         field1.setSortOrder(2);
@@ -49,6 +50,7 @@ class StuFieldRepositoryTest {
         field2.setFieldId(UUID.randomUUID().toString());
         field2.setModelId(modelId);
         field2.setFieldName("Field 2");
+        field2.setFieldCode("field2");
         field2.setFieldType("NUMBER");
         field2.setIsRequired(false);
         field2.setSortOrder(1);

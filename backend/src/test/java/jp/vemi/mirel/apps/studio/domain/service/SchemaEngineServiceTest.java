@@ -36,20 +36,32 @@ class SchemaEngineServiceTest {
 
         StuField field1 = new StuField();
         field1.setFieldName("name");
+        field1.setFieldCode("name");
         field1.setFieldType("STRING");
         field1.setIsRequired(true);
 
         StuField field2 = new StuField();
         field2.setFieldName("age");
+        field2.setFieldCode("age");
         field2.setFieldType("INTEGER");
         field2.setIsRequired(false);
 
-        String sql = service.generateCreateTableSql(model, Arrays.asList(field1, field2));
+        StuField field3 = new StuField();
+        field3.setFieldCode("description");
+        field3.setFieldType("TEXTAREA");
+
+        StuField field4 = new StuField();
+        field4.setFieldCode("gender");
+        field4.setFieldType("RADIO");
+
+        String sql = service.generateCreateTableSql(model, Arrays.asList(field1, field2, field3, field4));
 
         assertThat(sql).contains("CREATE TABLE dyn_test_model");
         assertThat(sql).contains("id UUID PRIMARY KEY");
         assertThat(sql).contains("name VARCHAR(255) NOT NULL");
         assertThat(sql).contains("age INTEGER");
+        assertThat(sql).contains("description TEXT");
+        assertThat(sql).contains("gender VARCHAR(255)");
         assertThat(sql).contains("created_at TIMESTAMP");
     }
 
