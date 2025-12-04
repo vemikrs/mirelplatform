@@ -20,9 +20,22 @@ public class MenuService {
 
     private final MenuRepository menuRepository;
 
-    public List<MenuDto> getMenuTree() {
+    public List<MenuDto> getMenuTree(List<String> roles) {
         List<MenuEntity> allMenus = menuRepository.findAllByOrderBySortOrderAsc();
-        return buildTree(allMenus);
+        List<MenuEntity> filtered = allMenus.stream()
+                .filter(menu -> isAccessible(menu, roles))
+                .collect(Collectors.toList());
+        return buildTree(filtered);
+    }
+
+    private boolean isAccessible(MenuEntity menu, List<String> roles) {
+        if (menu.getRequiredPermission() == null || menu.getRequiredPermission().isEmpty()) {
+            return true;
+        }
+        if (roles == null || roles.isEmpty()) {
+            return false;
+        }
+        return roles.contains(menu.getRequiredPermission());
     }
 
     private List<MenuDto> buildTree(List<MenuEntity> entities) {
