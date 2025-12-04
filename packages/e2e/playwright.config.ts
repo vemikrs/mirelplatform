@@ -24,12 +24,7 @@ export default defineConfig({
   maxFailures: undefined,  // Run all tests to completion
   
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['list']
-  ],
+  reporter: 'list',
   
   /* Start dev servers automatically for local E2E runs only (CI handles server startup separately) */
   webServer: process.env.CI ? undefined : [
