@@ -64,7 +64,7 @@ public class UserProfileService {
         logger.info("Getting user profile: {}", userId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Tenant currentTenant = null;
         if (user.getTenantId() != null) {
@@ -72,21 +72,24 @@ public class UserProfileService {
         }
 
         return UserProfileDto.builder()
-            .userId(user.getUserId())
-            .username(user.getUsername())
-            .email(user.getEmail())
-            .displayName(user.getDisplayName())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .isActive(user.getIsActive())
-            .emailVerified(user.getEmailVerified())
-            .lastLoginAt(user.getLastLoginAt())
-            .currentTenant(currentTenant != null ? TenantInfoDto.builder()
-                .tenantId(currentTenant.getTenantId())
-                .tenantName(currentTenant.getTenantName())
-                .displayName(currentTenant.getDisplayName())
-                .build() : null)
-            .build();
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .displayName(user.getDisplayName())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .isActive(user.getIsActive())
+                .emailVerified(user.getEmailVerified())
+                .lastLoginAt(user.getLastLoginAt())
+                .currentTenant(currentTenant != null ? TenantInfoDto.builder()
+                        .tenantId(currentTenant.getTenantId())
+                        .tenantName(currentTenant.getTenantName())
+                        .displayName(currentTenant.getDisplayName())
+                        .build() : null)
+                .roles(user.getRoles() != null && !user.getRoles().isEmpty()
+                        ? java.util.Arrays.asList(user.getRoles().split("\\|"))
+                        : java.util.Collections.emptyList())
+                .build();
     }
 
     /**
@@ -97,7 +100,7 @@ public class UserProfileService {
         logger.info("Updating user profile: {}", userId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (request.getDisplayName() != null) {
             user.setDisplayName(request.getDisplayName());
@@ -124,11 +127,11 @@ public class UserProfileService {
         logger.info("Updating password for user: {}", userId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // SystemUser取得
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-            .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
 
         // 現在のパスワード検証
         if (!passwordEncoder.matches(request.getCurrentPassword(), systemUser.getPasswordHash())) {
@@ -155,21 +158,21 @@ public class UserProfileService {
         List<UserTenant> userTenants = userTenantRepository.findByUserId(userId);
 
         return userTenants.stream()
-            .map(ut -> {
-                Tenant tenant = tenantRepository.findById(ut.getTenantId()).orElse(null);
-                if (tenant == null) {
-                    return null;
-                }
-                return TenantInfoDto.builder()
-                    .tenantId(tenant.getTenantId())
-                    .tenantName(tenant.getTenantName())
-                    .displayName(tenant.getDisplayName())
-                    .roleInTenant(ut.getRoleInTenant())
-                    .isDefault(ut.getIsDefault())
-                    .build();
-            })
-            .filter(t -> t != null)
-            .collect(Collectors.toList());
+                .map(ut -> {
+                    Tenant tenant = tenantRepository.findById(ut.getTenantId()).orElse(null);
+                    if (tenant == null) {
+                        return null;
+                    }
+                    return TenantInfoDto.builder()
+                            .tenantId(tenant.getTenantId())
+                            .tenantName(tenant.getTenantName())
+                            .displayName(tenant.getDisplayName())
+                            .roleInTenant(ut.getRoleInTenant())
+                            .isDefault(ut.getIsDefault())
+                            .build();
+                })
+                .filter(t -> t != null)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -180,18 +183,18 @@ public class UserProfileService {
         logger.info("Getting licenses for user: {}, tenant: {}", userId, tenantId);
 
         List<ApplicationLicense> licenses = licenseRepository
-            .findEffectiveLicenses(userId, tenantId, Instant.now());
+                .findEffectiveLicenses(userId, tenantId, Instant.now());
 
         return licenses.stream()
-            .map(license -> LicenseInfoDto.builder()
-                .id(license.getId())
-                .subjectType(license.getSubjectType())
-                .subjectId(license.getSubjectId())
-                .applicationId(license.getApplicationId())
-                .tier(license.getTier())
-                .grantedAt(license.getGrantedAt())
-                .expiresAt(license.getExpiresAt())
-                .build())
-            .collect(Collectors.toList());
+                .map(license -> LicenseInfoDto.builder()
+                        .id(license.getId())
+                        .subjectType(license.getSubjectType())
+                        .subjectId(license.getSubjectId())
+                        .applicationId(license.getApplicationId())
+                        .tier(license.getTier())
+                        .grantedAt(license.getGrantedAt())
+                        .expiresAt(license.getExpiresAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

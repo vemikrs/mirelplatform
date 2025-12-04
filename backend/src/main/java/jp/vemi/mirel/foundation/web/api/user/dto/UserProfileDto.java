@@ -28,4 +28,5 @@ public class UserProfileDto {
     private Boolean emailVerified;
     private Instant lastLoginAt;
     private TenantInfoDto currentTenant;
+    private java.util.List<String> roles;
 }
