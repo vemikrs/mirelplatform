@@ -13,6 +13,12 @@ interface ModelSummary {
   modelType: 'transaction' | 'master';
 }
 
+/**
+ * @deprecated Use StudioNavigation from '@/features/studio/components' instead.
+ * This component will be removed in a future version.
+ * Migration guide: The unified StudioNavigation component provides
+ * consistent navigation across all Studio pages.
+ */
 export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => {
   const location = useLocation();
   const pathname = location.pathname;

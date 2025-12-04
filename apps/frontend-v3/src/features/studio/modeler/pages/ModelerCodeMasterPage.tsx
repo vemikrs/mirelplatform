@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicCode } from '../types/modeler';
 import { CodeGroupList } from '../components/CodeGroupList';
 import { CodeValueEditor } from '../components/CodeValueEditor';
-import { ModelerLayout } from '../components/layout/ModelerLayout';
+import { StudioLayout } from '../../layouts';
+import { StudioContextBar } from '../../components';
 
 export const ModelerCodeMasterPage: React.FC = () => {
   const [groups, setGroups] = useState<string[]>([]);
@@ -82,11 +83,16 @@ export const ModelerCodeMasterPage: React.FC = () => {
   };
 
   return (
-    <ModelerLayout>
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-4 p-4 border-b border-border bg-background">
-          <h1 className="text-xl font-bold text-foreground">コードマスタ管理</h1>
-        </div>
+    <StudioLayout showHeader={true}>
+      <div className="flex flex-col h-full overflow-hidden">
+        <StudioContextBar
+          breadcrumbs={[
+            { label: 'Studio', href: '/apps/studio' },
+            { label: 'Modeler', href: '/apps/studio/modeler' },
+            { label: 'コードマスタ' },
+          ]}
+          title="コードマスタ管理"
+        />
         
         <div className="flex flex-1 overflow-hidden">
           <CodeGroupList
@@ -114,6 +120,6 @@ export const ModelerCodeMasterPage: React.FC = () => {
           )}
         </div>
       </div>
-    </ModelerLayout>
+    </StudioLayout>
   );
 };

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel, SchRecord } from '../types/modeler';
 import { RecordGrid } from '../components/RecordGrid';
 import { ModelSelector } from '../components/ModelSelector';
-import { ModelerLayout } from '../components/layout/ModelerLayout';
+import { StudioLayout } from '../../layouts';
+import { StudioContextBar } from '../../components';
+import { Button, Input } from '@mirel/ui';
 
 export const ModelerRecordListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -78,83 +80,93 @@ export const ModelerRecordListPage: React.FC = () => {
   const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
-    <ModelerLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-foreground">データ管理</h1>
-        </div>
-
-        <div className="flex justify-between items-center mb-4 p-4 border border-border rounded-lg bg-card shadow-sm">
-          <ModelSelector
-            models={models}
-            selectedModelId={selectedModelId}
-            onSelect={setSelectedModelId}
-          />
-          <button
+    <StudioLayout showHeader={true}>
+      <div className="flex flex-col h-full overflow-hidden">
+        <StudioContextBar
+          breadcrumbs={[
+            { label: 'Studio', href: '/apps/studio' },
+            { label: 'Modeler', href: '/apps/studio/modeler' },
+            { label: 'データ管理' },
+          ]}
+          title="データ管理"
+        >
+          <Button
             onClick={handleCreateNew}
             disabled={!selectedModelId}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            size="sm"
           >
             新規作成
-          </button>
+          </Button>
+        </StudioContextBar>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex justify-between items-center p-4 border border-border rounded-lg bg-card shadow-sm">
+            <ModelSelector
+              models={models}
+              selectedModelId={selectedModelId}
+              onSelect={setSelectedModelId}
+            />
+          </div>
+
+          {selectedModelId && (
+            <>
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-64"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Button type="submit" variant="secondary">
+                  Search
+                </Button>
+              </form>
+
+              <div className="border border-border rounded-lg bg-card shadow-sm overflow-hidden">
+                {loading ? (
+                  <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                ) : (
+                  <RecordGrid fields={fields} records={records} onRowClick={handleRowClick} />
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-end items-center gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {page} of {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= totalPages}
+                >
+                  Next
+                </Button>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="p-1 border rounded border-input bg-background text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </>
+          )}
         </div>
-
-        {selectedModelId && (
-          <>
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="mb-4 flex gap-2">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="p-2 border rounded w-64 border-input bg-background"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button type="submit" className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80">
-                Search
-              </button>
-            </form>
-
-            <div className="border border-border rounded-lg bg-card shadow-sm overflow-hidden">
-              {loading ? (
-                <div className="p-8 text-center text-muted-foreground">Loading...</div>
-              ) : (
-                <RecordGrid fields={fields} records={records} onRowClick={handleRowClick} />
-              )}
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex justify-end items-center gap-4 mt-4">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-accent"
-              >
-                Previous
-              </button>
-              <span className="text-sm">
-                Page {page} of {totalPages || 1}
-              </span>
-              <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-accent"
-              >
-                Next
-              </button>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="p-1 border rounded border-input bg-background"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-          </>
-        )}
       </div>
-    </ModelerLayout>
+    </StudioLayout>
   );
 };

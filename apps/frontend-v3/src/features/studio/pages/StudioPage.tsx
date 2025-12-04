@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FormDesigner } from '../components/FormDesigner/FormDesigner';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
 import { useFormDesignerStore, type Widget } from '../stores/useFormDesignerStore';
 import { Button, Card } from '@mirel/ui';
-import { Eye, Edit, Save, ArrowLeft } from 'lucide-react';
+import { Eye, Edit, Workflow, Database, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { createDraft, updateDraft, getSchema } from '@/lib/api/schema';
-import { useNavigate } from 'react-router-dom';
-
 import { FlowDesignerContainer } from '../components/FlowDesigner/FlowDesignerContainer';
-import { Workflow } from 'lucide-react';
-
 import { useFlowDesignerStore } from '../stores/useFlowDesignerStore';
+import { StudioLayout } from '../layouts';
+import { StudioContextBar, ModeSwitcher } from '../components';
 
 export const StudioPage: React.FC = () => {
   const { modelId: paramModelId } = useParams<{ modelId: string }>();
@@ -129,83 +127,88 @@ export const StudioPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="h-full flex items-center justify-center">Loading...</div>;
+    return (
+      <StudioLayout showHeader={true} hideProperties={true}>
+        <div className="h-full flex items-center justify-center">Loading...</div>
+      </StudioLayout>
+    );
   }
 
-  return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-      {/* Toolbar */}
-      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/apps/studio')}>
-            <ArrowLeft className="size-4" />
-          </Button>
-          <h1 className="font-semibold text-lg">{modelName}</h1>
-          <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">
-            {modelId ? 'v' + (schema?.data?.version || 1) : 'New'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-muted p-1 rounded-lg flex gap-1">
-            <Button 
-              variant={mode === 'edit' ? 'secondary' : 'ghost'} 
-              size="sm"
-              onClick={() => setMode('edit')}
-              className="gap-2"
-            >
-              <Edit className="size-4" />
-              Form
-            </Button>
-            <Button 
-              variant={mode === 'flow' ? 'secondary' : 'ghost'} 
-              size="sm"
-              onClick={() => setMode('flow')}
-              className="gap-2"
-            >
-              <Workflow className="size-4" />
-              Flow
-            </Button>
-            <Button 
-              variant={mode === 'preview' ? 'secondary' : 'ghost'} 
-              size="sm"
-              onClick={() => setMode('preview')}
-              className="gap-2"
-            >
-              <Eye className="size-4" />
-              Preview
-            </Button>
-          </div>
-          <div className="w-px h-6 bg-border mx-2" />
-          <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/data`)} disabled={!modelId} className="gap-2">
-            Data
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate(`/apps/studio/${modelId}/releases`)} disabled={!modelId} className="gap-2">
-            Releases
-          </Button>
-          <Button size="sm" onClick={handleSave} className="gap-2">
-            <Save className="size-4" />
-            Save
-          </Button>
-        </div>
-      </div>
+  // Mode definitions for the switcher
+  const modes = [
+    { id: 'edit', label: 'Form', icon: Edit },
+    { id: 'flow', label: 'Flow', icon: Workflow },
+    { id: 'preview', label: 'Preview', icon: Eye },
+  ];
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        {mode === 'edit' && <FormDesigner />}
-        {mode === 'flow' && <FlowDesignerContainer />}
-        {mode === 'preview' && (
-          <div className="h-full overflow-auto p-8 bg-muted/30 flex justify-center">
-            <Card className="w-full max-w-2xl p-8 bg-card shadow-sm h-fit">
-              <h2 className="text-xl font-bold mb-6">Preview Form</h2>
-              <DynamicFormRenderer 
-                widgets={widgets} 
-                onSubmit={(data) => alert(JSON.stringify(data, null, 2))} 
-              />
-            </Card>
-          </div>
-        )}
+  // Quick action buttons
+  const quickActions = (
+    <>
+      <ModeSwitcher
+        modes={modes}
+        activeMode={mode}
+        onModeChange={(m) => setMode(m as 'edit' | 'flow' | 'preview')}
+      />
+      <div className="w-px h-6 bg-border mx-2" />
+      <Button 
+        size="sm" 
+        variant="ghost" 
+        onClick={() => navigate(`/apps/studio/${modelId}/data`)} 
+        disabled={!modelId}
+        className="gap-1.5"
+      >
+        <Database className="size-4" />
+        <span className="hidden md:inline">Data</span>
+      </Button>
+      <Button 
+        size="sm" 
+        variant="ghost" 
+        onClick={() => navigate(`/apps/studio/${modelId}/releases`)} 
+        disabled={!modelId}
+        className="gap-1.5"
+      >
+        <Rocket className="size-4" />
+        <span className="hidden md:inline">Releases</span>
+      </Button>
+    </>
+  );
+
+  return (
+    <StudioLayout showHeader={true} hideProperties={mode !== 'edit'}>
+      <div className="flex flex-col h-full">
+        {/* Context Bar with mode switcher */}
+        <StudioContextBar
+          title={modelName}
+          subtitle={modelId ? `v${schema?.data?.version || 1}` : 'New'}
+          breadcrumbs={[
+            { label: 'Studio', path: '/apps/studio' },
+            { label: 'Forms', path: '/apps/studio' },
+            { label: modelName, path: `/apps/studio/${modelId || 'new'}` },
+          ]}
+          actions={quickActions}
+          onSave={handleSave}
+          showSave={true}
+          showPreview={false}
+        />
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {mode === 'edit' && <FormDesigner />}
+          {mode === 'flow' && <FlowDesignerContainer />}
+          {mode === 'preview' && (
+            <div className="h-full overflow-auto p-8 bg-muted/30 flex justify-center">
+              <Card className="w-full max-w-2xl p-8 bg-card shadow-sm h-fit">
+                <h2 className="text-xl font-bold mb-6">Preview Form</h2>
+                <DynamicFormRenderer 
+                  widgets={widgets} 
+                  onSubmit={(data) => alert(JSON.stringify(data, null, 2))} 
+                />
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </StudioLayout>
   );
 };
 

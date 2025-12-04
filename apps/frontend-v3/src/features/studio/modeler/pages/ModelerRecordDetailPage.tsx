@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel } from '../types/modeler';
 import { DynamicForm } from '../components/DynamicForm';
-import { ModelerLayout } from '../components/layout/ModelerLayout';
+import { StudioLayout } from '../../layouts';
+import { StudioContextBar } from '../../components';
 
 export const ModelerRecordDetailPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
@@ -45,28 +46,44 @@ export const ModelerRecordDetailPage: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 text-muted-foreground">読み込み中...</div>;
+  if (loading) {
+    return (
+      <StudioLayout showHeader={true}>
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          読み込み中...
+        </div>
+      </StudioLayout>
+    );
+  }
+
+  const pageTitle = recordId === 'new' ? '新規レコード作成' : 'レコード編集';
 
   return (
-    <ModelerLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Link to="/apps/modeler/records" className="text-muted-foreground hover:text-foreground">
-            ← 戻る
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">
-            {recordId === 'new' ? '新規レコード作成' : 'レコード編集'}
-          </h1>
-        </div>
-        <div className="p-6 border border-border rounded-lg bg-card shadow-sm">
-          <DynamicForm
-            fields={fields}
-            data={data}
-            onChange={setData}
-            onSubmit={handleSubmit}
-          />
+    <StudioLayout showHeader={true}>
+      <div className="flex flex-col h-full overflow-hidden">
+        <StudioContextBar
+          breadcrumbs={[
+            { label: 'Studio', href: '/apps/studio' },
+            { label: 'Modeler', href: '/apps/studio/modeler' },
+            { label: 'データ管理', href: '/apps/studio/modeler/records' },
+            { label: modelId || '' },
+            { label: pageTitle },
+          ]}
+          title={pageTitle}
+          onSave={handleSubmit}
+        />
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-4xl mx-auto p-6 border border-border rounded-lg bg-card shadow-sm">
+            <DynamicForm
+              fields={fields}
+              data={data}
+              onChange={setData}
+              onSubmit={handleSubmit}
+            />
+          </div>
         </div>
       </div>
-    </ModelerLayout>
+    </StudioLayout>
   );
 };
