@@ -4,21 +4,19 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class SchemaManageServiceTest {
 
     @Mock
@@ -27,37 +25,40 @@ class SchemaManageServiceTest {
     private SchemaEngineService schemaEngine;
 
     @InjectMocks
-    private SchemaManageService service;
+    private SchemaManageService schemaManageService;
 
-    @Test
-    void createDraft_shouldDelegateToDomainService() {
-        String name = "New Model";
-        String description = "Description";
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId("id");
-
-        when(studioModelService.createDraft(name, description)).thenReturn(model);
-
-        String resultId = service.createDraft(name, description);
-
-        assertThat(resultId).isEqualTo("id");
-        verify(studioModelService).createDraft(name, description);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void updateDraft_shouldDelegateToDomainService() {
-        String modelId = "test_model";
+    void createDraft() {
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId("id-1");
+        when(studioModelService.createDraft("Name", "Desc")).thenReturn(model);
+
+        String id = schemaManageService.createDraft("Name", "Desc");
+
+        assertEquals("id-1", id);
+    }
+
+    @Test
+    void updateDraft() {
+        String modelId = "id-1";
         List<StuField> fields = Collections.emptyList();
 
-        service.updateDraft(modelId, "Name", "Desc", fields);
+        schemaManageService.updateDraft(modelId, "Name", "Desc", fields);
 
         verify(studioModelService).updateDraft(modelId, "Name", "Desc", fields);
     }
 
     @Test
-    void publish_shouldDelegateToDomainService() {
-        String modelId = "test_model";
-        service.publish(modelId);
+    void publish() {
+        String modelId = "id-1";
+
+        schemaManageService.publish(modelId);
+
         verify(studioModelService).publish(modelId, schemaEngine);
     }
 }

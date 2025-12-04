@@ -4,23 +4,26 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
-import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderRepository;
+import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderLegacyRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
- * Domain Service for managing Studio Models.
+ * Service for managing Studio Models.
  */
 @Service
+@RequiredArgsConstructor
 public class StudioModelService {
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private StuModelHeaderRepository headerRepository;
+    private final StuModelHeaderLegacyRepository headerRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private StuFieldRepository fieldRepository;
 
@@ -34,8 +37,8 @@ public class StudioModelService {
      * @return The created model
      */
     @Transactional
-    public StuModelHeader createDraft(String name, String description) {
-        StuModelHeader model = new StuModelHeader();
+    public StuModelHeaderLegacy createDraft(String name, String description) {
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
         model.setModelId(java.util.UUID.randomUUID().toString());
         model.setModelName(name);
         model.setDescription(description);
@@ -59,7 +62,7 @@ public class StudioModelService {
      */
     @Transactional
     public void updateDraft(String modelId, String name, String description, List<StuField> fields) {
-        StuModelHeader model = headerRepository.findById(modelId)
+        StuModelHeaderLegacy model = headerRepository.findById(modelId)
                 .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
 
         if ("PUBLISHED".equals(model.getStatus())) {
@@ -89,7 +92,7 @@ public class StudioModelService {
      */
     @Transactional
     public void deleteModel(String modelId) {
-        StuModelHeader model = headerRepository.findById(modelId)
+        StuModelHeaderLegacy model = headerRepository.findById(modelId)
                 .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
 
         List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
@@ -104,7 +107,7 @@ public class StudioModelService {
      *            Model ID
      * @return The model
      */
-    public StuModelHeader getModel(String modelId) {
+    public StuModelHeaderLegacy getModel(String modelId) {
         return headerRepository.findById(modelId)
                 .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
     }
@@ -130,7 +133,7 @@ public class StudioModelService {
      */
     @Transactional
     public void publish(String modelId, SchemaEngineService schemaEngine) {
-        StuModelHeader model = headerRepository.findById(modelId)
+        StuModelHeaderLegacy model = headerRepository.findById(modelId)
                 .orElseThrow(() -> new NoSuchElementException("Model not found: " + modelId));
 
         if ("PUBLISHED".equals(model.getStatus())) {
@@ -152,7 +155,7 @@ public class StudioModelService {
      * 
      * @return List of models
      */
-    public List<StuModelHeader> findAll() {
+    public List<StuModelHeaderLegacy> findAll() {
         return headerRepository.findAll();
     }
 
@@ -162,7 +165,7 @@ public class StudioModelService {
      * @param model
      *            The model to save
      */
-    public void saveModel(StuModelHeader model) {
+    public void saveModel(StuModelHeaderLegacy model) {
         headerRepository.save(model);
     }
 }

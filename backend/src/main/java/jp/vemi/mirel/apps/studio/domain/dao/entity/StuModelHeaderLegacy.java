@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "stu_model_header")
 @Getter
 @Setter
-public class StuModelHeader {
+public class StuModelHeaderLegacy {
 
     @Id
     @Column(name = "model_id", length = 64)

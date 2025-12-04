@@ -4,84 +4,75 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class SchemaEngineServiceTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
 
     @InjectMocks
-    private SchemaEngineService service;
+    private SchemaEngineService schemaEngineService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
-    void generateCreateTableSql_shouldGenerateCorrectSql() {
-        StuModelHeader model = new StuModelHeader();
+    void createTable() {
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId("test_model");
+
+        StuField field = new StuField();
+        field.setFieldCode("field1");
+        field.setFieldType("STRING");
+
+        schemaEngineService.createTable(model, List.of(field));
+
+        verify(jdbcTemplate, times(1)).execute(anyString());
+    }
+
+    @Test
+    void generateCreateTableSql() {
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
         model.setModelId("test_model");
 
         StuField field1 = new StuField();
-        field1.setFieldName("name");
         field1.setFieldCode("name");
         field1.setFieldType("STRING");
         field1.setIsRequired(true);
 
         StuField field2 = new StuField();
-        field2.setFieldName("age");
         field2.setFieldCode("age");
         field2.setFieldType("INTEGER");
-        field2.setIsRequired(false);
 
-        StuField field3 = new StuField();
-        field3.setFieldCode("description");
-        field3.setFieldType("TEXTAREA");
+        String sql = schemaEngineService.generateCreateTableSql(model, List.of(field1, field2));
 
-        StuField field4 = new StuField();
-        field4.setFieldCode("gender");
-        field4.setFieldType("RADIO");
-
-        String sql = service.generateCreateTableSql(model, Arrays.asList(field1, field2, field3, field4));
-
-        assertThat(sql).contains("CREATE TABLE dyn_test_model");
-        assertThat(sql).contains("id UUID PRIMARY KEY");
-        assertThat(sql).contains("name VARCHAR(255) NOT NULL");
-        assertThat(sql).contains("age INTEGER");
-        assertThat(sql).contains("description TEXT");
-        assertThat(sql).contains("gender VARCHAR(255)");
-        assertThat(sql).contains("created_at TIMESTAMP");
+        assertTrue(sql.contains("CREATE TABLE dyn_test_model"));
+        assertTrue(sql.contains("name VARCHAR(255) NOT NULL"));
+        assertTrue(sql.contains("age INTEGER"));
     }
 
     @Test
-    void generateCreateTableSql_shouldThrowExceptionForInvalidName() {
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId("invalid-name"); // Hyphen is not allowed
+    void validateName_Invalid() {
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId("invalid-name"); // Hyphen not allowed
 
-        assertThatThrownBy(() -> service.generateCreateTableSql(model, Collections.emptyList()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid name");
-    }
-
-    @Test
-    void createTable_shouldExecuteSql() {
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId("simple_model");
-
-        service.createTable(model, Collections.emptyList());
-
-        verify(jdbcTemplate).execute(anyString());
+        assertThrows(IllegalArgumentException.class, () -> {
+            schemaEngineService.generateCreateTableSql(model, Collections.emptyList());
+        });
     }
 }

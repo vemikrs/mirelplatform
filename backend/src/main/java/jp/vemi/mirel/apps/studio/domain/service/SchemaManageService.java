@@ -4,7 +4,7 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +32,7 @@ public class SchemaManageService {
      */
     @Transactional
     public String createDraft(String name, String description) {
-        StuModelHeader model = studioModelService.createDraft(name, description);
+        StuModelHeaderLegacy model = studioModelService.createDraft(name, description);
         return model.getModelId();
     }
 
@@ -61,7 +61,7 @@ public class SchemaManageService {
      */
     @Transactional
     public void deleteModel(String modelId) {
-        StuModelHeader model = studioModelService.getModel(modelId);
+        StuModelHeaderLegacy model = studioModelService.getModel(modelId);
 
         // If published, we might want to drop the table too.
         // For Phase 1, we will drop the table if it exists.
@@ -116,7 +116,7 @@ public class SchemaManageService {
      * @return Model detail
      */
     public jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse getModel(String modelId) {
-        StuModelHeader header = studioModelService.getModel(modelId);
+        StuModelHeaderLegacy header = studioModelService.getModel(modelId);
         List<StuField> fields = studioModelService.getFields(modelId);
 
         jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse response = new jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse();

@@ -4,7 +4,7 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class SchemaEngineService {
      *            The field definitions
      */
     @Transactional
-    public void createTable(StuModelHeader model, List<StuField> fields) {
+    public void createTable(StuModelHeaderLegacy model, List<StuField> fields) {
         String sql = generateCreateTableSql(model, fields);
         jdbcTemplate.execute(sql);
     }
@@ -49,7 +49,7 @@ public class SchemaEngineService {
      *            The field definitions
      * @return The SQL string
      */
-    public String generateCreateTableSql(StuModelHeader model, List<StuField> fields) {
+    public String generateCreateTableSql(StuModelHeaderLegacy model, List<StuField> fields) {
         validateName(model.getModelId());
 
         // Table name prefix "dyn_" to distinguish from system tables

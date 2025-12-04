@@ -6,7 +6,7 @@ package jp.vemi.mirel.apps.studio.domain.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuFlow;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuRelease;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuReleaseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class ReleaseService {
     @Transactional
     public StuRelease createRelease(String modelId) {
         // 1. Fetch current state
-        StuModelHeader header = studioModelService.getModel(modelId);
+        StuModelHeaderLegacy header = studioModelService.getModel(modelId);
         List<StuField> fields = studioModelService.getFields(modelId);
         List<StuFlow> flows = flowManageService.getFlowsByModelId(modelId);
 

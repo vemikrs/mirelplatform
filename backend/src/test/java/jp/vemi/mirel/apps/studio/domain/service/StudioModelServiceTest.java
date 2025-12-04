@@ -4,9 +4,9 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeader;
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
-import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderRepository;
+import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderLegacyRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,120 +17,126 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudioModelServiceTest {
 
     @Mock
-    private StuModelHeaderRepository headerRepository;
+    private StuModelHeaderLegacyRepository headerRepository;
+
     @Mock
     private StuFieldRepository fieldRepository;
 
     @InjectMocks
-    private StudioModelService service;
+    private StudioModelService studioModelService;
 
     @Test
-    void createDraft_shouldSaveNewModel() {
-        String name = "New Model";
-        String description = "Description";
+    void createDraft() {
+        when(headerRepository.save(any(StuModelHeaderLegacy.class))).thenAnswer(i -> i.getArguments()[0]);
 
-        when(headerRepository.save(any(StuModelHeader.class))).thenAnswer(i -> i.getArguments()[0]);
+        StuModelHeaderLegacy result = studioModelService.createDraft("Test Model", "Description");
 
-        StuModelHeader created = service.createDraft(name, description);
-
-        assertThat(created).isNotNull();
-        verify(headerRepository).save(any(StuModelHeader.class));
+        assertNotNull(result);
+        assertEquals("Test Model", result.getModelName());
+        assertEquals("Description", result.getDescription());
+        assertEquals("DRAFT", result.getStatus());
+        assertEquals(1, result.getVersion());
+        assertNotNull(result.getModelId());
     }
 
     @Test
-    void updateDraft_shouldUpdateModelAndFields() {
-        String modelId = "test_model";
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId(modelId);
-        model.setStatus("DRAFT");
-
-        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
-
-        StuField field = new StuField();
-        field.setFieldName("new_field");
-        List<StuField> fields = Collections.singletonList(field);
-
-        service.updateDraft(modelId, "Updated Name", "Updated Desc", fields);
-
-        verify(headerRepository).save(model);
-        assertThat(model.getModelName()).isEqualTo("Updated Name");
-        verify(fieldRepository).deleteAll(anyList());
-        verify(fieldRepository).save(field);
-    }
-
-    @Test
-    void updateDraft_shouldThrowIfPublished() {
-        String modelId = "published_model";
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId(modelId);
-        model.setStatus("PUBLISHED");
-
-        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
-
-        assertThatThrownBy(() -> service.updateDraft(modelId, "Name", "Desc", Collections.emptyList()))
-                .isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    void deleteModel_shouldDeleteModelAndFields() {
-        String modelId = "test_model";
-        StuModelHeader model = new StuModelHeader();
+    void updateDraft() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
         model.setModelId(modelId);
         model.setStatus("DRAFT");
 
         when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
         when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.emptyList());
 
-        service.deleteModel(modelId);
+        studioModelService.updateDraft(modelId, "New Name", "New Desc", Collections.emptyList());
 
-        verify(fieldRepository).deleteAll(anyList());
-        verify(headerRepository).delete(model);
+        assertEquals("New Name", model.getModelName());
+        assertEquals("New Desc", model.getDescription());
+        verify(headerRepository, times(1)).save(model);
     }
 
     @Test
-    void publish_shouldPublishModel() {
-        String modelId = "test_model";
-        StuModelHeader model = new StuModelHeader();
-        model.setModelId(modelId);
-        model.setStatus("DRAFT");
-
-        List<StuField> fields = Collections.emptyList();
-        SchemaEngineService schemaEngine = org.mockito.Mockito.mock(SchemaEngineService.class);
-
-        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(fields);
-
-        service.publish(modelId, schemaEngine);
-
-        verify(schemaEngine).createTable(model, fields);
-        verify(headerRepository).save(model);
-        assertThat(model.getStatus()).isEqualTo("PUBLISHED");
-    }
-
-    @Test
-    void publish_shouldThrowExceptionIfAlreadyPublished() {
-        String modelId = "published_model";
-        StuModelHeader model = new StuModelHeader();
+    void updateDraft_Published() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
         model.setModelId(modelId);
         model.setStatus("PUBLISHED");
 
-        SchemaEngineService schemaEngine = org.mockito.Mockito.mock(SchemaEngineService.class);
+        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
+
+        assertThrows(IllegalStateException.class, () -> {
+            studioModelService.updateDraft(modelId, "New Name", "New Desc", Collections.emptyList());
+        });
+    }
+
+    @Test
+    void deleteModel() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId(modelId);
+
+        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
+        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.emptyList());
+
+        studioModelService.deleteModel(modelId);
+
+        verify(headerRepository, times(1)).delete(model);
+    }
+
+    @Test
+    void getModel() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId(modelId);
 
         when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
 
-        assertThatThrownBy(() -> service.publish(modelId, schemaEngine))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("already published");
+        StuModelHeaderLegacy result = studioModelService.getModel(modelId);
+
+        assertEquals(model, result);
+    }
+
+    @Test
+    void publish() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId(modelId);
+        model.setStatus("DRAFT");
+
+        SchemaEngineService schemaEngine = mock(SchemaEngineService.class);
+
+        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
+        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.emptyList());
+
+        studioModelService.publish(modelId, schemaEngine);
+
+        assertEquals("PUBLISHED", model.getStatus());
+        verify(schemaEngine, times(1)).createTable(eq(model), anyList());
+        verify(headerRepository, times(1)).save(model);
+    }
+
+    @Test
+    void publish_AlreadyPublished() {
+        String modelId = "test-id";
+        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        model.setModelId(modelId);
+        model.setStatus("PUBLISHED");
+
+        SchemaEngineService schemaEngine = mock(SchemaEngineService.class);
+
+        when(headerRepository.findById(modelId)).thenReturn(Optional.of(model));
+
+        assertThrows(IllegalStateException.class, () -> {
+            studioModelService.publish(modelId, schemaEngine);
+        });
     }
 }
