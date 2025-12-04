@@ -35,8 +35,8 @@ spring:
       client:
         registration:
           github:
-            client-id: dummy-dev-client-id
-            client-secret: dummy-dev-client-secret
+            client-id: Iv23liIwxlvNGfAn9K1s
+            client-secret: ${GITHUB_CLIENT_SECRET}
 
 logging:
   level:
@@ -65,14 +65,14 @@ mirel:
 mipla2:
   security:
     api:
-      enabled: true  # SaaS認証テスト用に有効化
-      csrf-enabled: false  # 開発時はCSRF無効（本番では true）
+      enabled: true # SaaS認証テスト用に有効化
+      csrf-enabled: false # 開発時はCSRF無効（本番では true）
 
 # JWT authentication method (default in WebSecurityConfig)
 auth:
-  method: jwt  # JWT認証を利用
+  method: jwt # JWT認証を利用
   jwt:
-    enabled: true  # JWT有効化
+    enabled: true # JWT有効化
 
 # JWT秘密鍵(開発用固定値)
 jwt:
@@ -81,12 +81,12 @@ jwt:
 # 開発環境用OTP設定 (有効期限を長めに、E2Eテスト考慮)
 otp:
   expiration-minutes: 10
-  resend-cooldown-seconds: 10  # 再送信クールダウン(秒)
+  resend-cooldown-seconds: 10 # 再送信クールダウン(秒)
 
 # 開発環境用レート制限 (緩和 - E2Eテスト考慮)
 rate-limit:
   otp:
-    request-per-minute: 6  # 60秒間に6回までリクエスト可能
+    request-per-minute: 6 # 60秒間に6回までリクエスト可能
     verify-per-minute: 20
 
 # 開発環境用メール設定 (MailHog)
