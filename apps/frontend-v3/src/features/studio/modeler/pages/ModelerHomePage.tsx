@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Database, List, Tags, Card, CardHeader, CardTitle, CardDescription, CardContent, cn } from '@mirel/ui';
+import { Database, List, Tags } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@mirel/ui';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
 

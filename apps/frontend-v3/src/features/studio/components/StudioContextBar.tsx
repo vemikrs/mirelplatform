@@ -41,7 +41,14 @@ interface StudioContextBarProps {
   /**
    * Whether to show preview button
    */
+  /**
+   * Whether to show preview button
+   */
   showPreview?: boolean;
+  /**
+   * Children are rendered in the actions area (alias for actions)
+   */
+  children?: ReactNode;
 }
 
 /**
@@ -59,6 +66,7 @@ export function StudioContextBar({
   saveDisabled = false,
   showSave = true,
   showPreview = true,
+  children,
 }: StudioContextBarProps) {
   const context = useStudioContextOptional();
   const breadcrumbs = propsBreadcrumbs ?? context?.breadcrumbs ?? [];
@@ -75,24 +83,38 @@ export function StudioContextBar({
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-1" aria-label="Breadcrumb">
-            {breadcrumbs.map((item, index) => (
-              <React.Fragment key={item.path}>
-                {index > 0 && (
-                  <ChevronRight className="size-3 text-muted-foreground shrink-0" />
-                )}
-                <Link
-                  to={item.path}
-                  className={cn(
-                    'text-xs transition-colors truncate max-w-32',
-                    index === breadcrumbs.length - 1
-                      ? 'text-foreground font-medium'
-                      : 'text-muted-foreground hover:text-foreground'
+            {breadcrumbs.map((item, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              const target = item.path || item.href;
+              
+              return (
+                <React.Fragment key={index}>
+                  {index > 0 && (
+                    <ChevronRight className="size-3 text-muted-foreground shrink-0" />
                   )}
-                >
-                  {item.label}
-                </Link>
-              </React.Fragment>
-            ))}
+                  {target && !isLast ? (
+                    <Link
+                      to={target}
+                      className={cn(
+                        'text-xs transition-colors truncate max-w-32',
+                        'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span
+                      className={cn(
+                        'text-xs truncate max-w-32',
+                        isLast ? 'text-foreground font-medium' : 'text-muted-foreground'
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </nav>
         )}
 
@@ -119,6 +141,7 @@ export function StudioContextBar({
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
         {actions}
+        {children}
         
         {showPreview && onPreview && (
           <Button

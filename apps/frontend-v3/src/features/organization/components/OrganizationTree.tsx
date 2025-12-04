@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@mirel/ui';
 import type { OrganizationUnit } from '../types';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 
 interface OrganizationTreeProps {
   units: OrganizationUnit[];

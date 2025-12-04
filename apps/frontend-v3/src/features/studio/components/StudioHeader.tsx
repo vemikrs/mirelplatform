@@ -83,13 +83,17 @@ export function StudioHeader({
                   <span className="text-sm text-foreground font-medium">
                     {item.label}
                   </span>
-                ) : (
+                ) : (item.path || item.href) ? (
                   <Link
-                    to={item.path}
+                    to={(item.path || item.href)!}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item.label}
                   </Link>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    {item.label}
+                  </span>
                 )}
               </React.Fragment>
             ))}

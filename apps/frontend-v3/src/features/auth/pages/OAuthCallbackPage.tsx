@@ -17,13 +17,16 @@ export function OAuthCallbackPage() {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
 
+    console.log(`[OAuthCallbackPage] Mounted. token=${token ? 'YES' : 'NO'}, error=${error}`);
+
     if (error) {
-      console.error('OAuth2 authentication failed:', error);
+      console.error('[OAuthCallbackPage] OAuth2 error:', error);
       navigate('/login?error=' + error);
       return;
     }
 
     if (token) {
+      console.log('[OAuthCallbackPage] Fetching user profile...');
       // ユーザー存在確認 (インターセプターを回避するために直接fetch/axiosを使用)
       // 401の場合は未登録とみなしてサインアップ画面へ
       fetch('/mapi/users/me', {
@@ -33,8 +36,10 @@ export function OAuthCallbackPage() {
         },
       })
       .then(async (res) => {
+        console.log(`[OAuthCallbackPage] Response status: ${res.status}`);
         if (res.ok) {
           const userProfile = await res.json();
+          console.log('[OAuthCallbackPage] User found, logging in...');
           // ユーザーが存在するのでログイン完了
           setAuth(
             userProfile,
@@ -47,29 +52,31 @@ export function OAuthCallbackPage() {
           );
           navigate('/home');
         } else if (res.status === 401 || res.status === 404) {
+          console.log('[OAuthCallbackPage] User not found (401/404), redirecting to signup...');
           // ユーザー未登録 -> サインアップ画面へ
           // トークンをstateで渡す
           navigate('/signup', { state: { oauth2: true, token } });
         } else {
           // その他のエラー
-          console.error('Failed to fetch user profile:', res.status);
+          console.error('[OAuthCallbackPage] Failed to fetch user profile:', res.status);
           navigate('/login?error=profile_fetch_failed');
         }
       })
       .catch((err) => {
-        console.error('Error fetching user profile:', err);
+        console.error('[OAuthCallbackPage] Error fetching user profile:', err);
         navigate('/login?error=network_error');
       });
     } else {
+      console.warn('[OAuthCallbackPage] No token found');
       navigate('/login?error=no_token');
     }
   }, [searchParams, navigate, setAuth]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50" data-testid="oauth-callback-page">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="mt-4 text-muted-foreground">ログイン処理中...</p>
+        <h2 className="text-2xl font-semibold mb-4">Authenticating...</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
       </div>
     </div>
   );

@@ -5,7 +5,8 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
  */
 export interface BreadcrumbItem {
   label: string;
-  path: string;
+  path?: string;
+  href?: string;
 }
 
 /**

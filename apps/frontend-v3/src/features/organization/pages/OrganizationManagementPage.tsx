@@ -36,7 +36,7 @@ export function OrganizationManagementPage() {
   // Set default organization
   React.useEffect(() => {
     if (organizations && organizations.length > 0 && !selectedOrgId) {
-      setSelectedOrgId(organizations[0].organizationId);
+      setSelectedOrgId(organizations[0]?.organizationId ?? null);
     }
   }, [organizations, selectedOrgId]);
 
