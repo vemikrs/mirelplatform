@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import jp.vemi.mirel.apps.studio.modeler.domain.dto.model.dictionary.HierarchicalTopNode;
 import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuRecord;
-import jp.vemi.mirel.apps.studio.modeler.domain.service.StuModelService;
 import jp.vemi.mirel.apps.studio.modeler.domain.service.StuRecordService;
 import lombok.RequiredArgsConstructor;
 
@@ -16,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 public class StuEngine {
 
     private final StuRecordService schemaRecordService;
-    private final StuModelService schemaModelService;
 
     public HierarchicalTopNode getSchemaRecursive(String modelId) {
         // TODO: Implement recursive schema retrieval logic

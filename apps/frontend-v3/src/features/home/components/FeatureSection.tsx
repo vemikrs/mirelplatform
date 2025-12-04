@@ -138,7 +138,7 @@ export function AvailableFeaturesSection() {
 }
 
 export function InDevelopmentSection() {
-  const { data: features, isLoading, error } = useQuery({
+  const { data: features, isLoading } = useQuery({
     queryKey: ['in-development-features'],
     queryFn: getInDevelopmentFeatures,
     staleTime: 60 * 1000,
@@ -154,9 +154,74 @@ export function InDevelopmentSection() {
     );
   }
 
-  if (error || !features || features.length === 0) {
-    return null;
-  }
+  // Static features for Studio and Workflow
+  const staticFeatures: FeatureFlag[] = [
+    {
+      id: 'studio-modeler',
+      featureKey: 'studio.modeler',
+      featureName: 'Modeler (データモデル定義)',
+      applicationId: 'mirel Studio',
+      status: 'BETA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-form',
+      featureKey: 'studio.form',
+      featureName: 'Form Designer (画面作成)',
+      applicationId: 'mirel Studio',
+      status: 'ALPHA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-flow',
+      featureKey: 'studio.flow',
+      featureName: 'Flow Designer (ロジック定義)',
+      applicationId: 'mirel Studio',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-data',
+      featureKey: 'studio.data',
+      featureName: 'Data Browser (データ管理)',
+      applicationId: 'mirel Studio',
+      status: 'ALPHA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-release',
+      featureKey: 'studio.release',
+      featureName: 'Release Center (リリース管理)',
+      applicationId: 'mirel Studio',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'workflow-process',
+      featureKey: 'workflow.process',
+      featureName: 'Process Management (BPMN/Webhook)',
+      applicationId: 'Business Workflow',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+  ];
+
+  const displayFeatures = [
+    ...(features || []),
+    ...staticFeatures
+  ];
 
   return (
     <Card 
@@ -173,13 +238,13 @@ export function InDevelopmentSection() {
             開発中の機能
           </span>
           <Badge variant="warning" className="font-normal">
-            {features.length} 件
+            {displayFeatures.length} 件
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          {features.map((feature) => (
+          {displayFeatures.map((feature) => (
             <FeatureItem key={feature.id} feature={feature} showApp />
           ))}
         </div>

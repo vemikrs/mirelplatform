@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet, redirect } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
+import { ProductLineupPage } from '@/features/home/pages/ProductLineupPage';
 import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
 import { SiteMapPage } from '@/features/sitemap/pages/SiteMapPage';
 import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarkerPage';
@@ -19,6 +20,7 @@ import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordRes
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
+import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { ProtectedRoute } from '@/components/auth';
 import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
@@ -198,6 +200,11 @@ export const router = createBrowserRouter([
             handle: { title: 'ホーム' },
           },
           {
+            path: 'products',
+            element: <ProductLineupPage />,
+            handle: { title: '製品ラインナップ' },
+          },
+          {
             index: true,
             loader: () => redirect('/home'),
           },
@@ -229,6 +236,11 @@ export const router = createBrowserRouter([
             path: 'admin/features',
             element: <AdminFeaturesPage />,
             handle: { title: '管理 - フィーチャーフラグ' },
+          },
+          {
+            path: 'admin/menu',
+            element: <MenuManagementPage />,
+            handle: { title: '管理 - メニュー定義' },
           },
           // Backward compatibility route for E2E tests
           {
