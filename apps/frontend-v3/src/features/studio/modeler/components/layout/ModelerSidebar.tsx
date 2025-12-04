@@ -43,10 +43,10 @@ export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => 
   const renderModelLink = (model: ModelSummary) => (
     <Link
       key={model.modelId}
-      to={`/apps/modeler/records/${model.modelId}`}
+      to={`/apps/studio/modeler/records/${model.modelId}`}
       className={cn(
         "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-        isActive(`/apps/modeler/records/${model.modelId}`) ? "bg-accent text-accent-foreground" : "transparent"
+        isActive(`/apps/studio/modeler/records/${model.modelId}`) ? "bg-accent text-accent-foreground" : "transparent"
       )}
     >
       <svg
@@ -74,10 +74,10 @@ export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => 
           </h2>
           <div className="space-y-1">
             <Link
-              to="/apps/modeler"
+              to="/apps/studio/modeler"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                pathname === "/apps/modeler" ? "bg-accent text-accent-foreground" : "transparent"
+                pathname === "/apps/studio/modeler" ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -116,10 +116,10 @@ export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => 
           <div className="space-y-1">
             {masterModels.map(renderModelLink)}
              <Link
-              to="/apps/modeler/records"
+              to="/apps/studio/modeler/records"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/modeler/records") && !transactionModels.some(m => isActive(`/apps/modeler/records/${m.modelId}`)) && !masterModels.some(m => isActive(`/apps/modeler/records/${m.modelId}`)) ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/studio/modeler/records") && !transactionModels.some(m => isActive(`/apps/studio/modeler/records/${m.modelId}`)) && !masterModels.some(m => isActive(`/apps/studio/modeler/records/${m.modelId}`)) ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -149,10 +149,10 @@ export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => 
           </h2>
           <div className="space-y-1">
             <Link
-              to="/apps/modeler/models"
+              to="/apps/studio/modeler/models"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/modeler/models") ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/studio/modeler/models") ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -170,10 +170,10 @@ export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => 
               モデル定義
             </Link>
             <Link
-              to="/apps/modeler/codes"
+              to="/apps/studio/modeler/codes"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/modeler/codes") ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/studio/modeler/codes") ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
