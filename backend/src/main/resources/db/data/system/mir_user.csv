@@ -10,3 +10,4 @@ user-regular-007,550e8400-e29b-41d4-a716-446655440007,default,user07,user07@exam
 user-regular-008,550e8400-e29b-41d4-a716-446655440008,default,user08,user08@example.com,"Regular User 08",Test,User08,true,true,USER,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
 user-regular-009,550e8400-e29b-41d4-a716-446655440009,default,user09,user09@example.com,"Regular User 09",Test,User09,true,true,USER,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
 user-regular-010,550e8400-e29b-41d4-a716-44665544000a,default,user10,user10@example.com,"Regular User 10",Test,User10,true,true,USER,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+user-tenant-admin,550e8400-e29b-41d4-a716-44665544000b,default,tenant-admin,tenant-admin@example.com,"Tenant Admin",Tenant,Admin,true,true,TENANT_ADMIN|USER,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
