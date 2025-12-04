@@ -1,8 +1,7 @@
 import { Button, SectionHeading } from '@mirel/ui'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import { LicenseSection } from '../components/LicenseSection'
-import { AvailableFeaturesSection, InDevelopmentSection } from '../components/FeatureSection'
+import { UnifiedFeatureSection } from '../components/FeatureSection'
 
 export function HomePage() {
   return (
@@ -51,11 +50,9 @@ export function HomePage() {
         />
       </div>
 
-      {/* License & Features Grid */}
+      {/* Features Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <LicenseSection />
-        <AvailableFeaturesSection />
-        <InDevelopmentSection />
+        <UnifiedFeatureSection />
       </div>
 
       {/* Bottom Info Section */}
