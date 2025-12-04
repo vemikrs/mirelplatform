@@ -16,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuRecord;
-import jp.vemi.mirel.apps.studio.modeler.domain.service.StuRecordService;
 import jp.vemi.mirel.foundation.feature.TenantContext;
 
 @SpringBootTest

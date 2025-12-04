@@ -3,7 +3,6 @@
  */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuModelHeaderLegacyRepository;
@@ -14,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
