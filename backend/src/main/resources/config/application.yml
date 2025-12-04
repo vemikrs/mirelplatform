@@ -138,3 +138,12 @@ auth:
     secret: ${JWT_SECRET:changeit_changeit_changeit_changeit_changeit_changeit} # 32文字以上
     expiration: 3600
     refresh-expiration: 86400
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: always
