@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { schemaApi } from '../api/schemaApi';
-import type { SchDicModel } from '../types/schema';
+import { modelerApi } from '../api/modelerApi';
+import type { SchDicModel } from '../types/modeler';
 import { FieldEditor } from '../components/FieldEditor';
-import { SchemaLayout } from '../components/layout/SchemaLayout';
+import { ModelerLayout } from '../components/layout/ModelerLayout';
 
 import { useToast } from '@mirel/ui';
 
-export const SchemaModelDefinePage: React.FC = () => {
+export const ModelerModelDefinePage: React.FC = () => {
   const { toast } = useToast();
   const [modelId, setModelId] = useState('');
   const [modelName, setModelName] = useState('');
@@ -46,7 +46,7 @@ export const SchemaModelDefinePage: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      await schemaApi.saveSchema(modelId, modelName, isHidden, modelType, fields);
+      await modelerApi.saveModel(modelId, modelName, isHidden, modelType, fields);
       toast({
         title: "保存しました",
         description: "モデル定義を保存しました。",
@@ -65,9 +65,9 @@ export const SchemaModelDefinePage: React.FC = () => {
   const handleLoad = async () => {
     if (!modelId) return;
     try {
-      const response = await schemaApi.listSchema(modelId);
-      setFields(response.data.schemas);
-      // Note: Header info loading not implemented in listSchema response yet, assuming fields only
+      const response = await modelerApi.listModel(modelId);
+      setFields(response.data.modelers);
+      // Note: Header info loading not implemented in listModel response yet, assuming fields only
       // TODO: Load modelType and other metadata from response once available
     } catch (error) {
       console.error('Failed to load model:', error);
@@ -75,7 +75,7 @@ export const SchemaModelDefinePage: React.FC = () => {
   };
 
   return (
-    <SchemaLayout>
+    <ModelerLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <h1 className="text-2xl font-bold text-foreground">モデル定義</h1>
@@ -177,6 +177,6 @@ export const SchemaModelDefinePage: React.FC = () => {
           </button>
         </div>
       </div>
-    </SchemaLayout>
+    </ModelerLayout>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { DataTable } from '@mirel/ui';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { SchDicModel, SchRecord } from '../types/schema';
+import type { SchDicModel, SchRecord } from '../types/modeler';
 
 interface RecordGridProps {
   fields: SchDicModel[];

@@ -1,6 +1,6 @@
-import type { SchemaApiResponse } from '../types/schema';
+import type { SchemaApiResponse } from '../types/modeler';
 
-const BASE_URL = '/apps/schema/api';
+const BASE_URL = '/api/studio/modeler';
 
 async function request(path: string, content: Record<string, any>): Promise<SchemaApiResponse> {
   const response = await fetch(`${BASE_URL}/${path}`, {
@@ -18,7 +18,7 @@ async function request(path: string, content: Record<string, any>): Promise<Sche
   return response.json();
 }
 
-export const schemaApi = {
+export const modelerApi = {
   list: (modelId: string, page: number = 1, size: number = 20, query: string = '') => {
     // In a real implementation, these params would be sent to the backend.
     // For now, we'll simulate it or pass them if backend supports it.
@@ -29,9 +29,9 @@ export const schemaApi = {
   save: (modelId: string, recordId: string | null, record: Record<string, any>) =>
     request('save', { modelId, recordId, record }),
   deleteRecord: (recordId: string) => request('deleteRecord', { recordId }),
-  listSchema: (modelId: string) => request('listSchema', { modelId }),
-  saveSchema: (modelId: string, modelName: string, isHiddenModel: boolean, modelType: 'transaction' | 'master', fields: any[]) =>
-    request('saveSchema', { modelId, modelName, isHiddenModel, modelType, fields }),
+  listModel: (modelId: string) => request('listModel', { modelId }),
+  saveModel: (modelId: string, modelName: string, isHiddenModel: boolean, modelType: 'transaction' | 'master', fields: any[]) =>
+    request('saveModel', { modelId, modelName, isHiddenModel, modelType, fields }),
   deleteModel: (modelId: string) => request('deleteModel', { modelId }),
   listModels: () => request('listModels', {}),
   listCodeGroups: () => request('listCodeGroups', {}),

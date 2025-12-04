@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SchDicModel } from '../types/schema';
+import type { SchDicModel } from '../types/modeler';
 import { CodeSelect } from './CodeSelect';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { SchDicModel } from '../types/schema';
+import type { SchDicModel } from '../types/modeler';
 import { WidgetRenderer } from './WidgetRenderer';
 
 interface DynamicFormProps {
@@ -13,45 +13,45 @@ interface DynamicFormProps {
 }
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, data, onChange, onSubmit }) => {
-  // Generate Zod schema dynamically
-  const generateSchema = (fields: SchDicModel[]) => {
+  // Generate Zod modeler dynamically
+  const generateModeler = (fields: SchDicModel[]) => {
     const shape: Record<string, any> = {};
     
     fields.forEach((field) => {
       if (field.widgetType === 'title' || field.widgetType === 'break') return;
 
-      let schema = z.string();
+      let modeler = z.string();
 
       if (field.minLength) {
-        schema = schema.min(field.minLength, { message: `Min length is ${field.minLength}` });
+        modeler = modeler.min(field.minLength, { message: `Min length is ${field.minLength}` });
       }
 
       if (field.maxLength) {
-        schema = schema.max(field.maxLength, { message: `Max length is ${field.maxLength}` });
+        modeler = modeler.max(field.maxLength, { message: `Max length is ${field.maxLength}` });
       }
 
       if (field.regexPattern) {
         try {
           const regex = new RegExp(field.regexPattern);
-          schema = schema.regex(regex, { message: `Invalid format` });
+          modeler = modeler.regex(regex, { message: `Invalid format` });
         } catch (e) {
           console.warn(`Invalid regex pattern for field ${field.fieldName}: ${field.regexPattern}`);
         }
       }
 
       if (field.isRequired) {
-        schema = schema.min(1, { message: `${field.fieldName} is required` });
-        shape[field.fieldId] = schema;
+        modeler = modeler.min(1, { message: `${field.fieldName} is required` });
+        shape[field.fieldId] = modeler;
       } else {
         // For optional fields, we allow empty string or undefined
-        shape[field.fieldId] = schema.optional().or(z.literal(''));
+        shape[field.fieldId] = modeler.optional().or(z.literal(''));
       }
     });
 
     return z.object(shape);
   };
 
-  const schema = generateSchema(fields);
+  const modeler = generateModeler(fields);
 
   const {
     register,
@@ -60,7 +60,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, data, onChange
     reset,
     watch,
   } = useForm({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(modeler),
     defaultValues: data,
   });
 

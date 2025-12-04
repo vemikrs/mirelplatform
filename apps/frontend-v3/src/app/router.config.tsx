@@ -24,11 +24,11 @@ import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
-import { SchemaHomePage } from '@/features/schema/pages/SchemaHomePage';
-import { SchemaRecordListPage } from '@/features/schema/pages/SchemaRecordListPage';
-import { SchemaRecordDetailPage } from '@/features/schema/pages/SchemaRecordDetailPage';
-import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefinePage';
-import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
+import { ModelerHomePage } from '@/features/studio/modeler/pages/ModelerHomePage';
+import { ModelerRecordListPage } from '@/features/studio/modeler/pages/ModelerRecordListPage';
+import { ModelerRecordDetailPage } from '@/features/studio/modeler/pages/ModelerRecordDetailPage';
+import { ModelerModelDefinePage } from '@/features/studio/modeler/pages/ModelerModelDefinePage';
+import { ModelerCodeMasterPage } from '@/features/studio/modeler/pages/ModelerCodeMasterPage';
 import { StudioPage } from '@/features/studio/pages/StudioPage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
 import { StudioDataListPage } from '@/features/studio/pages/StudioDataListPage';
@@ -238,41 +238,6 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: 'apps/schema',
-        children: [
-          {
-            index: true,
-            element: <SchemaHomePage />,
-            handle: { title: 'Schema - Home' },
-          },
-          {
-            path: 'models',
-            element: <SchemaModelDefinePage />,
-            handle: { title: 'Schema - Model Definition' },
-          },
-          {
-            path: 'records',
-            element: <SchemaRecordListPage />,
-            handle: { title: 'Schema - Records' },
-          },
-          {
-            path: 'records/:modelId/new',
-            element: <SchemaRecordDetailPage />,
-            handle: { title: 'Schema - New Record' },
-          },
-          {
-            path: 'records/:modelId/:recordId',
-            element: <SchemaRecordDetailPage />,
-            handle: { title: 'Schema - Edit Record' },
-          },
-          {
-            path: 'codes',
-            element: <SchemaCodeMasterPage />,
-            handle: { title: 'Schema - Code Master' },
-          },
-        ],
-      },
-      {
         path: 'apps/studio',
         children: [
           {
@@ -303,6 +268,41 @@ export const router = createBrowserRouter([
             path: ':modelId/data/:recordId',
             element: <StudioDataEditPage />,
             handle: { title: 'Studio - Edit Data' },
+          },
+          {
+            path: 'modeler',
+            children: [
+              {
+                index: true,
+                element: <ModelerHomePage />,
+                handle: { title: 'Modeler - Home' },
+              },
+              {
+                path: 'models',
+                element: <ModelerModelDefinePage />,
+                handle: { title: 'Modeler - Model Definition' },
+              },
+              {
+                path: 'records',
+                element: <ModelerRecordListPage />,
+                handle: { title: 'Modeler - Records' },
+              },
+              {
+                path: 'records/:modelId/new',
+                element: <ModelerRecordDetailPage />,
+                handle: { title: 'Modeler - New Record' },
+              },
+              {
+                path: 'records/:modelId/:recordId',
+                element: <ModelerRecordDetailPage />,
+                handle: { title: 'Modeler - Edit Record' },
+              },
+              {
+                path: 'codes',
+                element: <ModelerCodeMasterPage />,
+                handle: { title: 'Modeler - Code Master' },
+              },
+            ],
           },
         ],
       },

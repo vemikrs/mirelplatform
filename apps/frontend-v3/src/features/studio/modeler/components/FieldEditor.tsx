@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SchDicModel } from '../types/schema';
+import type { SchDicModel } from '../types/modeler';
 
 interface FieldEditorProps {
   field: SchDicModel;

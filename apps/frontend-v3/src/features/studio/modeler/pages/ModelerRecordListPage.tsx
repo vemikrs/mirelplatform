@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { schemaApi } from '../api/schemaApi';
-import type { SchDicModel, SchRecord } from '../types/schema';
+import { modelerApi } from '../api/modelerApi';
+import type { SchDicModel, SchRecord } from '../types/modeler';
 import { RecordGrid } from '../components/RecordGrid';
 import { ModelSelector } from '../components/ModelSelector';
-import { SchemaLayout } from '../components/layout/SchemaLayout';
+import { ModelerLayout } from '../components/layout/ModelerLayout';
 
-export const SchemaRecordListPage: React.FC = () => {
+export const ModelerRecordListPage: React.FC = () => {
   const navigate = useNavigate();
   const [models, setModels] = useState<{ value: string; text: string }[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -21,7 +21,7 @@ export const SchemaRecordListPage: React.FC = () => {
   useEffect(() => {
     // TODO: Fetch available models from API
     // For now, hardcode or fetch if endpoint exists
-    // schemaApi.getApps().then(...)
+    // modelerApi.getApps().then(...)
     setModels([
       { value: 'sample_model', text: 'Sample Model' },
       // Add more models as needed
@@ -46,10 +46,10 @@ export const SchemaRecordListPage: React.FC = () => {
   const loadModelAndRecords = async (modelId: string, currentPage: number, currentPagesize: number, currentSearchQuery: string) => {
     try {
       setLoading(true);
-      const schemaResponse = await schemaApi.listSchema(modelId);
-      setFields(schemaResponse.data.schemas);
+      const modelerResponse = await modelerApi.listModel(modelId);
+      setFields(modelerResponse.data.modelers);
 
-      const recordsResponse = await schemaApi.list(modelId, currentPage, currentPagesize, currentSearchQuery);
+      const recordsResponse = await modelerApi.list(modelId, currentPage, currentPagesize, currentSearchQuery);
       setRecords(recordsResponse.data.records);
       setTotalRecords(recordsResponse.data.total || 0); // Assuming API returns total count
     } catch (error) {
@@ -60,12 +60,12 @@ export const SchemaRecordListPage: React.FC = () => {
   };
 
   const handleRowClick = (record: SchRecord) => {
-    navigate(`/apps/schema/records/${selectedModelId}/${record.id}`);
+    navigate(`/apps/modeler/records/${selectedModelId}/${record.id}`);
   };
 
   const handleCreateNew = () => {
     if (selectedModelId) {
-      navigate(`/apps/schema/records/${selectedModelId}/new`);
+      navigate(`/apps/modeler/records/${selectedModelId}/new`);
     }
   };
 
@@ -78,7 +78,7 @@ export const SchemaRecordListPage: React.FC = () => {
   const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
-    <SchemaLayout>
+    <ModelerLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <h1 className="text-2xl font-bold text-foreground">データ管理</h1>
@@ -155,6 +155,6 @@ export const SchemaRecordListPage: React.FC = () => {
           </>
         )}
       </div>
-    </SchemaLayout>
+    </ModelerLayout>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { schemaApi } from '../api/schemaApi';
-import type { SchDicCode } from '../types/schema';
+import { modelerApi } from '../api/modelerApi';
+import type { SchDicCode } from '../types/modeler';
 
 interface CodeSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   codeGroupId: string;
@@ -20,7 +20,7 @@ export const CodeSelect = React.forwardRef<HTMLSelectElement, CodeSelectProps>(
     const loadOptions = async () => {
       try {
         setLoading(true);
-        const res = await schemaApi.listCode(codeGroupId);
+        const res = await modelerApi.listCode(codeGroupId);
         setOptions(res.data.valueTexts);
       } catch (error) {
         console.error('Failed to load code options:', error);

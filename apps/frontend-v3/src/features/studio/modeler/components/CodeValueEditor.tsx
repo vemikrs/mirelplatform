@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { SchDicCode } from '../types/schema';
+import type { SchDicCode } from '../types/modeler';
 
 interface CodeValueEditorProps {
   groupId: string;

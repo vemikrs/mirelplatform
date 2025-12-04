@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { schemaApi } from '../api/schemaApi';
-import type { SchDicModel } from '../types/schema';
+import { modelerApi } from '../api/modelerApi';
+import type { SchDicModel } from '../types/modeler';
 import { DynamicForm } from '../components/DynamicForm';
-import { SchemaLayout } from '../components/layout/SchemaLayout';
+import { ModelerLayout } from '../components/layout/ModelerLayout';
 
-export const SchemaRecordDetailPage: React.FC = () => {
+export const ModelerRecordDetailPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
   const navigate = useNavigate();
   const [fields, setFields] = useState<SchDicModel[]>([]);
@@ -21,11 +21,11 @@ export const SchemaRecordDetailPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const schemaResponse = await schemaApi.listSchema(modelId!);
-      setFields(schemaResponse.data.schemas);
+      const modelerResponse = await modelerApi.listModel(modelId!);
+      setFields(modelerResponse.data.modelers);
 
       if (recordId && recordId !== 'new') {
-        const recordResponse = await schemaApi.load(recordId);
+        const recordResponse = await modelerApi.load(recordId);
         setData(recordResponse.data.record.recordData);
       }
     } catch (error) {
@@ -37,8 +37,8 @@ export const SchemaRecordDetailPage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      await schemaApi.save(modelId!, recordId === 'new' ? null : recordId!, data);
-      navigate('/apps/schema/records');
+      await modelerApi.save(modelId!, recordId === 'new' ? null : recordId!, data);
+      navigate('/apps/modeler/records');
     } catch (error) {
       console.error('Failed to save record:', error);
       alert('レコードの保存に失敗しました');
@@ -48,10 +48,10 @@ export const SchemaRecordDetailPage: React.FC = () => {
   if (loading) return <div className="p-6 text-muted-foreground">読み込み中...</div>;
 
   return (
-    <SchemaLayout>
+    <ModelerLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
-          <Link to="/apps/schema/records" className="text-muted-foreground hover:text-foreground">
+          <Link to="/apps/modeler/records" className="text-muted-foreground hover:text-foreground">
             ← 戻る
           </Link>
           <h1 className="text-2xl font-bold text-foreground">
@@ -67,6 +67,6 @@ export const SchemaRecordDetailPage: React.FC = () => {
           />
         </div>
       </div>
-    </SchemaLayout>
+    </ModelerLayout>
   );
 };

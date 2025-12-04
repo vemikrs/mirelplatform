@@ -35,10 +35,16 @@ export const StudioHomePage: React.FC = () => {
           <h1 className="text-2xl font-bold">Mirel Studio</h1>
           <p className="text-muted-foreground">Manage your forms and schemas</p>
         </div>
-        <Button onClick={handleCreateNew} className="gap-2">
-          <Plus className="size-4" />
-          Create New Form
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/apps/studio/modeler')} className="gap-2">
+            <FileText className="size-4" />
+            Modeler
+          </Button>
+          <Button onClick={handleCreateNew} className="gap-2">
+            <Plus className="size-4" />
+            Create New Form
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

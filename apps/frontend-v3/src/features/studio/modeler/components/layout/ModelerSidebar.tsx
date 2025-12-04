@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@mirel/ui';
-import { schemaApi } from '../../api/schemaApi';
+import { modelerApi } from '../../api/modelerApi';
 
-interface SchemaSidebarProps {
+interface ModelerSidebarProps {
   className?: string;
 }
 
@@ -13,7 +13,7 @@ interface ModelSummary {
   modelType: 'transaction' | 'master';
 }
 
-export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
+export const ModelerSidebar: React.FC<ModelerSidebarProps> = ({ className }) => {
   const location = useLocation();
   const pathname = location.pathname;
   const [transactionModels, setTransactionModels] = useState<ModelSummary[]>([]);
@@ -25,7 +25,7 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
 
   const loadModels = async () => {
     try {
-      const response = await schemaApi.listModels();
+      const response = await modelerApi.listModels();
       const models: ModelSummary[] = response.data.models || [];
       
       setTransactionModels(models.filter(m => m.modelType === 'transaction'));
@@ -43,10 +43,10 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
   const renderModelLink = (model: ModelSummary) => (
     <Link
       key={model.modelId}
-      to={`/apps/schema/records/${model.modelId}`}
+      to={`/apps/modeler/records/${model.modelId}`}
       className={cn(
         "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-        isActive(`/apps/schema/records/${model.modelId}`) ? "bg-accent text-accent-foreground" : "transparent"
+        isActive(`/apps/modeler/records/${model.modelId}`) ? "bg-accent text-accent-foreground" : "transparent"
       )}
     >
       <svg
@@ -70,14 +70,14 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Mirel Schema
+            Mirel Modeler
           </h2>
           <div className="space-y-1">
             <Link
-              to="/apps/schema"
+              to="/apps/modeler"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                pathname === "/apps/schema" ? "bg-accent text-accent-foreground" : "transparent"
+                pathname === "/apps/modeler" ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -116,10 +116,10 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
           <div className="space-y-1">
             {masterModels.map(renderModelLink)}
              <Link
-              to="/apps/schema/records"
+              to="/apps/modeler/records"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/schema/records") && !transactionModels.some(m => isActive(`/apps/schema/records/${m.modelId}`)) && !masterModels.some(m => isActive(`/apps/schema/records/${m.modelId}`)) ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/modeler/records") && !transactionModels.some(m => isActive(`/apps/modeler/records/${m.modelId}`)) && !masterModels.some(m => isActive(`/apps/modeler/records/${m.modelId}`)) ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -149,10 +149,10 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
           </h2>
           <div className="space-y-1">
             <Link
-              to="/apps/schema/models"
+              to="/apps/modeler/models"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/schema/models") ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/modeler/models") ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg
@@ -170,10 +170,10 @@ export const SchemaSidebar: React.FC<SchemaSidebarProps> = ({ className }) => {
               モデル定義
             </Link>
             <Link
-              to="/apps/schema/codes"
+              to="/apps/modeler/codes"
               className={cn(
                 "flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                isActive("/apps/schema/codes") ? "bg-accent text-accent-foreground" : "transparent"
+                isActive("/apps/modeler/codes") ? "bg-accent text-accent-foreground" : "transparent"
               )}
             >
               <svg

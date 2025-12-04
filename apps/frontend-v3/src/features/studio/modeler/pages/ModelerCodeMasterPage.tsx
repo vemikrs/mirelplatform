@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { schemaApi } from '../api/schemaApi';
-import type { SchDicCode } from '../types/schema';
+import { modelerApi } from '../api/modelerApi';
+import type { SchDicCode } from '../types/modeler';
 import { CodeGroupList } from '../components/CodeGroupList';
 import { CodeValueEditor } from '../components/CodeValueEditor';
-import { SchemaLayout } from '../components/layout/SchemaLayout';
+import { ModelerLayout } from '../components/layout/ModelerLayout';
 
-export const SchemaCodeMasterPage: React.FC = () => {
+export const ModelerCodeMasterPage: React.FC = () => {
   const [groups, setGroups] = useState<string[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [codes, setCodes] = useState<SchDicCode[]>([]);
@@ -29,7 +29,7 @@ export const SchemaCodeMasterPage: React.FC = () => {
 
   const loadGroups = async () => {
     try {
-      const res = await schemaApi.listCodeGroups();
+      const res = await modelerApi.listCodeGroups();
       setGroups(res.data.groups);
       if (res.data.groups.length > 0 && !selectedGroupId) {
         setSelectedGroupId(res.data.groups[0]);
@@ -42,7 +42,7 @@ export const SchemaCodeMasterPage: React.FC = () => {
   const loadCodes = async (groupId: string) => {
     try {
       setLoading(true);
-      const res = await schemaApi.listCode(groupId);
+      const res = await modelerApi.listCode(groupId);
       setCodes(res.data.valueTexts);
     } catch (error) {
       console.error('Failed to load codes:', error);
@@ -58,7 +58,7 @@ export const SchemaCodeMasterPage: React.FC = () => {
 
   const handleSave = async (groupId: string, updatedCodes: SchDicCode[]) => {
     try {
-      await schemaApi.saveCode(groupId, updatedCodes);
+      await modelerApi.saveCode(groupId, updatedCodes);
       alert('保存しました');
       await loadGroups();
       setSelectedGroupId(groupId);
@@ -71,7 +71,7 @@ export const SchemaCodeMasterPage: React.FC = () => {
   const handleDeleteGroup = async (groupId: string) => {
     if (!confirm('このグループを削除してもよろしいですか？')) return;
     try {
-      await schemaApi.deleteCode(groupId);
+      await modelerApi.deleteCode(groupId);
       alert('削除しました');
       await loadGroups();
       setSelectedGroupId(null);
@@ -82,7 +82,7 @@ export const SchemaCodeMasterPage: React.FC = () => {
   };
 
   return (
-    <SchemaLayout>
+    <ModelerLayout>
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-4 p-4 border-b border-border bg-background">
           <h1 className="text-xl font-bold text-foreground">コードマスタ管理</h1>
@@ -114,6 +114,6 @@ export const SchemaCodeMasterPage: React.FC = () => {
           )}
         </div>
       </div>
-    </SchemaLayout>
+    </ModelerLayout>
   );
 };
