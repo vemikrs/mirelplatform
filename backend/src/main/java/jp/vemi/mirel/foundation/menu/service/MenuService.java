@@ -35,7 +35,13 @@ public class MenuService {
         if (roles == null || roles.isEmpty()) {
             return false;
         }
-        return roles.contains(menu.getRequiredPermission());
+        String[] requiredPermissions = menu.getRequiredPermission().split(",");
+        for (String permission : requiredPermissions) {
+            if (roles.contains(permission.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<MenuDto> buildTree(List<MenuEntity> entities) {
