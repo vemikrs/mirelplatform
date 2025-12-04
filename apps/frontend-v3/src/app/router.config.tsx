@@ -21,6 +21,8 @@ import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerifica
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
+import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
+import AnnouncementEditPage from '@/features/admin/pages/AnnouncementEditPage';
 import { ProtectedRoute } from '@/components/auth';
 import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
@@ -241,6 +243,16 @@ export const router = createBrowserRouter([
             path: 'admin/menu',
             element: <MenuManagementPage />,
             handle: { title: '管理 - メニュー定義' },
+          },
+          {
+            path: 'admin/announcements',
+            element: <AnnouncementListPage />,
+            handle: { title: '管理 - お知らせ一覧' },
+          },
+          {
+            path: 'admin/announcements/:id',
+            element: <AnnouncementEditPage />,
+            handle: { title: '管理 - お知らせ編集' },
           },
           // Backward compatibility route for E2E tests
           {
