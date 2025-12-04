@@ -7,6 +7,10 @@ import { Bell, HelpCircle } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
+import { SideNavigation } from '@/components/layouts/SideNavigation';
+import { GlobalSearch } from '@/components/header/GlobalSearch';
+import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
@@ -45,9 +49,17 @@ function renderAction(action: NavigationAction) {
  * Provides common layout structure for all pages
  */
 export function RootLayout() {
-  const navigation = useLoaderData() as NavigationConfig;
+  const initialNavigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
+
+  // Fetch dynamic menu from backend
+  const { data: dynamicMenu } = useQuery({
+    queryKey: ['menu-tree'],
+    queryFn: getMenuTree,
+    enabled: isAuthenticated, // Only fetch if authenticated
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   // Sync user profile on mount if authenticated
   useEffect(() => {
@@ -78,47 +90,36 @@ export function RootLayout() {
     return () => window.removeEventListener('quicklinks-toggle', handleToggle);
   }, []);
 
-  const primaryLinks = useMemo(() => navigation.primary, [navigation.primary]);
+  const primaryLinks = useMemo(() => {
+    if (dynamicMenu && dynamicMenu.length > 0) {
+      return dynamicMenu.map(adaptMenuToNavigationLink);
+    }
+    return initialNavigation.primary;
+  }, [dynamicMenu, initialNavigation.primary]);
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl">
-        <div className="container flex h-16 items-center justify-between gap-4 md:h-20 md:gap-6">
+        <div className="flex h-16 items-center justify-between gap-4 px-4 md:h-20 md:gap-6 md:px-6">
           <div className="flex flex-1 items-center gap-6">
             <Link to="/home" className="group flex items-center gap-3 text-left">
               <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-                {navigation.brand.shortName ?? navigation.brand.name}
+                {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
               </div>
               <div className="space-y-1">
                 <p className="text-lg font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                  {navigation.brand.name}
+                  {initialNavigation.brand.name}
                 </p>
-                {navigation.brand.tagline ? (
-                  <p className="text-xs text-muted-foreground">{navigation.brand.tagline}</p>
+                {initialNavigation.brand.tagline ? (
+                  <p className="text-xs text-muted-foreground">{initialNavigation.brand.tagline}</p>
                 ) : null}
               </div>
             </Link>
-            <nav className="hidden items-center gap-1 md:flex">
-              {primaryLinks.map((item: NavigationLink) => (
-                <NavLink
-                  key={item.id}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-surface-raised text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-surface-subtle hover:text-foreground'
-                    }`
-                  }
-                  aria-label={item.description ?? item.label}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
+            {/* Desktop Nav Removed */}
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            {navigation.globalActions
+            <GlobalSearch />
+            {initialNavigation.globalActions
               .filter((action) => action.type !== 'theme' && action.type !== 'profile')
               .map((action) => renderAction(action))}
             {isAuthenticated && <UserMenu />}
@@ -127,7 +128,7 @@ export function RootLayout() {
             {isAuthenticated && <UserMenu />}
           </div>
         </div>
-        <nav className="container flex items-center gap-2 overflow-x-auto pb-3 pt-2 md:hidden">
+        <nav className="flex items-center gap-2 overflow-x-auto px-4 pb-3 pt-2 md:hidden">
           {primaryLinks.map((item: NavigationLink) => (
             <NavLink
               key={item.id}
@@ -146,13 +147,13 @@ export function RootLayout() {
         </nav>
       </header>
 
-      {navigation.quickLinks.length > 0 && quickLinksVisible ? (
+      {initialNavigation.quickLinks.length > 0 && quickLinksVisible ? (
         <div className="border-b border-border bg-surface">
-          <div className="container flex flex-wrap items-center gap-2 py-3">
+          <div className="flex flex-wrap items-center gap-2 px-4 py-3 md:px-6">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Quick Links
             </span>
-            {navigation.quickLinks.map((link: NavigationLink) => (
+            {initialNavigation.quickLinks.map((link: NavigationLink) => (
               <Badge key={link.id} variant="neutral">
                 <Link
                   to={link.path}
@@ -167,32 +168,41 @@ export function RootLayout() {
         </div>
       ) : null}
 
-      <main className="flex-1 bg-background py-10">
-        <div className="container">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex flex-1 items-start">
+        <SideNavigation 
+          items={primaryLinks} 
+          className="hidden md:flex sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto shrink-0" 
+        />
+        
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1 bg-background py-10">
+            <div className="px-4 md:px-8">
+              <Outlet />
+            </div>
+          </main>
 
-      <footer className="mt-auto border-t border-outline/40 bg-surface-subtle/60">
-        <div className="container flex flex-col gap-2 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            © 2016-2025 mirelplatform. All rights reserved.
-          </div>
-          <div className="flex items-center gap-3">
-            {navigation.secondary.map((link: NavigationLink) => (
-              <Link
-                key={link.id}
-                to={link.path}
-                target={link.external ? '_blank' : undefined}
-                rel={link.external ? 'noreferrer' : undefined}
-                className="text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          <footer className="mt-auto border-t border-outline/40 bg-surface-subtle/60">
+            <div className="flex flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-6">
+              <div>
+                © 2016-2025 mirelplatform. All rights reserved.
+              </div>
+              <div className="flex items-center gap-3">
+                {initialNavigation.secondary.map((link: NavigationLink) => (
+                  <Link
+                    key={link.id}
+                    to={link.path}
+                    target={link.external ? '_blank' : undefined}
+                    rel={link.external ? 'noreferrer' : undefined}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
       <Toaster />
     </div>
   );
