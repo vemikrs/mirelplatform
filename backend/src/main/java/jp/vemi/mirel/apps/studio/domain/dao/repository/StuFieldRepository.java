@@ -16,4 +16,6 @@ import java.util.List;
 public interface StuFieldRepository extends JpaRepository<StuField, String> {
 
     List<StuField> findByModelIdOrderBySortOrder(String modelId);
+
+    boolean existsByModelId(String modelId);
 }

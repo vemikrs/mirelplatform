@@ -31,6 +31,12 @@ class DynamicEntityServiceTest {
     @InjectMocks
     private DynamicEntityService service;
 
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        // Default to true for most tests unless overridden
+        org.mockito.Mockito.lenient().when(fieldRepository.existsByModelId(anyString())).thenReturn(true);
+    }
+
     @Test
     void findAll_shouldExecuteSelect() {
         String modelId = "test_model";
@@ -135,6 +141,18 @@ class DynamicEntityServiceTest {
             service.insert(modelId, data);
         } catch (IllegalArgumentException e) {
             assert e.getMessage().equals("Field Code format is invalid");
+        }
+    }
+
+    @Test
+    void findAll_shouldThrowException_whenModelIdInvalid() {
+        String modelId = "invalid_model";
+        when(fieldRepository.existsByModelId(modelId)).thenReturn(false);
+
+        try {
+            service.findAll(modelId);
+        } catch (IllegalArgumentException e) {
+            assert e.getMessage().equals("Model not found: " + modelId);
         }
     }
 }

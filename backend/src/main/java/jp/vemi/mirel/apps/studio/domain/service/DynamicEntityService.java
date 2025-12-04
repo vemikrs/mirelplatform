@@ -38,7 +38,7 @@ public class DynamicEntityService {
      * @return List of records
      */
     public List<Map<String, Object>> findAll(String modelId) {
-        validateName(modelId);
+        validateModelId(modelId);
         String tableName = "dyn_" + modelId;
         String sql = "SELECT * FROM " + tableName;
         return jdbcTemplate.queryForList(sql);
@@ -54,7 +54,7 @@ public class DynamicEntityService {
      * @return The record, or null if not found
      */
     public Map<String, Object> findById(String modelId, String id) {
-        validateName(modelId);
+        validateModelId(modelId);
         String tableName = "dyn_" + modelId;
         String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
         try {
@@ -74,7 +74,7 @@ public class DynamicEntityService {
      */
     @Transactional
     public void insert(String modelId, Map<String, Object> data) {
-        validateName(modelId);
+        validateModelId(modelId);
         String tableName = "dyn_" + modelId;
 
         List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
@@ -119,7 +119,7 @@ public class DynamicEntityService {
      */
     @Transactional
     public void update(String modelId, String id, Map<String, Object> data) {
-        validateName(modelId);
+        validateModelId(modelId);
         String tableName = "dyn_" + modelId;
 
         List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
@@ -157,7 +157,7 @@ public class DynamicEntityService {
      */
     @Transactional
     public void delete(String modelId, String id) {
-        validateName(modelId);
+        validateModelId(modelId);
         String tableName = "dyn_" + modelId;
         String sql = "DELETE FROM " + tableName + " WHERE id = ?";
         jdbcTemplate.update(sql, UUID.fromString(id));
@@ -215,6 +215,13 @@ public class DynamicEntityService {
     private void validateName(String name) {
         if (name == null || !VALID_NAME_PATTERN.matcher(name).matches()) {
             throw new IllegalArgumentException("Invalid name: " + name);
+        }
+    }
+
+    private void validateModelId(String modelId) {
+        validateName(modelId);
+        if (!fieldRepository.existsByModelId(modelId)) {
+            throw new IllegalArgumentException("Model not found: " + modelId);
         }
     }
 
