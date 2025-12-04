@@ -31,7 +31,7 @@ export default function AnnouncementListPage() {
   };
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-4 space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">お知らせ管理</h1>
         <Button onClick={() => navigate('/admin/announcements/new')}>
@@ -44,7 +44,7 @@ export default function AnnouncementListPage() {
         <CardHeader>
           <CardTitle>検索条件</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               placeholder="タイトル"

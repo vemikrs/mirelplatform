@@ -54,15 +54,15 @@ export default function AnnouncementEditPage() {
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="container py-6 max-w-3xl">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container py-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">{isNew ? 'お知らせ作成' : 'お知らせ編集'}</h1>
       </div>
 
       <form onSubmit={handleSubmit}>
         <Card>
-          <CardContent className="space-y-6 pt-6">
-            <div className="space-y-2">
+          <CardContent className="space-y-4 pt-4">
+            <div className="space-y-1.5">
               <Label>タイトル</Label>
               <Input
                 required
@@ -72,7 +72,7 @@ export default function AnnouncementEditPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>カテゴリ</Label>
                 <Select value={formData.category} onValueChange={(v: string) => setFormData({ ...formData, category: v })}>
                   <SelectTrigger>
@@ -89,7 +89,7 @@ export default function AnnouncementEditPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>優先度</Label>
                 <Select value={formData.priority} onValueChange={(v: string) => setFormData({ ...formData, priority: v })}>
                   <SelectTrigger>
@@ -105,7 +105,7 @@ export default function AnnouncementEditPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>概要</Label>
               <Input
                 value={formData.summary || ''}
@@ -113,7 +113,7 @@ export default function AnnouncementEditPage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>本文 (Markdown)</Label>
               <Textarea
                 className="min-h-[200px]"
@@ -123,7 +123,7 @@ export default function AnnouncementEditPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>ステータス</Label>
                 <Select value={formData.status} onValueChange={(v: string) => setFormData({ ...formData, status: v })}>
                   <SelectTrigger>
@@ -137,7 +137,7 @@ export default function AnnouncementEditPage() {
                 </Select>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>公開日時</Label>
                 <Input
                   type="datetime-local"
@@ -157,7 +157,7 @@ export default function AnnouncementEditPage() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate('/admin/announcements')}>
                 キャンセル
               </Button>

@@ -29,7 +29,7 @@ interface SideNavigationProps {
 
 export function SideNavigation({ items, className }: SideNavigationProps) {
   return (
-    <nav className={cn("w-64 bg-surface-subtle border-r border-outline/20 flex flex-col py-4", className)}>
+    <nav className={cn("w-56 bg-surface-subtle border-r border-outline/20 flex flex-col py-4", className)}>
       <div className="px-3 space-y-1">
         {items.map((item) => (
           <NavItem key={item.id} item={item} />
@@ -53,7 +53,7 @@ function NavItem({ item, depth = 0 }: { item: NavigationLink; depth?: number }) 
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+            "w-full flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
             "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
           )}
           style={{ paddingLeft }}
@@ -79,7 +79,7 @@ function NavItem({ item, depth = 0 }: { item: NavigationLink; depth?: number }) 
       to={item.path}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+          "flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
           isActive
             ? "bg-primary/10 text-primary"
             : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
