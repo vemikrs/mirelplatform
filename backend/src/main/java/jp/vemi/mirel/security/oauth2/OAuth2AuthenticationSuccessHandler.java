@@ -31,52 +31,61 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-    
+
     private final ObjectProvider<JwtService> jwtServiceProvider;
     private final SystemUserRepository systemUserRepository;
-    
+
     @Value("${app.base-url:http://localhost:5173}")
     private String appBaseUrl;
-    
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
-        
+
         if (authentication.getPrincipal() instanceof OAuth2User oauth2User) {
             try {
                 // GitHubユーザー情報を取得
                 Map<String, Object> attributes = oauth2User.getAttributes();
                 String githubId = String.valueOf(attributes.get("id"));
-                
+
                 // SystemUserを取得
                 Optional<SystemUser> systemUser = systemUserRepository
                         .findByOauth2ProviderAndOauth2ProviderId("github", githubId);
-                
+
                 if (systemUser.isEmpty()) {
                     log.error("SystemUser not found for GitHub ID: {}", githubId);
                     getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=user_not_found");
                     return;
                 }
-                
+
                 JwtService jwtService = jwtServiceProvider.getIfAvailable();
                 if (jwtService == null) {
-                    log.warn("JWT service unavailable - auth.jwt.enabled=false? Redirecting with oauth2_jwt_disabled error");
-                    getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=oauth2_jwt_disabled");
+                    log.warn(
+                            "JWT service unavailable - auth.jwt.enabled=false? Redirecting with oauth2_jwt_disabled error");
+                    getRedirectStrategy().sendRedirect(request, response,
+                            appBaseUrl + "/login?error=oauth2_jwt_disabled");
                     return;
                 }
 
                 // JWTトークンを生成
-                String token = jwtService.generateToken(authentication);
-                
+                // SystemUserのIDをSubjectとして使用するために、一時的なAuthenticationオブジェクトを作成
+                Authentication jwtAuth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        systemUser.get().getId().toString(),
+                        "N/A",
+                        authentication.getAuthorities());
+
+                String token = jwtService.generateToken(jwtAuth);
+
                 // フロントエンドにリダイレクト（トークンをクエリパラメータで渡す）
                 String redirectUrl = appBaseUrl + "/auth/oauth2/success?token=" + token;
-                log.info("OAuth2 authentication success: user={}, redirecting to {}", 
+                log.info("OAuth2 authentication success: user={}, redirecting to {}",
                         systemUser.get().getEmail(), redirectUrl);
-                
+
                 getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-                
+
             } catch (Exception e) {
-                log.error("Failed to process OAuth2 authentication", e);
+                log.error("Failed to process OAuth2 authentication. Authentication: {}, Principal: {}",
+                        authentication, authentication.getPrincipal(), e);
                 getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=oauth2");
             }
         } else {

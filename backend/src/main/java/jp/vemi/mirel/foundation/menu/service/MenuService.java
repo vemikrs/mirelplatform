@@ -35,7 +35,7 @@ public class MenuService {
         if (roles == null || roles.isEmpty()) {
             return false;
         }
-        String[] requiredPermissions = menu.getRequiredPermission().split(",");
+        String[] requiredPermissions = menu.getRequiredPermission().split("\\|");
         for (String permission : requiredPermissions) {
             if (roles.contains(permission.trim())) {
                 return true;

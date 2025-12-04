@@ -304,6 +304,10 @@ public class DataLoader {
                     .withColumnSeparator(',')
                     .withQuoteChar('"')
                     .withEscapeChar('\\');
+
+            // CSVパーサーの設定を調整
+            csvMapper.enable(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS);
+
             MappingIterator<Map<String, String>> it = csvMapper.readerFor(Map.class)
                     .with(schema)
                     .readValues(is);
