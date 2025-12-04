@@ -18,36 +18,49 @@ export function OAuthCallbackPage() {
     const error = searchParams.get('error');
 
     if (error) {
-      // エラー発生時はログインページに戻る
       console.error('OAuth2 authentication failed:', error);
       navigate('/login?error=' + error);
       return;
     }
 
     if (token) {
-      // TODO: トークンをデコードしてユーザー情報を取得する
-      // 現在は簡易的に認証状態のみを設定
-      setAuth(
-        {
-          userId: 'oauth-user',
-          username: 'oauth-user',
-          email: 'oauth@example.com',
-          displayName: 'OAuth User',
-          isActive: true,
-          emailVerified: true,
+      // ユーザー存在確認 (インターセプターを回避するために直接fetch/axiosを使用)
+      // 401の場合は未登録とみなしてサインアップ画面へ
+      fetch('/mapi/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        null, // tenant情報なし
-        {
-          accessToken: token,
-          refreshToken: '',
-          expiresIn: 3600,
+      })
+      .then(async (res) => {
+        if (res.ok) {
+          const userProfile = await res.json();
+          // ユーザーが存在するのでログイン完了
+          setAuth(
+            userProfile,
+            null, // テナント情報は別途取得が必要だが、一旦nullで
+            {
+              accessToken: token,
+              refreshToken: '', // リフレッシュトークンはCookieにあるはずだが、ここでもらえてない場合は空
+              expiresIn: 3600,
+            }
+          );
+          navigate('/home');
+        } else if (res.status === 401 || res.status === 404) {
+          // ユーザー未登録 -> サインアップ画面へ
+          // トークンをstateで渡す
+          navigate('/signup', { state: { oauth2: true, token } });
+        } else {
+          // その他のエラー
+          console.error('Failed to fetch user profile:', res.status);
+          navigate('/login?error=profile_fetch_failed');
         }
-      );
-      
-      // ダッシュボードに遷移
-      navigate('/home');
+      })
+      .catch((err) => {
+        console.error('Error fetching user profile:', err);
+        navigate('/login?error=network_error');
+      });
     } else {
-      // トークンがない場合はログインページに戻る
       navigate('/login?error=no_token');
     }
   }, [searchParams, navigate, setAuth]);

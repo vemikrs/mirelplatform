@@ -80,6 +80,36 @@ public class AuthenticationController {
     }
 
     /**
+     * OAuth2サインアップ（既存のSystemUserにUserを紐付け）
+     */
+    @PostMapping("/signup/oauth2")
+    public ResponseEntity<AuthenticationResponse> signupOAuth2(
+            @Valid @RequestBody OAuth2SignupRequest request,
+            HttpServletResponse httpResponse) {
+        try {
+            // 認証済み（SystemUserとして）であることを確認
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            AuthenticationResponse response = authenticationService.signupWithOAuth2(request, auth.getName());
+
+            // Set access token in HttpOnly cookie
+            if (response.getTokens() != null) {
+                setTokenCookies(httpResponse, response.getTokens());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("OAuth2 signup failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * トークンリフレッシュ
      */
     @PostMapping("/refresh")

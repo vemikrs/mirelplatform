@@ -71,8 +71,8 @@ public class AuthenticationServiceImpl {
 
         // SystemUserでusernameまたはemailを検索
         SystemUser systemUser = systemUserRepository.findByUsername(request.getUsernameOrEmail())
-            .or(() -> systemUserRepository.findByEmail(request.getUsernameOrEmail()))
-            .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
+                .or(() -> systemUserRepository.findByEmail(request.getUsernameOrEmail()))
+                .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
 
         // アクティブチェック
         if (systemUser.getIsActive() == null || !systemUser.getIsActive()) {
@@ -87,17 +87,18 @@ public class AuthenticationServiceImpl {
         // パスワード検証
         if (!passwordEncoder.matches(request.getPassword(), systemUser.getPasswordHash())) {
             logger.warn("Invalid password for user: {}", request.getUsernameOrEmail());
-            
+
             // ログイン失敗回数をインクリメント
-            Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0 : systemUser.getFailedLoginAttempts();
+            Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0
+                    : systemUser.getFailedLoginAttempts();
             systemUser.setFailedLoginAttempts(failedAttempts + 1);
-            
+
             // 5回失敗でアカウントロック
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
                 logger.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
             }
-            
+
             systemUserRepository.save(systemUser);
             throw new RuntimeException("Invalid username/email or password");
         }
@@ -108,7 +109,7 @@ public class AuthenticationServiceImpl {
 
         // Userエンティティを取得（ApplicationデータにアクセスするためにsystemUserIdで検索）
         User user = userRepository.findBySystemUserId(systemUser.getId())
-            .orElseThrow(() -> new RuntimeException("User profile not found"));
+                .orElseThrow(() -> new RuntimeException("User profile not found"));
 
         // 最終ログイン時刻更新
         user.setLastLoginAt(Instant.now());
@@ -122,10 +123,8 @@ public class AuthenticationServiceImpl {
         boolean isJwtEnabled = authProperties.getJwt().isEnabled();
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, buildAuthoritiesFromUser(user)
-                )
-            );
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, buildAuthoritiesFromUser(user)));
         } else {
             accessToken = "session-based-auth-token";
             logger.warn("JWT is disabled. Using session-based authentication placeholder.");
@@ -136,8 +135,7 @@ public class AuthenticationServiceImpl {
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
-            user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now()
-        );
+                user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
         logger.info("Login successful for user: {}", user.getUserId());
 
@@ -163,10 +161,8 @@ public class AuthenticationServiceImpl {
         boolean isJwtEnabled = authProperties.getJwt().isEnabled();
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, buildAuthoritiesFromUser(user)
-                )
-            );
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, buildAuthoritiesFromUser(user)));
         } else {
             accessToken = "session-based-auth-token";
             logger.warn("JWT is disabled. Using session-based authentication placeholder.");
@@ -177,8 +173,7 @@ public class AuthenticationServiceImpl {
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
-            user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now()
-        );
+                user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
         logger.info("Login successful for user: {}", user.getUserId());
 
@@ -254,10 +249,8 @@ public class AuthenticationServiceImpl {
         boolean isJwtEnabled = authProperties.getJwt().isEnabled();
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, List.of()
-                )
-            );
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, List.of()));
         } else {
             accessToken = "session-based-auth-token";
             logger.warn("JWT is disabled. Using session-based authentication placeholder.");
@@ -267,8 +260,86 @@ public class AuthenticationServiceImpl {
 
         logger.info("Signup successful for user: {}", user.getUserId());
 
-        return buildAuthenticationResponse(user, defaultTenant, accessToken, 
-            refreshToken.getTokenHash(), List.of(license));
+        return buildAuthenticationResponse(user, defaultTenant, accessToken,
+                refreshToken.getTokenHash(), List.of(license));
+    }
+
+    /**
+     * OAuth2サインアップ処理
+     */
+    @Transactional
+    public AuthenticationResponse signupWithOAuth2(OAuth2SignupRequest request, String systemUserIdStr) {
+        logger.info("OAuth2 signup attempt for username: {}, systemUserId: {}", request.getUsername(), systemUserIdStr);
+
+        UUID systemUserId = UUID.fromString(systemUserIdStr);
+        SystemUser systemUser = systemUserRepository.findById(systemUserId)
+                .orElseThrow(() -> new RuntimeException("System user not found"));
+
+        // ユーザー名重複チェック (自分自身は除く...といってもUserはまだないはず)
+        // SystemUserのusernameとは別管理だが、一応チェック
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        // User作成
+        User user = new User();
+        user.setUserId(UUID.randomUUID().toString());
+        user.setSystemUserId(systemUser.getId());
+        user.setUsername(request.getUsername());
+        user.setEmail(systemUser.getEmail()); // SystemUserのメールを使用
+        user.setDisplayName(request.getDisplayName());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        // パスワードは設定しない（OAuth2認証のみ）
+        // ただしDB制約がある場合はダミーを入れる必要があるが、Userエンティティの定義を確認するとnullableではない可能性がある
+        // User.javaを見ると password カラムはあるが nullable 制約は @Column に書いてない。DB定義次第。
+        // 安全のためダミーを入れる
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+
+        user.setIsActive(true);
+        user.setEmailVerified(systemUser.getEmailVerified());
+        user.setRoles("USER");
+        user = userRepository.save(user);
+
+        // デフォルトテナント作成または割り当て
+        Tenant defaultTenant = getOrCreateDefaultTenant();
+        user.setTenantId(defaultTenant.getTenantId());
+        userRepository.save(user);
+
+        // UserTenant作成
+        UserTenant userTenant = new UserTenant();
+        userTenant.setUserId(user.getUserId());
+        userTenant.setTenantId(defaultTenant.getTenantId());
+        userTenant.setRoleInTenant("MEMBER");
+        userTenant.setIsDefault(true);
+        userTenantRepository.save(userTenant);
+
+        // デフォルトライセンス付与（FREE tier）
+        ApplicationLicense license = new ApplicationLicense();
+        license.setSubjectType(SubjectType.USER);
+        license.setSubjectId(user.getUserId());
+        license.setApplicationId("promarker");
+        license.setTier(LicenseTier.FREE);
+        license.setGrantedBy("system");
+        licenseRepository.save(license);
+
+        // トークン生成
+        String accessToken;
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (isJwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+        } else {
+            accessToken = "session-based-auth-token";
+        }
+
+        RefreshToken refreshToken = createRefreshToken(user);
+
+        logger.info("OAuth2 signup successful for user: {}", user.getUserId());
+
+        return buildAuthenticationResponse(user, defaultTenant, accessToken,
+                refreshToken.getTokenHash(), List.of(license));
     }
 
     /**
@@ -285,7 +356,7 @@ public class AuthenticationServiceImpl {
         // RefreshToken検証
         String tokenHash = hashToken(request.getRefreshToken());
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
-            .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
         if (!refreshToken.isValid()) {
             throw new RuntimeException("Refresh token is expired or revoked");
@@ -293,20 +364,17 @@ public class AuthenticationServiceImpl {
 
         // ユーザー取得
         User user = userRepository.findById(refreshToken.getUserId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // テナント取得
-        Tenant tenant = user.getTenantId() != null ? 
-            tenantRepository.findById(user.getTenantId()).orElse(null) : null;
+        Tenant tenant = user.getTenantId() != null ? tenantRepository.findById(user.getTenantId()).orElse(null) : null;
 
         // 新しいアクセストークン生成
         String accessToken;
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    user.getUserId(), null, List.of()
-                )
-            );
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, List.of()));
         } else {
             accessToken = "session-based-auth-token";
             logger.warn("JWT is disabled. Using session-based authentication placeholder.");
@@ -314,8 +382,7 @@ public class AuthenticationServiceImpl {
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
-            user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now()
-        );
+                user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
         logger.info("Token refresh successful for user: {}", user.getUserId());
 
@@ -347,11 +414,11 @@ public class AuthenticationServiceImpl {
         logger.info("Tenant switch attempt: user={}, tenant={}", userId, tenantId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // ユーザーがテナントに所属しているか確認
         UserTenant userTenant = userTenantRepository.findByUserIdAndTenantId(userId, tenantId)
-            .orElseThrow(() -> new RuntimeException("User is not a member of this tenant"));
+                .orElseThrow(() -> new RuntimeException("User is not a member of this tenant"));
 
         // デフォルトテナント更新
         // まず全てのUserTenantのisDefaultをfalseに
@@ -370,27 +437,27 @@ public class AuthenticationServiceImpl {
 
         // Tenant取得
         Tenant tenant = tenantRepository.findById(tenantId)
-            .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new RuntimeException("Tenant not found"));
 
         logger.info("Tenant switch successful: user={}, new tenant={}", userId, tenantId);
 
         return UserContextDto.builder()
-            .user(UserDto.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .displayName(user.getDisplayName())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .isActive(user.getIsActive())
-                .emailVerified(user.getEmailVerified())
-                .build())
-            .currentTenant(TenantContextDto.builder()
-                .tenantId(tenant.getTenantId())
-                .tenantName(tenant.getTenantName())
-                .displayName(tenant.getDisplayName())
-                .build())
-            .build();
+                .user(UserDto.builder()
+                        .userId(user.getUserId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .displayName(user.getDisplayName())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .isActive(user.getIsActive())
+                        .emailVerified(user.getEmailVerified())
+                        .build())
+                .currentTenant(TenantContextDto.builder()
+                        .tenantId(tenant.getTenantId())
+                        .tenantName(tenant.getTenantName())
+                        .displayName(tenant.getDisplayName())
+                        .build())
+                .build();
     }
 
     /**
@@ -398,11 +465,11 @@ public class AuthenticationServiceImpl {
      */
     private Tenant resolveTenant(User user, String requestedTenantId) {
         String tenantId = requestedTenantId != null ? requestedTenantId : user.getTenantId();
-        
+
         if (tenantId == null) {
             // デフォルトテナント取得
             UserTenant defaultUserTenant = userTenantRepository.findDefaultByUserId(user.getUserId())
-                .orElse(null);
+                    .orElse(null);
             if (defaultUserTenant != null) {
                 tenantId = defaultUserTenant.getTenantId();
             } else {
@@ -456,7 +523,8 @@ public class AuthenticationServiceImpl {
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1)
+                    hexString.append('0');
                 hexString.append(hex);
             }
             return hexString.toString();
@@ -468,38 +536,39 @@ public class AuthenticationServiceImpl {
     /**
      * AuthenticationResponse構築
      */
-    private AuthenticationResponse buildAuthenticationResponse(User user, Tenant tenant, 
+    private AuthenticationResponse buildAuthenticationResponse(User user, Tenant tenant,
             String accessToken, String refreshToken, List<ApplicationLicense> licenses) {
-        
+
         return AuthenticationResponse.builder()
-            .user(UserDto.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .displayName(user.getDisplayName())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .isActive(user.getIsActive())
-                .emailVerified(user.getEmailVerified())
-                .build())
-            .tokens(TokenDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(authProperties.getJwt().getExpiration())
-                .build())
-            .currentTenant(tenant != null ? TenantContextDto.builder()
-                .tenantId(tenant.getTenantId())
-                .tenantName(tenant.getTenantName())
-                .displayName(tenant.getDisplayName())
-                .build() : null)
-            .build();
+                .user(UserDto.builder()
+                        .userId(user.getUserId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .displayName(user.getDisplayName())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .isActive(user.getIsActive())
+                        .emailVerified(user.getEmailVerified())
+                        .build())
+                .tokens(TokenDto.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .expiresIn(authProperties.getJwt().getExpiration())
+                        .build())
+                .currentTenant(tenant != null ? TenantContextDto.builder()
+                        .tenantId(tenant.getTenantId())
+                        .tenantName(tenant.getTenantName())
+                        .displayName(tenant.getDisplayName())
+                        .build() : null)
+                .build();
     }
 
     /**
      * ユーザーのロール文字列からSpring Security権限リストを生成
      * ロールはカンマ(,)またはパイプ(|)で区切られた文字列
      * 
-     * @param user ユーザー
+     * @param user
+     *            ユーザー
      * @return 権限リスト
      */
     private List<SimpleGrantedAuthority> buildAuthoritiesFromUser(User user) {
@@ -508,18 +577,18 @@ public class AuthenticationServiceImpl {
             // デフォルトでUSERロールを付与
             return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
         }
-        
+
         // カンマまたはパイプで区切り
         return Arrays.stream(roles.split("[,|]"))
-            .map(String::trim)
-            .filter(role -> !role.isEmpty())
-            .map(role -> {
-                // ROLE_ プレフィックスがない場合は追加
-                if (!role.startsWith("ROLE_")) {
-                    return new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
-                }
-                return new SimpleGrantedAuthority(role.toUpperCase());
-            })
-            .collect(Collectors.toList());
+                .map(String::trim)
+                .filter(role -> !role.isEmpty())
+                .map(role -> {
+                    // ROLE_ プレフィックスがない場合は追加
+                    if (!role.startsWith("ROLE_")) {
+                        return new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
+                    }
+                    return new SimpleGrantedAuthority(role.toUpperCase());
+                })
+                .collect(Collectors.toList());
     }
 }

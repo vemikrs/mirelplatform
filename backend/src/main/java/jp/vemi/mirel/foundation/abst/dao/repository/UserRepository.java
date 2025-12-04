@@ -9,9 +9,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, String> {
-    
+
     /**
      * SystemUserIDでUserを検索
      */
     Optional<User> findBySystemUserId(UUID systemUserId);
+
+    /**
+     * UsernameでUserを検索
+     */
+    Optional<User> findByUsername(String username);
 }
