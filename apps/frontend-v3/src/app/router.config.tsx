@@ -21,6 +21,7 @@ import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerifica
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
+import { OrganizationManagementPage } from '@/features/organization';
 import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
 import AnnouncementEditPage from '@/features/admin/pages/AnnouncementEditPage';
 import { ProtectedRoute } from '@/components/auth';
@@ -243,6 +244,16 @@ export const router = createBrowserRouter([
             path: 'admin/menu',
             element: <MenuManagementPage />,
             handle: { title: '管理 - メニュー定義' },
+          },
+          {
+            path: 'admin/tenant',
+            element: <div>Tenant Management (Coming Soon)</div>,
+            handle: { title: '管理 - テナント管理' },
+          },
+          {
+            path: 'admin/organization',
+            element: <OrganizationManagementPage />,
+            handle: { title: '管理 - 組織メンテナンス' },
           },
           {
             path: 'admin/announcements',
