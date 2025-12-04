@@ -11,7 +11,7 @@
   main {
     min-height: 100%;
   }
-  
+
   /**
    * ⚠️ Tailwind v4 制限への対応:
    * 
@@ -33,66 +33,74 @@
   .bg-background {
     background-color: hsl(var(--background)) !important;
   }
-  
+
   .bg-card {
     background-color: hsl(var(--card)) !important;
   }
-  
+
   .bg-surface {
     background-color: hsl(var(--surface)) !important;
   }
-  
+
+  .bg-popover {
+    background-color: hsl(var(--popover)) !important;
+  }
+
+  .text-popover-foreground {
+    color: hsl(var(--popover-foreground)) !important;
+  }
+
   /* Force bg-white to use standard white (Tailwind v4 oklch override) */
   .bg-white {
     background-color: #ffffff !important;
   }
-  
+
   .dark .dark\:bg-gray-800 {
     background-color: #1f2937 !important;
   }
-  
+
   .dark .dark\:bg-gray-700 {
     background-color: #374151 !important;
   }
-  
+
   .dark .dark\:border-gray-700 {
     border-color: #374151 !important;
   }
-  
+
   .border-gray-200 {
     border-color: #e5e7eb !important;
   }
-  
+
   .dark .dark\:text-gray-100 {
     color: #f3f4f6 !important;
   }
-  
+
   .dark .dark\:text-gray-400 {
     color: #9ca3af !important;
   }
-  
+
   /* Hover states */
   .hover\:bg-gray-100:hover {
     background-color: #f3f4f6 !important;
   }
-  
+
   .dark .dark\:hover\:bg-gray-700:hover {
     background-color: #374151 !important;
   }
-  
+
   /* Selection states */
   .bg-blue-50 {
     background-color: #eff6ff !important;
   }
-  
+
   .text-blue-600 {
     color: #2563eb !important;
   }
-  
+
   .dark .dark\:bg-blue-950 {
     background-color: #172554 !important;
   }
-  
+
   .dark .dark\:text-blue-400 {
     color: #60a5fa !important;
   }
