@@ -4,7 +4,10 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 import { NotificationList } from '../components/NotificationList'
 import { SystemStatusWidget } from '../components/SystemStatusWidget'
 
+import { useAuth } from '@/hooks/useAuth'
+
 export function HomePage() {
+  const { user } = useAuth();
   return (
     <div className="space-y-12 pb-16">
       {/* Hero Section with Liquid Glass Effect */}
@@ -59,10 +62,11 @@ export function HomePage() {
         </div>
 
         {/* Sidebar - System Status (Admin Only) */}
-        {/* TODO: Implement proper role check. For now, showing to all for demo or check user email/role if available */}
-        <div className="space-y-6">
-          <SystemStatusWidget />
-        </div>
+        {user?.roles?.includes('ADMIN') && (
+          <div className="space-y-6">
+            <SystemStatusWidget />
+          </div>
+        )}
       </div>
 
       {/* Bottom Info Section */}

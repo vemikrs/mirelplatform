@@ -19,6 +19,7 @@ export interface UserProfile {
     tenantName: string;
     displayName: string;
   };
+  roles: string[];
 }
 
 export interface UpdateProfileRequest {
