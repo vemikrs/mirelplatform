@@ -1,7 +1,8 @@
 import { Button, SectionHeading } from '@mirel/ui'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import { UnifiedFeatureSection } from '../components/FeatureSection'
+import { NotificationList } from '../components/NotificationList'
+import { SystemStatusWidget } from '../components/SystemStatusWidget'
 
 export function HomePage() {
   return (
@@ -50,9 +51,18 @@ export function HomePage() {
         />
       </div>
 
-      {/* Features Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <UnifiedFeatureSection />
+      {/* Dashboard Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main Content - Notifications */}
+        <div className="lg:col-span-2">
+          <NotificationList />
+        </div>
+
+        {/* Sidebar - System Status (Admin Only) */}
+        {/* TODO: Implement proper role check. For now, showing to all for demo or check user email/role if available */}
+        <div className="space-y-6">
+          <SystemStatusWidget />
+        </div>
       </div>
 
       {/* Bottom Info Section */}
