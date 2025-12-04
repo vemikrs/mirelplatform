@@ -209,7 +209,7 @@ export function RootLayout() {
         />
         
         <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 bg-background py-10">
+          <main className="flex-1 bg-background py-6">
             <div className="px-4 md:px-8">
               <Outlet />
             </div>
