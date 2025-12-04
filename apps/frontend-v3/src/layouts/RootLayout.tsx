@@ -13,16 +13,50 @@ import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
+import { getUnreadCount } from '@/lib/api/announcement';
+
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
+
+import { Popover, PopoverContent, PopoverTrigger } from '@mirel/ui';
+import { NotificationList } from '@/features/home/components/NotificationList';
+
+function NotificationPopover() {
+  const { data } = useQuery({
+    queryKey: ['unread-count'],
+    queryFn: getUnreadCount,
+    refetchInterval: 60000, // 1 minute
+  });
+
+  const count = data?.count || 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="square" aria-label="通知" className="relative">
+          <Bell className="size-5" />
+          {count > 0 && (
+            <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500 ring-2 ring-background flex items-center justify-center text-[8px] font-bold text-white">
+              {count > 9 ? '9+' : count}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[380px] p-0" align="end">
+        <div className="p-4 border-b border-border">
+          <h4 className="font-semibold leading-none">お知らせ</h4>
+        </div>
+        <div className="p-2">
+          <NotificationList variant="popover" />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function renderAction(action: NavigationAction) {
   switch (action.type) {
     case 'notifications':
-      return (
-        <Button key={action.id} variant="ghost" size="square" aria-label="通知">
-          <Bell className="size-5" />
-        </Button>
-      );
+      return <NotificationPopover key={action.id} />;
     case 'help':
       return (
         <Button

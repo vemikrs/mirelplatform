@@ -8,7 +8,7 @@ export function HomePage() {
   return (
     <div className="space-y-12 pb-16">
       {/* Hero Section with Liquid Glass Effect */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden pb-4">
         {/* Background Gradient Orb */}
         <div 
           className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-30 blur-3xl pointer-events-none"
