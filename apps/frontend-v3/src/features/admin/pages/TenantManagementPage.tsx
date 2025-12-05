@@ -17,7 +17,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Edit2, MoreHorizontal, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
-import { getTenants, createTenant, updateTenant } from '../api';
+import { getTenants, createTenant } from '../api';
 import type { Tenant, TenantPlan } from '../api';
 
 export const TenantManagementPage = () => {
@@ -25,10 +25,17 @@ export const TenantManagementPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Query for tenants
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenantsResponse, isLoading, error } = useQuery({
     queryKey: ['admin-tenants', searchQuery],
-    queryFn: () => getTenants(searchQuery || undefined),
+    queryFn: async () => {
+      // Direct API call or wrapper - let's use wrapper if it returns data, otherwise fix wrapper usage
+      // Assuming getTenants returns AxiosResponse based on previous errors
+      const res = await getTenants(searchQuery || undefined);
+      return res.data; 
+    },
   });
+
+  const tenants = tenantsResponse || [];
 
   // Create mutation
   const createMutation = useMutation({
@@ -52,6 +59,9 @@ export const TenantManagementPage = () => {
         }
     }
   };
+
+  if (isLoading) return <div>読み込み中...</div>;
+  if (error) return <div>エラーが発生しました</div>;
 
   return (
     <div className="space-y-6 p-6">
@@ -89,13 +99,7 @@ export const TenantManagementPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-                <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                        読み込み中...
-                    </TableCell>
-                </TableRow>
-            ) : tenants.length === 0 ? (
+            {tenants.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
                         テナントが見つかりません

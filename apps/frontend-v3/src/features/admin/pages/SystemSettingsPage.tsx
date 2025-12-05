@@ -38,7 +38,10 @@ export function SystemSettingsPage() {
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['admin-system-settings'],
-    queryFn: getSystemSettings,
+    queryFn: async () => {
+        const res = await getSystemSettings();
+        return res.data;
+    },
   });
 
   useEffect(() => {

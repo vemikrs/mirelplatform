@@ -7,7 +7,6 @@ import {
   CardContent,
   Button,
   Input,
-  Progress,
   Badge,
 } from '@mirel/ui';
 import { 
@@ -21,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getLicenseInfo, updateLicenseKey } from '../api';
-import type { LicenseSummary } from '../api';
+
 import { useState } from 'react';
 
 export function LicenseManagementPage() {
@@ -30,7 +29,10 @@ export function LicenseManagementPage() {
 
   const { data: license, isLoading } = useQuery({
     queryKey: ['admin-license'],
-    queryFn: getLicenseInfo,
+    queryFn: async () => {
+        const res = await getLicenseInfo();
+        return res.data;
+    },
   });
 
   const updateKeyMutation = useMutation({
@@ -150,7 +152,9 @@ export function LicenseManagementPage() {
                 </div>
                 <span className="font-medium">{info.currentUsers} / {info.maxUsers}</span>
               </div>
-              <Progress value={userUsagePercent} className="h-2" />
+              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${userUsagePercent}%` }} />
+              </div>
               <p className="text-xs text-muted-foreground text-right">{userUsagePercent}% 使用中</p>
             </div>
 
@@ -162,7 +166,9 @@ export function LicenseManagementPage() {
                 </div>
                 <span className="font-medium">{info.currentStorage} GB / {info.maxStorage} GB</span>
               </div>
-              <Progress value={storageUsagePercent} className="h-2" />
+              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${storageUsagePercent}%` }} />
+              </div>
               <p className="text-xs text-muted-foreground text-right">{storageUsagePercent}% 使用中</p>
             </div>
           </CardContent>

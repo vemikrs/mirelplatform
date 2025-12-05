@@ -14,26 +14,32 @@ import {
   TableHeader,
   TableRow,
 } from '@mirel/ui';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Edit2, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, deleteUser, createUser } from '../api';
 import type { AdminUser } from '../api';
 
+
+
 export const UserManagementPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
-
+  // New state variables introduced by the change
   // Query for fetching users
   const { data: userResponse, isLoading } = useQuery({
     queryKey: ['admin-users', searchQuery, roleFilter],
-    queryFn: () => getUsers({ 
-      q: searchQuery || undefined, 
-      role: roleFilter !== 'ALL' ? roleFilter : undefined 
-    }),
+    queryFn: async () => {
+      const res = await getUsers({ 
+        q: searchQuery || undefined, 
+        role: roleFilter !== 'ALL' ? roleFilter : undefined 
+      });
+      return res.data;
+    },
+    placeholderData: keepPreviousData,
   });
   
   const users = userResponse?.users || [];
