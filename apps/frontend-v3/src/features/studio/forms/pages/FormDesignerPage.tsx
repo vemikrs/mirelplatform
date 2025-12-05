@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FormDesigner } from '../../components/FormDesigner/FormDesigner';
 import { DynamicFormRenderer } from '../../components/Runtime/DynamicFormRenderer';
@@ -18,7 +18,11 @@ export const FormDesignerPage: React.FC = () => {
   const paramModelId = formId === 'new' ? undefined : formId;
   
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'edit' | 'preview' | 'flow'>('edit');
+  const [searchParams] = useSearchParams();
+  const initialMode = searchParams.get('mode') as 'edit' | 'preview' | 'flow' | null;
+  const [mode, setMode] = useState<'edit' | 'preview' | 'flow'>(
+    (initialMode && ['edit', 'preview', 'flow'].includes(initialMode)) ? initialMode : 'edit'
+  );
   const { widgets, modelId, modelName, setModelInfo, setWidgets } = useFormDesignerStore();
   const { loadFlow, saveFlow } = useFlowDesignerStore();
 
