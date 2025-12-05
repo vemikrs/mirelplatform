@@ -20,4 +20,9 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
      * UsernameでUserを検索
      */
     Optional<User> findByUsername(String username);
+
+    /**
+     * EmailでUserを検索
+     */
+    Optional<User> findByEmail(String email);
 }

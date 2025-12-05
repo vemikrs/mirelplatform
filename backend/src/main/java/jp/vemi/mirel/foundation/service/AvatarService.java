@@ -133,7 +133,7 @@ public class AvatarService {
             Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
 
             // 複数の拡張子を試す
-            for (String ext : new String[] { ".jpg", ".png", ".gif", ".jpeg" }) {
+            for (String ext : new String[] { ".jpg", ".png", ".gif", ".jpeg", ".webp" }) {
                 Path filePath = avatarsPath.resolve(userId.toString() + ext);
                 if (Files.exists(filePath)) {
                     Files.delete(filePath);
@@ -143,6 +143,57 @@ public class AvatarService {
 
         } catch (IOException e) {
             log.error("Failed to delete avatar image for user: {}", userId, e);
+        }
+    }
+
+    /**
+     * バイト配列からアバター画像を保存します。
+     * 
+     * @param imageBytes
+     *            画像バイト配列
+     * @param userId
+     *            ユーザーID
+     * @param extension
+     *            ファイル拡張子（例: ".jpg"）
+     * @return 保存されたアバター画像の相対URL
+     */
+    public String saveAvatarFromBytes(byte[] imageBytes, UUID userId, String extension) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            log.warn("Image bytes is null or empty for user: {}", userId);
+            return null;
+        }
+
+        try {
+            // ファイルサイズチェック
+            if (imageBytes.length > MAX_AVATAR_SIZE) {
+                log.warn("Avatar image too large: {} bytes (max: {})", imageBytes.length, MAX_AVATAR_SIZE);
+                return null;
+            }
+
+            // 保存先ディレクトリを作成
+            Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
+            if (!Files.exists(avatarsPath)) {
+                Files.createDirectories(avatarsPath);
+                log.info("Created avatars directory: {}", avatarsPath);
+            }
+
+            // 既存のアバターを削除
+            deleteAvatar(userId);
+
+            // ファイル名生成（ユーザーID + 拡張子）
+            String fileName = userId.toString() + extension;
+            Path filePath = avatarsPath.resolve(fileName);
+
+            // ファイル保存
+            Files.write(filePath, imageBytes);
+            log.info("Saved avatar image: {} ({} bytes)", filePath, imageBytes.length);
+
+            // APIエンドポイントURLを返却
+            return contextPath + "/api/users/" + userId + "/avatar";
+
+        } catch (IOException e) {
+            log.error("Failed to save avatar image for user: {}", userId, e);
+            return null;
         }
     }
 

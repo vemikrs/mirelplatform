@@ -11,6 +11,11 @@ export interface UserProfile {
   displayName: string;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string;
+  bio?: string;
+  phoneNumber?: string;
+  preferredLanguage?: string;
+  timezone?: string;
   isActive: boolean;
   emailVerified: boolean;
   lastLoginAt?: string;
@@ -20,12 +25,19 @@ export interface UserProfile {
     displayName: string;
   };
   roles: string[];
+  oauth2Provider?: string;
+  hasPassword?: boolean;
 }
 
 export interface UpdateProfileRequest {
+  username?: string;
   displayName?: string;
   firstName?: string;
   lastName?: string;
+  bio?: string;
+  phoneNumber?: string;
+  preferredLanguage?: string;
+  timezone?: string;
 }
 
 export interface UpdatePasswordRequest {
@@ -82,6 +94,64 @@ export async function updatePassword(
     '/users/me/password',
     request
   );
+}
+
+/**
+ * Update user email (requires OTP verification)
+ */
+export async function updateEmail(email: string): Promise<UserProfile> {
+  const response = await apiClient.put<UserProfile>(
+    '/users/me/email',
+    { email }
+  );
+  return response.data;
+}
+
+/**
+ * Upload avatar image
+ */
+export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await apiClient.post<{ avatarUrl: string }>(
+    '/users/me/avatar',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+}
+
+/**
+ * Delete avatar image
+ */
+export async function deleteAvatar(): Promise<void> {
+  await apiClient.delete('/users/me/avatar');
+}
+
+/**
+ * Unlink GitHub OAuth2
+ */
+export async function unlinkGitHub(): Promise<void> {
+  await apiClient.delete('/users/me/oauth2/github');
+}
+
+/**
+ * Enable passwordless login (OTP only)
+ */
+export async function enablePasswordless(): Promise<void> {
+  await apiClient.post('/users/me/passwordless');
+}
+
+/**
+ * Set password (for passwordless users)
+ */
+export async function setPassword(newPassword: string): Promise<void> {
+  await apiClient.post('/users/me/password/set', { newPassword });
 }
 
 /**
