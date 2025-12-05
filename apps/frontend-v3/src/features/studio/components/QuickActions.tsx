@@ -22,13 +22,16 @@ export const QuickActions: React.FC = () => {
     {
       label: 'New Flow',
       icon: Play,
-      onClick: () => console.log('New Flow clicked'), // Placeholder
+      onClick: () => navigate('/apps/studio/forms/new?mode=flow'),
       variant: 'outline' as const,
     },
     {
       label: 'Release',
       icon: Upload,
-      onClick: () => console.log('Release clicked'), // Placeholder
+      onClick: () => {
+        // Release requires context. Navigate to Forms list for now.
+        navigate('/apps/studio/forms');
+      },
       variant: 'ghost' as const,
     },
   ];

@@ -44,6 +44,7 @@ import { FormListPage } from '@/features/studio/forms/pages/FormListPage';
 import { FormDesignerPage } from '@/features/studio/forms/pages/FormDesignerPage';
 import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
 import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
+import { ReleasePage } from '@/features/studio/pages/ReleasePage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -424,6 +425,11 @@ export const router = createBrowserRouter([
                 handle: { title: 'Studio - Data Record' },
               },
             ],
+          },
+          {
+            path: ':modelId/releases',
+            element: <ReleasePage />,
+            handle: { title: 'Studio - Release Center' },
           },
           // Legacy Routes & Redirects
           {
