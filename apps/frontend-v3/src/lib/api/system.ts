@@ -168,8 +168,9 @@ export async function getSystemStatus() {
 export async function getSystemInfo(): Promise<SystemInfo> {
   try {
     const response = await client.get('/actuator/info');
-    return response.data;
+    return response.data || {};
   } catch {
+    // actuator/info が公開されていない場合は空オブジェクトを返す
     return {};
   }
 }
@@ -179,12 +180,12 @@ export async function getTenantStats(): Promise<TenantStats> {
     const response = await client.get<TenantStats>('/admin/stats/tenants');
     return response.data;
   } catch {
-    // Fallback mock data if API not available
+    // API未実装の場合はデフォルト値を返す（将来実装予定）
     return {
-      totalTenants: 0,
-      activeTenants: 0,
-      totalUsers: 0,
-      activeUsers: 0,
+      totalTenants: 1,
+      activeTenants: 1,
+      totalUsers: 1,
+      activeUsers: 1,
     };
   }
 }
@@ -194,7 +195,7 @@ export async function getApplicationModules(): Promise<ApplicationModule[]> {
     const response = await client.get<ApplicationModule[]>('/admin/modules');
     return response.data;
   } catch {
-    // Fallback: return known modules from menu/navigation
+    // API未実装の場合は既知のモジュールを返す（将来実装予定）
     return [
       { id: 'promarker', name: 'ProMarker', version: '1.0.0', status: 'active', description: 'コード生成ツール' },
       { id: 'studio', name: 'Studio', version: '0.1.0', status: 'active', description: 'ローコード開発環境' },
