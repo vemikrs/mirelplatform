@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicCode } from '../types/modeler';
 import { CodeGroupList } from '../components/CodeGroupList';
@@ -12,9 +12,33 @@ export const ModelerCodeMasterPage: React.FC = () => {
   const [codes, setCodes] = useState<SchDicCode[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const loadGroups = useCallback(async () => {
+    try {
+      const res = await modelerApi.listCodeGroups();
+      setGroups(res.data.groups);
+      if (res.data.groups.length > 0 && !selectedGroupId) {
+        setSelectedGroupId(res.data.groups[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load groups:', error);
+    }
+  }, [selectedGroupId]);
+
+  const loadCodes = useCallback(async (groupId: string) => {
+    try {
+      setLoading(true);
+      const res = await modelerApi.listCode(groupId);
+      setCodes(res.data.valueTexts);
+    } catch (error) {
+      console.error('Failed to load codes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadGroups();
-  }, []);
+  }, [loadGroups]);
 
   useEffect(() => {
     if (selectedGroupId) {
@@ -26,31 +50,7 @@ export const ModelerCodeMasterPage: React.FC = () => {
     } else {
       setCodes([]);
     }
-  }, [selectedGroupId]);
-
-  const loadGroups = async () => {
-    try {
-      const res = await modelerApi.listCodeGroups();
-      setGroups(res.data.groups);
-      if (res.data.groups.length > 0 && !selectedGroupId) {
-        setSelectedGroupId(res.data.groups[0]);
-      }
-    } catch (error) {
-      console.error('Failed to load groups:', error);
-    }
-  };
-
-  const loadCodes = async (groupId: string) => {
-    try {
-      setLoading(true);
-      const res = await modelerApi.listCode(groupId);
-      setCodes(res.data.valueTexts);
-    } catch (error) {
-      console.error('Failed to load codes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [selectedGroupId, loadCodes]);
 
   const handleCreateGroup = () => {
     setSelectedGroupId('new_group');
@@ -83,7 +83,7 @@ export const ModelerCodeMasterPage: React.FC = () => {
   };
 
   return (
-    <StudioLayout>
+    <StudioLayout hideContextBar={true}>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
