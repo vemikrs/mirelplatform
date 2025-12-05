@@ -1,61 +1,19 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link, NavLink, Outlet, useLoaderData } from 'react-router-dom';
-import { Badge, Button, Toaster } from '@mirel/ui';
+import { Link, Outlet, useLoaderData } from 'react-router-dom';
+import { Badge, Button, Toaster, Dialog, DialogContent, DialogTrigger } from '@mirel/ui';
 import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
-import { Bell, HelpCircle } from 'lucide-react';
-import { UserMenu } from '@/components/header/UserMenu';
+import { HelpCircle, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { SideNavigation } from '@/components/layouts/SideNavigation';
-import { GlobalSearch } from '@/components/header/GlobalSearch';
 import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-import { getUnreadCount } from '@/lib/api/announcement';
-
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
-
-import { Popover, PopoverContent, PopoverTrigger } from '@mirel/ui';
-import { NotificationList } from '@/features/home/components/NotificationList';
-
-function NotificationPopover() {
-  const { data } = useQuery({
-    queryKey: ['unread-count'],
-    queryFn: getUnreadCount,
-    refetchInterval: 60000, // 1 minute
-  });
-
-  const count = data?.count || 0;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="square" aria-label="通知" className="relative">
-          <Bell className="size-5" />
-          {count > 0 && (
-            <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500 ring-2 ring-background flex items-center justify-center text-[8px] font-bold text-white">
-              {count > 9 ? '9+' : count}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[380px] p-0" align="end">
-        <div className="p-4 border-b border-border">
-          <h4 className="font-semibold leading-none">お知らせ</h4>
-        </div>
-        <div className="p-2">
-          <NotificationList variant="popover" />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function renderAction(action: NavigationAction) {
   switch (action.type) {
-    case 'notifications':
-      return <NotificationPopover key={action.id} />;
     case 'help':
       return (
         <Button
@@ -114,6 +72,8 @@ export function RootLayout() {
     return stored === null ? true : stored === 'true';
   });
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const handleToggle = (event: Event) => {
       const customEvent = event as CustomEvent<{ visible: boolean }>;
@@ -135,21 +95,28 @@ export function RootLayout() {
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between gap-4 px-4 md:h-20 md:gap-6 md:px-6">
           <div className="flex flex-1 items-center gap-6">
-            {/* Brand moved to sidebar - show on mobile only */}
+            {/* Mobile menu button */}
+            <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="size-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="p-0 max-w-[288px] h-full top-0 left-0 translate-x-0 translate-y-0 data-[state=closed]:-translate-x-full">
+                <SideNavigation 
+                  items={primaryLinks}
+                  brand={initialNavigation.brand}
+                  className="h-full border-0"
+                />
+              </DialogContent>
+            </Dialog>
+            
+            {/* Brand - show on mobile only in header */}
             <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
               <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                 {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
               </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                  {initialNavigation.brand.name}
-                </p>
-                {initialNavigation.brand.tagline ? (
-                  <p className="text-xs text-muted-foreground">{initialNavigation.brand.tagline}</p>
-                ) : null}
-              </div>
             </Link>
-            {/* Desktop Nav Removed */}
           </div>
           <div className="hidden items-center gap-2 md:flex">
             {initialNavigation.globalActions
@@ -157,27 +124,7 @@ export function RootLayout() {
               .map((action) => renderAction(action))}
             {/* UserMenu, Notifications, and Search moved to sidebar */}
           </div>
-          <div className="flex items-center gap-2 md:hidden">
-            {isAuthenticated && <UserMenu />}
-          </div>
         </div>
-        <nav className="flex items-center gap-2 overflow-x-auto px-4 pb-3 pt-2 md:hidden">
-          {primaryLinks.map((item: NavigationLink) => (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              className={({ isActive }) =>
-                `whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-surface-subtle text-muted-foreground'
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
       </header>
 
       {initialNavigation.quickLinks.length > 0 && quickLinksVisible ? (
