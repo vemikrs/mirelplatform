@@ -238,56 +238,106 @@ export const router = createBrowserRouter([
             path: 'settings/security',
             element: <SecurityPage />,
           },
-          // Admin routes (requires ADMIN role)
+          // Admin routes - Platform Management (requires ADMIN role)
+          {
+            path: 'admin/platform/tenants',
+            element: <TenantManagementPage />,
+            handle: { title: '管理 - テナント一覧' },
+          },
+          {
+            path: 'admin/platform/system',
+            element: <SystemSettingsPage />,
+            handle: { title: '管理 - システム共通設定' },
+          },
+          {
+            path: 'admin/platform/status',
+            element: <SystemStatusPage />,
+            handle: { title: '管理 - システムステータス' },
+          },
+          {
+            path: 'admin/platform/menu',
+            element: <MenuManagementPage />,
+            handle: { title: '管理 - メニュー定義' },
+          },
+          {
+            path: 'admin/platform/sitemap',
+            element: <SiteMapPage />,
+            handle: { title: '管理 - サイトマップ' },
+          },
           {
             path: 'admin/features',
             element: <AdminFeaturesPage />,
             handle: { title: '管理 - フィーチャーフラグ' },
           },
+          // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
           {
-            path: 'admin/menu',
-            element: <MenuManagementPage />,
-            handle: { title: '管理 - メニュー定義' },
-          },
-          {
-            path: 'admin/users',
-            element: <UserManagementPage />,
-            handle: { title: '管理 - ユーザー・ロール管理' },
-          },
-          {
-            path: 'admin/license',
+            path: 'admin/workspace/license',
             element: <LicenseManagementPage />,
-            handle: { title: '管理 - ライセンス管理' },
+            handle: { title: '管理 - 契約・ライセンス管理' },
+          },
+          {
+            path: 'admin/workspace/announcements',
+            element: <AnnouncementListPage />,
+            handle: { title: '管理 - 通知設定' },
+          },
+          {
+            path: 'admin/workspace/announcements/:id',
+            element: <AnnouncementEditPage />,
+            handle: { title: '管理 - お知らせ編集' },
+          },
+          // Admin routes - Identity Management (requires TENANT_ADMIN role)
+          {
+            path: 'admin/identity/users',
+            element: <UserManagementPage />,
+            handle: { title: '管理 - ユーザー管理' },
+          },
+          // Admin routes - Master Maintenance (requires TENANT_ADMIN role)
+          {
+            path: 'admin/master/organization',
+            element: <OrganizationManagementPage />,
+            handle: { title: '管理 - 組織マスタ' },
+          },
+          {
+            path: 'admin/master/codes',
+            element: <ModelerCodeMasterPage />,
+            handle: { title: '管理 - コードマスタ' },
+          },
+          // Legacy redirects for backward compatibility
+          {
+            path: 'admin/tenant',
+            loader: () => redirect('/admin/platform/tenants'),
           },
           {
             path: 'admin/system',
-            element: <SystemSettingsPage />,
-            handle: { title: '管理 - システム設定' },
+            loader: () => redirect('/admin/platform/system'),
           },
           {
             path: 'admin/status',
-            element: <SystemStatusPage />,
-            handle: { title: '管理 - システムステータス' },
+            loader: () => redirect('/admin/platform/status'),
           },
           {
-            path: 'admin/tenant',
-            element: <TenantManagementPage />,
-            handle: { title: '管理 - テナント管理' },
+            path: 'admin/menu',
+            loader: () => redirect('/admin/platform/menu'),
           },
           {
-            path: 'admin/organization',
-            element: <OrganizationManagementPage />,
-            handle: { title: '管理 - 組織メンテナンス' },
+            path: 'admin/license',
+            loader: () => redirect('/admin/workspace/license'),
           },
           {
             path: 'admin/announcements',
-            element: <AnnouncementListPage />,
-            handle: { title: '管理 - お知らせ一覧' },
+            loader: () => redirect('/admin/workspace/announcements'),
           },
           {
-            path: 'admin/announcements/:id',
-            element: <AnnouncementEditPage />,
-            handle: { title: '管理 - お知らせ編集' },
+            path: 'admin/users',
+            loader: () => redirect('/admin/identity/users'),
+          },
+          {
+            path: 'admin/organization',
+            loader: () => redirect('/admin/master/organization'),
+          },
+          {
+            path: 'sitemap',
+            loader: () => redirect('/admin/platform/sitemap'),
           },
           // Backward compatibility route for E2E tests
           {

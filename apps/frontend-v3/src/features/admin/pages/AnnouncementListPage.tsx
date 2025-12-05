@@ -34,7 +34,7 @@ export default function AnnouncementListPage() {
     <div className="container py-4 space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">お知らせ管理</h1>
-        <Button onClick={() => navigate('/admin/announcements/new')}>
+        <Button onClick={() => navigate('/admin/workspace/announcements/new')}>
           <Plus className="mr-2 size-4" />
           新規作成
         </Button>
@@ -93,7 +93,7 @@ export default function AnnouncementListPage() {
                       <td className="p-4"><Badge variant="outline">{item.status}</Badge></td>
                       <td className="p-4">{item.publishAt ? format(new Date(item.publishAt), 'yyyy-MM-dd HH:mm') : '-'}</td>
                       <td className="p-4 text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/announcements/${item.announcementId}`)}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/workspace/announcements/${item.announcementId}`)}>
                           <Edit className="size-4" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(item.announcementId)}>

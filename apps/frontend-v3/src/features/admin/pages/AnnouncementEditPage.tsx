@@ -42,7 +42,7 @@ export default function AnnouncementEditPage() {
     mutationFn: (dto: AnnouncementSaveDto) => isNew ? createAnnouncement(dto) : updateAnnouncement(id!, dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-announcements'] });
-      navigate('/admin/announcements');
+      navigate('/admin/workspace/announcements');
     },
   });
 
@@ -158,7 +158,7 @@ export default function AnnouncementEditPage() {
             </div>
 
             <div className="flex justify-end space-x-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => navigate('/admin/announcements')}>
+              <Button type="button" variant="outline" onClick={() => navigate('/admin/workspace/announcements')}>
                 キャンセル
               </Button>
               <Button type="submit" disabled={saveMutation.isPending}>

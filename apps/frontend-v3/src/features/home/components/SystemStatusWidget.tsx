@@ -179,7 +179,7 @@ export function SystemStatusWidget() {
         {/* View Details Link */}
         <div className="pt-2 border-t">
           <Button variant="ghost" size="sm" className="w-full" asChild>
-            <Link to="/admin/status">
+            <Link to="/admin/platform/status">
               詳細を表示
               <ExternalLink className="size-3 ml-2" />
             </Link>

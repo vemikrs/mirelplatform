@@ -22,7 +22,7 @@ const modules = [
     detailDescription: 'BPMN 連携やWebhookにより複雑な業務シナリオをオーケストレーション。',
     icon: <Workflow className="size-7 text-primary/80" />,
     status: '設計中',
-    link: '/sitemap',
+    link: '/admin/platform/sitemap',
   },
   {
     id: 'studio',

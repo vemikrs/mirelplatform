@@ -499,7 +499,7 @@ export function SystemStatusPage() {
             </CardHeader>
             <CardContent>
               <Button asChild>
-                <Link to="/admin/tenant">
+                <Link to="/admin/platform/tenants">
                   <Building2 className="size-4 mr-2" />
                   テナント管理へ
                 </Link>
