@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData } from 'react-router-dom';
 import { Button, Toaster, Dialog, DialogContent, DialogTrigger } from '@mirel/ui';
-import type { NavigationConfig } from '@/app/navigation.schema';
+import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
