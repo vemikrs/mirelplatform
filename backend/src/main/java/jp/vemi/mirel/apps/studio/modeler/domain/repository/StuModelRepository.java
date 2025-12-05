@@ -12,4 +12,6 @@ public interface StuModelRepository extends JpaRepository<StuModel, StuModel.PK>
     List<StuModel> findByPk_ModelIdAndTenantId(String modelId, String tenantId);
 
     void deleteByPk_ModelIdAndTenantId(String modelId, String tenantId);
+
+    boolean existsByPk_ModelIdAndTenantId(String modelId, String tenantId);
 }

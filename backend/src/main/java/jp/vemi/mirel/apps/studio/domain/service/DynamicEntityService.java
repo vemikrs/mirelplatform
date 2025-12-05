@@ -3,8 +3,9 @@
  */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.repository.StuModelRepository;
+import jp.vemi.mirel.foundation.feature.TenantContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,11 +22,11 @@ import java.util.stream.Collectors;
 public class DynamicEntityService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final StuFieldRepository fieldRepository;
+    private final StuModelRepository fieldRepository;
 
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
 
-    public DynamicEntityService(JdbcTemplate jdbcTemplate, StuFieldRepository fieldRepository) {
+    public DynamicEntityService(JdbcTemplate jdbcTemplate, StuModelRepository fieldRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.fieldRepository = fieldRepository;
     }
@@ -77,9 +78,12 @@ public class DynamicEntityService {
         validateModelId(modelId);
         String tableName = "dyn_" + modelId;
 
-        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
-        Map<String, StuField> fieldMap = fields.stream()
-                .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
+        List<StuModel> fields = fieldRepository.findByPk_ModelIdAndTenantId(modelId, TenantContext.getTenantId());
+        // TODO: Ensure fields are sorted by sort order if needed, or rely on fetch
+        // order if consistent
+
+        Map<String, StuModel> fieldMap = fields.stream()
+                .collect(Collectors.toMap(StuModel::getFieldName, f -> f));
 
         validateData(data, fieldMap);
 
@@ -122,9 +126,9 @@ public class DynamicEntityService {
         validateModelId(modelId);
         String tableName = "dyn_" + modelId;
 
-        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
-        Map<String, StuField> fieldMap = fields.stream()
-                .collect(Collectors.toMap(StuField::getFieldCode, f -> f));
+        List<StuModel> fields = fieldRepository.findByPk_ModelIdAndTenantId(modelId, TenantContext.getTenantId());
+        Map<String, StuModel> fieldMap = fields.stream()
+                .collect(Collectors.toMap(StuModel::getFieldName, f -> f));
 
         validateData(data, fieldMap);
 
@@ -163,11 +167,11 @@ public class DynamicEntityService {
         jdbcTemplate.update(sql, UUID.fromString(id));
     }
 
-    private void validateData(Map<String, Object> data, Map<String, StuField> fieldMap) {
+    private void validateData(Map<String, Object> data, Map<String, StuModel> fieldMap) {
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            StuField field = fieldMap.get(key);
+            StuModel field = fieldMap.get(key);
 
             if (field == null)
                 continue; // Ignore unknown fields or handle as error
@@ -179,21 +183,21 @@ public class DynamicEntityService {
             if (value != null) {
                 String strValue = value.toString();
 
-                if ("NUMBER".equals(field.getFieldType())) {
+                if ("NUMBER".equals(field.getDataType())) {
                     try {
                         double numValue = Double.parseDouble(strValue);
-                        if (field.getMinValue() != null && numValue < field.getMinValue()) {
+                        if (field.getMinValue() != null && numValue < field.getMinValue().doubleValue()) {
                             throw new IllegalArgumentException(
                                     "Field " + field.getFieldName() + " must be >= " + field.getMinValue());
                         }
-                        if (field.getMaxValue() != null && numValue > field.getMaxValue()) {
+                        if (field.getMaxValue() != null && numValue > field.getMaxValue().doubleValue()) {
                             throw new IllegalArgumentException(
                                     "Field " + field.getFieldName() + " must be <= " + field.getMaxValue());
                         }
                     } catch (NumberFormatException e) {
                         throw new IllegalArgumentException("Field " + field.getFieldName() + " must be a number");
                     }
-                } else if ("STRING".equals(field.getFieldType()) || "TEXT".equals(field.getFieldType())) {
+                } else if ("STRING".equals(field.getDataType()) || "TEXT".equals(field.getDataType())) {
                     if (field.getMinLength() != null && strValue.length() < field.getMinLength()) {
                         throw new IllegalArgumentException("Field " + field.getFieldName() + " must be at least "
                                 + field.getMinLength() + " characters");
@@ -202,8 +206,8 @@ public class DynamicEntityService {
                         throw new IllegalArgumentException("Field " + field.getFieldName() + " must be at most "
                                 + field.getMaxLength() + " characters");
                     }
-                    if (field.getValidationRegex() != null && !field.getValidationRegex().isEmpty()) {
-                        if (!Pattern.matches(field.getValidationRegex(), strValue)) {
+                    if (field.getRegexPattern() != null && !field.getRegexPattern().isEmpty()) {
+                        if (!Pattern.matches(field.getRegexPattern(), strValue)) {
                             throw new IllegalArgumentException("Field " + field.getFieldName() + " format is invalid");
                         }
                     }
@@ -220,7 +224,7 @@ public class DynamicEntityService {
 
     private void validateModelId(String modelId) {
         validateName(modelId);
-        if (!fieldRepository.existsByModelId(modelId)) {
+        if (!fieldRepository.existsByPk_ModelIdAndTenantId(modelId, TenantContext.getTenantId())) {
             throw new IllegalArgumentException("Model not found: " + modelId);
         }
     }
@@ -234,7 +238,7 @@ public class DynamicEntityService {
      */
     public byte[] exportCsv(String modelId) {
         List<Map<String, Object>> data = findAll(modelId);
-        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+        List<StuModel> fields = fieldRepository.findByPk_ModelIdAndTenantId(modelId, TenantContext.getTenantId());
 
         if (fields.isEmpty()) {
             return new byte[0];
@@ -245,8 +249,8 @@ public class DynamicEntityService {
                 .builder();
 
         // Add columns based on fields
-        for (StuField field : fields) {
-            schemaBuilder.addColumn(field.getFieldCode());
+        for (StuModel field : fields) {
+            schemaBuilder.addColumn(field.getFieldName());
         }
 
         // Add id column if not present (usually good to have for updates, but maybe
@@ -273,7 +277,7 @@ public class DynamicEntityService {
      */
     @Transactional
     public void importCsv(String modelId, byte[] csvData) {
-        List<StuField> fields = fieldRepository.findByModelIdOrderBySortOrder(modelId);
+        List<StuModel> fields = fieldRepository.findByPk_ModelIdAndTenantId(modelId, TenantContext.getTenantId());
         if (fields.isEmpty()) {
             throw new IllegalArgumentException("Model has no fields defined");
         }
@@ -282,8 +286,8 @@ public class DynamicEntityService {
         com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder schemaBuilder = com.fasterxml.jackson.dataformat.csv.CsvSchema
                 .builder();
 
-        for (StuField field : fields) {
-            schemaBuilder.addColumn(field.getFieldCode());
+        for (StuModel field : fields) {
+            schemaBuilder.addColumn(field.getFieldName());
         }
         schemaBuilder.addColumn("id"); // Optional ID for updates
 

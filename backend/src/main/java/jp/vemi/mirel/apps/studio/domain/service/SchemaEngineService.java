@@ -1,10 +1,7 @@
-/*
- * Copyright(c) 2025 mirelplatform All Right Reserved.
- */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +32,7 @@ public class SchemaEngineService {
      *            The field definitions
      */
     @Transactional
-    public void createTable(StuModelHeaderLegacy model, List<StuField> fields) {
+    public void createTable(StuModelHeader model, List<StuModel> fields) {
         String sql = generateCreateTableSql(model, fields);
         jdbcTemplate.execute(sql);
     }
@@ -49,7 +46,7 @@ public class SchemaEngineService {
      *            The field definitions
      * @return The SQL string
      */
-    public String generateCreateTableSql(StuModelHeaderLegacy model, List<StuField> fields) {
+    public String generateCreateTableSql(StuModelHeader model, List<StuModel> fields) {
         validateName(model.getModelId());
 
         // Table name prefix "dyn_" to distinguish from system tables
@@ -61,10 +58,10 @@ public class SchemaEngineService {
         // Default primary key
         sql.append("id UUID PRIMARY KEY, ");
 
-        for (StuField field : fields) {
-            validateName(field.getFieldCode());
-            sql.append(field.getFieldCode()).append(" ");
-            sql.append(mapToSqlType(field.getFieldType()));
+        for (StuModel field : fields) {
+            validateName(field.getFieldName());
+            sql.append(field.getFieldName()).append(" ");
+            sql.append(mapToSqlType(field.getDataType()));
 
             if (Boolean.TRUE.equals(field.getIsRequired())) {
                 sql.append(" NOT NULL");
@@ -83,6 +80,8 @@ public class SchemaEngineService {
     }
 
     private String mapToSqlType(String studioType) {
+        if (studioType == null)
+            return "VARCHAR(255)";
         return switch (studioType) {
             case "STRING" -> "VARCHAR(255)";
             case "TEXT" -> "TEXT";
