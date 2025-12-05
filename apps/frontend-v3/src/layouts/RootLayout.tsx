@@ -154,9 +154,9 @@ export function RootLayout() {
           <div className="hidden items-center gap-2 md:flex">
             <GlobalSearch />
             {initialNavigation.globalActions
-              .filter((action) => action.type !== 'theme' && action.type !== 'profile')
+              .filter((action) => action.type !== 'theme' && action.type !== 'profile' && action.type !== 'notifications')
               .map((action) => renderAction(action))}
-            {/* UserMenu moved to sidebar */}
+            {/* UserMenu and Notifications moved to sidebar */}
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {isAuthenticated && <UserMenu />}

@@ -17,6 +17,7 @@ import {
 import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
 import type { NavigationLink } from '@/app/navigation.schema';
 import { SidebarUserMenu } from '@/components/header/SidebarUserMenu';
+import { NotificationPopover } from '@/components/header/NotificationPopover';
 
 // Icon mapping
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -175,37 +176,43 @@ export function SideNavigation({ items, brand, className }: SideNavigationProps)
         "border-t border-outline/20 py-3",
         isCollapsed ? "px-2" : "px-3"
       )}>
-        {/* User Menu + Collapse Toggle in same row */}
+        {/* User Menu + Notification + Collapse Toggle */}
         <div className={cn(
-          "flex items-center",
-          isCollapsed ? "flex-col gap-3" : "gap-2"
+          "flex",
+          isCollapsed ? "flex-col items-center gap-3" : "items-stretch gap-2"
         )}>
+          {/* Left: User Menu */}
           <div className="flex-1 min-w-0">
             <SidebarUserMenu isCollapsed={isCollapsed} />
           </div>
           
+          {/* Right: Notification (top) + Collapse (bottom) stacked vertically */}
           {!isCollapsed && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="size-8 shrink-0"
-                  onClick={toggleCollapsed}
-                >
-                  <PanelLeftClose className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                メニューを折りたたむ
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex flex-col justify-between shrink-0 h-[68px]">
+              <NotificationPopover isCompact={false} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="size-8"
+                    onClick={toggleCollapsed}
+                  >
+                    <PanelLeftClose className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  メニューを折りたたむ
+                </TooltipContent>
+              </Tooltip>
+            </div>
           )}
         </div>
         
-        {/* Collapse toggle when collapsed - below avatar */}
+        {/* Notification + Collapse toggle when collapsed - below avatar */}
         {isCollapsed && (
-          <div className="flex justify-center mt-2">
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <NotificationPopover isCompact={true} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 

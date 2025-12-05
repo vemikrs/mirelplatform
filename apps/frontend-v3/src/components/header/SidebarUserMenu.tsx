@@ -142,7 +142,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="w-full flex items-center gap-2 px-2 py-2 h-auto justify-start hover:bg-surface-raised"
+          className="w-full flex items-center gap-2 px-2 py-1.5 h-[68px] justify-start hover:bg-surface-raised"
         >
           <Avatar 
             src={undefined}
@@ -151,11 +151,11 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
             size="sm"
           />
           <div className="flex-1 flex flex-col items-start text-left min-w-0">
-            <span className="text-sm font-medium leading-none truncate w-full">
+            <span className="text-sm font-medium leading-tight truncate w-full">
               {user.displayName || user.email}
             </span>
             {currentTenant && (
-              <span className="text-xs text-muted-foreground mt-1 truncate w-full">
+              <span className="text-xs text-muted-foreground mt-0.5 truncate w-full">
                 {currentTenant.displayName}
               </span>
             )}
