@@ -1,43 +1,25 @@
 import { useState } from 'react';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { ChevronsUpDown } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
-import { cn } from '@mirel/ui';
-import { Button } from '@/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button, cn, Input, Popover, PopoverContent, PopoverTrigger } from '@mirel/ui';
 
 interface IconPickerProps {
   value?: string;
   onChange: (value: string) => void;
-  className?: string; // Add className prop
+  className?: string;
 }
 
 const iconList = Object.keys(LucideIcons)
-  .filter((key) => key !== 'createLucideIcon' && key !== 'default' && isNaN(Number(key))) // Filter out non-icon exports
+  .filter((key) => key !== 'createLucideIcon' && key !== 'default' && isNaN(Number(key)))
   .map((key) => ({
     value: key
       .replace(/([A-Z])/g, '-$1')
       .toLowerCase()
-      .replace(/^-/, ''), // Convert PascalCase to kebab-case (e.g. LayoutDashboard -> layout-dashboard)
+      .replace(/^-/, ''),
     label: key,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Icon: (LucideIcons as any)[key] as React.ElementType,
   }));
-
-// Limit for performance initially, but search will filter
-const INITIAL_DISPLAY_LIMIT = 50;
 
 export function IconPicker({ value, onChange, className }: IconPickerProps) {
   const [open, setOpen] = useState(false);
@@ -71,37 +53,39 @@ export function IconPicker({ value, onChange, className }: IconPickerProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
-        <Command shouldFilter={false}>
-            <CommandInput 
-                placeholder="アイコンを検索..." 
+          <div className="p-2 border-b">
+            <Input
+                placeholder="アイコンを検索..."
                 value={search}
-                onValueChange={setSearch}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8"
             />
-            <CommandList>
-                <CommandEmpty>アイコンが見つかりません。</CommandEmpty>
-                <ScrollArea className="h-[300px]">
-                    <div className="p-1 grid grid-cols-4 gap-1">
-                        {filteredIcons.slice(0, 100).map((icon) => (
-                            <Button
-                                key={icon.value}
-                                variant="ghost"
-                                className={cn(
-                                    "h-10 w-10 p-0",
-                                    value === icon.value && "bg-accent text-accent-foreground"
-                                )}
-                                onClick={() => {
-                                    onChange(icon.value);
-                                    setOpen(false);
-                                }}
-                                title={icon.value}
-                            >
-                                <icon.Icon className="h-6 w-6" />
-                            </Button>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </CommandList>
-        </Command>
+          </div>
+          <div className="h-[300px] overflow-y-auto p-1 grid grid-cols-4 gap-1">
+               {filteredIcons.length === 0 ? (
+                   <div className="col-span-4 py-4 text-center text-sm text-muted-foreground">
+                       アイコンが見つかりません。
+                   </div>
+               ) : (
+                   filteredIcons.slice(0, 100).map((icon) => (
+                       <Button
+                           key={icon.value}
+                           variant="ghost"
+                           className={cn(
+                               "h-10 w-10 p-0",
+                               value === icon.value && "bg-accent text-accent-foreground"
+                           )}
+                           onClick={() => {
+                               onChange(icon.value);
+                               setOpen(false);
+                           }}
+                           title={icon.value}
+                       >
+                           <icon.Icon className="h-6 w-6" />
+                       </Button>
+                   ))
+               )}
+          </div>
       </PopoverContent>
     </Popover>
   );
