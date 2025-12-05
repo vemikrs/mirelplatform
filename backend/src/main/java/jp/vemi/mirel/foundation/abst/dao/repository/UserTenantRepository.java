@@ -41,4 +41,10 @@ public interface UserTenantRepository extends JpaRepository<UserTenant, String> 
      */
     @Query("SELECT ut FROM UserTenant ut WHERE ut.userId = :userId AND ut.tenantId = :tenantId AND ut.deleteFlag = false")
     Optional<UserTenant> findByUserIdAndTenantId(@Param("userId") String userId, @Param("tenantId") String tenantId);
+
+    /**
+     * テナントIDに紐づく有効なユーザ数をカウント
+     */
+    @Query("SELECT COUNT(ut) FROM UserTenant ut WHERE ut.tenantId = :tenantId AND ut.deleteFlag = false AND ut.leftAt IS NULL")
+    Integer countByTenantId(@Param("tenantId") String tenantId);
 }
