@@ -1,23 +1,37 @@
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@mirel/ui';
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
 import { Activity, Server, Cpu, HardDrive, RefreshCw, AlertCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSystemStatus } from '@/lib/api/system';
 
 export function SystemStatusWidget() {
-  const { data: status, isLoading, error } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: status, isLoading, error, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ['system-status'],
     queryFn: getSystemStatus,
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 1,
   });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['system-status'] });
+  };
+
+  // 最終更新時刻をフォーマット
+  const formatLastUpdated = () => {
+    if (!dataUpdatedAt) return '';
+    const date = new Date(dataUpdatedAt);
+    return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
   
   if (isLoading) {
     return (
       <Card className="bg-card/50 backdrop-blur-sm border-outline/15 shadow-sm h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="size-5 text-primary" />
-            システム稼働状況
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="size-5 text-primary" />
+              システム稼働状況
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-12">
@@ -31,9 +45,25 @@ export function SystemStatusWidget() {
     return (
       <Card className="bg-card/50 backdrop-blur-sm border-outline/15 shadow-sm h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="size-5 text-primary" />
-            システム稼働状況
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="size-5 text-primary" />
+              システム稼働状況
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={handleRefresh}
+                  disabled={isFetching}
+                >
+                  <RefreshCw className={`size-4 ${isFetching ? 'animate-spin' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>再取得</TooltipContent>
+            </Tooltip>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
@@ -49,9 +79,32 @@ export function SystemStatusWidget() {
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-outline/15 shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Activity className="size-5 text-primary" />
-          システム稼働状況
+        <CardTitle className="text-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="size-5 text-primary" />
+            システム稼働状況
+          </div>
+          <div className="flex items-center gap-2">
+            {dataUpdatedAt && (
+              <span className="text-xs text-muted-foreground font-normal">
+                {formatLastUpdated()}
+              </span>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={handleRefresh}
+                  disabled={isFetching}
+                >
+                  <RefreshCw className={`size-4 ${isFetching ? 'animate-spin' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>更新</TooltipContent>
+            </Tooltip>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
