@@ -1,1 +1,1 @@
-export { StudioLayout, StudioLayoutContent, default } from './StudioLayout';
+export { StudioLayout } from './StudioLayout';

@@ -1,5 +1,5 @@
 // Studio Layout Components
-export { StudioHeader, default as StudioHeaderDefault } from './StudioHeader';
+export { StudioHeader } from './StudioHeader';
 export { StudioNavigation, defaultStudioNavigation, type StudioNavItem } from './StudioNavigation';
 export { StudioContextBar, ModeSwitcher } from './StudioContextBar';
 export {

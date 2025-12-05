@@ -3,8 +3,7 @@ import { Badge, Button } from '@mirel/ui';
 import { Menu, Cloud, Check } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
 import { GlobalSearch } from '@/components/header/GlobalSearch';
-// Import context optionally or fallback if not ready
-// import { useStudioContext } from '../contexts/StudioContext';
+import { useStudioContextOptional } from '../contexts/index';
 
 interface StudioHeaderProps {
   workspaceName?: string;
@@ -16,15 +15,16 @@ interface StudioHeaderProps {
 
 export const StudioHeader: React.FC<StudioHeaderProps> = ({
   workspaceName,
-  environment = 'dev',
-  draftStatus = 'saved',
+  environment,
+  draftStatus,
   onToggleNavigation,
   isNavigationCollapsed,
 }) => {
-  // Mock context values for now as Task 1.4 is not yet done
-  const finalWorkspaceName = workspaceName || 'Workspace';
-  const finalEnvironment = environment || 'dev';
-  const finalDraftStatus = draftStatus; 
+  const context = useStudioContextOptional();
+  
+  const finalWorkspaceName = workspaceName || context?.workspace?.name || 'Workspace';
+  const finalEnvironment = environment || context?.environment || 'dev';
+  const finalDraftStatus = draftStatus || context?.draft?.status || 'saved';
 
   const getEnvBadgeVariant = (env: string) => {
     switch (env) {

@@ -27,7 +27,7 @@ export const ModelerHomePage: React.FC = () => {
   ];
 
   return (
-    <StudioLayout showHeader={true}>
+    <StudioLayout>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[

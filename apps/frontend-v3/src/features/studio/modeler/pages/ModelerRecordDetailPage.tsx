@@ -48,7 +48,7 @@ export const ModelerRecordDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <StudioLayout showHeader={true}>
+      <StudioLayout>
         <div className="flex items-center justify-center h-full text-muted-foreground">
           読み込み中...
         </div>
@@ -59,7 +59,7 @@ export const ModelerRecordDetailPage: React.FC = () => {
   const pageTitle = recordId === 'new' ? '新規レコード作成' : 'レコード編集';
 
   return (
-    <StudioLayout showHeader={true}>
+    <StudioLayout>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[

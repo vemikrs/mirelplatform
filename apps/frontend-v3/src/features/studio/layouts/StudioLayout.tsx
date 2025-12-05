@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Resizable, ResizeCallbackData } from 'react-resizable';
+import { StudioContextBar } from '../components/StudioContextBar';
 import { StudioHeader } from '../components/StudioHeader';
+import { Resizable, type ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
+import { useState } from 'react';
 
 // Simple utility for class names if @mirel/ui version is not available yet
 // const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
@@ -64,6 +65,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground flex-col">
       <StudioHeader />
+      <StudioContextBar />
         <div className="flex flex-1 overflow-hidden relative min-w-0">
       {/* Left Pane */}
       {showLeft && (

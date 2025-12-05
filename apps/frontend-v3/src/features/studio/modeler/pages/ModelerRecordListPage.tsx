@@ -80,7 +80,7 @@ export const ModelerRecordListPage: React.FC = () => {
   const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
-    <StudioLayout showHeader={true}>
+    <StudioLayout>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[

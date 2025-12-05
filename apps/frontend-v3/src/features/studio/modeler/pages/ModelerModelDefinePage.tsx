@@ -117,7 +117,6 @@ export const ModelerModelDefinePage: React.FC = () => {
 
   return (
     <StudioLayout
-      showHeader={true}
       explorer={<ModelerExplorer />}
       properties={
         <ModelerPropertyPanel
