@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { TooltipProvider } from '@mirel/ui'
 import { AppRouter } from './app/routes'
 import './App.css'
 
@@ -25,7 +26,9 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppRouter />
+      <TooltipProvider>
+        <AppRouter />
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }

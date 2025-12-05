@@ -83,6 +83,7 @@ export { Popover, PopoverTrigger, PopoverContent } from './components/Popover'
 export { Label } from './components/Label'
 export { Textarea } from './components/Textarea'
 export { Switch } from './components/Switch'
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './components/Tooltip'
 
 // Utils
 export { cn } from './lib/utils'
