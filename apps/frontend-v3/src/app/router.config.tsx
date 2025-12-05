@@ -35,6 +35,7 @@ import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
 import { ModelerCodeMasterPage } from '@/features/studio/modeler/pages/ModelerCodeMasterPage';
+import { ModelerHomePage } from '@/features/studio/modeler/pages/ModelerHomePage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
 import { EntityListPage } from '@/features/studio/modeler/pages/EntityListPage';
 import { EntityEditPage } from '@/features/studio/modeler/pages/EntityEditPage';
@@ -360,7 +361,8 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                loader: () => redirect('entities'),
+                element: <ModelerHomePage />,
+                handle: { title: 'Modeler - Dashboard' },
               },
               {
                 path: 'entities',
