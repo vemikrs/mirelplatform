@@ -157,12 +157,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         </div>
       )}
 
-      {/* Search Section - Fixed below brand */}
-      {!isCollapsed && (
-        <div className="px-3 py-2 border-b border-outline/20">
-          <GlobalSearch />
-        </div>
-      )}
+
 
       {/* Menu Items - Scrollable (hidden when collapsed) */}
       {!isCollapsed && (
@@ -180,6 +175,13 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
 
       {/* Spacer when collapsed */}
       {isCollapsed && <div className="flex-1" />}
+
+      {/* Search Section - Moved here */}
+      {!isCollapsed && (
+        <div className="px-3 py-2 border-t border-outline/20">
+          <GlobalSearch />
+        </div>
+      )}
 
       {/* Bottom Section - Fixed */}
       <div className={cn(
