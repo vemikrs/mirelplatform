@@ -20,8 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.repository.StuModelRepository;
+import jp.vemi.mirel.foundation.feature.TenantContext;
+import org.junit.jupiter.api.AfterEach;
+import org.mockito.MockedStatic;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
 class DynamicEntityServiceCsvTest {
@@ -33,7 +38,22 @@ class DynamicEntityServiceCsvTest {
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Mock
-    private StuFieldRepository fieldRepository;
+    private StuModelRepository fieldRepository;
+
+    private MockedStatic<TenantContext> tenantContextMock;
+
+    @BeforeEach
+    void setUp() {
+        tenantContextMock = mockStatic(TenantContext.class);
+        tenantContextMock.when(TenantContext::getTenantId).thenReturn("tenant-1");
+        org.mockito.Mockito.lenient().when(fieldRepository.existsByPk_ModelIdAndTenantId(anyString(), anyString()))
+                .thenReturn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        tenantContextMock.close();
+    }
 
     @InjectMocks
     private DynamicEntityService dynamicEntityService;
@@ -42,12 +62,13 @@ class DynamicEntityServiceCsvTest {
     void exportCsv_shouldReturnCsvBytes() {
         // Arrange
         String modelId = "testModel";
-        StuField field1 = new StuField();
-        field1.setFieldCode("name");
-        StuField field2 = new StuField();
-        field2.setFieldCode("age");
+        StuModel field1 = new StuModel();
+        field1.setFieldName("name");
+        StuModel field2 = new StuModel();
+        field2.setFieldName("age");
 
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Arrays.asList(field1, field2));
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Arrays.asList(field1, field2));
 
         Map<String, Object> row1 = new HashMap<>();
         row1.put("id", "1");

@@ -3,12 +3,15 @@
  */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.repository.StuFieldRepository;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.repository.StuModelRepository;
+import jp.vemi.mirel.foundation.feature.TenantContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -16,6 +19,7 @@ import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,15 +30,26 @@ class DynamicEntityServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
     @Mock
-    private StuFieldRepository fieldRepository;
+    private StuModelRepository fieldRepository;
 
     @InjectMocks
     private DynamicEntityService service;
 
+    private MockedStatic<TenantContext> tenantContextMock;
+
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
+        tenantContextMock = mockStatic(TenantContext.class);
+        tenantContextMock.when(TenantContext::getTenantId).thenReturn("tenant-1");
+
         // Default to true for most tests unless overridden
-        org.mockito.Mockito.lenient().when(fieldRepository.existsByModelId(anyString())).thenReturn(true);
+        org.mockito.Mockito.lenient().when(fieldRepository.existsByPk_ModelIdAndTenantId(anyString(), anyString()))
+                .thenReturn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        tenantContextMock.close();
     }
 
     @Test
@@ -50,9 +65,10 @@ class DynamicEntityServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Test Name");
 
-        StuField field = new StuField();
+        StuModel field = new StuModel();
         field.setFieldName("name");
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Collections.singletonList(field));
 
         service.insert(modelId, data);
 
@@ -66,9 +82,10 @@ class DynamicEntityServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Updated Name");
 
-        StuField field = new StuField();
+        StuModel field = new StuModel();
         field.setFieldName("name");
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Collections.singletonList(field));
 
         service.update(modelId, id, data);
 
@@ -91,16 +108,16 @@ class DynamicEntityServiceTest {
         Map<String, Object> data = new HashMap<>();
         // Missing "name"
 
-        StuField field = new StuField();
-        field.setFieldCode("name");
-        field.setFieldName("Name");
+        StuModel field = new StuModel();
+        field.setFieldName("name"); // Used as key and display name in this test logic
         field.setIsRequired(true);
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Collections.singletonList(field));
 
         try {
             service.insert(modelId, data);
         } catch (IllegalArgumentException e) {
-            assert e.getMessage().equals("Field Name is required");
+            assert e.getMessage().equals("Field name is required");
         }
     }
 
@@ -110,17 +127,17 @@ class DynamicEntityServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("age", "10");
 
-        StuField field = new StuField();
-        field.setFieldCode("age");
-        field.setFieldName("Age");
-        field.setFieldType("NUMBER");
-        field.setMinValue(18.0);
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+        StuModel field = new StuModel();
+        field.setFieldName("age");
+        field.setDataType("NUMBER");
+        field.setMinValue(new java.math.BigDecimal("18.0"));
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Collections.singletonList(field));
 
         try {
             service.insert(modelId, data);
         } catch (IllegalArgumentException e) {
-            assert e.getMessage().equals("Field Age must be >= 18.0");
+            assert e.getMessage().equals("Field age must be >= 18.0");
         }
     }
 
@@ -130,24 +147,24 @@ class DynamicEntityServiceTest {
         Map<String, Object> data = new HashMap<>();
         data.put("code", "abc");
 
-        StuField field = new StuField();
-        field.setFieldCode("code");
-        field.setFieldName("Code");
-        field.setFieldType("STRING");
-        field.setValidationRegex("^[0-9]+$");
-        when(fieldRepository.findByModelIdOrderBySortOrder(modelId)).thenReturn(Collections.singletonList(field));
+        StuModel field = new StuModel();
+        field.setFieldName("code");
+        field.setDataType("STRING");
+        field.setRegexPattern("^[0-9]+$");
+        when(fieldRepository.findByPk_ModelIdAndTenantId(eq(modelId), anyString()))
+                .thenReturn(Collections.singletonList(field));
 
         try {
             service.insert(modelId, data);
         } catch (IllegalArgumentException e) {
-            assert e.getMessage().equals("Field Code format is invalid");
+            assert e.getMessage().equals("Field code format is invalid");
         }
     }
 
     @Test
     void findAll_shouldThrowException_whenModelIdInvalid() {
         String modelId = "invalid_model";
-        when(fieldRepository.existsByModelId(modelId)).thenReturn(false);
+        when(fieldRepository.existsByPk_ModelIdAndTenantId(eq(modelId), anyString())).thenReturn(false);
 
         try {
             service.findAll(modelId);

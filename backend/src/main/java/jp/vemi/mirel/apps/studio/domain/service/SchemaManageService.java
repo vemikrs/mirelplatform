@@ -3,8 +3,6 @@
  */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

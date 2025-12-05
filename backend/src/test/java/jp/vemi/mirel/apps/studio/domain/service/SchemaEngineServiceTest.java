@@ -3,8 +3,8 @@
  */
 package jp.vemi.mirel.apps.studio.domain.service;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -33,12 +33,12 @@ class SchemaEngineServiceTest {
 
     @Test
     void createTable() {
-        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        StuModelHeader model = new StuModelHeader();
         model.setModelId("test_model");
 
-        StuField field = new StuField();
-        field.setFieldCode("field1");
-        field.setFieldType("STRING");
+        StuModel field = new StuModel();
+        field.setFieldName("field1");
+        field.setDataType("STRING");
 
         schemaEngineService.createTable(model, List.of(field));
 
@@ -47,17 +47,17 @@ class SchemaEngineServiceTest {
 
     @Test
     void generateCreateTableSql() {
-        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        StuModelHeader model = new StuModelHeader();
         model.setModelId("test_model");
 
-        StuField field1 = new StuField();
-        field1.setFieldCode("name");
-        field1.setFieldType("STRING");
+        StuModel field1 = new StuModel();
+        field1.setFieldName("name");
+        field1.setDataType("STRING");
         field1.setIsRequired(true);
 
-        StuField field2 = new StuField();
-        field2.setFieldCode("age");
-        field2.setFieldType("INTEGER");
+        StuModel field2 = new StuModel();
+        field2.setFieldName("age");
+        field2.setDataType("INTEGER");
 
         String sql = schemaEngineService.generateCreateTableSql(model, List.of(field1, field2));
 
@@ -68,7 +68,7 @@ class SchemaEngineServiceTest {
 
     @Test
     void validateName_Invalid() {
-        StuModelHeaderLegacy model = new StuModelHeaderLegacy();
+        StuModelHeader model = new StuModelHeader();
         model.setModelId("invalid-name"); // Hyphen not allowed
 
         assertThrows(IllegalArgumentException.class, () -> {
