@@ -10,7 +10,12 @@ import lombok.Data;
  */
 @Data
 public class UpdateProfileRequest {
+    private String username;
     private String displayName;
     private String firstName;
     private String lastName;
+    private String bio;
+    private String phoneNumber;
+    private String preferredLanguage;
+    private String timezone;
 }
