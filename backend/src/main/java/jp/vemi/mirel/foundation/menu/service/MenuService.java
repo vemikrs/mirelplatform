@@ -28,6 +28,58 @@ public class MenuService {
         return buildTree(filtered);
     }
 
+    public MenuDto getMenu(String menuId) {
+        MenuEntity entity = menuRepository.findById(menuId)
+                .orElseThrow(() -> new RuntimeException("Menu not found: " + menuId));
+        return toDto(entity);
+    }
+
+    public void createMenu(MenuDto menuDto) {
+        if (menuRepository.existsById(menuDto.getId())) {
+            throw new RuntimeException("Menu already exists: " + menuDto.getId());
+        }
+        MenuEntity entity = toEntity(menuDto);
+        menuRepository.save(entity);
+    }
+
+    public void updateMenu(String menuId, MenuDto menuDto) {
+        MenuEntity entity = menuRepository.findById(menuId)
+                .orElseThrow(() -> new RuntimeException("Menu not found: " + menuId));
+
+        entity.setLabel(menuDto.getLabel());
+        entity.setPath(menuDto.getPath());
+        entity.setIcon(menuDto.getIcon());
+        entity.setParentId(menuDto.getParentId());
+        entity.setSortOrder(menuDto.getSortOrder());
+        entity.setRequiredPermission(menuDto.getRequiredPermission());
+        entity.setDescription(menuDto.getDescription());
+
+        menuRepository.save(entity);
+    }
+
+    public void deleteMenu(String menuId) {
+        if (!menuRepository.existsById(menuId)) {
+            throw new RuntimeException("Menu not found: " + menuId);
+        }
+        // Check for children and prevent deletion if children exist
+        List<MenuEntity> children = menuRepository.findByParentIdOrderBySortOrderAsc(menuId);
+        if (!children.isEmpty()) {
+            throw new RuntimeException("Cannot delete menu with children. Please delete or move children first.");
+        }
+        menuRepository.deleteById(menuId);
+    }
+
+    public void batchUpdate(List<MenuDto> menuList) {
+        // Only update parentId and sortOrder for tree restructuring
+        for (MenuDto dto : menuList) {
+            MenuEntity entity = menuRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Menu not found: " + dto.getId()));
+            entity.setParentId(dto.getParentId());
+            entity.setSortOrder(dto.getSortOrder());
+            menuRepository.save(entity);
+        }
+    }
+
     private boolean isAccessible(MenuEntity menu, List<String> roles) {
         if (menu.getRequiredPermission() == null || menu.getRequiredPermission().isEmpty()) {
             return true;
@@ -84,6 +136,19 @@ public class MenuService {
                 .sortOrder(entity.getSortOrder())
                 .requiredPermission(entity.getRequiredPermission())
                 .description(entity.getDescription())
+                .build();
+    }
+
+    private MenuEntity toEntity(MenuDto dto) {
+        return MenuEntity.builder()
+                .menuId(dto.getId())
+                .label(dto.getLabel())
+                .path(dto.getPath())
+                .icon(dto.getIcon())
+                .parentId(dto.getParentId())
+                .sortOrder(dto.getSortOrder())
+                .requiredPermission(dto.getRequiredPermission())
+                .description(dto.getDescription())
                 .build();
     }
 }
