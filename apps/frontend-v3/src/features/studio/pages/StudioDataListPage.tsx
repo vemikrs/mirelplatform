@@ -11,7 +11,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { toast } from 'sonner';
+import { toast } from '@mirel/ui';
 
 export const StudioDataListPage: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
@@ -36,7 +36,10 @@ export const StudioDataListPage: React.FC = () => {
     mutationFn: (id: string) => deleteData(modelId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data', modelId] });
-      toast.success('Record deleted');
+      toast({
+        title: 'Record deleted',
+        variant: 'success',
+      });
     },
   });
 
@@ -134,8 +137,14 @@ export const StudioDataListPage: React.FC = () => {
                   import('@/lib/api/data').then(({ importDataCsv }) => {
                     importDataCsv(modelId, file).then(() => {
                       queryClient.invalidateQueries({ queryKey: ['data', modelId] });
-                      toast.success('CSV Imported');
-                    }).catch(() => toast.error('Import failed'));
+                      toast({
+                        title: 'CSV Imported',
+                        variant: 'success',
+                      });
+                    }).catch(() => toast({
+                      title: 'Import failed',
+                      variant: 'destructive',
+                    }));
                   });
                 }
                 e.target.value = ''; // Reset

@@ -16,7 +16,7 @@
  * }
  * ```
  */
-import { toast } from 'sonner';
+import { toast } from '@mirel/ui';
 
 /**
  * Display API errors as toast notifications

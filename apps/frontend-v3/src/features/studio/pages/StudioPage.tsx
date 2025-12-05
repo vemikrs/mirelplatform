@@ -4,9 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { FormDesigner } from '../components/FormDesigner/FormDesigner';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
 import { useFormDesignerStore, type Widget } from '../stores/useFormDesignerStore';
-import { Button, Card } from '@mirel/ui';
+import { Button, Card, toast } from '@mirel/ui';
 import { Eye, Edit, Workflow, Database, Rocket } from 'lucide-react';
-import { toast } from 'sonner';
 import { createDraft, updateDraft, getSchema } from '@/lib/api/schema';
 import { FlowDesignerContainer } from '../components/FlowDesigner/FlowDesignerContainer';
 import { useFlowDesignerStore } from '../stores/useFlowDesignerStore';
@@ -98,7 +97,11 @@ export const StudioPage: React.FC = () => {
         // Save Flow
         await saveFlow(modelId, modelName);
         
-        toast.success('Form and Flow saved successfully');
+        toast({
+          title: 'Success',
+          description: 'Form and Flow saved successfully',
+          variant: 'success',
+        });
       } else {
         const name = prompt('Enter form name', modelName);
         if (!name) return;
@@ -117,18 +120,26 @@ export const StudioPage: React.FC = () => {
            await saveFlow(result.data, name);
            
            navigate(`/apps/studio/${result.data}`);
-           toast.success('Form created successfully');
+           toast({
+             title: 'Success',
+             description: 'Form created successfully',
+             variant: 'success',
+           });
         }
       }
     } catch (error) {
       console.error('Failed to save', error);
-      toast.error('Failed to save form');
+      toast({
+        title: 'Error',
+        description: 'Failed to save form',
+        variant: 'destructive',
+      });
     }
   };
 
   if (isLoading) {
     return (
-      <StudioLayout showHeader={true} hideProperties={true}>
+      <StudioLayout hideProperties={true}>
         <div className="h-full flex items-center justify-center">Loading...</div>
       </StudioLayout>
     );
@@ -174,7 +185,7 @@ export const StudioPage: React.FC = () => {
   );
 
   return (
-    <StudioLayout showHeader={true} hideProperties={mode !== 'edit'}>
+    <StudioLayout hideProperties={mode !== 'edit'}>
       <div className="flex flex-col h-full">
         {/* Context Bar with mode switcher */}
         <StudioContextBar

@@ -3,9 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getReleases, createRelease } from '@/lib/api/release';
 import { ReleaseList } from '../components/ReleaseCenter/ReleaseList';
-import { Button } from '@mirel/ui';
+import { Button, toast } from '@mirel/ui';
 import { ArrowLeft, Plus } from 'lucide-react';
-import { toast } from 'sonner';
 
 export const ReleasePage: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
@@ -22,10 +21,17 @@ export const ReleasePage: React.FC = () => {
     mutationFn: () => createRelease(modelId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['releases', modelId] });
-      toast.success('Release created successfully');
+      toast({
+        title: 'Release created successfully',
+        variant: 'success',
+      });
     },
     onError: () => {
-      toast.error('Failed to create release');
+      toast({
+        title: 'Error',
+        description: 'Failed to create release',
+        variant: 'destructive',
+      });
     },
   });
 

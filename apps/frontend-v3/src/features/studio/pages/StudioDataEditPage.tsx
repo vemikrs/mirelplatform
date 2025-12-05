@@ -3,10 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDataById, createData, updateData } from '@/lib/api/data';
 import { getModel } from '@/lib/api/model';
-import { Button, Card } from '@mirel/ui';
+import { Button, Card, toast } from '@mirel/ui';
 import { ArrowLeft } from 'lucide-react';
 import { DynamicFormRenderer } from '../components/Runtime/DynamicFormRenderer';
-import { toast } from 'sonner';
 
 export const StudioDataEditPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
@@ -38,11 +37,18 @@ export const StudioDataEditPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data', modelId] });
-      toast.success(isNew ? 'Record created' : 'Record updated');
+      toast({
+        title: isNew ? 'Record created' : 'Record updated',
+        variant: 'success',
+      });
       navigate(`/apps/studio/${modelId}/data`);
     },
     onError: () => {
-      toast.error('Failed to save record');
+      toast({
+        title: 'Error',
+        description: 'Failed to save record',
+        variant: 'destructive',
+      });
     },
   });
 
