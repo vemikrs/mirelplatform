@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+import { Button, Input, Textarea } from '@mirel/ui';
 import {
   Form,
   FormControl,
@@ -10,10 +10,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { MenuDto } from '@/lib/api/menu';
+} from './ShadcnForm';
+import type { MenuDto } from '@/lib/api/menu';
 import { IconPicker } from './IconPicker';
 import { useEffect } from 'react';
 
@@ -23,12 +21,21 @@ const formSchema = z.object({
   path: z.string().optional(),
   icon: z.string().optional(),
   parentId: z.string().optional(),
-  sortOrder: z.coerce.number().optional(),
+  sortOrder: z.coerce.number().optional().default(10),
   requiredPermission: z.string().optional(),
   description: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+    id: string;
+    label: string;
+    path?: string;
+    icon?: string;
+    parentId?: string;
+    sortOrder?: number;
+    requiredPermission?: string;
+    description?: string;
+};
 
 interface MenuEditorProps {
   menu?: MenuDto | null; // null means create new (if we want that mode here, or we pass a blank object)
@@ -39,7 +46,7 @@ interface MenuEditorProps {
 
 export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuEditorProps) {
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       id: '',
       label: '',
@@ -81,8 +88,9 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
   const onSubmit = async (values: FormValues) => {
     await onSave({
       ...values,
-      children: menu?.children, // Preserve children if any
-    });
+      path: values.path || '',
+      children: menu?.children,
+    } as MenuDto);
   };
 
   return (
@@ -93,9 +101,9 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
         </h3>
       </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
+        <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
+          <FormField<FormValues>
+            control={form.control as any}
             name="id"
             render={({ field }) => (
               <FormItem>
@@ -109,8 +117,8 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
             )}
           />
 
-          <FormField
-            control={form.control}
+          <FormField<FormValues>
+            control={form.control as any}
             name="label"
             render={({ field }) => (
               <FormItem>
@@ -124,21 +132,21 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
           />
 
           <div className="grid grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
+             <FormField<FormValues>
+                control={form.control as any}
                 name="icon"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>アイコン</FormLabel>
                     <FormControl>
-                    <IconPicker value={field.value} onChange={field.onChange} />
+                    <IconPicker value={field.value as string | undefined} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
                 )}
             />
-            <FormField
-                control={form.control}
+            <FormField<FormValues>
+                control={form.control as any}
                 name="sortOrder"
                 render={({ field }) => (
                 <FormItem>
@@ -152,8 +160,8 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
             />
           </div>
 
-          <FormField
-            control={form.control}
+          <FormField<FormValues>
+            control={form.control as any}
             name="path"
             render={({ field }) => (
               <FormItem>
@@ -166,8 +174,8 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
             )}
           />
 
-          <FormField
-            control={form.control}
+          <FormField<FormValues>
+            control={form.control as any}
             name="requiredPermission"
             render={({ field }) => (
               <FormItem>
@@ -180,8 +188,8 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
             )}
           />
           
-          <FormField
-            control={form.control}
+          <FormField<FormValues>
+            control={form.control as any}
             name="parentId"
             render={({ field }) => (
               <FormItem>
@@ -195,8 +203,8 @@ export function MenuEditor({ menu, onSave, onCancel, isCreating = false }: MenuE
             )}
           />
 
-          <FormField
-            control={form.control}
+          <FormField<FormValues>
+            control={form.control as any}
             name="description"
             render={({ field }) => (
               <FormItem>

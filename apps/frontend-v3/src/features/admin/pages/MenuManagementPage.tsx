@@ -1,4 +1,4 @@
-import { SectionHeading } from '@mirel/ui';
+import { Button, SectionHeading, useToast } from '@mirel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
     getMenuTree, 
@@ -6,16 +6,15 @@ import {
     updateMenu, 
     deleteMenu, 
     updateMenuTree, 
-    MenuDto 
+    type MenuDto 
 } from '@/lib/api/menu';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { MenuTree } from '../components/menu/MenuTree';
 import { MenuEditor } from '../components/menu/MenuEditor';
-import { Button } from '@/components/ui/button';
-import { Toaster, toast } from 'sonner';
 
 export function MenuManagementPage() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedMenu, setSelectedMenu] = useState<MenuDto | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -33,10 +32,10 @@ export function MenuManagementPage() {
       queryClient.invalidateQueries({ queryKey: ['menu-tree'] });
       setIsCreating(false);
       setSelectedMenu(null); // Or select new one? ID is manual so we don't know it easily
-      toast.success('メニューを作成しました');
+      toast({ title: '成功', description: 'メニューを作成しました', variant: 'success' });
     },
     onError: (error) => {
-        toast.error('作成に失敗しました: ' + error.message);
+        toast({ title: 'エラー', description: '作成に失敗しました: ' + error.message, variant: 'destructive' });
     }
   });
 
@@ -44,10 +43,10 @@ export function MenuManagementPage() {
     mutationFn: ({ id, data }: { id: string; data: MenuDto }) => updateMenu(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-tree'] });
-      toast.success('メニューを更新しました');
+      toast({ title: '成功', description: 'メニューを更新しました', variant: 'success' });
     },
     onError: (error) => {
-        toast.error('更新に失敗しました: ' + error.message);
+        toast({ title: 'エラー', description: '更新に失敗しました: ' + error.message, variant: 'destructive' });
     }
   });
 
@@ -56,10 +55,10 @@ export function MenuManagementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-tree'] });
       if (selectedMenu) setSelectedMenu(null);
-      toast.success('メニューを削除しました');
+      toast({ title: '成功', description: 'メニューを削除しました', variant: 'success' });
     },
     onError: (error) => {
-        toast.error('削除に失敗しました: ' + error.message);
+        toast({ title: 'エラー', description: '削除に失敗しました: ' + error.message, variant: 'destructive' });
     }
   });
 
@@ -79,7 +78,7 @@ export function MenuManagementPage() {
     setIsCreating(true);
   };
 
-  const handleAddSubItem = (parentId: string) => {
+  const handleAddSubItem = (parentId?: string) => {
      // Find parent to get default sort order
      // Simplified: Just set parentId
      setSelectedMenu(null);

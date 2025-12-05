@@ -5,10 +5,9 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
   DragOverlay,
-  DragStartEvent,
 } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -17,10 +16,10 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MenuDto } from '@/lib/api/menu';
+import type { MenuDto } from '@/lib/api/menu';
 import { cn } from '@mirel/ui';
 import * as LucideIcons from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@mirel/ui';
 import { Plus, GripVertical } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -58,7 +57,7 @@ function SortableMenuItem({
   };
 
   const IconComponent = menu.icon
-    ? (LucideIcons as any)[menu.icon.replace(/-([a-z])/g, (g) => g[1].toUpperCase())]
+    ? (LucideIcons as any)[menu.icon.replace(/-([a-z])/g, (_, p1) => p1.toUpperCase())]
     : null;
 
   return (
