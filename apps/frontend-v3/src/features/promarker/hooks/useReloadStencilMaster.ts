@@ -1,4 +1,4 @@
-import { toast } from '@mirel/ui'
+import { toast } from 'sonner'
 import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import type { ApiRequest, ApiResponse } from '@/lib/api/types'
@@ -34,14 +34,13 @@ export function useReloadStencilMaster() {
       return response.data
     },
     onSuccess: () => {
-      toast({
-        ...toastMessages.reloadSuccess,
+      toast.success(toastMessages.reloadSuccess.title, {
+        description: toastMessages.reloadSuccess.description,
       })
     },
     onError: (error) => {
       console.error('ReloadStencilMaster API error:', error)
-      toast({
-        ...toastMessages.reloadError,
+      toast.error(toastMessages.reloadError.title, {
         description: formatError(error),
       })
     },
