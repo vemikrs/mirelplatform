@@ -4,11 +4,12 @@
 package jp.vemi.mirel.foundation.abst.dao.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import jp.vemi.mirel.foundation.abst.dao.entity.User;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<User, String> {
+public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
 
     /**
      * SystemUserIDでUserを検索

@@ -9,4 +9,6 @@ import java.util.Optional;
 
 public interface TenantSystemMasterRepository extends JpaRepository<TenantSystemMaster, String> {
     Optional<TenantSystemMaster> findByTenantIdAndKey(String tenantId, String key);
+
+    java.util.List<TenantSystemMaster> findByTenantId(String tenantId);
 }

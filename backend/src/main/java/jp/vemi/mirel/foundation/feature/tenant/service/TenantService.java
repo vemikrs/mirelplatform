@@ -14,6 +14,7 @@ import jp.vemi.mirel.foundation.abst.dao.entity.Tenant;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserTenantRepository;
 import jp.vemi.mirel.foundation.feature.tenant.dto.TenantStatus;
+import jp.vemi.mirel.foundation.feature.tenant.dto.TenantPlan;
 import jp.vemi.mirel.foundation.web.api.admin.dto.TenantDto;
 import lombok.RequiredArgsConstructor;
 
@@ -71,7 +72,9 @@ public class TenantService {
         tenant.setTenantId(java.util.UUID.randomUUID().toString()); // Assuming ID generation
         tenant.setTenantName(request.getTenantName());
         tenant.setDomain(request.getDomain());
-        tenant.setPlan(request.getPlan());
+        if (request.getPlan() != null) {
+            tenant.setPlan(TenantPlan.valueOf(request.getPlan()));
+        }
         tenant.setStatus(TenantStatus.ACTIVE);
 
         tenantRepository.save(tenant);
@@ -93,7 +96,7 @@ public class TenantService {
             tenant.setDomain(request.getDomain());
         }
         if (request.getPlan() != null) {
-            tenant.setPlan(request.getPlan());
+            tenant.setPlan(TenantPlan.valueOf(request.getPlan()));
         }
 
         tenantRepository.save(tenant);

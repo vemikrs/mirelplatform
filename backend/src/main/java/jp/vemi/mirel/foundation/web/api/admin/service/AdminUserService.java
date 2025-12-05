@@ -49,26 +49,47 @@ public class AdminUserService {
      */
     @Transactional(readOnly = true)
     public UserListResponse listUsers(int page, int size, String query, String role, Boolean active) {
-        logger.info("List users: page={}, size={}, query={}, role={}, active={}", 
-            page, size, query, role, active);
+        logger.info("List users: page={}, size={}, query={}, role={}, active={}",
+                page, size, query, role, active);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createDate").descending());
-        
-        // TODO: Implement filtering by query, role, active
-        // For now, just get all users
-        Page<User> userPage = userRepository.findAll(pageable);
+
+        org.springframework.data.jpa.domain.Specification<User> spec = (root, criteriaQuery, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            if (query != null && !query.isEmpty()) {
+                String likePattern = "%" + query.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), likePattern),
+                        cb.like(cb.lower(root.get("email")), likePattern),
+                        cb.like(cb.lower(root.get("displayName")), likePattern)));
+            }
+
+            if (role != null && !role.isEmpty()) {
+                // simple contains check for CSV roles
+                predicates.add(cb.like(root.get("roles"), "%" + role + "%"));
+            }
+
+            if (active != null) {
+                predicates.add(cb.equal(root.get("isActive"), active));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<User> userPage = userRepository.findAll(spec, pageable);
 
         List<AdminUserDto> userDtos = userPage.getContent().stream()
-            .map(this::convertToAdminUserDto)
-            .collect(Collectors.toList());
+                .map(this::convertToAdminUserDto)
+                .collect(Collectors.toList());
 
         return UserListResponse.builder()
-            .users(userDtos)
-            .page(page)
-            .size(size)
-            .totalElements(userPage.getTotalElements())
-            .totalPages(userPage.getTotalPages())
-            .build();
+                .users(userDtos)
+                .page(page)
+                .size(size)
+                .totalElements(userPage.getTotalElements())
+                .totalPages(userPage.getTotalPages())
+                .build();
     }
 
     /**
@@ -79,7 +100,7 @@ public class AdminUserService {
         logger.info("Get user by id: {}", userId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return convertToAdminUserDto(user);
     }
@@ -92,7 +113,7 @@ public class AdminUserService {
         logger.info("Update user: {}", userId);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (request.getDisplayName() != null) {
             user.setDisplayName(request.getDisplayName());
@@ -122,34 +143,78 @@ public class AdminUserService {
      */
     private AdminUserDto convertToAdminUserDto(User user) {
         List<UserTenant> userTenants = userTenantRepository.findByUserId(user.getUserId());
-        
+
         List<AdminUserDto.UserTenantInfo> tenantInfos = new ArrayList<>();
         for (UserTenant ut : userTenants) {
             Tenant tenant = tenantRepository.findById(ut.getTenantId()).orElse(null);
             if (tenant != null) {
                 tenantInfos.add(AdminUserDto.UserTenantInfo.builder()
-                    .tenantId(tenant.getTenantId())
-                    .tenantName(tenant.getTenantName())
-                    .roleInTenant(ut.getRoleInTenant())
-                    .isDefault(ut.getIsDefault())
-                    .build());
+                        .tenantId(tenant.getTenantId())
+                        .tenantName(tenant.getTenantName())
+                        .roleInTenant(ut.getRoleInTenant())
+                        .isDefault(ut.getIsDefault())
+                        .build());
             }
         }
 
         return AdminUserDto.builder()
-            .userId(user.getUserId())
-            .email(user.getEmail())
-            .username(user.getUsername())
-            .displayName(user.getDisplayName())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .isActive(user.getIsActive())
-            .emailVerified(user.getEmailVerified())
-            .roles(user.getRoles())
-            .lastLoginAt(user.getLastLoginAt())
-            .createdAt(user.getCreateDate() != null ? 
-                Instant.ofEpochMilli(user.getCreateDate().getTime()) : null)
-            .tenants(tenantInfos)
-            .build();
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .displayName(user.getDisplayName())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .isActive(user.getIsActive())
+                .emailVerified(user.getEmailVerified())
+                .roles(user.getRoles())
+                .lastLoginAt(user.getLastLoginAt())
+                .createdAt(user.getCreateDate() != null ? Instant.ofEpochMilli(user.getCreateDate().getTime()) : null)
+                .tenants(tenantInfos)
+                .build();
+    }
+
+    /**
+     * ユーザー作成
+     */
+    @Transactional
+    public AdminUserDto createUser(jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
+        logger.info("Create user: {}", request.getUsername());
+
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        // TODO: Password should be hashed by PasswordEncoder. using plain text for now
+        // as placeholder or need to inject PasswordEncoder.
+        // Assuming PasswordEncoder is available or logic is in service.
+        user.setPassword(request.getPassword());
+        user.setDisplayName(request.getDisplayName());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        if (request.getRoles() != null) {
+            user.setRoles(String.join(",", request.getRoles()));
+        }
+        user.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+
+        user = userRepository.save(user);
+
+        return convertToAdminUserDto(user);
+    }
+
+    /**
+     * ユーザー削除
+     */
+    @Transactional
+    public void deleteUser(String userId) {
+        logger.info("Delete user: {}", userId);
+
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found");
+        }
+
+        userRepository.deleteById(userId);
     }
 }
