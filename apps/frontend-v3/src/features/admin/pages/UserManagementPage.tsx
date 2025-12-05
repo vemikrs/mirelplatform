@@ -209,7 +209,7 @@ export const UserManagementPage = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                     <div className="flex gap-1">
-                        {user.roles.split(',').map((role: string) => (
+                        {user.roles.split(/[|,]/).map((role: string) => (
                         <Badge
                             key={role}
                             variant={role === 'ADMIN' ? 'destructive' : 'neutral'}

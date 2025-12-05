@@ -46,7 +46,7 @@ export const UserFormDialog = ({
 
   useEffect(() => {
     if (user) {
-      const userRoles = user.roles.split(',').map(r => r.trim());
+      const userRoles = user.roles.split(/[|,]/).map(r => r.trim());
       setFormData({
         username: user.username,
         email: user.email,
@@ -193,45 +193,37 @@ export const UserFormDialog = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>ロール *</Label>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="role-admin"
-                  checked={roleCheckboxes.ADMIN}
-                  onChange={() => handleRoleToggle('ADMIN')}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="role-admin" className="cursor-pointer font-normal">
-                  ADMIN (システム管理者)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="role-user"
-                  checked={roleCheckboxes.USER}
-                  onChange={() => handleRoleToggle('USER')}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="role-user" className="cursor-pointer font-normal">
-                  USER (一般ユーザー)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="role-tenant-admin"
-                  checked={roleCheckboxes.TENANT_ADMIN}
-                  onChange={() => handleRoleToggle('TENANT_ADMIN')}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="role-tenant-admin" className="cursor-pointer font-normal">
-                  TENANT_ADMIN (テナント管理者)
-                </Label>
-              </div>
+          <div className="space-y-3">
+            <Label>ロール設定 *</Label>
+            <div className="grid gap-2">
+              {[
+                { id: 'ADMIN', label: 'ADMIN', desc: 'システム全体の管理権限を持ちます' },
+                { id: 'TENANT_ADMIN', label: 'TENANT_ADMIN', desc: '所属テナント内の管理権限を持ちます' },
+                { id: 'USER', label: 'USER', desc: '一般的な利用権限のみを持ちます' },
+              ].map((role) => (
+                <div
+                  key={role.id}
+                  className={`flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs cursor-pointer transition-all ${
+                    roleCheckboxes[role.id as keyof typeof roleCheckboxes]
+                      ? 'border-primary bg-primary/5'
+                      : 'hover:bg-surface-raised'
+                  }`}
+                  onClick={() => handleRoleToggle(role.id as keyof typeof roleCheckboxes)}
+                >
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium cursor-pointer">
+                      {role.label}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {role.desc}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={roleCheckboxes[role.id as keyof typeof roleCheckboxes]}
+                    onCheckedChange={() => handleRoleToggle(role.id as keyof typeof roleCheckboxes)}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
