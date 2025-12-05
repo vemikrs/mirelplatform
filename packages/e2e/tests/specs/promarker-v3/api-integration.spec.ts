@@ -89,9 +89,9 @@ test.describe('ProMarker v3 API Integration', () => {
     await page.locator('[data-testid="reload-stencil-btn"]').click();
     
     // Assert: Verify error toast appears
-    // Sonner toasts are list items with data-sonner-toast attribute
-    await expect(page.locator('li[data-sonner-toast]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('li[data-sonner-toast]')).toContainText(/エラー|Error|failed|失敗/i);
+    // @mirel/ui Toast (shadcn/ui) uses role="status" or "alert" usually, but text check is most robust
+    const toast = page.getByRole('status').filter({ hasText: /エラー|Error|failed|失敗/i });
+    await expect(toast).toBeVisible({ timeout: 10000 });
   });
   
   test('should set correct request headers', async ({ page }) => {
