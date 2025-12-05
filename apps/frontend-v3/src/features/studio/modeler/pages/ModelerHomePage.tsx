@@ -27,7 +27,7 @@ export const ModelerHomePage: React.FC = () => {
   ];
 
   return (
-    <StudioLayout>
+    <StudioLayout hideContextBar={true} hideProperties={true}>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
