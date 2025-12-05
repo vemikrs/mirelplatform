@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel } from '../types/modeler';
@@ -10,16 +10,11 @@ export const ModelerRecordDetailPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
   const navigate = useNavigate();
   const [fields, setFields] = useState<SchDicModel[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (modelId) {
-      loadData();
-    }
-  }, [modelId, recordId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const modelerResponse = await modelerApi.listModel(modelId!);
@@ -34,7 +29,13 @@ export const ModelerRecordDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [modelId, recordId]);
+
+  useEffect(() => {
+    if (modelId) {
+      loadData();
+    }
+  }, [modelId, recordId, loadData]);
 
   const handleSubmit = async () => {
     try {
@@ -48,7 +49,7 @@ export const ModelerRecordDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <StudioLayout>
+      <StudioLayout hideContextBar={true}>
         <div className="flex items-center justify-center h-full text-muted-foreground">
           読み込み中...
         </div>
@@ -59,7 +60,7 @@ export const ModelerRecordDetailPage: React.FC = () => {
   const pageTitle = recordId === 'new' ? '新規レコード作成' : 'レコード編集';
 
   return (
-    <StudioLayout>
+    <StudioLayout hideContextBar={true}>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[

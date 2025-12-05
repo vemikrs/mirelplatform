@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel, SchRecord } from '../types/modeler';
@@ -20,6 +20,22 @@ export const ModelerRecordListPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [totalRecords, setTotalRecords] = useState(0);
 
+  const loadModelAndRecords = useCallback(async (modelId: string, currentPage: number, currentPagesize: number, currentSearchQuery: string) => {
+    try {
+      setLoading(true);
+      const modelerResponse = await modelerApi.listModel(modelId);
+      setFields(modelerResponse.data.modelers);
+
+      const recordsResponse = await modelerApi.list(modelId, currentPage, currentPagesize, currentSearchQuery);
+      setRecords(recordsResponse.data.records);
+      setTotalRecords(recordsResponse.data.total || 0); // Assuming API returns total count
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // TODO: Fetch available models from API
     // For now, hardcode or fetch if endpoint exists
@@ -35,31 +51,25 @@ export const ModelerRecordListPage: React.FC = () => {
       // Reset pagination and search when model changes
       setPage(1);
       setSearchQuery('');
+      // Need to call load here or depend on page/size change?
+      // Actually page change effect below handles it if we reset page.
+      // But if page was already 1, effect below might not trigger if we depend on [page].
+      // Let's rely on the below effect or explicity call.
+      // If we change selectedModelId, we reset page to 1.
+      // If page is already 1, the below effect [page, pageSize] won't fire if pageSize didn't change?
+      // Actually below effect depends on `selectedModelId` too? Original code didn't.
+      // Let's explicitly call load here, but simpler: depend on everything in one effect?
+      // Original logic separated them.
+      // I will keep logic but fix deps.
       loadModelAndRecords(selectedModelId, 1, pageSize, '');
     }
-  }, [selectedModelId]);
+  }, [selectedModelId, pageSize, loadModelAndRecords]); // added loadModelAndRecords, pageSize
 
   useEffect(() => {
     if (selectedModelId) {
       loadModelAndRecords(selectedModelId, page, pageSize, searchQuery);
     }
-  }, [page, pageSize]); // Reload when page/size changes
-
-  const loadModelAndRecords = async (modelId: string, currentPage: number, currentPagesize: number, currentSearchQuery: string) => {
-    try {
-      setLoading(true);
-      const modelerResponse = await modelerApi.listModel(modelId);
-      setFields(modelerResponse.data.modelers);
-
-      const recordsResponse = await modelerApi.list(modelId, currentPage, currentPagesize, currentSearchQuery);
-      setRecords(recordsResponse.data.records);
-      setTotalRecords(recordsResponse.data.total || 0); // Assuming API returns total count
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [page, pageSize, searchQuery, selectedModelId, loadModelAndRecords]); // added missing deps
 
   const handleRowClick = (record: SchRecord) => {
     navigate(`/apps/modeler/records/${selectedModelId}/${record.id}`);
@@ -80,7 +90,7 @@ export const ModelerRecordListPage: React.FC = () => {
   const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
-    <StudioLayout>
+    <StudioLayout hideContextBar={true}>
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
