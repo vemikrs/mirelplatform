@@ -96,15 +96,15 @@ export function RootLayout() {
           className="hidden md:flex sticky top-0 h-screen overflow-y-auto shrink-0" 
         />
         
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           <main className="flex-1 bg-background py-6">
             <div className="px-4 md:px-8">
               <Outlet />
             </div>
           </main>
 
-          <footer className="mt-auto border-t border-outline/40 bg-surface-subtle/60">
-            <div className="flex flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-6">
+          <footer className="border-t border-outline/40 bg-surface-subtle/60">
+            <div className="flex flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-6">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.
               </div>
