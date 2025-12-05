@@ -3,7 +3,7 @@
  */
 package jp.vemi.mirel.apps.studio.application.dto;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
 import lombok.Data;
 
 import java.util.List;
@@ -12,5 +12,5 @@ import java.util.List;
 public class UpdateDraftRequest {
     private String name;
     private String description;
-    private List<StuField> fields;
+    private List<StuModel> fields;
 }

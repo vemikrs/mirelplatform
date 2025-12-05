@@ -3,7 +3,7 @@
  */
 package jp.vemi.mirel.apps.studio.application.dto;
 
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -17,5 +17,5 @@ public class SchemaDetailResponse {
     private String status;
     private Integer version;
     private LocalDateTime updatedAt;
-    private List<StuField> fields;
+    private List<StuModel> fields;
 }
