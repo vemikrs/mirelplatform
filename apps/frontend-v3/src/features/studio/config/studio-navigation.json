@@ -1,0 +1,53 @@
+[
+  {
+    "id": "modeler",
+    "label": "Modeler",
+    "icon": "Database",
+    "children": [
+      {
+        "id": "entities",
+        "label": "Entities",
+        "path": "/apps/studio/modeler/entities",
+        "icon": "Box"
+      },
+      {
+        "id": "relations",
+        "label": "Relations",
+        "path": "/apps/studio/modeler/relations",
+        "icon": "Share2"
+      },
+      {
+        "id": "codes",
+        "label": "Code Master",
+        "path": "/apps/studio/modeler/codes",
+        "icon": "Tags"
+      }
+    ]
+  },
+  {
+    "id": "forms",
+    "label": "Forms",
+    "icon": "Layout",
+    "children": [
+      {
+        "id": "all-forms",
+        "label": "All Forms",
+        "path": "/apps/studio/forms",
+        "icon": "List"
+      }
+    ]
+  },
+  {
+    "id": "data",
+    "label": "Data",
+    "icon": "Table",
+    "children": [
+      {
+        "id": "browser",
+        "label": "Data Browser",
+        "path": "/apps/studio/data",
+        "icon": "Grid"
+      }
+    ]
+  }
+]

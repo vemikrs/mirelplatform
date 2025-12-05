@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronRight, type LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, type LucideIcon, Database, Box, Share2, Tags, Layout, List, Table, Grid } from 'lucide-react';
 import { cn } from '@mirel/ui';
+
+import navConfig from '../config/studio-navigation.json';
+
+const iconMap: Record<string, LucideIcon> = {
+  Database,
+  Box,
+  Share2,
+  Tags,
+  Layout,
+  List,
+  Table,
+  Grid
+};
 
 export interface StudioNavItem {
   id: string;
@@ -11,14 +24,17 @@ export interface StudioNavItem {
   children?: StudioNavItem[];
 }
 
-export const defaultStudioNavigation: StudioNavItem[] = [
-  // Placeholder structure - will be dynamic or passed as props
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    path: '/studio',
-  }
-];
+const mapConfigToItems = (config: typeof navConfig): StudioNavItem[] => {
+  return config.map(item => ({
+    id: item.id,
+    label: item.label,
+    path: (item as any).path,
+    icon: (item as any).icon ? iconMap[(item as any).icon] : undefined,
+    children: item.children ? mapConfigToItems(item.children as any) : undefined
+  }));
+};
+
+export const defaultStudioNavigation: StudioNavItem[] = mapConfigToItems(navConfig);
 
 interface StudioNavigationProps {
   items?: StudioNavItem[];
