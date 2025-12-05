@@ -12,10 +12,11 @@ import {
   Building,
   PanelLeftClose,
   PanelLeft,
+  HelpCircle,
   type LucideIcon 
 } from 'lucide-react';
 import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
-import type { NavigationLink } from '@/app/navigation.schema';
+import type { NavigationLink, NavigationAction } from '@/app/navigation.schema';
 import { SidebarUserMenu } from '@/components/header/SidebarUserMenu';
 import { NotificationPopover } from '@/components/header/NotificationPopover';
 import { GlobalSearch } from '@/components/header/GlobalSearch';
@@ -41,10 +42,11 @@ interface SideNavigationProps {
     shortName?: string;
     tagline?: string;
   };
+  helpAction?: NavigationAction;
   className?: string;
 }
 
-export function SideNavigation({ items, brand, className }: SideNavigationProps) {
+export function SideNavigation({ items, brand, helpAction, className }: SideNavigationProps) {
   const location = useLocation();
   
   // Sidebar collapsed state (persisted)
@@ -184,7 +186,7 @@ export function SideNavigation({ items, brand, className }: SideNavigationProps)
         "border-t border-outline/20 py-3",
         isCollapsed ? "px-2" : "px-3"
       )}>
-        {/* User Menu + Notification + Collapse Toggle */}
+        {/* User Menu + Actions + Notification + Collapse Toggle */}
         <div className={cn(
           "flex",
           isCollapsed ? "flex-col items-center gap-3" : "items-stretch gap-2"
@@ -193,6 +195,56 @@ export function SideNavigation({ items, brand, className }: SideNavigationProps)
           <div className="flex-1 min-w-0">
             <SidebarUserMenu isCollapsed={isCollapsed} />
           </div>
+
+
+          {/* Help Action */}
+          {helpAction && (
+             isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="size-8"
+                    asChild={Boolean('path' in helpAction && helpAction.path)}
+                  >
+                   {'path' in helpAction && helpAction.path ? (
+                      <Link to={helpAction.path} aria-label="ヘルプセンター">
+                        <HelpCircle className="size-4" />
+                      </Link>
+                    ) : (
+                      <HelpCircle className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  ヘルプセンター
+                </TooltipContent>
+              </Tooltip>
+             ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="size-8"
+                      asChild={Boolean('path' in helpAction && helpAction.path)}
+                    >
+                      {'path' in helpAction && helpAction.path ? (
+                        <Link to={helpAction.path} aria-label="ヘルプセンター">
+                          <HelpCircle className="size-4" />
+                        </Link>
+                      ) : (
+                        <HelpCircle className="size-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    ヘルプセンター
+                  </TooltipContent>
+                </Tooltip>
+             )
+          )}
           
           {/* Right: Notification (top) + Collapse (bottom) stacked vertically */}
           {!isCollapsed && (
