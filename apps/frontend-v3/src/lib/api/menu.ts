@@ -13,9 +13,31 @@ export interface MenuDto {
   children?: MenuDto[];
 }
 
+
 export async function getMenuTree(): Promise<MenuDto[]> {
   const response = await apiClient.get<MenuDto[]>('/api/v1/menus/tree');
   return response.data;
+}
+
+export async function getMenu(id: string): Promise<MenuDto> {
+  const response = await apiClient.get<MenuDto>(`/api/v1/menus/${id}`);
+  return response.data;
+}
+
+export async function createMenu(menu: MenuDto): Promise<void> {
+  await apiClient.post('/api/v1/menus', menu);
+}
+
+export async function updateMenu(id: string, menu: MenuDto): Promise<void> {
+  await apiClient.put(`/api/v1/menus/${id}`, menu);
+}
+
+export async function deleteMenu(id: string): Promise<void> {
+  await apiClient.delete(`/api/v1/menus/${id}`);
+}
+
+export async function updateMenuTree(menus: MenuDto[]): Promise<void> {
+  await apiClient.put('/api/v1/menus/tree', menus);
 }
 
 // Adapter to convert MenuDto to NavigationLink if needed, 
