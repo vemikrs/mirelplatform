@@ -1,228 +1,87 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { cn, Button, Badge } from '@mirel/ui';
-import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  Search,
-  Bell,
-  HelpCircle,
-  Save,
-  ChevronRight,
-} from 'lucide-react';
-import { useStudioContextOptional } from '../contexts';
+import { Badge, Button } from '@mirel/ui';
+import { Menu, Cloud, Check } from 'lucide-react';
 import { UserMenu } from '@/components/header/UserMenu';
+import { GlobalSearch } from '@/components/header/GlobalSearch';
+// Import context optionally or fallback if not ready
+// import { useStudioContext } from '../contexts/StudioContext';
 
 interface StudioHeaderProps {
-  className?: string;
+  workspaceName?: string;
+  environment?: 'dev' | 'stg' | 'prod';
+  draftStatus?: 'saved' | 'unsaved' | 'saving';
   onToggleNavigation?: () => void;
   isNavigationCollapsed?: boolean;
 }
 
-/**
- * Studio Header Component
- * Displays workspace info, draft status, environment badge, and actions
- */
-export function StudioHeader({
-  className,
+export const StudioHeader: React.FC<StudioHeaderProps> = ({
+  workspaceName,
+  environment = 'dev',
+  draftStatus = 'saved',
   onToggleNavigation,
   isNavigationCollapsed,
-}: StudioHeaderProps) {
-  const context = useStudioContextOptional();
-  
-  const workspace = context?.workspace;
-  const draft = context?.draft;
-  const environment = context?.environment ?? 'dev';
-  const breadcrumbs = context?.breadcrumbs ?? [];
+}) => {
+  // Mock context values for now as Task 1.4 is not yet done
+  const finalWorkspaceName = workspaceName || 'Workspace';
+  const finalEnvironment = environment || 'dev';
+  const finalDraftStatus = draftStatus; 
+
+  const getEnvBadgeVariant = (env: string) => {
+    switch (env) {
+      case 'prod': return 'destructive'; // Red for prod
+      case 'stg': return 'warning';      // Yellow/Orange for stg
+      default: return 'neutral';       // Blue/Gray for dev
+    }
+  };
+
+  const getSaveStatusIcon = () => {
+    switch (finalDraftStatus) {
+      case 'saving': return <Cloud className="size-4 animate-pulse text-muted-foreground" />;
+      case 'unsaved': return <span className="size-2 rounded-full bg-yellow-500" />;
+      case 'saved': return <Check className="size-4 text-green-500" />;
+    }
+  };
 
   return (
-    <header
-      className={cn(
-        'h-14 flex items-center justify-between px-4 border-b border-outline/20 bg-surface',
-        className
-      )}
-    >
-      {/* Left Section: Navigation Toggle + Workspace + Breadcrumbs */}
-      <div className="flex items-center gap-3">
-        {/* Navigation Toggle */}
+    <header className="flex h-14 items-center gap-4 border-b border-border bg-background px-4 shrink-0 justify-between">
+      <div className="flex items-center gap-4 min-w-0 font-semibold">
         {onToggleNavigation && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleNavigation}
-            className="shrink-0"
-            aria-label={isNavigationCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onToggleNavigation} 
+            className="shrink-0 md:hidden"
+            aria-label={isNavigationCollapsed ? "Expand navigation" : "Collapse navigation"}
           >
-            {isNavigationCollapsed ? (
-              <PanelLeftOpen className="size-4" />
-            ) : (
-              <PanelLeftClose className="size-4" />
-            )}
+            <Menu className="size-5" />
           </Button>
         )}
-
-        {/* Workspace Info */}
-        {workspace && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">
-              {workspace.name}
-            </span>
-            <span className="text-muted-foreground">/</span>
-          </div>
-        )}
-
-        {/* Breadcrumbs */}
-        {breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1" aria-label="Breadcrumb">
-            {breadcrumbs.map((item, index) => (
-              <React.Fragment key={item.path}>
-                {index > 0 && (
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                )}
-                {index === breadcrumbs.length - 1 ? (
-                  <span className="text-sm text-foreground font-medium">
-                    {item.label}
-                  </span>
-                ) : (item.path || item.href) ? (
-                  <Link
-                    to={(item.path || item.href)!}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    {item.label}
-                  </span>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
+        
+        <div className="flex items-center gap-2 truncate">
+          <span className="text-primary hidden md:inline">Studio</span>
+          <span className="text-muted-foreground hidden md:inline">/</span>
+          <span className="truncate">{finalWorkspaceName}</span>
+          <Badge variant={getEnvBadgeVariant(finalEnvironment)} className="text-[10px] h-5 px-1.5 uppercase">
+            {finalEnvironment}
+          </Badge>
+        </div>
       </div>
 
-      {/* Center Section: Draft Status */}
-      <div className="flex items-center gap-2">
-        {draft && (
-          <>
-            <DraftStatusIndicator status={draft.status} />
-            <span className="text-xs text-muted-foreground">
-              v{draft.version}
-            </span>
-            {draft.lastSaved && (
-              <span className="text-xs text-muted-foreground">
-                Last saved: {formatRelativeTime(draft.lastSaved)}
-              </span>
-            )}
-          </>
-        )}
+      {/* Center: Search */}
+      <div className="flex-1 flex justify-center max-w-xl mx-auto px-4">
+        <GlobalSearch />
       </div>
 
-      {/* Right Section: Environment + Actions */}
-      <div className="flex items-center gap-2">
-        {/* Environment Badge */}
-        <EnvironmentBadge environment={environment} />
+      {/* Right: Actions & User */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Save Status Indicator */}
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground mr-2">
+          {getSaveStatusIcon()}
+          <span>{finalDraftStatus === 'saving' ? 'Saving...' : finalDraftStatus === 'unsaved' ? 'Unsaved' : 'Saved'}</span>
+        </div>
 
-        {/* Search */}
-        <Button variant="ghost" size="icon" aria-label="Search">
-          <Search className="size-4" />
-        </Button>
-
-        {/* Help */}
-        <Button variant="ghost" size="icon" aria-label="Help">
-          <HelpCircle className="size-4" />
-        </Button>
-
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" aria-label="Notifications">
-          <Bell className="size-4" />
-        </Button>
-
-        {/* User Menu */}
         <UserMenu />
       </div>
     </header>
   );
-}
-
-interface DraftStatusIndicatorProps {
-  status: 'saved' | 'unsaved' | 'saving';
-}
-
-function DraftStatusIndicator({ status }: DraftStatusIndicatorProps) {
-  const statusConfig = {
-    saved: {
-      label: 'Saved',
-      className: 'bg-success/10 text-success',
-      icon: null,
-    },
-    unsaved: {
-      label: 'Unsaved changes',
-      className: 'bg-warning/10 text-warning',
-      icon: null,
-    },
-    saving: {
-      label: 'Saving...',
-      className: 'bg-info/10 text-info animate-pulse',
-      icon: <Save className="size-3 animate-spin" />,
-    },
-  };
-
-  const config = statusConfig[status];
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
-        config.className
-      )}
-    >
-      {config.icon}
-      <span>{config.label}</span>
-    </div>
-  );
-}
-
-interface EnvironmentBadgeProps {
-  environment: 'dev' | 'stg' | 'prod';
-}
-
-function EnvironmentBadge({ environment }: EnvironmentBadgeProps) {
-  const envConfig = {
-    dev: { label: 'DEV', variant: 'info' as const },
-    stg: { label: 'STG', variant: 'warning' as const },
-    prod: { label: 'PROD', variant: 'destructive' as const },
-  };
-
-  const config = envConfig[environment];
-
-  return (
-    <Badge variant={config.variant} className="uppercase text-xs">
-      {config.label}
-    </Badge>
-  );
-}
-
-/**
- * Format date to relative time string
- */
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-
-  if (diffSeconds < 60) {
-    return 'Just now';
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-  return date.toLocaleDateString();
-}
-
-export default StudioHeader;
+};

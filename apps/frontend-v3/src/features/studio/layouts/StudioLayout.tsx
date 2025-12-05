@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Resizable, ResizeCallbackData } from 'react-resizable';
+import { StudioHeader } from '../components/StudioHeader';
 import 'react-resizable/css/styles.css';
 
 // Simple utility for class names if @mirel/ui version is not available yet
@@ -61,7 +62,9 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
   const showRight = !hideProperties && properties;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground flex-col">
+      <StudioHeader />
+        <div className="flex flex-1 overflow-hidden relative min-w-0">
       {/* Left Pane */}
       {showLeft && (
         <Resizable
@@ -114,5 +117,6 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
         </Resizable>
       )}
     </div>
+      </div>
   );
 };
