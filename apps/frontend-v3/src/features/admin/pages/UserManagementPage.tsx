@@ -13,22 +13,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  toast,
 } from '@mirel/ui';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Edit2, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getUsers, deleteUser, createUser } from '../api';
-import type { AdminUser } from '../api';
+import { getUsers, deleteUser, createUser, updateUser } from '../api';
+import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
+import { UserFormDialog } from '../components/UserFormDialog';
 
 
 
 export const UserManagementPage = () => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
-  // New state variables introduced by the change
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   // Query for fetching users
   const { data: userResponse, isLoading } = useQuery({
     queryKey: ['admin-users', searchQuery, roleFilter],
@@ -49,39 +50,96 @@ export const UserManagementPage = () => {
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      // TODO: Show toast success
+      toast({
+        title: '削除完了',
+        description: 'ユーザーを削除しました。',
+      });
     },
     onError: (error) => {
       console.error("Failed to delete user", error);
-      // TODO: Show toast error
+      toast({
+        title: '削除失敗',
+        description: 'ユーザーの削除に失敗しました。',
+        variant: 'destructive',
+      });
     }
   });
 
-  // Create mutation (Placeholder for full modal/form flow)
+  // Create mutation
   const createMutation = useMutation({
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setIsDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: '作成完了',
+        description: 'ユーザーを作成しました。',
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to create user", error);
+      toast({
+        title: '作成失敗',
+        description: 'ユーザーの作成に失敗しました。',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateUserRequest }) => 
+      updateUser(userId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setIsDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: '更新完了',
+        description: 'ユーザー情報を更新しました。',
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update user", error);
+      toast({
+        title: '更新失敗',
+        description: 'ユーザー情報の更新に失敗しました。',
+        variant: 'destructive',
+      });
     }
   });
 
   const handleDelete = (userId: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
+    if (confirm('このユーザーを削除してもよろしいですか？')) {
       deleteMutation.mutate(userId);
     }
   };
 
   const handleCreateUser = () => {
-    const username = prompt("Enter username");
-    if (username) {
-        createMutation.mutate({
-            username: username,
-            email: `${username}@example.com`,
-            displayName: username,
-            roles: ['USER'],
-            isActive: true,
-        });
+    setSelectedUser(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditUser = (user: AdminUser) => {
+    setSelectedUser(user);
+    setIsDialogOpen(true);
+  };
+
+  const handleFormSubmit = (data: CreateUserRequest | UpdateUserRequest) => {
+    if (selectedUser) {
+      updateMutation.mutate({ 
+        userId: selectedUser.userId, 
+        data: data as UpdateUserRequest 
+      });
+    } else {
+      createMutation.mutate(data as CreateUserRequest);
     }
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedUser(null);
   };
 
   return (
@@ -176,7 +234,7 @@ export const UserManagementPage = () => {
                         </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`${user.userId}`)}>
+                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
                             <Edit2 className="mr-2 h-4 w-4" />
                             編集
                         </DropdownMenuItem>
@@ -196,6 +254,14 @@ export const UserManagementPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      <UserFormDialog
+        open={isDialogOpen}
+        onClose={handleDialogClose}
+        onSubmit={handleFormSubmit}
+        user={selectedUser}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+      />
     </div>
   );
 };
