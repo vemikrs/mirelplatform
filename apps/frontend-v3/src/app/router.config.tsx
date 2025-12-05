@@ -21,6 +21,7 @@ import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerifica
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
+import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
 import { OrganizationManagementPage } from '@/features/organization';
 import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
 import AnnouncementEditPage from '@/features/admin/pages/AnnouncementEditPage';
@@ -29,16 +30,14 @@ import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
 import SecurityPage from '@/app/settings/security/page';
-import { ModelerHomePage } from '@/features/studio/modeler/pages/ModelerHomePage';
-import { ModelerRecordListPage } from '@/features/studio/modeler/pages/ModelerRecordListPage';
-import { ModelerRecordDetailPage } from '@/features/studio/modeler/pages/ModelerRecordDetailPage';
-import { ModelerModelDefinePage } from '@/features/studio/modeler/pages/ModelerModelDefinePage';
 import { ModelerCodeMasterPage } from '@/features/studio/modeler/pages/ModelerCodeMasterPage';
-import { StudioPage } from '@/features/studio/pages/StudioPage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
-import { StudioDataListPage } from '@/features/studio/pages/StudioDataListPage';
-import { StudioDataEditPage } from '@/features/studio/pages/StudioDataEditPage';
-import { ReleasePage } from '@/features/studio/pages/ReleasePage';
+import { EntityListPage } from '@/features/studio/modeler/pages/EntityListPage';
+import { EntityEditPage } from '@/features/studio/modeler/pages/EntityEditPage';
+import { RelationViewPage } from '@/features/studio/modeler/pages/RelationViewPage';
+import { FormListPage } from '@/features/studio/forms/pages/FormListPage';
+import { FormDesignerPage } from '@/features/studio/forms/pages/FormDesignerPage';
+import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -246,6 +245,11 @@ export const router = createBrowserRouter([
             handle: { title: '管理 - メニュー定義' },
           },
           {
+            path: 'admin/users',
+            element: <UserManagementPage />,
+            handle: { title: '管理 - ユーザー・ロール管理' },
+          },
+          {
             path: 'admin/tenant',
             element: <div>Tenant Management (Coming Soon)</div>,
             handle: { title: '管理 - テナント管理' },
@@ -280,64 +284,78 @@ export const router = createBrowserRouter([
             element: <StudioHomePage />,
             handle: { title: 'Studio - Home' },
           },
-          {
-            path: 'new',
-            element: <StudioPage />,
-            handle: { title: 'Studio - New Form' },
-          },
-          {
-            path: ':modelId',
-            element: <StudioPage />,
-            handle: { title: 'Studio - Edit Form' },
-          },
-          {
-            path: ':modelId/releases',
-            element: <ReleasePage />,
-          },
-          {
-            path: ':modelId/data',
-            element: <StudioDataListPage />,
-            handle: { title: 'Studio - Data List' },
-          },
-          {
-            path: ':modelId/data/:recordId',
-            element: <StudioDataEditPage />,
-            handle: { title: 'Studio - Edit Data' },
-          },
+          // New IA Routes
           {
             path: 'modeler',
             children: [
               {
                 index: true,
-                element: <ModelerHomePage />,
-                handle: { title: 'Modeler - Home' },
+                loader: () => redirect('entities'),
               },
               {
-                path: 'models',
-                element: <ModelerModelDefinePage />,
-                handle: { title: 'Modeler - Model Definition' },
+                path: 'entities',
+                element: <EntityListPage />,
+                handle: { title: 'Modeler - Entity List' },
               },
               {
-                path: 'records',
-                element: <ModelerRecordListPage />,
-                handle: { title: 'Modeler - Records' },
+                path: 'entities/:entityId',
+                element: <EntityEditPage />,
+                handle: { title: 'Modeler - Entity Edit' },
               },
               {
-                path: 'records/:modelId/new',
-                element: <ModelerRecordDetailPage />,
-                handle: { title: 'Modeler - New Record' },
-              },
-              {
-                path: 'records/:modelId/:recordId',
-                element: <ModelerRecordDetailPage />,
-                handle: { title: 'Modeler - Edit Record' },
+                path: 'relations',
+                element: <RelationViewPage />,
+                handle: { title: 'Modeler - Relations' },
               },
               {
                 path: 'codes',
                 element: <ModelerCodeMasterPage />,
                 handle: { title: 'Modeler - Code Master' },
               },
+              // Legacy Redirects
+              {
+                path: 'models',
+                loader: () => redirect('../entities'),
+              },
+              {
+                path: 'records',
+                loader: () => redirect('../../data'),
+              },
             ],
+          },
+          {
+            path: 'forms',
+            children: [
+              {
+                index: true,
+                element: <FormListPage />,
+                handle: { title: 'Studio - Forms' },
+              },
+              {
+                path: ':formId',
+                element: <FormDesignerPage />,
+                handle: { title: 'Studio - Form Designer' },
+              },
+            ],
+          },
+          {
+            path: 'data',
+            children: [
+              {
+                index: true,
+                element: <DataBrowserPage />,
+                handle: { title: 'Studio - Data Browser' },
+              },
+            ],
+          },
+          // Legacy Routes & Redirects
+          {
+            path: 'new',
+            loader: () => redirect('forms/new'),
+          },
+          {
+            path: ':modelId', // Catch-all for old form URLs
+            loader: ({ params }) => redirect(`forms/${params.modelId}`),
           },
         ],
       },
