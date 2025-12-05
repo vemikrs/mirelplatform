@@ -1,248 +1,118 @@
-import React, { type ReactNode } from 'react';
-import { cn } from '@mirel/ui';
-import { StudioContextProvider, useStudioContext, type WorkspaceInfo, type EnvironmentType } from '../contexts';
-import { StudioNavigation, type StudioNavItem } from '../components/StudioNavigation';
-import { StudioHeader } from '../components/StudioHeader';
+import React, { useState } from 'react';
+import { Resizable, ResizeCallbackData } from 'react-resizable';
+import 'react-resizable/css/styles.css';
+
+// Simple utility for class names if @mirel/ui version is not available yet
+// const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
 interface StudioLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   /**
-   * Custom navigation component or items
+   * Navigation content (Left pane)
    */
-  navigation?: ReactNode | StudioNavItem[];
+  navigation?: React.ReactNode;
   /**
-   * Explorer panel (left side, after navigation)
+   * Explorer content (Left pane, unified with navigation or additional)
    */
-  explorer?: ReactNode;
+  explorer?: React.ReactNode;
   /**
-   * Properties panel (right side)
+   * Properties content (Right pane)
    */
-  properties?: ReactNode;
+  properties?: React.ReactNode;
   /**
-   * Whether to hide the navigation
+   * Whether to hide the navigation pane
    */
   hideNavigation?: boolean;
   /**
-   * Whether to hide the properties panel
+   * Whether to hide the properties pane
    */
   hideProperties?: boolean;
-  /**
-   * Whether to show the header
-   */
-  showHeader?: boolean;
-  /**
-   * Additional class names
-   */
-  className?: string;
-  /**
-   * Initial workspace info
-   */
-  initialWorkspace?: WorkspaceInfo | null;
-  /**
-   * Initial environment
-   */
-  initialEnvironment?: EnvironmentType;
 }
 
 /**
- * Studio Layout Component
- * Provides the unified 3-pane layout for all Studio screens
+ * StudioLayout
  * 
- * Structure:
- * ┌─────────────────────────────────────────────────────────┐
- * │ Header (optional)                                       │
- * ├────────┬─────────────────────────────────────┬──────────┤
- * │ Nav    │ Explorer │ Main Content Area        │ Property │
- * │ Panel  │ (opt)    │                          │ Panel    │
- * │        │          │                          │ (opt)    │
- * └────────┴──────────┴──────────────────────────┴──────────┘
+ * A 3-pane layout component for Mirel Studio.
+ * - Left: Navigation / Explorer
+ * - Center: Main Content (children)
+ * - Right: Properties
  */
-export function StudioLayout({
+export const StudioLayout: React.FC<StudioLayoutProps> = ({
   children,
   navigation,
   explorer,
   properties,
   hideNavigation = false,
   hideProperties = false,
-  showHeader = true,
-  className,
-  initialWorkspace,
-  initialEnvironment = 'dev',
-}: StudioLayoutProps) {
-  return (
-    <StudioContextProvider
-      initialWorkspace={initialWorkspace}
-      initialEnvironment={initialEnvironment}
-    >
-      <StudioLayoutInner
-        navigation={navigation}
-        explorer={explorer}
-        properties={properties}
-        hideNavigation={hideNavigation}
-        hideProperties={hideProperties}
-        showHeader={showHeader}
-        className={className}
-      >
-        {children}
-      </StudioLayoutInner>
-    </StudioContextProvider>
-  );
-}
+}) => {
+  const [leftWidth, setLeftWidth] = useState(250);
+  const [rightWidth, setRightWidth] = useState(300);
 
-interface StudioLayoutInnerProps {
-  children: ReactNode;
-  navigation?: ReactNode | StudioNavItem[];
-  explorer?: ReactNode;
-  properties?: ReactNode;
-  hideNavigation: boolean;
-  hideProperties: boolean;
-  showHeader: boolean;
-  className?: string;
-}
-
-function StudioLayoutInner({
-  children,
-  navigation,
-  explorer,
-  properties,
-  hideNavigation,
-  hideProperties,
-  showHeader,
-  className,
-}: StudioLayoutInnerProps) {
-  const {
-    isNavigationCollapsed,
-    toggleNavigation,
-    isPropertiesCollapsed,
-  } = useStudioContext();
-
-  // Render navigation
-  const renderNavigation = () => {
-    if (hideNavigation) return null;
-    
-    if (React.isValidElement(navigation)) {
-      return navigation;
-    }
-    
-    const navItems = Array.isArray(navigation) ? navigation : undefined;
-    
-    return (
-      <StudioNavigation
-        items={navItems}
-        collapsed={isNavigationCollapsed}
-        className="hidden md:flex shrink-0"
-      />
-    );
+  const onResizeLeft = (_event: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+    setLeftWidth(size.width);
   };
 
-  return (
-    <div className={cn('flex flex-col h-screen overflow-hidden bg-background', className)}>
-      {/* Header */}
-      {showHeader && (
-        <StudioHeader
-          onToggleNavigation={toggleNavigation}
-          isNavigationCollapsed={isNavigationCollapsed}
-        />
-      )}
+  const onResizeRight = (_event: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+    setRightWidth(size.width);
+  };
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Navigation */}
-        {renderNavigation()}
-
-        {/* Explorer Panel */}
-        {explorer && (
-          <div className="w-64 shrink-0 border-r border-outline/20 bg-surface overflow-hidden hidden lg:block">
-            {explorer}
-          </div>
-        )}
-
-        {/* Main Canvas / Content */}
-        <main className="flex-1 overflow-hidden bg-background">
-          {children}
-        </main>
-
-        {/* Properties Panel */}
-        {!hideProperties && properties && (
-          <div
-            className={cn(
-              'shrink-0 border-l border-outline/20 bg-surface overflow-hidden hidden lg:block transition-all duration-200',
-              isPropertiesCollapsed ? 'w-10' : 'w-80'
-            )}
-          >
-            {properties}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * StudioLayout with custom wrapper
- * Use when you need direct access to context without provider re-creation
- */
-export function StudioLayoutContent({
-  children,
-  explorer,
-  properties,
-  hideNavigation = false,
-  hideProperties = false,
-  showHeader = true,
-  className,
-}: Omit<StudioLayoutProps, 'initialWorkspace' | 'initialEnvironment'>) {
-  const {
-    isNavigationCollapsed,
-    toggleNavigation,
-    isPropertiesCollapsed,
-  } = useStudioContext();
+  // Combine navigation and explorer
+  const showLeft = !hideNavigation && (navigation || explorer);
+  const showRight = !hideProperties && properties;
 
   return (
-    <div className={cn('flex flex-col h-screen overflow-hidden bg-background', className)}>
-      {/* Header */}
-      {showHeader && (
-        <StudioHeader
-          onToggleNavigation={toggleNavigation}
-          isNavigationCollapsed={isNavigationCollapsed}
-        />
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      {/* Left Pane */}
+      {showLeft && (
+        <Resizable
+          width={leftWidth}
+          height={Infinity}
+          resizeHandles={['e']}
+          onResize={onResizeLeft}
+          handle={
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-black/10 dark:hover:bg-white/10 z-10 transition-colors"
+              style={{ right: -2 }}
+            />
+          }
+        >
+          <aside
+            style={{ width: leftWidth }}
+            className="flex h-full flex-col border-r bg-muted/5 relative shrink-0"
+          >
+            {navigation}
+            {explorer}
+          </aside>
+        </Resizable>
       )}
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Navigation */}
-        {!hideNavigation && (
-          <StudioNavigation
-            collapsed={isNavigationCollapsed}
-            className="hidden md:flex shrink-0"
-          />
-        )}
+      {/* Main Content */}
+      <main className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
+        {children}
+      </main>
 
-        {/* Explorer Panel */}
-        {explorer && (
-          <div className="w-64 shrink-0 border-r border-outline/20 bg-surface overflow-hidden hidden lg:block">
-            {explorer}
-          </div>
-        )}
-
-        {/* Main Canvas / Content */}
-        <main className="flex-1 overflow-hidden bg-background">
-          {children}
-        </main>
-
-        {/* Properties Panel */}
-        {!hideProperties && properties && (
-          <div
-            className={cn(
-              'shrink-0 border-l border-outline/20 bg-surface overflow-hidden hidden lg:block transition-all duration-200',
-              isPropertiesCollapsed ? 'w-10' : 'w-80'
-            )}
+      {/* Right Pane */}
+      {showRight && (
+        <Resizable
+          width={rightWidth}
+          height={Infinity}
+          resizeHandles={['w']}
+          onResize={onResizeRight}
+          handle={
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-black/10 dark:hover:bg-white/10 z-10 transition-colors"
+              style={{ left: -2 }}
+            />
+          }
+        >
+          <aside
+            style={{ width: rightWidth }}
+            className="flex h-full flex-col border-l bg-background relative shrink-0"
           >
             {properties}
-          </div>
-        )}
-      </div>
+          </aside>
+        </Resizable>
+      )}
     </div>
   );
-}
-
-export default StudioLayout;
+};
