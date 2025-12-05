@@ -43,8 +43,17 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-border bg-background px-4 shrink-0 justify-between">
-      <div className="flex items-center gap-4 min-w-0 font-semibold">
+    <div className="h-14 border-b bg-background flex items-center justify-between px-4 border-t-4 border-t-indigo-500">
+      <div className="flex items-center gap-4">
+        <div className="font-bold text-lg flex items-center gap-2">
+          <span>Mirel</span>
+          <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs">Studio</span>
+        </div>
+        
+        {/* Workspace/Project Selector could go here */}
+        
+        <div className="h-6 w-px bg-border" />
+
         {onToggleNavigation && (
           <Button 
             variant="ghost" 
@@ -67,6 +76,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         </div>
       </div>
 
+
+      
       {/* Center: Search */}
       <div className="flex-1 flex justify-center max-w-xl mx-auto px-4">
         <GlobalSearch />
@@ -82,6 +93,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
 
         <UserMenu />
       </div>
-    </header>
+    </div>
   );
 };
