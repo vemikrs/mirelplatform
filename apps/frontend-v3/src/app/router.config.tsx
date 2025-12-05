@@ -24,6 +24,7 @@ import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
 import { LicenseManagementPage } from '@/features/admin/pages/LicenseManagementPage';
 import { SystemSettingsPage } from '@/features/admin/pages/SystemSettingsPage';
+import { SystemStatusPage } from '@/features/admin/pages/SystemStatusPage';
 import { TenantManagementPage } from '@/features/admin/pages/TenantManagementPage';
 import { OrganizationManagementPage } from '@/features/organization';
 import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
@@ -262,6 +263,11 @@ export const router = createBrowserRouter([
             path: 'admin/system',
             element: <SystemSettingsPage />,
             handle: { title: '管理 - システム設定' },
+          },
+          {
+            path: 'admin/status',
+            element: <SystemStatusPage />,
+            handle: { title: '管理 - システムステータス' },
           },
           {
             path: 'admin/tenant',

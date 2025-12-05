@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
-import { Activity, Server, Cpu, HardDrive, RefreshCw, AlertCircle } from 'lucide-react';
+import { Activity, Server, Cpu, HardDrive, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSystemStatus } from '@/lib/api/system';
+import { Link } from 'react-router-dom';
 
 export function SystemStatusWidget() {
   const queryClient = useQueryClient();
@@ -173,6 +174,16 @@ export function SystemStatusWidget() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* View Details Link */}
+        <div className="pt-2 border-t">
+          <Button variant="ghost" size="sm" className="w-full" asChild>
+            <Link to="/admin/status">
+              詳細を表示
+              <ExternalLink className="size-3 ml-2" />
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>
