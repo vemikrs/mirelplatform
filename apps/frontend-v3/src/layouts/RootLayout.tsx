@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData } from 'react-router-dom';
-import { Badge, Button, Toaster, Dialog, DialogContent, DialogTrigger } from '@mirel/ui';
-import type { NavigationAction, NavigationConfig, NavigationLink } from '@/app/navigation.schema';
-import { HelpCircle, Menu } from 'lucide-react';
+import { Button, Toaster, Dialog, DialogContent, DialogTrigger } from '@mirel/ui';
+import type { NavigationConfig } from '@/app/navigation.schema';
+import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { SideNavigation } from '@/components/layouts/SideNavigation';
@@ -10,30 +10,6 @@ import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
-
-function renderAction(action: NavigationAction) {
-  switch (action.type) {
-    case 'help':
-      return (
-        <Button
-          key={action.id}
-          variant="ghost"
-          size="square"
-          aria-label="ヘルプセンター"
-          asChild={Boolean(action.path)}
-        >
-          {action.path ? (
-            <Link to={action.path}>{<HelpCircle className="size-5" />}</Link>
-          ) : (
-            <HelpCircle className="size-5" />
-          )}
-        </Button>
-      );
-    default:
-      return null;
-  }
-}
 
 /**
  * Root layout component
@@ -66,22 +42,7 @@ export function RootLayout() {
     }
   }, [isAuthenticated, fetchProfile]);
 
-  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
-  });
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleToggle = (event: Event) => {
-      const customEvent = event as CustomEvent<{ visible: boolean }>;
-      setQuickLinksVisible(customEvent.detail.visible);
-    };
-    window.addEventListener('quicklinks-toggle', handleToggle);
-    return () => window.removeEventListener('quicklinks-toggle', handleToggle);
-  }, []);
 
   const primaryLinks = useMemo(() => {
     if (dynamicMenu && dynamicMenu.length > 0) {
@@ -126,27 +87,6 @@ export function RootLayout() {
           </div>
         </div>
       </header>
-
-      {initialNavigation.quickLinks.length > 0 && quickLinksVisible ? (
-        <div className="border-b border-border bg-surface">
-          <div className="flex flex-wrap items-center gap-2 px-4 py-3 md:px-6">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Quick Links
-            </span>
-            {initialNavigation.quickLinks.map((link: NavigationLink) => (
-              <Badge key={link.id} variant="neutral">
-                <Link
-                  to={link.path}
-                  className="text-xs font-medium text-current"
-                  aria-label={link.description ?? link.label}
-                >
-                  {link.label}
-                </Link>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex flex-1 items-start">
         <SideNavigation 

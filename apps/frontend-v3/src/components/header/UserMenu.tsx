@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, type ThemeMode } from '@/lib/hooks/useTheme';
@@ -19,10 +18,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuPortal
 } from '@mirel/ui';
-import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff, Building2 } from 'lucide-react';
-import type { LicenseInfo } from '@/lib/api/userProfile';
+import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Building2 } from 'lucide-react';
 
-const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
@@ -31,21 +28,9 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  */
 export function UserMenu() {
   const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
+
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
-  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
-  });
-
-  const toggleQuickLinks = () => {
-    const newValue = !quickLinksVisible;
-    setQuickLinksVisible(newValue);
-    window.localStorage.setItem(QUICK_LINKS_STORAGE_KEY, String(newValue));
-    // カスタムイベントでRootLayoutに通知
-    window.dispatchEvent(new CustomEvent('quicklinks-toggle', { detail: { visible: newValue } }));
-  };
 
   const handleLogout = () => {
     console.log('[DEBUG UserMenu] handleLogout called');
@@ -193,11 +178,6 @@ export function UserMenu() {
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-
-          <DropdownMenuItem onClick={toggleQuickLinks}>
-            {quickLinksVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-            <span>Quick Links {quickLinksVisible ? '非表示' : '表示'}</span>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
