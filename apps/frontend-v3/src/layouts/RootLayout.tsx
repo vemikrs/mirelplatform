@@ -56,7 +56,7 @@ export function RootLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
-        <div className="flex h-16 items-center justify-between gap-4 px-4 md:h-20 md:gap-6 md:px-6">
+        <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
             {/* Mobile menu button */}
             <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
