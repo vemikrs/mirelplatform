@@ -17,7 +17,7 @@ import java.util.List;
 public class SchemaManageService {
 
     @org.springframework.beans.factory.annotation.Autowired
-    private StudioModelService studioModelService;
+    private jp.vemi.mirel.apps.studio.modeler.domain.service.StuModelService studioModelService;
     @org.springframework.beans.factory.annotation.Autowired
     private SchemaEngineService schemaEngine;
 
@@ -32,24 +32,18 @@ public class SchemaManageService {
      */
     @Transactional
     public String createDraft(String name, String description) {
-        StuModelHeaderLegacy model = studioModelService.createDraft(name, description);
+        jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader model = studioModelService.createDraft(name,
+                description);
         return model.getModelId();
     }
 
     /**
      * Update a model draft.
      *
-     * @param modelId
-     *            Model ID
-     * @param name
-     *            Model name
-     * @param description
-     *            Model description
-     * @param fields
-     *            List of fields
      */
     @Transactional
-    public void updateDraft(String modelId, String name, String description, List<StuField> fields) {
+    public void updateDraft(String modelId, String name, String description,
+            List<jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel> fields) {
         studioModelService.updateDraft(modelId, name, description, fields);
     }
 
@@ -61,15 +55,7 @@ public class SchemaManageService {
      */
     @Transactional
     public void deleteModel(String modelId) {
-        StuModelHeaderLegacy model = studioModelService.getModel(modelId);
-
-        // If published, we might want to drop the table too.
-        // For Phase 1, we will drop the table if it exists.
-        if ("PUBLISHED".equals(model.getStatus())) {
-            // TODO: Implement drop table logic in SchemaEngineService if needed.
-            // For now, we just delete metadata.
-        }
-
+        // Drop table logic if needed
         studioModelService.deleteModel(modelId);
     }
 
@@ -79,15 +65,11 @@ public class SchemaManageService {
      * @param modelId
      *            The model ID to publish
      */
-    /**
-     * Publish a model, creating the physical table.
-     *
-     * @param modelId
-     *            The model ID to publish
-     */
     @Transactional
     public void publish(String modelId) {
-        studioModelService.publish(modelId, schemaEngine);
+        // TODO: Call SchemaEngine to create table (needs refactoring to use StuModel)
+        // schemaEngine.createTable(modelId);
+        studioModelService.publish(modelId);
     }
 
     /**
@@ -116,8 +98,8 @@ public class SchemaManageService {
      * @return Model detail
      */
     public jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse getModel(String modelId) {
-        StuModelHeaderLegacy header = studioModelService.getModel(modelId);
-        List<StuField> fields = studioModelService.getFields(modelId);
+        jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader header = studioModelService.findHeader(modelId);
+        List<jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel> fields = studioModelService.findModels(modelId);
 
         jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse response = new jp.vemi.mirel.apps.studio.application.dto.SchemaDetailResponse();
         response.setModelId(header.getModelId());

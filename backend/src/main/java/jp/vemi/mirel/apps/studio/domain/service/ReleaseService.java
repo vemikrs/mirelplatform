@@ -4,11 +4,12 @@
 package jp.vemi.mirel.apps.studio.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuField;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuFlow;
-import jp.vemi.mirel.apps.studio.domain.dao.entity.StuModelHeaderLegacy;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader;
 import jp.vemi.mirel.apps.studio.domain.dao.entity.StuRelease;
 import jp.vemi.mirel.apps.studio.domain.dao.repository.StuReleaseRepository;
+import jp.vemi.mirel.apps.studio.modeler.domain.service.StuModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,7 @@ public class ReleaseService {
     private StuReleaseRepository releaseRepository;
 
     @Autowired
-    private StudioModelService studioModelService;
+    private StuModelService studioModelService;
 
     @Autowired
     private FlowManageService flowManageService;
@@ -37,8 +38,8 @@ public class ReleaseService {
     @Transactional
     public StuRelease createRelease(String modelId) {
         // 1. Fetch current state
-        StuModelHeaderLegacy header = studioModelService.getModel(modelId);
-        List<StuField> fields = studioModelService.getFields(modelId);
+        StuModelHeader header = studioModelService.findHeader(modelId);
+        List<StuModel> fields = studioModelService.findModels(modelId);
         List<StuFlow> flows = flowManageService.getFlowsByModelId(modelId);
 
         // 2. Create Snapshot

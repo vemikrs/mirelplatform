@@ -60,6 +60,9 @@ public class StuModel {
     @Column(name = "display_width")
     private Long displayWidth;
 
+    @Column(name = "layout")
+    private String layout;
+
     @Column(name = "format")
     private String format;
 

@@ -47,6 +47,12 @@ public class StuModelHeader {
     @Column(name = "tenant_id", nullable = false)
     private String tenantId;
 
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "form_settings", length = 2000)
+    private String formSettings;
+
     @Version
     @Column(name = "version")
     private Integer version;

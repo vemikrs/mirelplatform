@@ -52,6 +52,61 @@ public class StuModelService {
         schDicModelHeaderRepository.save(header);
     }
 
+    public StuModelHeader createDraft(String name, String description) {
+        StuModelHeader model = new StuModelHeader();
+        model.setModelId(java.util.UUID.randomUUID().toString());
+        model.setModelName(name);
+        model.setDescription(description);
+        model.setStatus("DRAFT");
+        model.setModelType("ENTITY");
+        model.setTenantId(TenantContext.getTenantId());
+        model.setVersion(1);
+        return schDicModelHeaderRepository.save(model);
+    }
+
+    public void updateDraft(String modelId, String name, String description, List<StuModel> fields) {
+        String tenantId = TenantContext.getTenantId();
+        StuModelHeader model = schDicModelHeaderRepository.findByModelIdAndTenantId(modelId, tenantId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Model not found: " + modelId));
+
+        if ("PUBLISHED".equals(model.getStatus())) {
+            throw new IllegalStateException("Cannot update published model. Create a new version.");
+        }
+
+        model.setModelName(name);
+        model.setDescription(description);
+        schDicModelHeaderRepository.save(model);
+
+        // Replace fields
+        List<StuModel> existingFields = schDicModelRepository.findByPk_ModelIdAndTenantId(modelId, tenantId);
+        schDicModelRepository.deleteAll(existingFields);
+
+        fields.forEach(field -> {
+            if (field.getPk() == null) {
+                field.setPk(new StuModel.PK());
+            }
+            field.getPk().setModelId(modelId);
+            if (field.getPk().getFieldId() == null) {
+                field.getPk().setFieldId(java.util.UUID.randomUUID().toString());
+            }
+            field.setTenantId(tenantId);
+        });
+        schDicModelRepository.saveAll(fields);
+    }
+
+    public List<StuModelHeader> findAll() {
+        return schDicModelHeaderRepository.findByTenantId(TenantContext.getTenantId());
+    }
+
+    public void publish(String modelId) {
+        String tenantId = TenantContext.getTenantId();
+        StuModelHeader model = schDicModelHeaderRepository.findByModelIdAndTenantId(modelId, tenantId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Model not found: " + modelId));
+        // TODO: Call SchemaEngine to create table
+        model.setStatus("PUBLISHED");
+        schDicModelHeaderRepository.save(model);
+    }
+
     public void deleteModel(String modelId) {
         String tenantId = TenantContext.getTenantId();
         // Delete header

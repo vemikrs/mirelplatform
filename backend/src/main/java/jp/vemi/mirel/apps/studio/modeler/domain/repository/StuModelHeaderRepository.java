@@ -12,4 +12,6 @@ public interface StuModelHeaderRepository extends JpaRepository<StuModelHeader, 
     Optional<StuModelHeader> findByModelIdAndTenantId(String modelId, String tenantId);
 
     void deleteByModelIdAndTenantId(String modelId, String tenantId);
+
+    java.util.List<StuModelHeader> findByTenantId(String tenantId);
 }
