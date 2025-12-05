@@ -38,6 +38,7 @@ import { RelationViewPage } from '@/features/studio/modeler/pages/RelationViewPa
 import { FormListPage } from '@/features/studio/forms/pages/FormListPage';
 import { FormDesignerPage } from '@/features/studio/forms/pages/FormDesignerPage';
 import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
+import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -345,6 +346,11 @@ export const router = createBrowserRouter([
                 index: true,
                 element: <DataBrowserPage />,
                 handle: { title: 'Studio - Data Browser' },
+              },
+              {
+                path: ':modelId/:recordId',
+                element: <DataRecordPage />,
+                handle: { title: 'Studio - Data Record' },
               },
             ],
           },

@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { modelerApi } from '../api/modelerApi';
-import type { SchDicModel } from '../types/modeler';
-import { DynamicForm } from '../components/DynamicForm';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
+import { modelerApi } from '../../modeler/api/modelerApi';
+import type { SchDicModel } from '../../modeler/types/modeler';
+import { DynamicForm } from '../../modeler/components/DynamicForm';
 
-export const ModelerRecordDetailPage: React.FC = () => {
+export const DataRecordPage: React.FC = () => {
   const { modelId, recordId } = useParams<{ modelId: string; recordId: string }>();
   const navigate = useNavigate();
   const [fields, setFields] = useState<SchDicModel[]>([]);
@@ -17,7 +17,9 @@ export const ModelerRecordDetailPage: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const modelerResponse = await modelerApi.listModel(modelId!);
+      if (!modelId) return;
+
+      const modelerResponse = await modelerApi.listModel(modelId);
       setFields(modelerResponse.data.modelers);
 
       if (recordId && recordId !== 'new') {
@@ -32,15 +34,13 @@ export const ModelerRecordDetailPage: React.FC = () => {
   }, [modelId, recordId]);
 
   useEffect(() => {
-    if (modelId) {
-      loadData();
-    }
-  }, [modelId, recordId, loadData]);
+    loadData();
+  }, [loadData]);
 
   const handleSubmit = async () => {
     try {
       await modelerApi.save(modelId!, recordId === 'new' ? null : recordId!, data);
-      navigate('/apps/modeler/records');
+      navigate('/apps/studio/data');
     } catch (error) {
       console.error('Failed to save record:', error);
       alert('レコードの保存に失敗しました');
@@ -65,8 +65,7 @@ export const ModelerRecordDetailPage: React.FC = () => {
         <StudioContextBar
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
-            { label: 'Modeler', href: '/apps/studio/modeler' },
-            { label: 'データ管理', href: '/apps/studio/modeler/records' },
+            { label: 'Data', href: '/apps/studio/data' },
             { label: modelId || '' },
             { label: pageTitle },
           ]}

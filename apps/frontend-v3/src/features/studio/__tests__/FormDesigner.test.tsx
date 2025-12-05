@@ -35,8 +35,8 @@ describe('FormDesigner', () => {
     expect(screen.getByText('Text Input')).toBeInTheDocument();
     expect(screen.getByText('Number Input')).toBeInTheDocument();
     
-    // Check Empty Canvas message
-    expect(screen.getByText('Empty Form')).toBeInTheDocument();
+    // Check Property Editor empty state
+    expect(screen.getByText('Select a widget to edit its properties')).toBeInTheDocument();
   });
 
   // Testing Drag and Drop with dnd-kit in jsdom is notoriously difficult without specific setup.
