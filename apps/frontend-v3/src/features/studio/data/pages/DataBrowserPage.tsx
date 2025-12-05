@@ -6,6 +6,7 @@ import { ModelSelector } from '../../modeler/components/ModelSelector';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
 import { Button, Input } from '@mirel/ui';
+import { StudioNavigation } from '../../components/StudioNavigation';
 
 export const DataBrowserPage: React.FC = () => {
   const [models, setModels] = useState<{ value: string; text: string }[]>([]);
@@ -86,21 +87,24 @@ export const DataBrowserPage: React.FC = () => {
   const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
-    <StudioLayout hideContextBar={true}>
+    <StudioLayout 
+      hideContextBar={true}
+      navigation={<StudioNavigation className="h-full" />}
+    >
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
-            { label: 'Data', href: '/apps/studio/data' },
+            { label: 'データ', href: '/apps/studio/data' },
           ]}
-          title="Data Browser"
+          title="データブラウザ"
         >
           <Button
             onClick={handleCreateNew}
             disabled={!selectedModelId}
             size="sm"
           >
-            New Record
+            新規レコード
           </Button>
         </StudioContextBar>
 
@@ -119,19 +123,19 @@ export const DataBrowserPage: React.FC = () => {
               <form onSubmit={handleSearch} className="flex gap-2">
                 <Input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="検索..."
                   className="w-64"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <Button type="submit" variant="secondary">
-                  Search
+                  検索
                 </Button>
               </form>
 
               <div className="border border-border rounded-lg bg-card shadow-sm overflow-hidden">
                 {loading ? (
-                  <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                  <div className="p-8 text-center text-muted-foreground">読み込み中...</div>
                 ) : (
                   <RecordGrid fields={fields} records={records} onRowClick={handleRowClick} />
                 )}
@@ -145,10 +149,10 @@ export const DataBrowserPage: React.FC = () => {
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
                 >
-                  Previous
+                  前へ
                 </Button>
                 <span className="text-sm">
-                  Page {page} of {totalPages || 1}
+                  {page} / {totalPages || 1} ページ
                 </span>
                 <Button
                   variant="outline"
@@ -156,7 +160,7 @@ export const DataBrowserPage: React.FC = () => {
                   onClick={() => setPage(p => p + 1)}
                   disabled={page >= totalPages}
                 >
-                  Next
+                  次へ
                 </Button>
                 <select
                   value={pageSize}

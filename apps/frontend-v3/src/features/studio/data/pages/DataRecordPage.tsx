@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
+import { StudioNavigation } from '../../components/StudioNavigation';
 import { modelerApi } from '../../modeler/api/modelerApi';
 import type { SchDicModel } from '../../modeler/types/modeler';
 import { DynamicForm } from '../../modeler/components/DynamicForm';
@@ -49,7 +50,10 @@ export const DataRecordPage: React.FC = () => {
 
   if (loading) {
     return (
-      <StudioLayout hideContextBar={true}>
+      <StudioLayout 
+        navigation={<StudioNavigation className="h-full border-r" />}
+        hideContextBar={true}
+      >
         <div className="flex items-center justify-center h-full text-muted-foreground">
           読み込み中...
         </div>
@@ -60,12 +64,15 @@ export const DataRecordPage: React.FC = () => {
   const pageTitle = recordId === 'new' ? '新規レコード作成' : 'レコード編集';
 
   return (
-    <StudioLayout hideContextBar={true}>
+    <StudioLayout 
+      navigation={<StudioNavigation className="h-full border-r" />}
+      hideContextBar={true}
+    >
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
-            { label: 'Data', href: '/apps/studio/data' },
+            { label: 'データ', href: '/apps/studio/data' },
             { label: modelId || '' },
             { label: pageTitle },
           ]}

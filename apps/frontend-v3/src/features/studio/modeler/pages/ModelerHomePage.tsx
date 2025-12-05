@@ -13,22 +13,22 @@ export const ModelerHomePage: React.FC = () => {
   const features = [
     {
       id: 'entities',
-      title: 'Entities',
-      description: 'Define data models, fields, and validation rules.',
+      title: 'エンティティ',
+      description: 'データモデル、フィールド、バリデーションルールを定義します。',
       icon: Database,
       path: '/apps/studio/modeler/entities',
     },
     {
       id: 'relations',
-      title: 'Relations',
-      description: 'Visualize and manage relationships between entities.',
+      title: 'リレーション',
+      description: 'エンティティ間の関係を可視化・管理します。',
       icon: Share2,
       path: '/apps/studio/modeler/relations',
     },
     {
       id: 'codes',
-      title: 'Code Master',
-      description: 'Manage system codes and enumerations.',
+      title: 'コードマスタ',
+      description: 'システムコードや列挙値を管理します。',
       icon: Tags,
       path: '/apps/studio/modeler/codes',
     },
@@ -42,8 +42,8 @@ export const ModelerHomePage: React.FC = () => {
       <div className="p-8 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold">Modeler Dashboard</h1>
-            <p className="text-muted-foreground">Design your data architecture</p>
+            <h1 className="text-2xl font-bold">モデラーダッシュボード</h1>
+            <p className="text-muted-foreground">データアーキテクチャを設計します</p>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export const ModelerHomePage: React.FC = () => {
               </p>
 
               <div className="flex items-center text-sm font-medium text-primary mt-auto">
-                Open {feature.title} <ArrowRight className="ml-2 size-4" />
+                {feature.title} を開く <ArrowRight className="ml-2 size-4" />
               </div>
             </Card>
           ))}

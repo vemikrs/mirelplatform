@@ -40,7 +40,7 @@ export const EntityListPage: React.FC = () => {
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
             { label: 'Modeler', href: '/apps/studio/modeler' },
-            { label: 'Entities', href: '/apps/studio/modeler/entities' },
+            { label: 'エンティティ', href: '/apps/studio/modeler/entities' },
           ]}
           actions={
             <Button onClick={() => navigate('/apps/studio/modeler/entities/new')}>

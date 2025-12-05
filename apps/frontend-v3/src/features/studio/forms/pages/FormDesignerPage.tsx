@@ -11,6 +11,7 @@ import { FlowDesignerContainer } from '../../components/FlowDesigner/FlowDesigne
 import { useFlowDesignerStore } from '../../stores/useFlowDesignerStore';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar, ModeSwitcher } from '../../components';
+import { StudioNavigation } from '../../components/StudioNavigation';
 
 export const FormDesignerPage: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
@@ -73,7 +74,7 @@ export const FormDesignerPage: React.FC = () => {
       }
     } else if (!paramModelId) {
       // Reset for new form
-      setModelInfo(null, 'Untitled Form');
+      setModelInfo(null, '無題のフォーム');
       setWidgets([]);
     }
   }, [paramModelId, schema, setModelInfo, setWidgets, mode, loadFlow]);
@@ -107,12 +108,12 @@ export const FormDesignerPage: React.FC = () => {
         await saveFlow(modelId, modelName);
         
         toast({
-          title: 'Success',
-          description: 'Form and Flow saved successfully',
+          title: '保存完了',
+          description: 'フォームとフローを保存しました',
           variant: 'success',
         });
       } else {
-        const name = prompt('Enter form name', modelName);
+        const name = prompt('フォーム名を入力してください', modelName);
         if (!name) return;
         const result = await createDraft({
           name,
@@ -130,8 +131,8 @@ export const FormDesignerPage: React.FC = () => {
            
            navigate(`/apps/studio/forms/${result.data}`);
            toast({
-             title: 'Success',
-             description: 'Form created successfully',
+             title: '作成完了',
+             description: 'フォームを作成しました',
              variant: 'success',
            });
         }
@@ -139,8 +140,8 @@ export const FormDesignerPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to save', error);
       toast({
-        title: 'Error',
-        description: 'Failed to save form',
+        title: 'エラー',
+        description: '保存に失敗しました',
         variant: 'destructive',
       });
     }
@@ -148,17 +149,21 @@ export const FormDesignerPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <StudioLayout hideProperties={true} hideContextBar={true}>
-        <div className="h-full flex items-center justify-center">Loading...</div>
+      <StudioLayout 
+        navigation={<StudioNavigation className="h-full border-r" />}
+        hideProperties={true} 
+        hideContextBar={true}
+      >
+        <div className="h-full flex items-center justify-center">読み込み中...</div>
       </StudioLayout>
     );
   }
 
   // Mode definitions for the switcher
   const modes = [
-    { id: 'edit', label: 'Form', icon: Edit },
-    { id: 'flow', label: 'Flow', icon: Workflow },
-    { id: 'preview', label: 'Preview', icon: Eye },
+    { id: 'edit', label: 'フォーム', icon: Edit },
+    { id: 'flow', label: 'フロー', icon: Workflow },
+    { id: 'preview', label: 'プレビュー', icon: Eye },
   ];
 
   // Quick action buttons
@@ -178,7 +183,7 @@ export const FormDesignerPage: React.FC = () => {
         className="gap-1.5"
       >
         <Database className="size-4" />
-        <span className="hidden md:inline">Data</span>
+        <span className="hidden md:inline">データ</span>
       </Button>
       <Button 
         size="sm" 
@@ -188,13 +193,17 @@ export const FormDesignerPage: React.FC = () => {
         className="gap-1.5"
       >
         <Rocket className="size-4" />
-        <span className="hidden md:inline">Releases</span>
+        <span className="hidden md:inline">リリース</span>
       </Button>
     </>
   );
 
   return (
-    <StudioLayout hideProperties={mode !== 'edit'} hideContextBar={true}>
+    <StudioLayout 
+      navigation={<StudioNavigation className="h-full border-r" />}
+      hideProperties={mode !== 'edit'} 
+      hideContextBar={true}
+    >
       <div className="flex flex-col h-full">
         {/* Context Bar with mode switcher */}
         <StudioContextBar
@@ -202,7 +211,7 @@ export const FormDesignerPage: React.FC = () => {
           subtitle={modelId ? `v${schema?.data?.version || 1}` : 'New'}
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
-            { label: 'Forms', href: '/apps/studio/forms' },
+            { label: 'フォーム', href: '/apps/studio/forms' },
             { label: modelName, href: `/apps/studio/forms/${modelId || 'new'}` },
           ]}
           actions={quickActions}
@@ -218,7 +227,7 @@ export const FormDesignerPage: React.FC = () => {
           {mode === 'preview' && (
             <div className="h-full overflow-auto p-8 bg-muted/30 flex justify-center">
               <Card className="w-full max-w-2xl p-8 bg-card shadow-sm h-fit">
-                <h2 className="text-xl font-bold mb-6">Preview Form</h2>
+                <h2 className="text-xl font-bold mb-6">プレビュー</h2>
                 <DynamicFormRenderer 
                   widgets={widgets} 
                   onSubmit={(data) => alert(JSON.stringify(data, null, 2))} 

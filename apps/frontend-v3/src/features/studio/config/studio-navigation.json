@@ -6,19 +6,19 @@
     "children": [
       {
         "id": "entities",
-        "label": "Entities",
+        "label": "エンティティ",
         "path": "/apps/studio/modeler/entities",
         "icon": "Box"
       },
       {
         "id": "relations",
-        "label": "Relations",
+        "label": "リレーション",
         "path": "/apps/studio/modeler/relations",
         "icon": "Share2"
       },
       {
         "id": "codes",
-        "label": "Code Master",
+        "label": "コードマスタ",
         "path": "/apps/studio/modeler/codes",
         "icon": "Tags"
       }
@@ -31,7 +31,7 @@
     "children": [
       {
         "id": "all-forms",
-        "label": "All Forms",
+        "label": "フォーム一覧",
         "path": "/apps/studio/forms",
         "icon": "List"
       }
@@ -44,7 +44,7 @@
     "children": [
       {
         "id": "all-flows",
-        "label": "All Flows",
+        "label": "フロー一覧",
         "path": "/apps/studio/flows",
         "icon": "List"
       }
@@ -57,7 +57,7 @@
     "children": [
       {
         "id": "browser",
-        "label": "Data Browser",
+        "label": "データブラウザ",
         "path": "/apps/studio/data",
         "icon": "Grid"
       }

@@ -6,6 +6,11 @@ import { ReleaseList } from '../components/ReleaseCenter/ReleaseList';
 import { Button, toast } from '@mirel/ui';
 import { ArrowLeft, Plus } from 'lucide-react';
 
+import { StudioLayout } from '../../layouts';
+import { StudioContextBar } from '../../components';
+import { StudioNavigation } from '../../components/StudioNavigation';
+import React from 'react';
+
 export const ReleasePage: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
@@ -22,49 +27,53 @@ export const ReleasePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['releases', modelId] });
       toast({
-        title: 'Release created successfully',
+        title: 'リリース作成完了',
+        description: 'リリースを作成しました',
         variant: 'success',
       });
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to create release',
+        title: 'エラー',
+        description: 'リリースの作成に失敗しました',
         variant: 'destructive',
       });
     },
   });
 
-  if (!modelId) return <div>Invalid Model ID</div>;
+  if (!modelId) return <div>モデルIDが無効です</div>;
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-      {/* Toolbar */}
-      <div className="h-14 border-b bg-background flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/apps/studio/${modelId}`)}>
-            <ArrowLeft className="size-4" />
-          </Button>
-          <h1 className="font-semibold text-lg">Release Center</h1>
-        </div>
-        <div>
-          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending} className="gap-2">
-            <Plus className="size-4" />
-            Create Release
-          </Button>
-        </div>
-      </div>
+    <StudioLayout 
+        navigation={<StudioNavigation className="h-full border-r" />}
+        hideContextBar={true}
+    >
+        <div className="flex flex-col h-full overflow-hidden">
+            <StudioContextBar
+                breadcrumbs={[
+                    { label: 'Studio', href: '/apps/studio' },
+                    { label: 'フォーム', href: '..' }, // Go up to form/model
+                    { label: modelId },
+                    { label: 'リリース' },
+                ]}
+                title="リリースセンター"
+            >
+                <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending} className="gap-2">
+                    <Plus className="size-4" />
+                    リリース作成
+                </Button>
+            </StudioContextBar>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-8 bg-muted/30">
-        <div className="max-w-4xl mx-auto">
-          {isLoading ? (
-            <div>Loading...</div>
-          ) : (
-            <ReleaseList releases={releases?.data || []} />
-          )}
+            <div className="flex-1 overflow-auto p-8 bg-muted/30">
+                <div className="max-w-4xl mx-auto">
+                {isLoading ? (
+                    <div>読み込み中...</div>
+                ) : (
+                    <ReleaseList releases={releases?.data || []} />
+                )}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
+    </StudioLayout>
   );
 };

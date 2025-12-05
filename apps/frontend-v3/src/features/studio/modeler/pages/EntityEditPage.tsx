@@ -53,8 +53,8 @@ export const EntityEditPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load model:', error);
       toast({
-        title: "Error",
-        description: "Failed to load model definition.",
+        title: "エラー",
+        description: "モデル定義の読み込みに失敗しました。",
         variant: "destructive",
       });
     }
@@ -104,22 +104,22 @@ export const EntityEditPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!modelId) {
-      toast({ title: "Error", description: "Model ID is required.", variant: "destructive" });
+      toast({ title: "エラー", description: "モデルIDは必須です。", variant: "destructive" });
       return;
     }
     try {
       await modelerApi.saveModel(modelId, modelName, isHidden, modelType, fields);
       toast({
-        title: "Saved",
-        description: "Model definition saved successfully.",
+        title: "保存完了",
+        description: "モデル定義を保存しました。",
         variant: "success",
       });
       // Optionally navigate if it was new
     } catch (error) {
       console.error('Failed to save model:', error);
       toast({
-        title: "Error",
-        description: "Failed to save model.",
+        title: "エラー",
+        description: "モデルの保存に失敗しました。",
         variant: "destructive",
       });
     }
@@ -143,7 +143,7 @@ export const EntityEditPage: React.FC = () => {
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
             { label: 'Modeler', href: '/apps/studio/modeler' },
-            { label: 'Entities', href: '/apps/studio/modeler/entities' },
+            { label: 'エンティティ', href: '/apps/studio/modeler/entities' },
             { label: modelName || modelId || '新規モデル' },
           ]}
           title={modelName || modelId || '新規モデル'}
@@ -155,11 +155,11 @@ export const EntityEditPage: React.FC = () => {
           {/* Model Settings */}
           <div className="bg-card border rounded-lg p-4 shadow-sm space-y-4">
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider border-b pb-2">
-              Model Settings
+              モデル設定
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Model ID</label>
+                <label className="block text-sm font-medium text-foreground mb-1">モデルID</label>
                 <input
                   type="text"
                   className="w-full p-2 border border-input rounded bg-background text-foreground"
@@ -170,7 +170,7 @@ export const EntityEditPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Model Name</label>
+                <label className="block text-sm font-medium text-foreground mb-1">モデル名</label>
                 <input
                   type="text"
                   className="w-full p-2 border border-input rounded bg-background text-foreground"
@@ -182,7 +182,7 @@ export const EntityEditPage: React.FC = () => {
             </div>
             <div className="flex gap-6">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-foreground">Type:</label>
+                <label className="text-sm font-medium text-foreground">タイプ:</label>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
@@ -190,7 +190,7 @@ export const EntityEditPage: React.FC = () => {
                     checked={modelType === 'transaction'}
                     onChange={() => setModelType('transaction')}
                   />
-                  <span className="text-sm">Transaction</span>
+                  <span className="text-sm">トランザクション</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -199,7 +199,7 @@ export const EntityEditPage: React.FC = () => {
                     checked={modelType === 'master'}
                     onChange={() => setModelType('master')}
                   />
-                  <span className="text-sm">Master</span>
+                  <span className="text-sm">マスタ</span>
                 </label>
               </div>
               <label className="flex items-center cursor-pointer">
@@ -209,7 +209,7 @@ export const EntityEditPage: React.FC = () => {
                   checked={isHidden}
                   onChange={(e) => setIsHidden(e.target.checked)}
                 />
-                <span className="text-sm text-foreground">Hidden Model</span>
+                <span className="text-sm text-foreground">隠しモデル</span>
               </label>
             </div>
           </div>
@@ -217,13 +217,13 @@ export const EntityEditPage: React.FC = () => {
           {/* Fields List (Canvas) */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">Fields</h2>
+              <h2 className="text-lg font-semibold text-foreground">フィールド</h2>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={handleAddField}
               >
-                + Add Field
+                + フィールド追加
               </Button>
             </div>
 
@@ -232,18 +232,18 @@ export const EntityEditPage: React.FC = () => {
                 <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                   <tr>
                     <th className="px-4 py-3 w-10">#</th>
-                    <th className="px-4 py-3">Field ID</th>
-                    <th className="px-4 py-3">Display Name</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3 w-20 text-center">Key</th>
-                    <th className="px-4 py-3 w-20 text-center">Req</th>
+                    <th className="px-4 py-3">フィールドID</th>
+                    <th className="px-4 py-3">表示名</th>
+                    <th className="px-4 py-3">タイプ</th>
+                    <th className="px-4 py-3 w-20 text-center">キー</th>
+                    <th className="px-4 py-3 w-20 text-center">必須</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {fields.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                        No fields defined. Click "Add Field" to start.
+                        フィールドが定義されていません。「フィールド追加」をクリックして開始してください。
                       </td>
                     </tr>
                   ) : (

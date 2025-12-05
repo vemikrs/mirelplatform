@@ -27,14 +27,14 @@ export const FlowDesignerPage: React.FC = () => {
             try {
                 await saveFlow(flowId, modelName);
                 toast({
-                    title: 'Success',
-                    description: 'Flow saved successfully',
+                    title: '保存完了',
+                    description: 'フローを保存しました',
                     variant: 'success',
                 });
             } catch (error) {
                 toast({
-                    title: 'Error',
-                    description: 'Failed to save flow',
+                    title: 'エラー',
+                    description: 'フローの保存に失敗しました',
                     variant: 'destructive',
                 });
             }
@@ -42,9 +42,9 @@ export const FlowDesignerPage: React.FC = () => {
     };
 
     const modes = [
-        { id: 'edit', label: 'Form', icon: Edit },
-        { id: 'flow', label: 'Flow', icon: Workflow },
-        { id: 'preview', label: 'Preview', icon: Eye },
+        { id: 'edit', label: 'フォーム', icon: Edit },
+        { id: 'flow', label: 'フロー', icon: Workflow },
+        { id: 'preview', label: 'プレビュー', icon: Eye },
     ];
 
     return (
@@ -57,7 +57,7 @@ export const FlowDesignerPage: React.FC = () => {
                     title={modelName}
                     breadcrumbs={[
                         { label: 'Studio', href: '/apps/studio' },
-                        { label: 'Flows', href: '/apps/studio/flows' },
+                        { label: 'フロー', href: '/apps/studio/flows' },
                         { label: modelName },
                     ]}
                     actions={

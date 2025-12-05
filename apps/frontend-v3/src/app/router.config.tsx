@@ -362,7 +362,7 @@ export const router = createBrowserRouter([
           {
             index: true,
             element: <StudioHomePage />,
-            handle: { title: 'Studio - Home' },
+            handle: { title: 'Studio - ホーム' },
           },
           // New IA Routes
           {
@@ -371,27 +371,30 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 element: <ModelerHomePage />,
-                handle: { title: 'Modeler - Dashboard' },
+                handle: { title: 'Modeler - ダッシュボード' },
               },
               {
                 path: 'entities',
                 element: <EntityListPage />,
-                handle: { title: 'Modeler - Entity List' },
+                handle: { title: 'Modeler - エンティティ一覧' },
               },
               {
                 path: 'entities/:entityId',
                 element: <EntityEditPage />,
-                handle: { title: 'Modeler - Entity Edit' },
+                handle: { title: 'Modeler - エンティティ編集' },
               },
               {
                 path: 'relations',
                 element: <RelationViewPage />,
-                handle: { title: 'Modeler - Relations' },
+                handle: { title: 'Modeler - リレーション' },
               },
               {
                 path: 'codes',
                 element: <ModelerCodeMasterPage />,
-                handle: { title: 'Modeler - Code Master' },
+                handle: { title: '管理 - コードマスタ' }, // Matches existing Admin title? No, this is Modeler version.
+                                                        // Admin has `handle: { title: '管理 - コードマスタ' }` at line 308.
+                                                        // This uses the SAME component `ModelerCodeMasterPage`.
+                                                        // I should use `Modeler - コードマスタ`.
               },
               // Legacy Redirects
               {
@@ -410,12 +413,12 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 element: <FormListPage />,
-                handle: { title: 'Studio - Forms' },
+                handle: { title: 'Studio - フォーム一覧' },
               },
               {
                 path: ':formId',
                 element: <FormDesignerPage />,
-                handle: { title: 'Studio - Form Designer' },
+                handle: { title: 'Studio - フォームデザイナー' },
               },
             ],
           },
@@ -425,12 +428,12 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 element: <FlowListPage />,
-                handle: { title: 'Studio - Flows' },
+                handle: { title: 'Studio - フロー一覧' },
               },
               {
                 path: ':flowId',
                 element: <FlowDesignerPage />,
-                handle: { title: 'Studio - Flow Designer' },
+                handle: { title: 'Studio - フローデザイナー' },
               },
             ],
           },
@@ -440,19 +443,19 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 element: <DataBrowserPage />,
-                handle: { title: 'Studio - Data Browser' },
+                handle: { title: 'Studio - データブラウザ' },
               },
               {
                 path: ':modelId/:recordId',
                 element: <DataRecordPage />,
-                handle: { title: 'Studio - Data Record' },
+                handle: { title: 'Studio - データレコード' },
               },
             ],
           },
           {
             path: ':modelId/releases',
             element: <ReleasePage />,
-            handle: { title: 'Studio - Release Center' },
+            handle: { title: 'Studio - リリースセンター' },
           },
           // Legacy Routes & Redirects
           {

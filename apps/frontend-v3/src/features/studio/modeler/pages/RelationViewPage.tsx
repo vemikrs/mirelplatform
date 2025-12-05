@@ -16,12 +16,12 @@ export const RelationViewPage: React.FC = () => {
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
             { label: 'Modeler', href: '/apps/studio/modeler' },
-            { label: 'Relations', href: '/apps/studio/modeler/relations' },
+            { label: 'リレーション', href: '/apps/studio/modeler/relations' },
           ]}
         />
         <div className="p-6">
-          <h1 className="text-2xl font-bold">Relations</h1>
-          <p className="text-muted-foreground mt-2">Relation view implementation coming soon.</p>
+          <h1 className="text-2xl font-bold">リレーション</h1>
+          <p className="text-muted-foreground mt-2">リレーションビューは実装中です。</p>
         </div>
       </div>
     </StudioLayout>

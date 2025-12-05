@@ -37,7 +37,7 @@ export const FlowListPage: React.FC = () => {
           title="フロー一覧"
           breadcrumbs={[
             { label: 'Studio', href: '/apps/studio' },
-            { label: 'Flows', href: '/apps/studio/flows' },
+            { label: 'フロー', href: '/apps/studio/flows' },
           ]}
           actions={
             <Button onClick={() => navigate('/apps/studio/flows/new')}>
