@@ -31,18 +31,20 @@ export const StudioPage: React.FC = () => {
       const data = schema.data;
       setModelInfo(data.modelId, data.modelName);
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const loadedWidgets: Widget[] = data.fields.map((field: any) => {
         let layout = { x: 0, y: 0, w: 4, h: 2 };
         try {
           if (field.layout) {
             layout = JSON.parse(field.layout);
           }
-        } catch (e) {
+        } catch {
           console.warn('Failed to parse layout for field', field.fieldId);
         }
 
         return {
           id: field.fieldId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           type: field.fieldType.toLowerCase() as any, // TODO: strict type mapping
           label: field.fieldName,
           fieldCode: field.fieldCode,
@@ -185,7 +187,7 @@ export const StudioPage: React.FC = () => {
   );
 
   return (
-    <StudioLayout hideProperties={mode !== 'edit'}>
+    <StudioLayout hideProperties={mode !== 'edit'} hideContextBar={true}>
       <div className="flex flex-col h-full">
         {/* Context Bar with mode switcher */}
         <StudioContextBar

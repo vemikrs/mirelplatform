@@ -1,22 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
+import { cn } from '@mirel/ui';
 import { useStudioContextOptional } from '../contexts';
 
 interface StudioContextBarProps {
   className?: string;
   // Legacy props for compatibility with existing Modeler pages
   title?: string;
+  subtitle?: string;
   breadcrumbs?: { label: string; href?: string; path?: string }[];
   onSave?: () => Promise<void> | void;
+  actions?: React.ReactNode;
+  showSave?: boolean;
+  showPreview?: boolean;
   children?: React.ReactNode;
 }
 
 export const StudioContextBar: React.FC<StudioContextBarProps> = ({ 
   className,
   title,
+  subtitle,
   breadcrumbs: propBreadcrumbs,
   onSave,
+  actions,
+  // showSave, showPreview are largely handled by presence of onSave/children/actions in this new implementation
   children
 }) => {
   const context = useStudioContextOptional();
@@ -55,11 +63,13 @@ export const StudioContextBar: React.FC<StudioContextBarProps> = ({
           <>
             {breadcrumbs.length > 0 && <span className="text-muted-foreground/20">|</span>}
             <span className="font-medium">{title}</span>
+            {subtitle && <span className="text-muted-foreground text-xs">{subtitle}</span>}
           </>
         )}
       </div>
 
       <div className="flex items-center gap-2">
+        {actions}
         {children}
         {onSave && (
           <button onClick={onSave} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:bg-primary/90">
@@ -67,6 +77,39 @@ export const StudioContextBar: React.FC<StudioContextBarProps> = ({
           </button>
         )}
       </div>
+    </div>
+  );
+};
+
+export interface ModeSwitcherProps {
+  modes: { id: string; label: string; icon?: React.ElementType }[];
+  activeMode: string;
+  onModeChange: (modeId: string) => void;
+  className?: string;
+}
+
+export const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ modes, activeMode, onModeChange, className }) => {
+  return (
+    <div className={cn("flex items-center bg-muted/50 rounded-md p-0.5", className)}>
+      {modes.map((mode) => {
+        const Icon = mode.icon;
+        const isActive = activeMode === mode.id;
+        return (
+          <button
+            key={mode.id}
+            onClick={() => onModeChange(mode.id)}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-sm transition-all",
+              isActive 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            {Icon && <Icon className="size-3.5" />}
+            <span>{mode.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };

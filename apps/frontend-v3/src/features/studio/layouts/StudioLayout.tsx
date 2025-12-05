@@ -29,6 +29,10 @@ interface StudioLayoutProps {
    * Whether to hide the properties pane
    */
   hideProperties?: boolean;
+  /**
+   * Whether to hide the context bar
+   */
+  hideContextBar?: boolean;
 }
 
 /**
@@ -46,6 +50,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
   properties,
   hideNavigation = false,
   hideProperties = false,
+  hideContextBar = false,
 }) => {
   const [leftWidth, setLeftWidth] = useState(250);
   const [rightWidth, setRightWidth] = useState(300);
@@ -65,7 +70,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground flex-col">
       <StudioHeader />
-      <StudioContextBar />
+      {!hideContextBar && <StudioContextBar />}
         <div className="flex flex-1 overflow-hidden relative min-w-0">
       {/* Left Pane */}
       {showLeft && (
