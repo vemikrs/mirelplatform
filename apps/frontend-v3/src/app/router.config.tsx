@@ -22,6 +22,9 @@ import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
+import { LicenseManagementPage } from '@/features/admin/pages/LicenseManagementPage';
+import { SystemSettingsPage } from '@/features/admin/pages/SystemSettingsPage';
+import { TenantManagementPage } from '@/features/admin/pages/TenantManagementPage';
 import { OrganizationManagementPage } from '@/features/organization';
 import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
 import AnnouncementEditPage from '@/features/admin/pages/AnnouncementEditPage';
@@ -251,8 +254,18 @@ export const router = createBrowserRouter([
             handle: { title: '管理 - ユーザー・ロール管理' },
           },
           {
+            path: 'admin/license',
+            element: <LicenseManagementPage />,
+            handle: { title: '管理 - ライセンス管理' },
+          },
+          {
+            path: 'admin/system',
+            element: <SystemSettingsPage />,
+            handle: { title: '管理 - システム設定' },
+          },
+          {
             path: 'admin/tenant',
-            element: <div>Tenant Management (Coming Soon)</div>,
+            element: <TenantManagementPage />,
             handle: { title: '管理 - テナント管理' },
           },
           {
