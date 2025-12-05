@@ -20,8 +20,7 @@ import {
   DropdownMenuPortal
 } from '@mirel/ui';
 import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff, Building2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getUserLicenses, getUserTenants, type LicenseInfo, type TenantInfo } from '@/lib/api/userProfile';
+import type { LicenseInfo } from '@/lib/api/userProfile';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
@@ -31,7 +30,7 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  * ユーザーメニューコンポーネント
  */
 export function UserMenu() {
-  const { user, logout, tokens, currentTenant, switchTenant } = useAuth();
+  const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
@@ -47,26 +46,6 @@ export function UserMenu() {
     // カスタムイベントでRootLayoutに通知
     window.dispatchEvent(new CustomEvent('quicklinks-toggle', { detail: { visible: newValue } }));
   };
-
-  // Fetch user's licenses from API
-  const { data: licenses = [] } = useQuery<LicenseInfo[]>({
-    queryKey: ['userLicenses'],
-    queryFn: async () => {
-      if (!tokens?.accessToken) return [];
-      return getUserLicenses();
-    },
-    enabled: !!tokens?.accessToken,
-  });
-
-  // Fetch user's tenants from API
-  const { data: tenants = [] } = useQuery<TenantInfo[]>({
-    queryKey: ['userTenants'],
-    queryFn: async () => {
-      if (!tokens?.accessToken) return [];
-      return getUserTenants();
-    },
-    enabled: !!tokens?.accessToken,
-  });
 
   const handleLogout = () => {
     console.log('[DEBUG UserMenu] handleLogout called');

@@ -7,6 +7,8 @@ export function useAuth() {
   const user = useAuthStore((state) => state.user);
   const currentTenant = useAuthStore((state) => state.currentTenant);
   const tokens = useAuthStore((state) => state.tokens);
+  const tenants = useAuthStore((state) => state.tenants);
+  const licenses = useAuthStore((state) => state.licenses);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const signup = useAuthStore((state) => state.signup);
@@ -18,6 +20,8 @@ export function useAuth() {
     user,
     currentTenant,
     tokens,
+    tenants,
+    licenses,
     isAuthenticated,
     login,
     signup,
