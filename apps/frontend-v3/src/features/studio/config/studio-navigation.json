@@ -38,6 +38,19 @@
     ]
   },
   {
+    "id": "flows",
+    "label": "Flows",
+    "icon": "Workflow",
+    "children": [
+      {
+        "id": "all-flows",
+        "label": "All Flows",
+        "path": "/apps/studio/flows",
+        "icon": "List"
+      }
+    ]
+  },
+  {
     "id": "data",
     "label": "Data",
     "icon": "Table",

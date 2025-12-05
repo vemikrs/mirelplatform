@@ -42,6 +42,8 @@ import { EntityEditPage } from '@/features/studio/modeler/pages/EntityEditPage';
 import { RelationViewPage } from '@/features/studio/modeler/pages/RelationViewPage';
 import { FormListPage } from '@/features/studio/forms/pages/FormListPage';
 import { FormDesignerPage } from '@/features/studio/forms/pages/FormDesignerPage';
+import { FlowListPage } from '@/features/studio/flows/pages/FlowListPage';
+import { FlowDesignerPage } from '@/features/studio/flows/pages/FlowDesignerPage';
 import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
 import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
 import { ReleasePage } from '@/features/studio/pages/ReleasePage';
@@ -414,6 +416,21 @@ export const router = createBrowserRouter([
                 path: ':formId',
                 element: <FormDesignerPage />,
                 handle: { title: 'Studio - Form Designer' },
+              },
+            ],
+          },
+          {
+            path: 'flows',
+            children: [
+              {
+                index: true,
+                element: <FlowListPage />,
+                handle: { title: 'Studio - Flows' },
+              },
+              {
+                path: ':flowId',
+                element: <FlowDesignerPage />,
+                handle: { title: 'Studio - Flow Designer' },
               },
             ],
           },
