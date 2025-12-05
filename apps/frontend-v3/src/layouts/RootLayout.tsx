@@ -152,11 +152,10 @@ export function RootLayout() {
             {/* Desktop Nav Removed */}
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            <GlobalSearch />
             {initialNavigation.globalActions
               .filter((action) => action.type !== 'theme' && action.type !== 'profile' && action.type !== 'notifications')
               .map((action) => renderAction(action))}
-            {/* UserMenu and Notifications moved to sidebar */}
+            {/* UserMenu, Notifications, and Search moved to sidebar */}
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {isAuthenticated && <UserMenu />}

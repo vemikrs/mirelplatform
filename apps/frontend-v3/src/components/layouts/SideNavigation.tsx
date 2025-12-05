@@ -18,6 +18,7 @@ import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
 import type { NavigationLink } from '@/app/navigation.schema';
 import { SidebarUserMenu } from '@/components/header/SidebarUserMenu';
 import { NotificationPopover } from '@/components/header/NotificationPopover';
+import { GlobalSearch } from '@/components/header/GlobalSearch';
 
 // Icon mapping
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -151,6 +152,13 @@ export function SideNavigation({ items, brand, className }: SideNavigationProps)
               </>
             )}
           </Link>
+        </div>
+      )}
+
+      {/* Search Section - Fixed below brand */}
+      {!isCollapsed && (
+        <div className="px-3 py-2 border-b border-outline/20">
+          <GlobalSearch />
         </div>
       )}
 
