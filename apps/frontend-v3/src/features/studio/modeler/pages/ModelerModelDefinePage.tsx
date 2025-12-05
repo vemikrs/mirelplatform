@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel } from '../types/modeler';
@@ -22,34 +22,22 @@ export const ModelerModelDefinePage: React.FC = () => {
   
   const [selectedFieldIndex, setSelectedFieldIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (queryModelId) {
-      setModelId(queryModelId);
-      loadModel(queryModelId);
-    } else if (isNew) {
-      resetForm();
-    }
-  }, [queryModelId, isNew]);
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setModelId('');
     setModelName('');
     setModelType('master');
     setIsHidden(false);
     setFields([]);
     setSelectedFieldIndex(null);
-  };
+  }, []);
 
-  const loadModel = async (id: string) => {
+  const loadModel = useCallback(async (id: string) => {
     try {
       const response = await modelerApi.listModel(id);
       setFields(response.data.modelers);
-      // Assuming the first record might contain header info or separate API needed
-      // For now, we just load fields. 
-      // TODO: Fetch header info (name, type) correctly
+      
       if (response.data.modelers.length > 0) {
-        // Infer basic info from first field if available or just keep defaults
-        // In a real app, we'd have a getModelHeader API
+        // Infer basic info if available
       }
     } catch (error) {
       console.error('Failed to load model:', error);
@@ -59,7 +47,16 @@ export const ModelerModelDefinePage: React.FC = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (queryModelId) {
+      setModelId(queryModelId);
+      loadModel(queryModelId);
+    } else if (isNew) {
+      resetForm();
+    }
+  }, [queryModelId, isNew, loadModel, resetForm]);
 
   const handleAddField = () => {
     const newField: SchDicModel = {
@@ -118,6 +115,7 @@ export const ModelerModelDefinePage: React.FC = () => {
   return (
     <StudioLayout
       explorer={<ModelerExplorer />}
+      hideContextBar={true}
       properties={
         <ModelerPropertyPanel
           selectedField={selectedFieldIndex !== null && fields[selectedFieldIndex] ? fields[selectedFieldIndex] : null}
