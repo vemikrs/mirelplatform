@@ -90,9 +90,11 @@ export function RootLayout() {
     return initialNavigation.primary;
   }, [dynamicMenu, initialNavigation.primary]);
 
+  const helpAction = initialNavigation.globalActions.find(a => a.type === 'help');
+
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
-      <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
         <div className="flex h-16 items-center justify-between gap-4 px-4 md:h-20 md:gap-6 md:px-6">
           <div className="flex flex-1 items-center gap-6">
             {/* Mobile menu button */}
@@ -106,6 +108,7 @@ export function RootLayout() {
                 <SideNavigation 
                   items={primaryLinks}
                   brand={initialNavigation.brand}
+                  helpAction={helpAction}
                   className="h-full border-0"
                 />
               </DialogContent>
@@ -119,10 +122,7 @@ export function RootLayout() {
             </Link>
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            {initialNavigation.globalActions
-              .filter((action) => action.type !== 'theme' && action.type !== 'profile' && action.type !== 'notifications')
-              .map((action) => renderAction(action))}
-            {/* UserMenu, Notifications, and Search moved to sidebar */}
+            {/* Desktop Global Actions moved to sidebar */}
           </div>
         </div>
       </header>
@@ -152,7 +152,8 @@ export function RootLayout() {
         <SideNavigation 
           items={primaryLinks}
           brand={initialNavigation.brand}
-          className="hidden md:flex sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto shrink-0" 
+          helpAction={helpAction}
+          className="hidden md:flex sticky top-0 h-screen overflow-y-auto shrink-0" 
         />
         
         <div className="flex-1 flex flex-col min-w-0">
