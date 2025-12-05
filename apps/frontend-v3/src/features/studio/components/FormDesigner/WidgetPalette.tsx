@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '@mirel/ui';
-import { Type, Hash, Calendar, CheckSquare, List, AlignLeft, CircleDot } from 'lucide-react';
+import { Type, Hash, Calendar, CheckSquare, List, AlignLeft, CircleDot, Clock } from 'lucide-react';
 import type { WidgetType } from '../../stores/useFormDesignerStore';
 
 interface PaletteItemProps {
@@ -45,6 +45,8 @@ export const WidgetPalette: React.FC = () => {
         <PaletteItem type="textarea" label="Text Area" icon={<AlignLeft className="size-4" />} />
         <PaletteItem type="number" label="Number Input" icon={<Hash className="size-4" />} />
         <PaletteItem type="date" label="Date Picker" icon={<Calendar className="size-4" />} />
+        <PaletteItem type="time" label="Time Picker" icon={<Clock className="size-4" />} />
+        <PaletteItem type="datetime" label="Date & Time" icon={<Calendar className="size-4" />} />
         <PaletteItem type="boolean" label="Checkbox" icon={<CheckSquare className="size-4" />} />
         <PaletteItem type="select" label="Dropdown" icon={<List className="size-4" />} />
         <PaletteItem type="radio" label="Radio Group" icon={<CircleDot className="size-4" />} />

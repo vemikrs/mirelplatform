@@ -1,5 +1,6 @@
 import { StudioContextBar } from '../components/StudioContextBar';
 import { StudioHeader } from '../components/StudioHeader';
+import { StudioStatusBar } from '../components/StudioStatusBar';
 import { Resizable, type ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import { useState } from 'react';
@@ -124,6 +125,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
         </Resizable>
       )}
     </div>
-      </div>
+      <StudioStatusBar />
+    </div>
   );
 };

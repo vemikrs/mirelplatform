@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type WidgetType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'textarea' | 'radio';
+export type WidgetType = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'select' | 'textarea' | 'radio';
 
 export interface Widget {
   id: string;

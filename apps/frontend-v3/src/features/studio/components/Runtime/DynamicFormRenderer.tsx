@@ -60,6 +60,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
           if (!w.required) validator = validator.optional();
           break;
         case 'date':
+        case 'time':
+        case 'datetime':
            validator = z.string();
            if (w.required) validator = validator.min(1, { message: 'Required' });
            else validator = validator.optional().or(z.literal(''));
@@ -131,6 +133,10 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
                 return <Input id={key} type="number" {...register(key)} placeholder={widget.label} />;
               case 'date':
                 return <Input id={key} type="date" {...register(key)} />;
+              case 'time':
+                return <Input id={key} type="time" {...register(key)} />;
+              case 'datetime':
+                return <Input id={key} type="datetime-local" {...register(key)} />;
               case 'boolean':
                 return (
                     <div className="flex items-center space-x-2">
