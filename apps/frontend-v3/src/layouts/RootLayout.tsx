@@ -135,7 +135,8 @@ export function RootLayout() {
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between gap-4 px-4 md:h-20 md:gap-6 md:px-6">
           <div className="flex flex-1 items-center gap-6">
-            <Link to="/home" className="group flex items-center gap-3 text-left">
+            {/* Brand moved to sidebar - show on mobile only */}
+            <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
               <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
                 {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
               </div>
@@ -155,7 +156,7 @@ export function RootLayout() {
             {initialNavigation.globalActions
               .filter((action) => action.type !== 'theme' && action.type !== 'profile')
               .map((action) => renderAction(action))}
-            {isAuthenticated && <UserMenu />}
+            {/* UserMenu moved to sidebar */}
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {isAuthenticated && <UserMenu />}
@@ -203,7 +204,8 @@ export function RootLayout() {
 
       <div className="flex flex-1 items-start">
         <SideNavigation 
-          items={primaryLinks} 
+          items={primaryLinks}
+          brand={initialNavigation.brand}
           className="hidden md:flex sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto shrink-0" 
         />
         
