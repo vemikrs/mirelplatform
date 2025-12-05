@@ -5,6 +5,7 @@ st-home,ホーム,/apps/studio,,studio,10,,
 st-modeler,Modeler,/apps/studio/modeler,,studio,20,,
 st-mdl-define,モデル定義,/apps/studio/modeler/models,,st-modeler,10,,
 st-mdl-records,データ管理,/apps/studio/modeler/records,,st-modeler,20,,
+st-mdl-codes,コードマスタ,/apps/studio/modeler/codes,,st-modeler,30,,
 promarker,ProMarker,/promarker,wand-2,,30,,
 pm-payout,ワークスペース,/promarker,,promarker,10,,
 pm-stencils,ステンシル一覧,/promarker/stencils,,promarker,20,,
@@ -30,5 +31,4 @@ adm-roles,ロール管理,/admin/identity/roles,,adm-identity,20,ADMIN|TENANT_AD
 adm-invite,アクセス招待,/admin/identity/invite,,adm-identity,30,ADMIN|TENANT_ADMIN,将来実装
 adm-master,マスタメンテナンス,/admin/master,,admin,40,ADMIN|TENANT_ADMIN,業務横断マスタ管理
 adm-org,組織マスタ,/admin/master/organization,,adm-master,10,ADMIN|TENANT_ADMIN,
-adm-codes,コードマスタ,/admin/master/codes,,adm-master,20,ADMIN|TENANT_ADMIN,
 adm-business,業務マスタ,/admin/master/business,,adm-master,30,ADMIN|TENANT_ADMIN,将来実装
