@@ -1,10 +1,15 @@
 import React from 'react';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
+import { StudioNavigation } from '../../components/StudioNavigation';
+import { ModelerTree } from '../components/ModelerTree';
 
 export const RelationViewPage: React.FC = () => {
   return (
-    <StudioLayout>
+    <StudioLayout
+      navigation={<StudioNavigation className="h-auto shrink-0 max-h-[40%] border-b" />}
+      explorer={<ModelerTree className="flex-1" />}
+    >
       <div className="flex flex-col h-full">
         <StudioContextBar
           title="リレーションビュー"

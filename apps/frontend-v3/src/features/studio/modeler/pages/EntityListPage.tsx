@@ -6,6 +6,9 @@ import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
 import { modelerApi } from '../api/modelerApi';
 
+import { StudioNavigation } from '../../components/StudioNavigation';
+import { ModelerTree } from '../components/ModelerTree';
+
 export const EntityListPage: React.FC = () => {
   const navigate = useNavigate();
   const [models, setModels] = useState<{ value: string; text: string }[]>([]);
@@ -27,7 +30,10 @@ export const EntityListPage: React.FC = () => {
   }, []);
 
   return (
-    <StudioLayout>
+    <StudioLayout
+      navigation={<StudioNavigation className="h-auto shrink-0 max-h-[40%] border-b" />}
+      explorer={<ModelerTree className="flex-1" />}
+    >
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           title="エンティティ一覧"

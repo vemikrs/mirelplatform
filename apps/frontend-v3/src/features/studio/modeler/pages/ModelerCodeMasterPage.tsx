@@ -1,28 +1,47 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { modelerApi } from '../api/modelerApi';
 import type { SchDicCode } from '../types/modeler';
 import { CodeGroupList } from '../components/CodeGroupList';
 import { CodeValueEditor } from '../components/CodeValueEditor';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
+import { StudioNavigation } from '../../components/StudioNavigation';
+import { ModelerTree } from '../components/ModelerTree';
 
 export const ModelerCodeMasterPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryGroupId = searchParams.get('id');
+
   const [groups, setGroups] = useState<string[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(queryGroupId);
   const [codes, setCodes] = useState<SchDicCode[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (queryGroupId) {
+      setSelectedGroupId(queryGroupId);
+    }
+  }, [queryGroupId]);
+
+  const handleGroupSelect = (groupId: string) => {
+      setSelectedGroupId(groupId);
+      setSearchParams({ id: groupId });
+  };
 
   const loadGroups = useCallback(async () => {
     try {
       const res = await modelerApi.listCodeGroups();
       setGroups(res.data.groups);
-      if (res.data.groups.length > 0 && !selectedGroupId) {
+      if (res.data.groups.length > 0 && !selectedGroupId && !queryGroupId) {
+        // Only select first if nothing selected
+        // handleGroupSelect(res.data.groups[0]); // triggering navigation might be annoying on load
         setSelectedGroupId(res.data.groups[0]);
       }
     } catch (error) {
       console.error('Failed to load groups:', error);
     }
-  }, [selectedGroupId]);
+  }, [selectedGroupId, queryGroupId]);
 
   const loadCodes = useCallback(async (groupId: string) => {
     try {
@@ -54,6 +73,7 @@ export const ModelerCodeMasterPage: React.FC = () => {
 
   const handleCreateGroup = () => {
     setSelectedGroupId('new_group');
+    setSearchParams({ id: 'new_group' });
     setCodes([]);
   };
 
@@ -83,7 +103,11 @@ export const ModelerCodeMasterPage: React.FC = () => {
   };
 
   return (
-    <StudioLayout hideContextBar={true}>
+    <StudioLayout
+      navigation={<StudioNavigation className="h-auto shrink-0 max-h-[40%] border-b" />}
+      explorer={<ModelerTree className="flex-1" />}
+      hideContextBar={true}
+    >
       <div className="flex flex-col h-full overflow-hidden">
         <StudioContextBar
           breadcrumbs={[
@@ -98,7 +122,7 @@ export const ModelerCodeMasterPage: React.FC = () => {
           <CodeGroupList
             groups={groups}
             selectedGroupId={selectedGroupId}
-            onSelect={setSelectedGroupId}
+            onSelect={handleGroupSelect}
             onCreate={handleCreateGroup}
           />
           

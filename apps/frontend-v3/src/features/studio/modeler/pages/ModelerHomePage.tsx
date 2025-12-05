@@ -4,6 +4,9 @@ import { Card } from '@mirel/ui';
 import { Database, Share2, Tags, ArrowRight } from 'lucide-react';
 import { StudioLayout } from '../../layouts/StudioLayout';
 
+import { StudioNavigation } from '../../components/StudioNavigation';
+import { ModelerTree } from '../components/ModelerTree';
+
 export const ModelerHomePage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -32,7 +35,10 @@ export const ModelerHomePage: React.FC = () => {
   ];
 
   return (
-    <StudioLayout>
+    <StudioLayout
+      navigation={<StudioNavigation className="h-auto shrink-0 max-h-[40%] border-b" />}
+      explorer={<ModelerTree className="flex-1" />}
+    >
       <div className="p-8 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -4,7 +4,8 @@ import { modelerApi } from '../api/modelerApi';
 import type { SchDicModel } from '../types/modeler';
 import { StudioLayout } from '../../layouts';
 import { StudioContextBar } from '../../components';
-import { ModelerExplorer } from '../components/layout/ModelerExplorer';
+import { StudioNavigation } from '../../components/StudioNavigation';
+import { ModelerTree } from '../components/ModelerTree';
 import { ModelerPropertyPanel } from '../components/layout/ModelerPropertyPanel';
 import { useToast, cn, Button } from '@mirel/ui';
 
@@ -126,7 +127,8 @@ export const EntityEditPage: React.FC = () => {
 
   return (
     <StudioLayout
-      explorer={<ModelerExplorer />}
+      navigation={<StudioNavigation className="h-auto shrink-0 max-h-[40%] border-b" />}
+      explorer={<ModelerTree className="flex-1" />}
       hideContextBar={true}
       properties={
         <ModelerPropertyPanel
