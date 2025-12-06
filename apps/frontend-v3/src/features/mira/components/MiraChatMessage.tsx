@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { cn, Button } from '@mirel/ui';
-import { Bot, User, Copy, Check } from 'lucide-react';
+import { Bot, User, Copy, Check, Edit } from 'lucide-react';
 import type { MiraMessage } from '@/stores/miraStore';
 import { MiraMarkdown } from './MiraMarkdown';
 
@@ -14,9 +14,11 @@ interface MiraChatMessageProps {
   className?: string;
   /** コンパクト表示（ポップアップウィンドウ用） */
   compact?: boolean;
+  /** メッセージ編集コールバック */
+  onEdit?: (messageId: string) => void;
 }
 
-export function MiraChatMessage({ message, className, compact = false }: MiraChatMessageProps) {
+export function MiraChatMessage({ message, className, compact = false, onEdit }: MiraChatMessageProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   
@@ -72,12 +74,12 @@ export function MiraChatMessage({ message, className, compact = false }: MiraCha
           size="icon"
           onClick={handleCopy}
           className={cn(
-            'absolute top-1 right-1',
+            'absolute top-1',
             compact ? 'w-5 h-5' : 'w-7 h-7',
             'opacity-0 group-hover:opacity-100 transition-opacity',
             isUser 
-              ? 'text-primary-foreground hover:bg-primary-foreground/10' 
-              : 'hover:bg-background/50'
+              ? 'text-primary-foreground hover:bg-primary-foreground/10 right-8' 
+              : 'hover:bg-background/50 right-1'
           )}
           title="コピー"
         >
@@ -87,6 +89,24 @@ export function MiraChatMessage({ message, className, compact = false }: MiraCha
             <Copy className={compact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} />
           )}
         </Button>
+        
+        {/* 編集ボタン（ユーザーメッセージのみ） */}
+        {isUser && onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit(message.id)}
+            className={cn(
+              'absolute top-1 right-1',
+              compact ? 'w-5 h-5' : 'w-7 h-7',
+              'opacity-0 group-hover:opacity-100 transition-opacity',
+              'text-primary-foreground hover:bg-primary-foreground/10'
+            )}
+            title="編集して再送信"
+          >
+            <Edit className={compact ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} />
+          </Button>
+        )}
         
         {message.contentType === 'markdown' ? (
           <MiraMarkdown content={message.content} compact={compact} />

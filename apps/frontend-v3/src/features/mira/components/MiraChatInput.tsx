@@ -73,6 +73,12 @@ interface MiraChatInputProps {
   autoFocus?: boolean;
   /** コンパクト表示（ポップアップウィンドウ用） */
   compact?: boolean;
+  /** 編集中のメッセージID */
+  editingMessageId?: string;
+  /** 編集中のメッセージ内容 */
+  editingMessageContent?: string;
+  /** 編集キャンセルコールバック */
+  onCancelEdit?: () => void;
 }
 
 export function MiraChatInput({
@@ -84,6 +90,9 @@ export function MiraChatInput({
   initialMode = 'GENERAL_CHAT',
   autoFocus = false,
   compact = false,
+  editingMessageId,
+  editingMessageContent,
+  onCancelEdit,
 }: MiraChatInputProps) {
   const [message, setMessage] = useState('');
   const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
@@ -146,6 +155,20 @@ export function MiraChatInput({
       return () => clearTimeout(timer);
     }
   }, [autoFocus, isLoading, disabled]);
+  
+  // 編集モード時にメッセージ内容をセット
+  useEffect(() => {
+    if (editingMessageId && editingMessageContent !== undefined) {
+      setMessage(editingMessageContent);
+      // 編集モード時は履歴をリセット
+      setHistoryIndex(-1);
+      setTempMessage('');
+      // フォーカス
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+    }
+  }, [editingMessageId, editingMessageContent]);
   
   // ファイルタイプを判定
   const getFileType = (file: File): AttachedFile['type'] => {
@@ -271,6 +294,12 @@ export function MiraChatInput({
       setShowModeMenu(false);
       return;
     }
+    // Escape で編集モードをキャンセル
+    if (e.key === 'Escape' && editingMessageId && onCancelEdit) {
+      e.preventDefault();
+      onCancelEdit();
+      return;
+    }
     
     // 上下キーで入力履歴をナビゲート
     if (e.key === 'ArrowUp' && inputHistory.length > 0) {
@@ -333,6 +362,23 @@ export function MiraChatInput({
             <Upload className="w-8 h-8 animate-bounce" />
             <p className="text-sm font-medium">ファイルをドロップ</p>
           </div>
+        </div>
+      )}
+      
+      {/* 編集中バナー */}
+      {editingMessageId && onCancelEdit && (
+        <div className="px-3 py-2 bg-amber-500/10 border-b flex items-center justify-between">
+          <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+            メッセージを編集中
+          </span>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={onCancelEdit}
+            className="h-6 text-xs"
+          >
+            キャンセル
+          </Button>
         </div>
       )}
       
