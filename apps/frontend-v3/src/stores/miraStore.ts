@@ -52,6 +52,10 @@ interface MiraState {
   conversations: Record<string, MiraConversation>;
   error: string | null;
   
+  // メッセージ編集状態
+  editingMessageId: string | null;
+  editingMessageContent: string | null;
+  
   // アクション
   togglePanel: () => void;
   openPanel: () => void;
@@ -70,6 +74,11 @@ interface MiraState {
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
   clearConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
+  
+  // メッセージ編集
+  startEditMessage: (conversationId: string, messageId: string) => void;
+  cancelEditMessage: () => void;
+  resendEditedMessage: (conversationId: string, messageId: string) => void;
   
   // ヘルパー
   getActiveConversation: () => MiraConversation | null;
@@ -90,6 +99,10 @@ export const useMiraStore = create<MiraState>()(
       activeConversationId: null,
       conversations: {},
       error: null,
+      
+      // メッセージ編集初期状態
+      editingMessageId: null,
+      editingMessageContent: null,
       
       // パネル制御
       togglePanel: () => set((state) => ({ isOpen: !state.isOpen })),
@@ -273,6 +286,52 @@ export const useMiraStore = create<MiraState>()(
       getConversationMessages: (conversationId) => {
         const conversation = get().conversations[conversationId];
         return conversation?.messages || [];
+      },
+      
+      // メッセージ編集
+      startEditMessage: (conversationId, messageId) => {
+        const conversation = get().conversations[conversationId];
+        if (!conversation) return;
+        
+        const message = conversation.messages.find(m => m.id === messageId);
+        if (!message || message.role !== 'user') return;
+        
+        set({
+          editingMessageId: messageId,
+          editingMessageContent: message.content,
+          activeConversationId: conversationId,
+        });
+      },
+      
+      cancelEditMessage: () => {
+        set({
+          editingMessageId: null,
+          editingMessageContent: null,
+        });
+      },
+      
+      resendEditedMessage: (conversationId, messageId) => {
+        const conversation = get().conversations[conversationId];
+        if (!conversation) return;
+        
+        // 編集点以降のメッセージを削除
+        const messageIndex = conversation.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) return;
+        
+        const updatedMessages = conversation.messages.slice(0, messageIndex);
+        
+        set((state) => ({
+          conversations: {
+            ...state.conversations,
+            [conversationId]: {
+              ...conversation,
+              messages: updatedMessages,
+              updatedAt: new Date(),
+            },
+          },
+          editingMessageId: null,
+          editingMessageContent: null,
+        }));
       },
     }),
     {

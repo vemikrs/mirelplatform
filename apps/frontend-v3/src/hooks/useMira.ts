@@ -280,6 +280,13 @@ export function useMira() {
   const panel = useMiraPanel();
   const errorAnalysis = useMiraErrorAnalysis();
   const contextSnapshot = useMiraContextSnapshot();
+  const {
+    editingMessageId,
+    editingMessageContent,
+    startEditMessage,
+    cancelEditMessage,
+    resendEditedMessage,
+  } = useMiraStore();
   
   return {
     // パネル
@@ -300,6 +307,13 @@ export function useMira() {
     conversations: conversation.conversations,
     clearConversation: conversation.clear,
     newConversation: () => conversation.setActive(null),
+    
+    // メッセージ編集
+    editingMessageId,
+    editingMessageContent,
+    startEditMessage,
+    cancelEditMessage,
+    resendEditedMessage,
     
     // エラー分析
     analyzeError: errorAnalysis.analyze,
