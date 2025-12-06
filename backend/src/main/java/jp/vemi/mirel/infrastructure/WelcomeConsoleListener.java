@@ -47,7 +47,7 @@ public class WelcomeConsoleListener {
     @Value("${server.servlet.context-path:/}")
     private String contextPath;
 
-    @Value("${server.port:8080}")
+    @Value("${server.port:3000}")
     private String serverPort;
 
     public WelcomeConsoleListener(Environment environment) {
