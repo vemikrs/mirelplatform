@@ -110,17 +110,6 @@ export interface MiraSnapshotApiResponse {
 }
 
 /**
- * タイトル生成リクエスト
- */
-export interface GenerateTitleRequest {
-  conversationId: string;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>;
-}
-
-/**
  * タイトル生成レスポンス
  */
 export interface GenerateTitleResponse {
@@ -132,6 +121,69 @@ export interface GenerateTitleResponse {
 
 export interface MiraTitleApiResponse {
   data: GenerateTitleResponse | null;
+  errors: string[];
+}
+
+/**
+ * エクスポートデータレスポンス
+ */
+export interface ExportDataResponse {
+  metadata: {
+    exportedAt: string;
+    userId: string;
+    tenantId: string;
+    conversationCount: number;
+    totalMessageCount: number;
+    version: string;
+  };
+  conversations: Array<{
+    conversationId: string;
+    title: string | null;
+    mode: string | null;
+    createdAt: string;
+    lastActivityAt: string;
+    messages: Array<{
+      messageId: string;
+      senderType: string;
+      content: string;
+      contentType: string;
+      createdAt: string;
+      metadata: Record<string, unknown>;
+    }>;
+  }>;
+  userContext: {
+    terminology: string;
+    style: string;
+    workflow: string;
+    additionalContexts: Record<string, string>;
+  };
+}
+
+export interface MiraExportApiResponse {
+  data: ExportDataResponse | null;
+  errors: string[];
+}
+
+/**
+ * タイトル更新リクエスト
+ */
+export interface UpdateTitleRequest {
+  conversationId: string;
+  title: string;
+}
+
+/**
+ * タイトル更新レスポンス
+ */
+export interface UpdateTitleResponse {
+  conversationId: string;
+  title: string;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export interface MiraUpdateTitleApiResponse {
+  data: UpdateTitleResponse | null;
   errors: string[];
 }
 
@@ -253,6 +305,47 @@ export async function generateConversationTitle(
   
   if (!response.data.data) {
     throw new Error('タイトル生成に失敗しました');
+  }
+  
+  return response.data.data;
+}
+
+/**
+ * ユーザーデータエクスポート
+ */
+export async function exportUserData(): Promise<ExportDataResponse> {
+  const response = await apiClient.get<MiraExportApiResponse>(
+    '/apps/mira/api/export'
+  );
+  
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+  
+  if (!response.data.data) {
+    throw new Error('エクスポートに失敗しました');
+  }
+  
+  return response.data.data;
+}
+
+/**
+ * 会話タイトル更新
+ */
+export async function updateConversationTitle(
+  request: UpdateTitleRequest
+): Promise<UpdateTitleResponse> {
+  const response = await apiClient.put<MiraUpdateTitleApiResponse>(
+    '/apps/mira/api/conversation/update-title',
+    { model: request }
+  );
+  
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+  
+  if (!response.data.data) {
+    throw new Error('タイトル更新に失敗しました');
   }
   
   return response.data.data;
