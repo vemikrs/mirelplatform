@@ -56,10 +56,19 @@ public class ChatResponse {
     @AllArgsConstructor
     @Builder
     public static class Metadata {
+        /** プロバイダー名 */
+        private String provider;
+
         /** 使用モデル名 */
-        private String usedModel;
+        private String model;
 
         /** レイテンシ（ミリ秒） */
         private Long latencyMs;
+
+        /** プロンプトトークン数 */
+        private Integer promptTokens;
+
+        /** 応答トークン数 */
+        private Integer completionTokens;
     }
 }

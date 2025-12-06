@@ -3,6 +3,8 @@
  */
 package jp.vemi.mirel.apps.mira.domain.dto.request;
 
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,6 +31,6 @@ public class ContextSnapshotRequest {
     /** アプリケーションロール（SystemAdmin / Builder / Operator / Viewer） */
     private String appRole;
 
-    /** 画面固有コンテキスト（JSON形式） */
-    private Object payload;
+    /** 画面固有コンテキスト */
+    private Map<String, Object> payload;
 }

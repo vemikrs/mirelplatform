@@ -1,9 +1,8 @@
 /*
- * Copyright 2025 Vemi Inc. All rights reserved.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -12,13 +11,12 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jp.vemi.mirel.apps.mira.domain.api.MiraChatService;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraContextSnapshot;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraConversation;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraMessage;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraContextSnapshotRepository;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraConversationRepository;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraMessageRepository;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextSnapshot;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraConversation;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraMessage;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraContextSnapshotRepository;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraConversationRepository;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraMessageRepository;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
@@ -32,12 +30,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Mira チャットサービス実装.
+ * Mira チャットサービス.
+ * 
+ * <p>AI アシスタント機能のコア実装を提供します。</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MiraChatServiceImpl implements MiraChatService {
+public class MiraChatService {
     
     private final AiProviderFactory aiProviderFactory;
     private final ModeResolver modeResolver;
@@ -48,7 +48,6 @@ public class MiraChatServiceImpl implements MiraChatService {
     private final MiraMessageRepository messageRepository;
     private final MiraContextSnapshotRepository contextSnapshotRepository;
     
-    @Override
     @Transactional
     public ChatResponse chat(ChatRequest request, String tenantId, String userId) {
         long startTime = System.currentTimeMillis();
@@ -84,7 +83,7 @@ public class MiraChatServiceImpl implements MiraChatService {
         AiRequest aiRequest = promptBuilder.buildChatRequest(request, mode, history);
         
         // 7. AI 呼び出し
-        AiProviderClient client = aiProviderFactory.getClient();
+        AiProviderClient client = aiProviderFactory.getProvider();
         AiResponse aiResponse = client.chat(aiRequest);
         
         long latency = System.currentTimeMillis() - startTime;
@@ -92,7 +91,7 @@ public class MiraChatServiceImpl implements MiraChatService {
         // 8. 応答処理
         if (!aiResponse.isSuccess()) {
             log.error("AI呼び出し失敗: {}", aiResponse.getErrorMessage());
-            return buildErrorResponse(conversation.getId().toString(), 
+            return buildErrorResponse(conversation.getId(), 
                 "AI応答の取得に失敗しました: " + aiResponse.getErrorMessage());
         }
         
@@ -106,8 +105,8 @@ public class MiraChatServiceImpl implements MiraChatService {
         
         // 11. レスポンス構築
         return ChatResponse.builder()
-            .conversationId(conversation.getId().toString())
-            .messageId(assistantMessage.getId().toString())
+            .conversationId(conversation.getId())
+            .messageId(assistantMessage.getId())
             .mode(mode.name())
             .assistantMessage(ChatResponse.AssistantMessage.builder()
                 .content(formattedContent)
@@ -123,7 +122,6 @@ public class MiraChatServiceImpl implements MiraChatService {
             .build();
     }
     
-    @Override
     @Transactional
     public ContextSnapshotResponse saveContextSnapshot(
             ContextSnapshotRequest request, 
@@ -131,6 +129,7 @@ public class MiraChatServiceImpl implements MiraChatService {
             String userId) {
         
         MiraContextSnapshot snapshot = MiraContextSnapshot.builder()
+            .id(UUID.randomUUID().toString())
             .tenantId(tenantId)
             .userId(userId)
             .appId(request.getAppId())
@@ -143,12 +142,11 @@ public class MiraChatServiceImpl implements MiraChatService {
         MiraContextSnapshot saved = contextSnapshotRepository.save(snapshot);
         
         return ContextSnapshotResponse.builder()
-            .snapshotId(saved.getId().toString())
+            .snapshotId(saved.getId())
             .createdAt(saved.getCreatedAt())
             .build();
     }
     
-    @Override
     @Transactional
     public ChatResponse analyzeError(ErrorReportRequest request, String tenantId, String userId) {
         long startTime = System.currentTimeMillis();
@@ -161,13 +159,13 @@ public class MiraChatServiceImpl implements MiraChatService {
         AiRequest aiRequest = promptBuilder.buildErrorAnalyzeRequest(request);
         
         // AI 呼び出し
-        AiProviderClient client = aiProviderFactory.getClient();
+        AiProviderClient client = aiProviderFactory.getProvider();
         AiResponse aiResponse = client.chat(aiRequest);
         
         long latency = System.currentTimeMillis() - startTime;
         
         if (!aiResponse.isSuccess()) {
-            return buildErrorResponse(conversation.getId().toString(), 
+            return buildErrorResponse(conversation.getId(), 
                 "エラー分析に失敗しました");
         }
         
@@ -175,8 +173,8 @@ public class MiraChatServiceImpl implements MiraChatService {
         MiraMessage assistantMessage = saveAssistantMessage(conversation, formattedContent);
         
         return ChatResponse.builder()
-            .conversationId(conversation.getId().toString())
-            .messageId(assistantMessage.getId().toString())
+            .conversationId(conversation.getId())
+            .messageId(assistantMessage.getId())
             .mode(MiraMode.ERROR_ANALYZE.name())
             .assistantMessage(ChatResponse.AssistantMessage.builder()
                 .content(formattedContent)
@@ -192,35 +190,29 @@ public class MiraChatServiceImpl implements MiraChatService {
             .build();
     }
     
-    @Override
     @Transactional
     public void clearConversation(String conversationId, String tenantId, String userId) {
-        UUID convId = UUID.fromString(conversationId);
-        
-        Optional<MiraConversation> conversation = conversationRepository.findById(convId);
+        Optional<MiraConversation> conversation = conversationRepository.findById(conversationId);
         if (conversation.isPresent() 
                 && conversation.get().getTenantId().equals(tenantId)
                 && conversation.get().getUserId().equals(userId)) {
             
             MiraConversation conv = conversation.get();
-            conv.setStatus("CLEARED");
-            conv.setUpdatedAt(LocalDateTime.now());
+            conv.setStatus(MiraConversation.ConversationStatus.CLOSED);
             conversationRepository.save(conv);
             
             log.info("会話をクリア: conversationId={}", conversationId);
         }
     }
     
-    @Override
     public boolean isConversationActive(String conversationId, String tenantId, String userId) {
         try {
-            UUID convId = UUID.fromString(conversationId);
-            Optional<MiraConversation> conversation = conversationRepository.findById(convId);
+            Optional<MiraConversation> conversation = conversationRepository.findById(conversationId);
             
             return conversation
                 .filter(c -> c.getTenantId().equals(tenantId))
                 .filter(c -> c.getUserId().equals(userId))
-                .filter(c -> "ACTIVE".equals(c.getStatus()))
+                .filter(c -> MiraConversation.ConversationStatus.ACTIVE.equals(c.getStatus()))
                 .isPresent();
         } catch (IllegalArgumentException e) {
             return false;
@@ -232,40 +224,20 @@ public class MiraChatServiceImpl implements MiraChatService {
     // ========================================
     
     private MiraMode resolveMode(ChatRequest request) {
-        // リクエストで明示されていればそれを使用
-        if (request.getMode() != null && !request.getMode().isEmpty()) {
-            try {
-                return MiraMode.valueOf(request.getMode());
-            } catch (IllegalArgumentException e) {
-                log.warn("不明なモード指定: {}", request.getMode());
-            }
-        }
-        
-        // コンテキストから推定
-        ChatRequest.Context ctx = request.getContext();
-        String appId = ctx != null ? ctx.getAppId() : null;
-        String screenId = ctx != null ? ctx.getScreenId() : null;
-        String content = request.getMessage() != null ? request.getMessage().getContent() : "";
-        
-        return modeResolver.resolve(appId, screenId, content);
+        return modeResolver.resolve(request);
     }
     
     private MiraConversation getOrCreateConversation(
             String conversationId, String tenantId, String userId, MiraMode mode) {
         
         if (conversationId != null && !conversationId.isEmpty()) {
-            try {
-                UUID convId = UUID.fromString(conversationId);
-                Optional<MiraConversation> existing = conversationRepository.findById(convId);
-                
-                if (existing.isPresent() 
-                        && existing.get().getTenantId().equals(tenantId)
-                        && existing.get().getUserId().equals(userId)
-                        && "ACTIVE".equals(existing.get().getStatus())) {
-                    return existing.get();
-                }
-            } catch (IllegalArgumentException e) {
-                log.warn("無効な会話ID: {}", conversationId);
+            Optional<MiraConversation> existing = conversationRepository.findById(conversationId);
+            
+            if (existing.isPresent() 
+                    && existing.get().getTenantId().equals(tenantId)
+                    && existing.get().getUserId().equals(userId)
+                    && MiraConversation.ConversationStatus.ACTIVE.equals(existing.get().getStatus())) {
+                return existing.get();
             }
         }
         
@@ -274,21 +246,33 @@ public class MiraChatServiceImpl implements MiraChatService {
     
     private MiraConversation createConversation(String tenantId, String userId, MiraMode mode) {
         MiraConversation conversation = MiraConversation.builder()
+            .id(UUID.randomUUID().toString())
             .tenantId(tenantId)
             .userId(userId)
-            .mode(mode.name())
-            .status("ACTIVE")
+            .mode(toConversationMode(mode))
+            .status(MiraConversation.ConversationStatus.ACTIVE)
             .build();
         
         return conversationRepository.save(conversation);
     }
     
+    private MiraConversation.ConversationMode toConversationMode(MiraMode mode) {
+        return switch (mode) {
+            case GENERAL_CHAT -> MiraConversation.ConversationMode.GENERAL_CHAT;
+            case CONTEXT_HELP -> MiraConversation.ConversationMode.CONTEXT_HELP;
+            case ERROR_ANALYZE -> MiraConversation.ConversationMode.ERROR_ANALYZE;
+            case STUDIO_AGENT -> MiraConversation.ConversationMode.STUDIO_AGENT;
+            case WORKFLOW_AGENT -> MiraConversation.ConversationMode.WORKFLOW_AGENT;
+        };
+    }
+    
     private void saveUserMessage(MiraConversation conversation, String content) {
         MiraMessage message = MiraMessage.builder()
+            .id(UUID.randomUUID().toString())
             .conversationId(conversation.getId())
-            .senderType("USER")
+            .senderType(MiraMessage.SenderType.USER)
             .content(content)
-            .contentType("text")
+            .contentType(MiraMessage.ContentType.PLAIN)
             .build();
         
         messageRepository.save(message);
@@ -296,25 +280,32 @@ public class MiraChatServiceImpl implements MiraChatService {
     
     private MiraMessage saveAssistantMessage(MiraConversation conversation, String content) {
         MiraMessage message = MiraMessage.builder()
+            .id(UUID.randomUUID().toString())
             .conversationId(conversation.getId())
-            .senderType("ASSISTANT")
+            .senderType(MiraMessage.SenderType.ASSISTANT)
             .content(content)
-            .contentType("markdown")
+            .contentType(MiraMessage.ContentType.MARKDOWN)
             .build();
         
         return messageRepository.save(message);
     }
     
-    private List<AiRequest.Message> loadConversationHistory(UUID conversationId) {
+    private List<AiRequest.Message> loadConversationHistory(String conversationId) {
         List<MiraMessage> messages = messageRepository
             .findByConversationIdOrderByCreatedAtAsc(conversationId);
         
         List<AiRequest.Message> history = new ArrayList<>();
         for (MiraMessage msg : messages) {
-            if ("USER".equals(msg.getSenderType())) {
-                history.add(AiRequest.Message.user(msg.getContent()));
-            } else if ("ASSISTANT".equals(msg.getSenderType())) {
-                history.add(AiRequest.Message.assistant(msg.getContent()));
+            if (MiraMessage.SenderType.USER.equals(msg.getSenderType())) {
+                history.add(AiRequest.Message.builder()
+                    .role("user")
+                    .content(msg.getContent())
+                    .build());
+            } else if (MiraMessage.SenderType.ASSISTANT.equals(msg.getSenderType())) {
+                history.add(AiRequest.Message.builder()
+                    .role("assistant")
+                    .content(msg.getContent())
+                    .build());
             }
         }
         

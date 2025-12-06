@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * AI リクエスト DTO.
+ * 
+ * <p>Spring AI 1.1 ChatClient との互換性を持つリクエスト構造を提供します。</p>
  */
 @Data
 @NoArgsConstructor
@@ -20,21 +22,22 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AiRequest {
 
-    /** システムプロンプト */
-    private String systemPrompt;
+    /** メッセージリスト（system, user, assistant の順） */
+    private List<Message> messages;
 
-    /** ユーザプロンプト */
-    private String userPrompt;
-
-    /** コンテキスト情報（追加プロンプト） */
-    private String contextPrompt;
-
-    /** 会話履歴 */
-    private List<Message> conversationHistory;
-
-    /** オプション */
+    /** Temperature (0.0 - 2.0) */
     @Builder.Default
-    private Options options = new Options();
+    private Double temperature = 0.7;
+
+    /** 最大トークン数 */
+    @Builder.Default
+    private Integer maxTokens = 4096;
+
+    /** モデル指定（オプション） */
+    private String model;
+
+    /** 追加パラメータ */
+    private Map<String, Object> additionalParams;
 
     /**
      * 会話メッセージ.
@@ -48,28 +51,44 @@ public class AiRequest {
         private String role;
         /** 内容 */
         private String content;
-    }
 
-    /**
-     * AI オプション.
-     */
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class Options {
-        /** Temperature (0.0 - 2.0) */
-        @Builder.Default
-        private Double temperature = 0.7;
+        /**
+         * システムメッセージを生成.
+         *
+         * @param content 内容
+         * @return Message
+         */
+        public static Message system(String content) {
+            return Message.builder()
+                .role("system")
+                .content(content)
+                .build();
+        }
 
-        /** 最大トークン数 */
-        @Builder.Default
-        private Integer maxTokens = 4096;
+        /**
+         * ユーザーメッセージを生成.
+         *
+         * @param content 内容
+         * @return Message
+         */
+        public static Message user(String content) {
+            return Message.builder()
+                .role("user")
+                .content(content)
+                .build();
+        }
 
-        /** モデル指定（オプション） */
-        private String model;
-
-        /** 追加パラメータ */
-        private Map<String, Object> additionalParams;
+        /**
+         * アシスタントメッセージを生成.
+         *
+         * @param content 内容
+         * @return Message
+         */
+        public static Message assistant(String content) {
+            return Message.builder()
+                .role("assistant")
+                .content(content)
+                .build();
+        }
     }
 }

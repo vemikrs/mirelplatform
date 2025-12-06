@@ -100,4 +100,49 @@ public class AiResponse {
     public boolean hasError() {
         return error != null;
     }
+
+    /**
+     * 成功かどうか判定.
+     */
+    public boolean isSuccess() {
+        return error == null && content != null;
+    }
+
+    /**
+     * エラーメッセージを取得.
+     */
+    public String getErrorMessage() {
+        if (error == null) {
+            return null;
+        }
+        return error.getMessage();
+    }
+
+    /**
+     * プロバイダ名を取得.
+     */
+    public String getProvider() {
+        return metadata != null ? metadata.getModel() : "unknown";
+    }
+
+    /**
+     * モデル名を取得.
+     */
+    public String getModel() {
+        return metadata != null ? metadata.getModel() : "unknown";
+    }
+
+    /**
+     * プロンプトトークン数を取得.
+     */
+    public Integer getPromptTokens() {
+        return metadata != null ? metadata.getPromptTokens() : null;
+    }
+
+    /**
+     * 応答トークン数を取得.
+     */
+    public Integer getCompletionTokens() {
+        return metadata != null ? metadata.getCompletionTokens() : null;
+    }
 }

@@ -35,8 +35,11 @@ public class MockAiClient implements AiProviderClient {
         // 応答遅延シミュレーション
         simulateDelay();
 
+        // ユーザーメッセージを抽出
+        String userPrompt = extractUserMessage(request);
+        
         // パターンマッチ応答を検索
-        String response = findMatchingResponse(request.getUserPrompt());
+        String response = findMatchingResponse(userPrompt);
 
         long latencyMs = System.currentTimeMillis() - startTime;
 
@@ -45,9 +48,9 @@ public class MockAiClient implements AiProviderClient {
                 AiResponse.Metadata.builder()
                         .model("mock-model")
                         .finishReason("stop")
-                        .promptTokens(estimateTokens(request.getUserPrompt()))
+                        .promptTokens(estimateTokens(userPrompt))
                         .completionTokens(estimateTokens(response))
-                        .totalTokens(estimateTokens(request.getUserPrompt()) + estimateTokens(response))
+                        .totalTokens(estimateTokens(userPrompt) + estimateTokens(response))
                         .latencyMs(latencyMs)
                         .build()
         );
@@ -163,5 +166,20 @@ public class MockAiClient implements AiProviderClient {
         // 日本語の場合は文字数の約1.5倍、英語の場合は単語数の約1.3倍として概算
         // ここでは簡易的に文字数 / 3 として計算
         return Math.max(1, text.length() / 3);
+    }
+
+    /**
+     * リクエストからユーザーメッセージを抽出.
+     */
+    private String extractUserMessage(AiRequest request) {
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            return "";
+        }
+        // 最後のユーザーメッセージを取得
+        return request.getMessages().stream()
+                .filter(m -> "user".equals(m.getRole()))
+                .reduce((first, second) -> second)
+                .map(AiRequest.Message::getContent)
+                .orElse("");
     }
 }

@@ -1,17 +1,18 @@
 /*
- * Copyright 2025 Vemi Inc. All rights reserved.
+ * Copyright(c) 2015-2025 mirelplatform.
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import jp.vemi.mirel.apps.mira.domain.dao.MiraAuditLog;
-import jp.vemi.mirel.apps.mira.domain.dao.MiraAuditLogRepository;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraAuditLog;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraAuditLogRepository;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,26 +30,6 @@ public class MiraAuditService {
     
     private final MiraAuditLogRepository auditLogRepository;
     private final MiraAiProperties aiProperties;
-    
-    /**
-     * 監査アクション種別.
-     */
-    public enum AuditAction {
-        /** チャット開始 */
-        CHAT_START,
-        /** チャット応答 */
-        CHAT_RESPONSE,
-        /** エラー分析 */
-        ERROR_ANALYZE,
-        /** コンテキストヘルプ */
-        CONTEXT_HELP,
-        /** Studio エージェント */
-        STUDIO_AGENT,
-        /** 会話クリア */
-        CONVERSATION_CLEAR,
-        /** API エラー */
-        API_ERROR
-    }
     
     /**
      * 監査ログを非同期で記録.
@@ -99,10 +80,10 @@ public class MiraAuditService {
      * @param userId ユーザーID
      * @param conversationId 会話ID
      * @param mode モード
-     * @param provider プロバイダー
+     * @param usedModel 使用モデル
      * @param latencyMs レイテンシ（ミリ秒）
-     * @param promptTokens プロンプトトークン数
-     * @param completionTokens 完了トークン数
+     * @param promptLength プロンプト文字数
+     * @param responseLength 応答文字数
      * @param status ステータス
      */
     public void logChatResponse(
@@ -110,23 +91,23 @@ public class MiraAuditService {
             String userId,
             String conversationId,
             String mode,
-            String provider,
-            long latencyMs,
-            Integer promptTokens,
-            Integer completionTokens,
-            String status) {
+            String usedModel,
+            int latencyMs,
+            Integer promptLength,
+            Integer responseLength,
+            MiraAuditLog.AuditStatus status) {
         
         logAsync(AuditLogBuilder.create()
-            .action(AuditAction.CHAT_RESPONSE)
+            .action(MiraAuditLog.AuditAction.CHAT)
             .tenantId(tenantId)
             .userId(userId)
             .conversationId(conversationId)
-            .provider(provider)
+            .mode(mode)
+            .usedModel(usedModel)
             .latencyMs(latencyMs)
-            .promptTokens(promptTokens)
-            .completionTokens(completionTokens)
-            .status(status)
-            .detail("mode=" + mode));
+            .promptLength(promptLength)
+            .responseLength(responseLength)
+            .status(status));
     }
     
     /**
@@ -144,11 +125,12 @@ public class MiraAuditService {
             String errorMessage) {
         
         logAsync(AuditLogBuilder.create()
-            .action(AuditAction.API_ERROR)
+            .action(MiraAuditLog.AuditAction.CHAT)
             .tenantId(tenantId)
             .userId(userId)
-            .status("ERROR")
-            .detail("action=" + action + ", error=" + truncate(errorMessage, 500)));
+            .conversationId("error-" + UUID.randomUUID().toString())
+            .status(MiraAuditLog.AuditStatus.ERROR)
+            .errorCode(truncate(errorMessage, 50)));
     }
     
     /**
@@ -176,15 +158,17 @@ public class MiraAuditService {
         private String tenantId;
         private String userId;
         private String conversationId;
-        private AuditAction action;
-        private String provider;
-        private Long latencyMs;
-        private String status;
-        private Integer promptTokens;
-        private Integer completionTokens;
+        private String messageId;
+        private MiraAuditLog.AuditAction action;
+        private String mode;
+        private String appId;
+        private String screenId;
         private Integer promptLength;
         private Integer responseLength;
-        private String detail;
+        private String usedModel;
+        private Integer latencyMs;
+        private MiraAuditLog.AuditStatus status;
+        private String errorCode;
         
         public static AuditLogBuilder create() {
             return new AuditLogBuilder();
@@ -205,33 +189,28 @@ public class MiraAuditService {
             return this;
         }
         
-        public AuditLogBuilder action(AuditAction action) {
+        public AuditLogBuilder messageId(String messageId) {
+            this.messageId = messageId;
+            return this;
+        }
+        
+        public AuditLogBuilder action(MiraAuditLog.AuditAction action) {
             this.action = action;
             return this;
         }
         
-        public AuditLogBuilder provider(String provider) {
-            this.provider = provider;
+        public AuditLogBuilder mode(String mode) {
+            this.mode = mode;
             return this;
         }
         
-        public AuditLogBuilder latencyMs(Long latencyMs) {
-            this.latencyMs = latencyMs;
+        public AuditLogBuilder appId(String appId) {
+            this.appId = appId;
             return this;
         }
         
-        public AuditLogBuilder status(String status) {
-            this.status = status;
-            return this;
-        }
-        
-        public AuditLogBuilder promptTokens(Integer promptTokens) {
-            this.promptTokens = promptTokens;
-            return this;
-        }
-        
-        public AuditLogBuilder completionTokens(Integer completionTokens) {
-            this.completionTokens = completionTokens;
+        public AuditLogBuilder screenId(String screenId) {
+            this.screenId = screenId;
             return this;
         }
         
@@ -245,24 +224,43 @@ public class MiraAuditService {
             return this;
         }
         
-        public AuditLogBuilder detail(String detail) {
-            this.detail = detail;
+        public AuditLogBuilder usedModel(String usedModel) {
+            this.usedModel = usedModel;
+            return this;
+        }
+        
+        public AuditLogBuilder latencyMs(Integer latencyMs) {
+            this.latencyMs = latencyMs;
+            return this;
+        }
+        
+        public AuditLogBuilder status(MiraAuditLog.AuditStatus status) {
+            this.status = status;
+            return this;
+        }
+        
+        public AuditLogBuilder errorCode(String errorCode) {
+            this.errorCode = errorCode;
             return this;
         }
         
         public MiraAuditLog build() {
             return MiraAuditLog.builder()
+                .id(UUID.randomUUID().toString())
                 .tenantId(tenantId)
                 .userId(userId)
                 .conversationId(conversationId)
-                .action(action != null ? action.name() : null)
-                .provider(provider)
-                .latencyMs(latencyMs)
-                .status(status)
-                .promptTokens(promptTokens)
-                .completionTokens(completionTokens)
+                .messageId(messageId)
+                .action(action != null ? action : MiraAuditLog.AuditAction.CHAT)
+                .mode(mode)
+                .appId(appId)
+                .screenId(screenId)
                 .promptLength(promptLength)
                 .responseLength(responseLength)
+                .usedModel(usedModel)
+                .latencyMs(latencyMs)
+                .status(status != null ? status : MiraAuditLog.AuditStatus.SUCCESS)
+                .errorCode(errorCode)
                 .createdAt(LocalDateTime.now())
                 .build();
         }

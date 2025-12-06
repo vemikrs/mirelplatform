@@ -104,36 +104,22 @@ public class AzureOpenAiClient implements AiProviderClient {
     private List<Message> buildMessages(AiRequest request) {
         List<Message> messages = new ArrayList<>();
 
-        // システムプロンプト
-        if (request.getSystemPrompt() != null && !request.getSystemPrompt().isEmpty()) {
-            messages.add(new SystemMessage(request.getSystemPrompt()));
-        }
-
-        // コンテキストプロンプト（システムメッセージとして追加）
-        if (request.getContextPrompt() != null && !request.getContextPrompt().isEmpty()) {
-            messages.add(new SystemMessage(request.getContextPrompt()));
-        }
-
-        // 会話履歴
-        if (request.getConversationHistory() != null) {
-            for (AiRequest.Message histMsg : request.getConversationHistory()) {
-                switch (histMsg.getRole().toLowerCase()) {
+        if (request.getMessages() != null) {
+            for (AiRequest.Message msg : request.getMessages()) {
+                switch (msg.getRole().toLowerCase()) {
                     case "user":
-                        messages.add(new UserMessage(histMsg.getContent()));
+                        messages.add(new UserMessage(msg.getContent()));
                         break;
                     case "assistant":
-                        messages.add(new AssistantMessage(histMsg.getContent()));
+                        messages.add(new AssistantMessage(msg.getContent()));
                         break;
                     case "system":
-                        messages.add(new SystemMessage(histMsg.getContent()));
+                        messages.add(new SystemMessage(msg.getContent()));
                         break;
+                    default:
+                        log.warn("Unknown message role: {}", msg.getRole());
                 }
             }
-        }
-
-        // ユーザプロンプト
-        if (request.getUserPrompt() != null && !request.getUserPrompt().isEmpty()) {
-            messages.add(new UserMessage(request.getUserPrompt()));
         }
 
         return messages;

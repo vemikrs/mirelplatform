@@ -131,6 +131,9 @@ public class MiraAiProperties {
      */
     @Data
     public static class AuditConfig {
+        /** 監査ログ有効化フラグ */
+        private boolean enabled = true;
+        
         /**
          * 保存ポリシー.
          * 

@@ -26,8 +26,8 @@ public class ErrorReportRequest {
     /** ユーザ向けメッセージ */
     private String message;
 
-    /** 詳細情報（JSON形式） */
-    private Object detail;
+    /** 詳細情報 */
+    private String detail;
 
     /** コンテキスト情報 */
     private Context context;
