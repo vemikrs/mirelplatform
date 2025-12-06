@@ -134,6 +134,20 @@ public class MiraAuditService {
     }
     
     /**
+     * コンテキスト更新の監査ログを記録.
+     *
+     * @param userId ユーザーID
+     * @param action アクション（例: USER_CONTEXT_UPDATED）
+     */
+    public void logContextUpdate(String userId, String action) {
+        logAsync(AuditLogBuilder.create()
+            .action(MiraAuditLog.AuditAction.CONTEXT_UPDATE)
+            .userId(userId)
+            .conversationId("context-" + UUID.randomUUID().toString())
+            .status(MiraAuditLog.AuditStatus.SUCCESS));
+    }
+    
+    /**
      * 監査ログが有効かどうか.
      */
     private boolean isAuditEnabled() {

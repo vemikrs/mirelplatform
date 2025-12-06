@@ -6,10 +6,8 @@ export { MiraChatMessage } from './MiraChatMessage';
 export { MiraChatInput } from './MiraChatInput';
 export { MiraMarkdown } from './MiraMarkdown';
 export { MiraFab } from './MiraFab';
-export { MiraFullscreenView } from './MiraFullscreenView';
 
 // Mira専用画面用コンポーネント
 export { MiraConversationList } from './MiraConversationList';
-export { MiraContextPanel } from './MiraContextPanel';
-export { MiraChatArea } from './MiraChatArea';
 export { MiraKeyboardShortcuts } from './MiraKeyboardShortcuts';
+export { MiraUserContextEditor } from './MiraUserContextEditor';

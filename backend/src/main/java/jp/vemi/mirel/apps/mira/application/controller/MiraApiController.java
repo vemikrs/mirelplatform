@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.PutMapping;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,8 +31,10 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.GenerateTitleRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.GenerateTitleResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.UserContextResponse;
 import jp.vemi.mirel.apps.mira.domain.service.MiraAuditService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraChatService;
+import jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraRbacAdapter;
 import jp.vemi.mirel.apps.mira.domain.service.MiraTenantContextManager;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
@@ -48,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MiraApiController {
     
     private final MiraChatService chatService;
+    private final MiraContextLayerService contextLayerService;
     private final MiraRbacAdapter rbacAdapter;
     private final MiraAuditService auditService;
     private final MiraTenantContextManager tenantContextManager;
@@ -367,6 +372,87 @@ public class MiraApiController {
     }
     
     // ========================================
+    // User Context Endpoints
+    // ========================================
+    
+    @GetMapping("/user-context")
+    @Operation(
+        summary = "ユーザーコンテキスト取得",
+        description = "現在のユーザーのAIコンテキスト設定を取得します。"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "成功",
+        content = @Content(mediaType = "application/json")
+    )
+    public ResponseEntity<MiraUserContextApiResponse> getUserContext() {
+        try {
+            String userId = tenantContextManager.getCurrentUserId();
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            // organizationId は現時点ではnull（将来的に追加）
+            String organizationId = null;
+            
+            log.debug("[MiraApi] getUserContext: userId={}", userId);
+            
+            // ユーザースコープのコンテキストを取得
+            var contexts = contextLayerService.buildMergedContext(tenantId, organizationId, userId);
+            
+            UserContextResponse response = new UserContextResponse(
+                contexts.getOrDefault("terminology", ""),
+                contexts.getOrDefault("style", ""),
+                contexts.getOrDefault("workflow", "")
+            );
+            
+            return ResponseEntity.ok(MiraUserContextApiResponse.success(response));
+            
+        } catch (Exception e) {
+            log.error("ユーザーコンテキスト取得エラー", e);
+            return ResponseEntity.internalServerError()
+                .body(MiraUserContextApiResponse.error("コンテキストの取得中にエラーが発生しました"));
+        }
+    }
+    
+    @PutMapping("/user-context")
+    @Operation(
+        summary = "ユーザーコンテキスト更新",
+        description = "現在のユーザーのAIコンテキスト設定を更新します。"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "成功",
+        content = @Content(mediaType = "application/json")
+    )
+    public ResponseEntity<MiraUserContextApiResponse> updateUserContext(
+            @RequestBody UserContextRequest request) {
+        try {
+            String userId = tenantContextManager.getCurrentUserId();
+            
+            log.info("[MiraApi] updateUserContext: userId={}", userId);
+            
+            // 各カテゴリを保存（upsert）
+            contextLayerService.saveOrUpdateUserContext(userId, "terminology", request.terminology());
+            contextLayerService.saveOrUpdateUserContext(userId, "style", request.style());
+            contextLayerService.saveOrUpdateUserContext(userId, "workflow", request.workflow());
+            
+            // 監査ログ
+            auditService.logContextUpdate(userId, "USER_CONTEXT_UPDATED");
+            
+            return ResponseEntity.ok(MiraUserContextApiResponse.success(
+                new UserContextResponse(
+                    request.terminology(),
+                    request.style(),
+                    request.workflow()
+                )
+            ));
+            
+        } catch (Exception e) {
+            log.error("ユーザーコンテキスト更新エラー", e);
+            return ResponseEntity.internalServerError()
+                .body(MiraUserContextApiResponse.error("コンテキストの更新中にエラーが発生しました"));
+        }
+    }
+    
+    // ========================================
     // Health Check
     // ========================================
     
@@ -443,4 +529,36 @@ public class MiraApiController {
             return new MiraTitleApiResponse(null, java.util.List.of(message));
         }
     }
+    
+    /**
+     * ユーザーコンテキスト API レスポンス.
+     */
+    @Schema(description = "Mira ユーザーコンテキスト API レスポンス")
+    public record MiraUserContextApiResponse(
+        @Schema(description = "レスポンスデータ")
+        UserContextResponse data,
+        @Schema(description = "エラーメッセージリスト")
+        java.util.List<String> errors
+    ) {
+        public static MiraUserContextApiResponse success(UserContextResponse data) {
+            return new MiraUserContextApiResponse(data, java.util.List.of());
+        }
+        
+        public static MiraUserContextApiResponse error(String message) {
+            return new MiraUserContextApiResponse(null, java.util.List.of(message));
+        }
+    }
+    
+    /**
+     * ユーザーコンテキスト更新リクエスト.
+     */
+    @Schema(description = "ユーザーコンテキスト更新リクエスト")
+    public record UserContextRequest(
+        @Schema(description = "専門用語コンテキスト")
+        String terminology,
+        @Schema(description = "回答スタイルコンテキスト")
+        String style,
+        @Schema(description = "ワークフローコンテキスト")
+        String workflow
+    ) {}
 }

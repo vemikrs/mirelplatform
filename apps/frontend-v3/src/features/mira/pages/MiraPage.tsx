@@ -23,6 +23,7 @@ import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
+import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
 
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -305,6 +306,7 @@ export function MiraPage() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <MiraUserContextEditor />
             <Button
               variant="ghost"
               size="icon"

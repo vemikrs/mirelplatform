@@ -149,6 +149,51 @@ public class MiraContextLayerService {
     }
 
     /**
+     * ユーザーコンテキストを保存または更新（upsert）.
+     *
+     * @param userId ユーザーID
+     * @param category カテゴリ
+     * @param content コンテンツ
+     * @return 保存されたエンティティ
+     */
+    @Transactional
+    public MiraContextLayer saveOrUpdateUserContext(String userId, String category, String content) {
+        if (log.isDebugEnabled()) {
+            log.debug("[MiraContextLayerService] saveOrUpdateUserContext: userId={}, category={}",
+                    userId, category);
+        }
+
+        // 既存のレコードを検索
+        Optional<MiraContextLayer> existing = repository.findByScopeAndScopeIdAndCategory(
+                ContextScope.USER, userId, category);
+        
+        MiraContextLayer layer;
+        if (existing.isPresent()) {
+            // 更新
+            layer = existing.get();
+            layer.setContent(content);
+            log.debug("[MiraContextLayerService] Updating existing context: id={}", layer.getId());
+        } else {
+            // 新規作成
+            layer = MiraContextLayer.builder()
+                    .id(java.util.UUID.randomUUID().toString())
+                    .scope(ContextScope.USER)
+                    .scopeId(userId)
+                    .category(category)
+                    .content(content)
+                    .priority(0)
+                    .enabled(true)
+                    .build();
+            log.debug("[MiraContextLayerService] Creating new context");
+        }
+
+        MiraContextLayer saved = repository.save(layer);
+        log.info("[MiraContextLayerService] Saved user context: id={}, category={}",
+                saved.getId(), category);
+        return saved;
+    }
+
+    /**
      * コンテキスト値をJSON Mapとしてパース.
      *
      * @param contextContent JSON文字列

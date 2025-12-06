@@ -176,7 +176,11 @@ public class MiraAuditLog {
         /** サーキットブレーカークローズ */
         CIRCUIT_BREAKER_CLOSED,
         /** フォールバック有効化 */
-        FALLBACK_ACTIVATED
+        FALLBACK_ACTIVATED,
+        
+        // コンテキスト管理
+        /** コンテキスト更新 */
+        CONTEXT_UPDATE
     }
 
     /** 監査ステータス */
