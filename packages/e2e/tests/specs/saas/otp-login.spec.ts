@@ -27,7 +27,7 @@ test.describe('OTP Login Flow', () => {
     const testEmail = 'user01@example.com';
     
     // Get MailHog API URL from environment variable (CI uses 8026, local may use 8025)
-    const mailhogApiUrl = process.env.MAILHOG_API_URL || 'http://localhost:8026';
+    const mailhogApiUrl = process.env.MAILHOG_API_URL || 'http://localhost:8025';
     console.log('[E2E] Using MailHog API URL:', mailhogApiUrl);
     
     // ============================================

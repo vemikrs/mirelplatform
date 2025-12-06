@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, type ThemeMode } from '@/lib/hooks/useTheme';
@@ -17,13 +16,11 @@ import {
   DropdownMenuSubContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuPortal
+  DropdownMenuPortal,
+  DropdownMenuLabel
 } from '@mirel/ui';
-import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Eye, EyeOff, Building2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getUserLicenses, getUserTenants, type LicenseInfo, type TenantInfo } from '@/lib/api/userProfile';
+import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Building2 } from 'lucide-react';
 
-const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
@@ -31,42 +28,10 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  * ユーザーメニューコンポーネント
  */
 export function UserMenu() {
-  const { user, logout, tokens, currentTenant, switchTenant } = useAuth();
+  const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
+
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
-  const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
-  });
-
-  const toggleQuickLinks = () => {
-    const newValue = !quickLinksVisible;
-    setQuickLinksVisible(newValue);
-    window.localStorage.setItem(QUICK_LINKS_STORAGE_KEY, String(newValue));
-    // カスタムイベントでRootLayoutに通知
-    window.dispatchEvent(new CustomEvent('quicklinks-toggle', { detail: { visible: newValue } }));
-  };
-
-  // Fetch user's licenses from API
-  const { data: licenses = [] } = useQuery<LicenseInfo[]>({
-    queryKey: ['userLicenses'],
-    queryFn: async () => {
-      if (!tokens?.accessToken) return [];
-      return getUserLicenses();
-    },
-    enabled: !!tokens?.accessToken,
-  });
-
-  // Fetch user's tenants from API
-  const { data: tenants = [] } = useQuery<TenantInfo[]>({
-    queryKey: ['userTenants'],
-    queryFn: async () => {
-      if (!tokens?.accessToken) return [];
-      return getUserTenants();
-    },
-    enabled: !!tokens?.accessToken,
-  });
 
   const handleLogout = () => {
     console.log('[DEBUG UserMenu] handleLogout called');
@@ -153,6 +118,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>ワークスペース</DropdownMenuLabel>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Building2 className="mr-2 h-4 w-4" />
@@ -175,11 +141,12 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>アカウント設定</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
             <User className="mr-2 h-4 w-4" />
             <span>プロフィール設定</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+          <DropdownMenuItem onClick={() => navigate('/settings/profile?tab=security')}>
             <Settings className="mr-2 h-4 w-4" />
             <span>セキュリティ設定</span>
           </DropdownMenuItem>
@@ -188,6 +155,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>表示設定</DropdownMenuLabel>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               {themeMode === 'light' ? <SunMedium className="mr-2 h-4 w-4" /> : 
@@ -214,11 +182,6 @@ export function UserMenu() {
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-
-          <DropdownMenuItem onClick={toggleQuickLinks}>
-            {quickLinksVisible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-            <span>Quick Links {quickLinksVisible ? '非表示' : '表示'}</span>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

@@ -24,18 +24,9 @@ public class DataSeederVerificationTest {
     }
 
     @Test
-    public void testInitializeSaasTestData_CallsLoadSystemData() {
-        // Run initialization
-        DataSeeder.initializeSaasTestData();
-
-        // Verify dataLoader.loadSystemData() was called
-        verify(dataLoader, times(1)).loadSystemData();
-    }
-
-    @Test
     public void testInitializeSchemaSampleData_CallsLoadSampleData() {
         // Run initialization
-        DataSeeder.initializeSchemaSampleData();
+        DataSeeder.initializeSampleData();
 
         // Verify dataLoader.loadSampleData() was called
         verify(dataLoader, times(1)).loadSampleData();

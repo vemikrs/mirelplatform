@@ -43,7 +43,6 @@ public class OtpService {
     private final OtpProperties otpProperties;
     private final RateLimitProperties rateLimitProperties;
     private final AppProperties appProperties;
-    private final MeterRegistry meterRegistry;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -74,7 +73,6 @@ public class OtpService {
         this.otpProperties = otpProperties;
         this.rateLimitProperties = rateLimitProperties;
         this.appProperties = appProperties;
-        this.meterRegistry = meterRegistry;
 
         // メトリクスカウンター初期化
         this.otpRequestSuccessCounter = Counter.builder("otp.request.success")

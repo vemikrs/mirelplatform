@@ -58,7 +58,7 @@ export function OtpVerifyPage() {
         // It's AuthenticationResponse (Login success)
         try {
           // まずトークンをストアにセット(これにより apiClient がトークンを使用可能)
-          // @ts-expect-error - data is AuthenticationResponse
+          // data is AuthenticationResponse
           setAuth(data.user, data.currentTenant, data.tokens);
           
           // OTP検証成功時、tenants と licenses も取得してストアに保存

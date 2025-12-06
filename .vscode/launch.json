@@ -9,8 +9,9 @@
             "mainClass": "jp.vemi.mirel.MiplaApplication",
             "args": "",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local",
+                "SPRING_PROFILES_ACTIVE": "local"
             },
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

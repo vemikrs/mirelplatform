@@ -38,20 +38,4 @@ public class DataSeeder implements ApplicationContextAware {
     public static void initializeSampleData() {
         getDataLoader().loadSampleData();
     }
-
-    // 後方互換性のためのエイリアス
-    @Deprecated
-    public static void initializeDefaultTenant() {
-        initializeSystemData();
-    }
-
-    @Deprecated
-    public static void initializeSaasTestData() {
-        // システムデータに統合済み、何もしない
-    }
-
-    @Deprecated
-    public static void initializeSchemaSampleData() {
-        initializeSampleData();
-    }
 }

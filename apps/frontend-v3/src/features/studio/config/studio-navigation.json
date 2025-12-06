@@ -1,0 +1,66 @@
+[
+  {
+    "id": "modeler",
+    "label": "Modeler",
+    "icon": "Database",
+    "children": [
+      {
+        "id": "entities",
+        "label": "エンティティ",
+        "path": "/apps/studio/modeler/entities",
+        "icon": "Box"
+      },
+      {
+        "id": "relations",
+        "label": "リレーション",
+        "path": "/apps/studio/modeler/relations",
+        "icon": "Share2"
+      },
+      {
+        "id": "codes",
+        "label": "コードマスタ",
+        "path": "/apps/studio/modeler/codes",
+        "icon": "Tags"
+      }
+    ]
+  },
+  {
+    "id": "forms",
+    "label": "Forms",
+    "icon": "Layout",
+    "children": [
+      {
+        "id": "all-forms",
+        "label": "フォーム一覧",
+        "path": "/apps/studio/forms",
+        "icon": "List"
+      }
+    ]
+  },
+  {
+    "id": "flows",
+    "label": "Flows",
+    "icon": "Workflow",
+    "children": [
+      {
+        "id": "all-flows",
+        "label": "フロー一覧",
+        "path": "/apps/studio/flows",
+        "icon": "List"
+      }
+    ]
+  },
+  {
+    "id": "data",
+    "label": "Data",
+    "icon": "Table",
+    "children": [
+      {
+        "id": "browser",
+        "label": "データブラウザ",
+        "path": "/apps/studio/data",
+        "icon": "Grid"
+      }
+    ]
+  }
+]

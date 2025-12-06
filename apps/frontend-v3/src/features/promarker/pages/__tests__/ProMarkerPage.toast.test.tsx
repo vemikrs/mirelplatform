@@ -1,5 +1,6 @@
 import { describe, expect, beforeEach, vi, it } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@mirel/ui', async () => {
   const actual = await vi.importActual<typeof import('@mirel/ui')>('@mirel/ui');
@@ -88,7 +89,11 @@ describe('ProMarkerPage toast behavior', () => {
   });
 
   it('shows toast when clearing all inputs', async () => {
-    render(<ProMarkerPage />);
+    render(
+      <MemoryRouter>
+        <ProMarkerPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(suggestMutate).toHaveBeenCalled());
 
@@ -100,7 +105,11 @@ describe('ProMarkerPage toast behavior', () => {
   });
 
   it('shows toast when clearing stencil definition', async () => {
-    render(<ProMarkerPage />);
+    render(
+      <MemoryRouter>
+        <ProMarkerPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(suggestMutate).toHaveBeenCalled());
 

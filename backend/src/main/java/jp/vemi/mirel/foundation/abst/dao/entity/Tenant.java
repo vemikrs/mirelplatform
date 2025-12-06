@@ -13,6 +13,10 @@ import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.Date;
+import jp.vemi.mirel.foundation.feature.tenant.dto.TenantPlan;
+import jp.vemi.mirel.foundation.feature.tenant.dto.TenantStatus;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Setter
 @Getter
@@ -26,6 +30,17 @@ public class Tenant {
 
     @Column(name = "tenant_name")
     private String tenantName;
+
+    @Column(name = "domain", unique = true)
+    private String domain;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plan")
+    private TenantPlan plan;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private TenantStatus status;
 
     // SaaS拡張フィールド
     @Column(name = "display_name")

@@ -1,3 +1,5 @@
-tenant_id,tenant_name,display_name,is_active,version,delete_flag,create_user_id,create_date,update_user_id,update_date
-default,default,Default Workspace,true,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
-enterprise-001,enterprise-001,Enterprise Workspace,true,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+tenant_id,tenant_name,display_name,is_active,version,delete_flag,create_user_id,create_date,update_user_id,update_date,plan,status,domain
+default,Mirel System (Demo),Default Workspace,true,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,ENTERPRISE,ACTIVE,system
+enterprise-001,Acme Corp (Demo),Acme Corp Workspace,true,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,ENTERPRISE,ACTIVE,acme-corp
+professional-001,Globex Corporation (Demo),Globex Workspace,true,1,false,admin,2023-06-20T00:00:00,admin,2023-06-20T00:00:00,PROFESSIONAL,SUSPENDED,globex
+starter-001,Soylent Corp (Demo),Soylent Workspace,true,1,false,admin,2024-01-15T00:00:00,admin,2024-01-15T00:00:00,STARTER,ACTIVE,soylent

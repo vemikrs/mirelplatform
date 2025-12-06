@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { OAuthCallbackPage } from '../OAuthCallbackPage';
@@ -22,6 +22,7 @@ describe('OAuthCallbackPage', () => {
   const mockNavigate = vi.fn();
   const mockSetToken = vi.fn();
   const mockSetAuthenticated = vi.fn();
+  const originalFetch = global.fetch;
   
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -38,6 +39,13 @@ describe('OAuthCallbackPage', () => {
       };
       return selector ? selector(state) : state;
     });
+    
+    // global.fetchをモック
+    global.fetch = vi.fn();
+  });
+  
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
   
   it('トークンが渡された場合: ストアに保存してダッシュボードに遷移', async () => {
@@ -47,6 +55,13 @@ describe('OAuthCallbackPage', () => {
     const mockSearchParams = new URLSearchParams({ token: testToken });
     vi.mocked(useSearchParams).mockReturnValue([mockSearchParams, vi.fn()] as any);
     
+    // Mock fetch to return user profile
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ id: 1, name: 'Test User', email: 'test@example.com' }),
+    } as Response);
+    
     // When: コンポーネントをレンダリング
     render(
       <BrowserRouter>
@@ -55,7 +70,7 @@ describe('OAuthCallbackPage', () => {
     );
     
     // Then: ローディング表示
-    expect(screen.getByText('ログイン処理中...')).toBeInTheDocument();
+    expect(screen.getByText('Authenticating...')).toBeInTheDocument();
     
     // Then: トークンをストアに保存
     await waitFor(() => {

@@ -2,13 +2,11 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mirel/ui';
 import { 
-  Sparkles, 
   CheckCircle, 
   Beaker, 
   AlertTriangle, 
   Clock, 
   Archive,
-  RefreshCw,
   Layers,
 } from 'lucide-react';
 import { 
@@ -19,12 +17,12 @@ import {
 } from '@/lib/api/features';
 
 // Status configuration
-const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: string; label: string }> = {
-  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'green', label: '安定版' },
-  BETA: { icon: <Beaker className="size-3.5" />, color: 'yellow', label: 'ベータ' },
-  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'orange', label: 'アルファ' },
-  PLANNING: { icon: <Clock className="size-3.5" />, color: 'gray', label: '計画中' },
-  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'red', label: '非推奨' },
+const statusConfig: Record<FeatureStatus, { icon: React.ReactNode; color: 'neutral' | 'outline' | 'destructive' | 'info' | 'success' | 'warning'; label: string }> = {
+  STABLE: { icon: <CheckCircle className="size-3.5" />, color: 'success', label: '安定版' },
+  BETA: { icon: <Beaker className="size-3.5" />, color: 'warning', label: 'ベータ' },
+  ALPHA: { icon: <AlertTriangle className="size-3.5" />, color: 'warning', label: 'アルファ' },
+  PLANNING: { icon: <Clock className="size-3.5" />, color: 'neutral', label: '計画中' },
+  DEPRECATED: { icon: <Archive className="size-3.5" />, color: 'destructive', label: '非推奨' },
 };
 
 interface FeatureItemProps {
@@ -56,7 +54,7 @@ function FeatureItem({ feature, showApp = false }: FeatureItemProps) {
           </Badge>
         )}
         <Badge 
-          variant={status.color as 'green' | 'yellow' | 'neutral'} 
+          variant={status.color} 
           className="text-xs"
         >
           {status.label}
@@ -71,122 +69,142 @@ function FeatureItem({ feature, showApp = false }: FeatureItemProps) {
   );
 }
 
-export function AvailableFeaturesSection() {
-  const { data: features, isLoading, error } = useQuery({
+export function UnifiedFeatureSection() {
+  const { data: availableFeatures } = useQuery({
     queryKey: ['available-features'],
     queryFn: getAvailableFeatures,
     staleTime: 60 * 1000,
   });
 
-  if (isLoading) {
-    return (
-      <Card className="bg-card/50 backdrop-blur-sm border-outline/15">
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="size-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error || !features || features.length === 0) {
-    return null;
-  }
-
-  // Group by application
-  const grouped = features.reduce((acc, feature) => {
-    const app = feature.applicationId;
-    if (!acc[app]) acc[app] = [];
-    acc[app].push(feature);
-    return acc;
-  }, {} as Record<string, FeatureFlag[]>);
-
-  return (
-    <Card 
-      className="bg-card/50 backdrop-blur-sm"
-      style={{
-        borderColor: 'hsl(var(--outline) / 0.15)',
-        boxShadow: 'var(--liquid-elevation-floating)',
-      }}
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Layers className="size-5 text-primary/70" />
-            利用可能な機能
-          </span>
-          <Badge variant="outline" className="font-normal">
-            {features.length} 件
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {Object.entries(grouped).map(([app, appFeatures]) => (
-          <div key={app}>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2 px-3">
-              {app}
-            </h4>
-            <div className="space-y-1">
-              {appFeatures.map((feature) => (
-                <FeatureItem key={feature.id} feature={feature} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function InDevelopmentSection() {
-  const { data: features, isLoading, error } = useQuery({
+  const { data: inDevFeatures } = useQuery({
     queryKey: ['in-development-features'],
     queryFn: getInDevelopmentFeatures,
     staleTime: 60 * 1000,
   });
 
-  if (isLoading) {
-    return (
-      <Card className="bg-card/50 backdrop-blur-sm border-outline/15">
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="size-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
+  // Static features for Studio and Workflow
+  const staticFeatures: FeatureFlag[] = [
+    {
+      id: 'studio-modeler',
+      featureKey: 'studio.modeler',
+      featureName: 'Modeler (データモデル定義)',
+      applicationId: 'mirel Studio',
+      status: 'BETA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-form',
+      featureKey: 'studio.form',
+      featureName: 'Form Designer (画面作成)',
+      applicationId: 'mirel Studio',
+      status: 'ALPHA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-flow',
+      featureKey: 'studio.flow',
+      featureName: 'Flow Designer (ロジック定義)',
+      applicationId: 'mirel Studio',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-data',
+      featureKey: 'studio.data',
+      featureName: 'Data Browser (データ管理)',
+      applicationId: 'mirel Studio',
+      status: 'ALPHA',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'studio-release',
+      featureKey: 'studio.release',
+      featureName: 'Release Center (リリース管理)',
+      applicationId: 'mirel Studio',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+    {
+      id: 'workflow-process',
+      featureKey: 'workflow.process',
+      featureName: 'Process Management (BPMN/Webhook)',
+      applicationId: 'Business Workflow',
+      status: 'PLANNING',
+      inDevelopment: true,
+      enabledByDefault: false,
+      rolloutPercentage: 0,
+    },
+  ];
 
-  if (error || !features || features.length === 0) {
-    return null;
-  }
+  const allFeatures = [
+    ...(availableFeatures || []),
+    ...(inDevFeatures || []),
+    ...staticFeatures
+  ];
+
+  // Group by application
+  const grouped = allFeatures.reduce((acc, feature) => {
+    // Normalize application names if needed
+    let app = feature.applicationId;
+    if (!acc[app]) acc[app] = [];
+    // Avoid duplicates if static features overlap with fetched ones
+    if (!acc[app].some(f => f.featureKey === feature.featureKey)) {
+      acc[app].push(feature);
+    }
+    return acc;
+  }, {} as Record<string, FeatureFlag[]>);
+
+  // Define display order for applications
+  const appOrder = ['mirelplatform', 'promarker', 'mirel Studio', 'Business Workflow'];
+  
+  const sortedApps = Object.keys(grouped).sort((a, b) => {
+    const indexA = appOrder.indexOf(a);
+    const indexB = appOrder.indexOf(b);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   return (
-    <Card 
-      className="bg-card/50 backdrop-blur-sm"
-      style={{
-        borderColor: 'hsl(var(--outline) / 0.15)',
-        boxShadow: 'var(--liquid-elevation-floating)',
-      }}
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Sparkles className="size-5 text-amber-500" />
-            開発中の機能
-          </span>
-          <Badge variant="warning" className="font-normal">
-            {features.length} 件
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          {features.map((feature) => (
-            <FeatureItem key={feature.id} feature={feature} showApp />
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground mt-4 px-3">
-          これらの機能は現在開発中です。今後のアップデートでご利用いただけるようになります。
-        </p>
-      </CardContent>
-    </Card>
+    <>
+      {sortedApps.map(app => (
+        <Card 
+          key={app}
+          className="bg-card/50 backdrop-blur-sm h-full"
+          style={{
+            borderColor: 'hsl(var(--outline) / 0.15)',
+            boxShadow: 'var(--liquid-elevation-floating)',
+          }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Layers className="size-5 text-primary/70" />
+                {app}
+              </span>
+              <Badge variant="outline" className="font-normal">
+                {grouped[app]?.length || 0} 件
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {grouped[app]?.map((feature) => (
+              <FeatureItem key={feature.id} feature={feature} />
+            ))}
+          </CardContent>
+        </Card>
+      ))}
+    </>
   );
 }

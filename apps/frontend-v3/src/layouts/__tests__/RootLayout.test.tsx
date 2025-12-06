@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { cleanup, render, screen } from '@testing-library/react'
 import type { NavigationConfig } from '@/app/navigation.schema'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -11,6 +12,11 @@ vi.mock('react-router-dom', async () => {
     useLoaderData: () => mockNavigation,
   }
 })
+
+// Mock menu API
+vi.mock('@/lib/api/menu', () => ({
+  getMenuTree: vi.fn().mockResolvedValue([]),
+}))
 
 const mockNavigation: NavigationConfig = {
   brand: {
@@ -32,6 +38,7 @@ const mockNavigation: NavigationConfig = {
 }
 
 let RootLayout: ComponentType
+let queryClient: QueryClient
 
 describe('RootLayout', () => {
   beforeAll(async () => {
@@ -40,6 +47,11 @@ describe('RootLayout', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
   })
 
   afterEach(() => {
@@ -52,13 +64,15 @@ describe('RootLayout', () => {
 
   it('renders navigation links from configuration with active state', () => {
     const { container } = render(
-      <MemoryRouter initialEntries={['/catalog']}>
-        <Routes>
-          <Route element={<RootLayout />}>
-            <Route path="/catalog" element={<div>Catalog page</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/catalog']}>
+          <Routes>
+            <Route element={<RootLayout />}>
+              <Route path="/catalog" element={<div>Catalog page</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
     )
 
     const catalogLinks = screen.getAllByRole('link', { name: 'UIカタログ' })

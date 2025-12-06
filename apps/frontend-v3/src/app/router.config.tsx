@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet, redirect } from 'react-router-dom';
 import { RootLayout } from '@/layouts/RootLayout';
 import { HomePage } from '@/features/home/pages/HomePage';
+import { ProductLineupPage } from '@/features/home/pages/ProductLineupPage';
 import { UiCatalogPage } from '@/features/catalog/pages/UiCatalogPage';
 import { SiteMapPage } from '@/features/sitemap/pages/SiteMapPage';
 import ProMarkerPageWithErrorBoundary from '@/features/promarker/pages/ProMarkerPage';
@@ -19,35 +20,50 @@ import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordRes
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { AdminFeaturesPage } from '@/features/admin';
+import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
+import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
+import { LicenseManagementPage } from '@/features/admin/pages/LicenseManagementPage';
+import { SystemSettingsPage } from '@/features/admin/pages/SystemSettingsPage';
+import { SystemStatusPage } from '@/features/admin/pages/SystemStatusPage';
+import { TenantManagementPage } from '@/features/admin/pages/TenantManagementPage';
+import { OrganizationManagementPage } from '@/features/organization';
+import AnnouncementListPage from '@/features/admin/pages/AnnouncementListPage';
+import AnnouncementEditPage from '@/features/admin/pages/AnnouncementEditPage';
 import { ProtectedRoute } from '@/components/auth';
 import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
-import SecurityPage from '@/app/settings/security/page';
-import { SchemaHomePage } from '@/features/schema/pages/SchemaHomePage';
-import { SchemaRecordListPage } from '@/features/schema/pages/SchemaRecordListPage';
-import { SchemaRecordDetailPage } from '@/features/schema/pages/SchemaRecordDetailPage';
-import { SchemaModelDefinePage } from '@/features/schema/pages/SchemaModelDefinePage';
-import { SchemaCodeMasterPage } from '@/features/schema/pages/SchemaCodeMasterPage';
+import { ModelerCodeMasterPage } from '@/features/studio/modeler/pages/ModelerCodeMasterPage';
+import { ModelerHomePage } from '@/features/studio/modeler/pages/ModelerHomePage';
+import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
+import { EntityListPage } from '@/features/studio/modeler/pages/EntityListPage';
+import { EntityEditPage } from '@/features/studio/modeler/pages/EntityEditPage';
+import { RelationViewPage } from '@/features/studio/modeler/pages/RelationViewPage';
+import { FormListPage } from '@/features/studio/forms/pages/FormListPage';
+import { FormDesignerPage } from '@/features/studio/forms/pages/FormDesignerPage';
+import { FlowListPage } from '@/features/studio/flows/pages/FlowListPage';
+import { FlowDesignerPage } from '@/features/studio/flows/pages/FlowDesignerPage';
+import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
+import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
+import { ReleasePage } from '@/features/studio/pages/ReleasePage';
+import { StudioGuard } from '@/features/studio/guards/StudioGuard';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
 import type { NavigationConfig } from './navigation.schema';
 
-// キャッシュ用の変数（同一セッション内での重複API呼び出しを防ぐ）
-let cachedData: { profile: unknown; navigation: NavigationConfig } | null = null;
-let cacheKey = '';
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5000; // 5秒
+// キャッシュ変数を削除
+// let cachedData: ... (removed)
+// let cacheKey = ... (removed)
+// let cacheTimestamp = ... (removed)
+// const CACHE_DURATION = ... (removed)
 
 /** * Clear authentication loader cache
  * Should be called on logout to ensure fresh authentication check on next navigation
+ * (No-op now as cache is removed)
  */
 export function clearAuthLoaderCache() {
-  cachedData = null;
-  cacheKey = '';
-  cacheTimestamp = 0;
-  console.log('[authLoader] Cache cleared');
+  // console.log('[authLoader] Cache cleared (no-op)');
 }
 
 /** * Authentication Loader
@@ -56,23 +72,13 @@ export function clearAuthLoaderCache() {
  */
 async function authLoader(): Promise<NavigationConfig> {
   try {
-    const now = Date.now();
-    const currentKey = window.location.pathname;
-    
-    // キャッシュが有効かつ同じURLならスキップ
-    if (cachedData && cacheKey === currentKey && (now - cacheTimestamp) < CACHE_DURATION) {
-      return cachedData.navigation;
-    }
+    // キャッシュロジックを削除: 常に最新の認証状態を確認する
     
     // サーバセッションから authStore を再構築
     const { rehydrateFromServerSession } = useAuthStore.getState();
     await rehydrateFromServerSession();
 
     const navigation = await loadNavigationConfig();
-    
-    cachedData = { profile: null, navigation };
-    cacheKey = currentKey;
-    cacheTimestamp = now;
     
     return navigation;
   } catch (error) {
@@ -193,6 +199,11 @@ export const router = createBrowserRouter([
             handle: { title: 'ホーム' },
           },
           {
+            path: 'products',
+            element: <ProductLineupPage />,
+            handle: { title: '製品ラインナップ' },
+          },
+          {
             index: true,
             loader: () => redirect('/home'),
           },
@@ -215,15 +226,107 @@ export const router = createBrowserRouter([
             path: 'settings/profile',
             element: <ProfilePage />,
           },
+
+          // Admin routes - Platform Management (requires ADMIN role)
           {
-            path: 'settings/security',
-            element: <SecurityPage />,
+            path: 'admin/platform/tenants',
+            element: <TenantManagementPage />,
+            handle: { title: '管理 - テナント一覧' },
           },
-          // Admin routes (requires ADMIN role)
+          {
+            path: 'admin/platform/system',
+            element: <SystemSettingsPage />,
+            handle: { title: '管理 - システム共通設定' },
+          },
+          {
+            path: 'admin/platform/status',
+            element: <SystemStatusPage />,
+            handle: { title: '管理 - システムステータス' },
+          },
+          {
+            path: 'admin/platform/menu',
+            element: <MenuManagementPage />,
+            handle: { title: '管理 - メニュー定義' },
+          },
+          {
+            path: 'admin/platform/sitemap',
+            element: <SiteMapPage />,
+            handle: { title: '管理 - サイトマップ' },
+          },
           {
             path: 'admin/features',
             element: <AdminFeaturesPage />,
             handle: { title: '管理 - フィーチャーフラグ' },
+          },
+          // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
+          {
+            path: 'admin/workspace/license',
+            element: <LicenseManagementPage />,
+            handle: { title: '管理 - 契約・ライセンス管理' },
+          },
+          {
+            path: 'admin/workspace/announcements',
+            element: <AnnouncementListPage />,
+            handle: { title: '管理 - 通知設定' },
+          },
+          {
+            path: 'admin/workspace/announcements/:id',
+            element: <AnnouncementEditPage />,
+            handle: { title: '管理 - お知らせ編集' },
+          },
+          // Admin routes - Identity Management (requires TENANT_ADMIN role)
+          {
+            path: 'admin/identity/users',
+            element: <UserManagementPage />,
+            handle: { title: '管理 - ユーザー管理' },
+          },
+          // Admin routes - Master Maintenance (requires TENANT_ADMIN role)
+          {
+            path: 'admin/master/organization',
+            element: <OrganizationManagementPage />,
+            handle: { title: '管理 - 組織マスタ' },
+          },
+          {
+            path: 'admin/master/codes',
+            element: <ModelerCodeMasterPage />,
+            handle: { title: '管理 - コードマスタ' },
+          },
+          // Legacy redirects for backward compatibility
+          {
+            path: 'admin/tenant',
+            loader: () => redirect('/admin/platform/tenants'),
+          },
+          {
+            path: 'admin/system',
+            loader: () => redirect('/admin/platform/system'),
+          },
+          {
+            path: 'admin/status',
+            loader: () => redirect('/admin/platform/status'),
+          },
+          {
+            path: 'admin/menu',
+            loader: () => redirect('/admin/platform/menu'),
+          },
+          {
+            path: 'admin/license',
+            loader: () => redirect('/admin/workspace/license'),
+          },
+          {
+            path: 'admin/announcements',
+            loader: () => redirect('/admin/workspace/announcements'),
+          },
+          {
+            path: 'admin/users',
+            loader: () => redirect('/admin/identity/users'),
+          },
+          {
+            path: 'admin/organization',
+            loader: () => redirect('/admin/master/organization'),
+          },
+          {
+            path: 'sitemap',
+            loader: () => redirect('/admin/platform/sitemap'),
           },
           // Backward compatibility route for E2E tests
           {
@@ -233,37 +336,119 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: 'apps/schema',
+        path: 'apps/studio',
+        element: (
+          <>
+            <StudioGuard />
+          </>
+        ),
         children: [
           {
             index: true,
-            element: <SchemaHomePage />,
-            handle: { title: 'Schema - Home' },
+            element: <StudioHomePage />,
+            handle: { title: 'Studio - ホーム' },
+          },
+          // New IA Routes
+          {
+            path: 'modeler',
+            children: [
+              {
+                index: true,
+                element: <ModelerHomePage />,
+                handle: { title: 'Modeler - ダッシュボード' },
+              },
+              {
+                path: 'entities',
+                element: <EntityListPage />,
+                handle: { title: 'Modeler - エンティティ一覧' },
+              },
+              {
+                path: 'entities/:entityId',
+                element: <EntityEditPage />,
+                handle: { title: 'Modeler - エンティティ編集' },
+              },
+              {
+                path: 'relations',
+                element: <RelationViewPage />,
+                handle: { title: 'Modeler - リレーション' },
+              },
+              {
+                path: 'codes',
+                element: <ModelerCodeMasterPage />,
+                handle: { title: '管理 - コードマスタ' }, // Matches existing Admin title? No, this is Modeler version.
+                                                        // Admin has `handle: { title: '管理 - コードマスタ' }` at line 308.
+                                                        // This uses the SAME component `ModelerCodeMasterPage`.
+                                                        // I should use `Modeler - コードマスタ`.
+              },
+              // Legacy Redirects
+              {
+                path: 'models',
+                loader: () => redirect('../entities'),
+              },
+              {
+                path: 'records',
+                loader: () => redirect('../../data'),
+              },
+            ],
           },
           {
-            path: 'models',
-            element: <SchemaModelDefinePage />,
-            handle: { title: 'Schema - Model Definition' },
+            path: 'forms',
+            children: [
+              {
+                index: true,
+                element: <FormListPage />,
+                handle: { title: 'Studio - フォーム一覧' },
+              },
+              {
+                path: ':formId',
+                element: <FormDesignerPage />,
+                handle: { title: 'Studio - フォームデザイナー' },
+              },
+            ],
           },
           {
-            path: 'records',
-            element: <SchemaRecordListPage />,
-            handle: { title: 'Schema - Records' },
+            path: 'flows',
+            children: [
+              {
+                index: true,
+                element: <FlowListPage />,
+                handle: { title: 'Studio - フロー一覧' },
+              },
+              {
+                path: ':flowId',
+                element: <FlowDesignerPage />,
+                handle: { title: 'Studio - フローデザイナー' },
+              },
+            ],
           },
           {
-            path: 'records/:modelId/new',
-            element: <SchemaRecordDetailPage />,
-            handle: { title: 'Schema - New Record' },
+            path: 'data',
+            children: [
+              {
+                index: true,
+                element: <DataBrowserPage />,
+                handle: { title: 'Studio - データブラウザ' },
+              },
+              {
+                path: ':modelId/:recordId',
+                element: <DataRecordPage />,
+                handle: { title: 'Studio - データレコード' },
+              },
+            ],
           },
           {
-            path: 'records/:modelId/:recordId',
-            element: <SchemaRecordDetailPage />,
-            handle: { title: 'Schema - Edit Record' },
+            path: ':modelId/releases',
+            element: <ReleasePage />,
+            handle: { title: 'Studio - リリースセンター' },
+          },
+          // Legacy Routes & Redirects
+          {
+            path: 'new',
+            loader: () => redirect('forms/new'),
           },
           {
-            path: 'codes',
-            element: <SchemaCodeMasterPage />,
-            handle: { title: 'Schema - Code Master' },
+            path: ':modelId', // Catch-all for old form URLs
+            loader: ({ params }) => redirect(`forms/${params.modelId}`),
           },
         ],
       },

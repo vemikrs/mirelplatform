@@ -37,7 +37,7 @@ public class AdminUserController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Boolean active) {
-        
+
         try {
             UserListResponse response = adminUserService.listUsers(page, size, q, role, active);
             return ResponseEntity.ok(response);
@@ -79,6 +79,41 @@ public class AdminUserController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             logger.error("Failed to update user: {}", id, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * ユーザー作成
+     */
+    @PostMapping
+    public ResponseEntity<AdminUserDto> createUser(
+            @RequestBody jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
+        try {
+            AdminUserDto user = adminUserService.createUser(request);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            logger.error("Failed to create user", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("Failed to create user", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * ユーザー削除
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        try {
+            adminUserService.deleteUser(id);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            logger.error("Failed to delete user: {}", id, e);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("Failed to delete user: {}", id, e);
             return ResponseEntity.internalServerError().build();
         }
     }

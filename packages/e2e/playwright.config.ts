@@ -24,17 +24,12 @@ export default defineConfig({
   maxFailures: undefined,  // Run all tests to completion
   
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['list']
-  ],
+  reporter: 'list',
   
   /* Start dev servers automatically for local E2E runs only (CI handles server startup separately) */
   webServer: process.env.CI ? undefined : [
     {
-      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun"',
+      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 DATABASE_URL=jdbc:postgresql://localhost:5432/mirelplatform DATABASE_USER=mirel DATABASE_PASS=mirel REDIS_PORT=6379 SMTP_PORT=1025 ./gradlew --console=plain :backend:bootRun"',
       url: 'http://localhost:3000/mipla2/actuator/health',
       reuseExistingServer: true,
       timeout: 180_000

@@ -18,12 +18,14 @@ import java.util.Date;
 @Getter
 @Entity
 @Table(name = "mir_tenant_system_master")
+@jakarta.persistence.IdClass(TenantSystemMasterId.class)
 public class TenantSystemMaster {
 
     @Id
     @Column(name = "tenant_id")
     private String tenantId;
 
+    @Id
     @Column(name = "key_column")
     private String key;
 

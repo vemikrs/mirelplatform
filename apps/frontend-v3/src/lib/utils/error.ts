@@ -16,18 +16,33 @@
  * }
  * ```
  */
+import { toast } from '@mirel/ui';
+
+/**
+ * Display API errors as toast notifications
+ * 
+ * @param errors - Array of error messages from API response
+ * 
+ * @example
+ * ```tsx
+ * const response = await apiClient.post('/api/endpoint', data)
+ * 
+ * if (response.data.errors?.length) {
+ *   handleApiError(response.data.errors)
+ * }
+ * ```
+ */
 export function handleApiError(errors: string[] | undefined): void {
   if (!errors || errors.length === 0) return
 
-  // TODO: Integrate with toast notification library (@mirel/ui)
-  // For now, log to console and use alert
   errors.forEach((error) => {
     console.error('API Error:', error)
     
-    // Temporary: Use alert (will be replaced with toast in Step 9)
-    if (typeof window !== 'undefined') {
-      alert(`エラー: ${error}`)
-    }
+    toast({
+      title: 'エラー',
+      description: error,
+      variant: 'destructive',
+    })
   })
 }
 
@@ -48,14 +63,14 @@ export function handleApiError(errors: string[] | undefined): void {
 export function handleSuccess(messages: string[] | undefined): void {
   if (!messages || messages.length === 0) return
 
-  // TODO: Integrate with toast notification library
   messages.forEach((message) => {
     console.log('Success:', message)
     
-    // Temporary: Use alert (will be replaced with toast in Step 9)
-    if (typeof window !== 'undefined') {
-      alert(`成功: ${message}`)
-    }
+    toast({
+      title: '成功',
+      description: message,
+      variant: 'success',
+    })
   })
 }
 

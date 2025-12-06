@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,7 +25,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
-import jp.vemi.framework.util.DataSeeder;
 import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
 import jp.vemi.mirel.security.AuthenticationService;
@@ -209,8 +207,8 @@ public class WebSecurityConfig {
                     .requestMatchers(
                             "/api/auth/device/code",
                             "/api/auth/device/token",
-                            "/api/auth/device/verify"
-                    ).permitAll()
+                            "/api/auth/device/verify")
+                    .permitAll()
 
                     // OAuth2関連エンドポイント（Spring Securityが処理）
                     .requestMatchers(
