@@ -48,6 +48,7 @@ import { DataBrowserPage } from '@/features/studio/data/pages/DataBrowserPage';
 import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
 import { ReleasePage } from '@/features/studio/pages/ReleasePage';
 import { StudioGuard } from '@/features/studio/guards/StudioGuard';
+import { MiraPage } from '@/features/mira/pages/MiraPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -348,6 +349,12 @@ export const router = createBrowserRouter([
           {
             path: 'mirel/mste',
             element: <ProMarkerPageWithErrorBoundary />,
+          },
+          // Mira AI Assistant - Dedicated Page
+          {
+            path: 'mira',
+            element: <MiraPage />,
+            handle: { title: 'Mira - AI Assistant' },
           },
         ],
       },

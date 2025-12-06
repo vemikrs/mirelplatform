@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Wand2, 
@@ -13,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   HelpCircle,
+  Bot,
   type LucideIcon 
 } from 'lucide-react';
 import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
@@ -48,6 +49,7 @@ interface SideNavigationProps {
 
 export function SideNavigation({ items, brand, helpAction, className }: SideNavigationProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Sidebar collapsed state (persisted)
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -178,8 +180,21 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
 
       {/* Search Section - Moved here */}
       {!isCollapsed && (
-        <div className="px-3 py-2 border-t border-outline/20">
+        <div className="px-3 py-2 border-t border-outline/20 space-y-2">
           <GlobalSearch />
+          {/* Mira AI Assistant Button */}
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start gap-2 text-sm font-medium",
+              location.pathname === '/mira' && "bg-primary/10 text-primary border-primary/30"
+            )}
+            onClick={() => navigate('/mira')}
+          >
+            <Bot className="size-4" />
+            <span>Mira</span>
+            <span className="text-xs text-muted-foreground ml-auto">(AI Assistant)</span>
+          </Button>
         </div>
       )}
 
