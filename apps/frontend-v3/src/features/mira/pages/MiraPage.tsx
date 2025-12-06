@@ -2,18 +2,17 @@
  * Mira AI Assistant - 専用ページ
  * 
  * チャット履歴の一覧と汎用AIチャット機能を提供する専用画面。
- * 3カラムレイアウト:
- * - 左: 会話履歴リスト
- * - 中央: チャットエリア
- * - 右: コンテキストパネル（メタデータ・アクション）
+ * シンプルな1カラムレイアウト + スライドインドロワー:
+ * - 左ドロワー: 会話履歴リスト（トグル表示）
+ * - 中央: チャットエリア（メイン）
  */
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, ScrollArea } from '@mirel/ui';
 import { 
-  Bot, 
   Sparkles,
   Trash2,
-  ChevronRight,
+  Menu,
+  Plus,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
@@ -21,7 +20,6 @@ import type { MiraMode } from '@/lib/api/mira';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
-import { MiraContextPanel } from '../components/MiraContextPanel';
 
 export function MiraPage() {
   const {
@@ -39,6 +37,9 @@ export function MiraPage() {
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
   const deleteConversation = useMiraStore((state) => state.deleteConversation);
   
+  // ドロワーの開閉状態
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
   // 現在のモードはアクティブな会話から取得
   const currentMode = activeConversation?.mode ?? 'GENERAL_CHAT';
   
@@ -54,19 +55,10 @@ export function MiraPage() {
     sendMessage(message, { mode });
   }, [sendMessage]);
   
-  // モード変更ハンドラ：現在の会話のモードを変更するか、新しい会話を開始
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleModeChange = useCallback((_mode: MiraMode) => {
-    // 既存の会話がない場合、新しい会話を開始
-    if (!activeConversation) {
-      newConversation();
-    }
-    // TODO: ストアにsetMode追加後、モード切替を実装
-  }, [activeConversation, newConversation]);
-  
   // 会話選択ハンドラ
   const handleSelectConversation = useCallback((conversationId: string) => {
     setActiveConversation(conversationId);
+    setIsDrawerOpen(false); // 選択後にドロワーを閉じる
   }, [setActiveConversation]);
   
   // 会話削除ハンドラ
@@ -74,13 +66,19 @@ export function MiraPage() {
     deleteConversation(conversationId);
   }, [deleteConversation]);
   
+  // 新規会話作成ハンドラ
+  const handleNewConversation = useCallback(() => {
+    newConversation();
+    setIsDrawerOpen(false);
+  }, [newConversation]);
+  
   // 会話の要約を取得
   const getConversationSummary = useCallback(() => {
-    if (!activeConversation) return 'Mira AI Assistant';
+    if (!activeConversation) return 'Mira';
     const firstUserMessage = activeConversation.messages.find((m) => m.role === 'user');
     if (firstUserMessage) {
-      return firstUserMessage.content.length > 50
-        ? firstUserMessage.content.substring(0, 50) + '...'
+      return firstUserMessage.content.length > 40
+        ? firstUserMessage.content.substring(0, 40) + '...'
         : firstUserMessage.content;
     }
     return '新しい会話';
@@ -99,44 +97,77 @@ export function MiraPage() {
   };
   
   return (
-    <div className="h-[calc(100vh-6rem)] flex">
-      {/* 左サイドバー: 会話履歴 */}
-      <MiraConversationList
-        conversations={conversations}
-        activeConversationId={activeConversation?.id ?? null}
-        onSelect={handleSelectConversation}
-        onDelete={handleDeleteConversation}
-        onNewConversation={newConversation}
-      />
+    <div className="h-[calc(100vh-6rem)] flex relative">
+      {/* オーバーレイ背景（ドロワー開閉時） */}
+      {isDrawerOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 transition-opacity"
+          onClick={() => setIsDrawerOpen(false)}
+        />
+      )}
       
-      {/* メインエリア: チャット */}
+      {/* 左ドロワー: 会話履歴 */}
+      <div 
+        className={`
+          fixed left-0 top-0 h-full z-50
+          transform transition-transform duration-300 ease-in-out
+          ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <MiraConversationList
+          conversations={conversations}
+          activeConversationId={activeConversation?.id ?? null}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+          onNewConversation={handleNewConversation}
+        />
+      </div>
+      
+      {/* メインエリア: チャット（1カラム中央配置） */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* チャットヘッダー */}
-        <div className="flex items-center justify-between p-4 border-b bg-surface">
+        <div className="flex items-center justify-between p-3 border-b bg-surface">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <div>
-              <h2 className="font-semibold">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsDrawerOpen(true)}
+              title="会話履歴を開く (⌘+H)"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h2 className="font-medium text-sm">
                 {getConversationSummary()}
               </h2>
-              {activeConversation?.mode && (
-                <span className="text-xs text-muted-foreground">
-                  モード: {getModeLabel(activeConversation.mode)}
+              {activeConversation?.mode && activeConversation.mode !== 'GENERAL_CHAT' && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                  {getModeLabel(activeConversation.mode)}
                 </span>
               )}
             </div>
           </div>
-          {messages.length > 0 && (
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => clearConversation()}
-              className="gap-1"
+              size="icon"
+              onClick={handleNewConversation}
+              title="新しい会話"
             >
-              <Trash2 className="w-4 h-4" />
-              クリア
+              <Plus className="w-4 h-4" />
             </Button>
-          )}
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => clearConversation()}
+                title="会話をクリア"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* エラー表示 */}
@@ -151,9 +182,9 @@ export function MiraPage() {
         
         {/* メッセージエリア */}
         <ScrollArea className="flex-1">
-          <div className="p-4 max-w-4xl mx-auto">
+          <div className="p-4 max-w-3xl mx-auto">
             {messages.length === 0 ? (
-              <MiraEmptyState onSendMessage={handleSend} />
+              <MiraEmptyState onSendMessage={handleSend} currentMode={currentMode} />
             ) : (
               <>
                 {messages.map((message) => (
@@ -166,22 +197,17 @@ export function MiraPage() {
         </ScrollArea>
         
         {/* 入力エリア */}
-        <div className="max-w-4xl mx-auto w-full">
-          <MiraChatInput
-            onSend={handleSend}
-            isLoading={isLoading}
-            placeholder="メッセージを入力... (Enter で送信)"
-            showShortcuts={true}
-          />
+        <div className="border-t bg-surface">
+          <div className="max-w-3xl mx-auto">
+            <MiraChatInput
+              onSend={handleSend}
+              isLoading={isLoading}
+              placeholder="メッセージを入力... (Enter で送信)"
+              showShortcuts={false}
+            />
+          </div>
         </div>
       </div>
-      
-      {/* 右サイドパネル: コンテキスト・メタデータ */}
-      <MiraContextPanel
-        conversation={activeConversation ?? null}
-        currentMode={currentMode}
-        onModeChange={handleModeChange}
-      />
     </div>
   );
 }
@@ -189,68 +215,40 @@ export function MiraPage() {
 /** 空状態表示コンポーネント */
 interface MiraEmptyStateProps {
   onSendMessage: (message: string) => void;
+  currentMode: MiraMode;
 }
 
 function MiraEmptyState({ onSendMessage }: MiraEmptyStateProps) {
+  const suggestions = [
+    'このエラーの原因を教えて',
+    'コードをレビューして',
+    'ドキュメントを書いて',
+    'アーキテクチャを相談したい',
+  ];
+  
   return (
-    <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
-      <Bot className="w-16 h-16 mb-6 opacity-50" />
-      <h3 className="text-lg font-medium mb-2">
-        Mira AI Assistant へようこそ
-      </h3>
-      <p className="text-center max-w-md mb-6">
-        何でも質問してください。プログラミング、設計、ドキュメント作成など、
-        様々なタスクをサポートします。
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+        <Sparkles className="w-8 h-8 text-primary" />
+      </div>
+      <h2 className="text-xl font-medium mb-2">Mira</h2>
+      <p className="text-muted-foreground mb-8">
+        何を手伝いましょうか？
       </p>
-      <div className="grid grid-cols-2 gap-3 max-w-lg">
-        <SuggestionCard
-          icon={<ChevronRight className="w-4 h-4" />}
-          title="コードの説明"
-          description="コードの動作を解説"
-          onClick={() => onSendMessage('このコードについて説明してください')}
-        />
-        <SuggestionCard
-          icon={<ChevronRight className="w-4 h-4" />}
-          title="設計のアドバイス"
-          description="アーキテクチャの相談"
-          onClick={() => onSendMessage('システム設計についてアドバイスをください')}
-        />
-        <SuggestionCard
-          icon={<ChevronRight className="w-4 h-4" />}
-          title="ドキュメント作成"
-          description="README や仕様書の作成"
-          onClick={() => onSendMessage('ドキュメントの作成を手伝ってください')}
-        />
-        <SuggestionCard
-          icon={<ChevronRight className="w-4 h-4" />}
-          title="バグの解析"
-          description="エラーの原因を特定"
-          onClick={() => onSendMessage('このエラーの原因を教えてください')}
-        />
+      
+      {/* シンプルなサジェストリンク */}
+      <div className="flex flex-col gap-2 text-sm">
+        <p className="text-xs text-muted-foreground mb-1">よく使われる質問:</p>
+        {suggestions.map((suggestion) => (
+          <button
+            key={suggestion}
+            onClick={() => onSendMessage(suggestion)}
+            className="text-primary hover:underline"
+          >
+            • {suggestion}
+          </button>
+        ))}
       </div>
     </div>
-  );
-}
-
-/** サジェストカード */
-interface SuggestionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  onClick: () => void;
-}
-
-function SuggestionCard({ icon, title, description, onClick }: SuggestionCardProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-start gap-3 p-3 rounded-lg border bg-surface hover:bg-surface-raised transition-colors text-left"
-    >
-      <div className="mt-0.5 text-primary">{icon}</div>
-      <div>
-        <p className="font-medium text-sm">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-    </button>
   );
 }

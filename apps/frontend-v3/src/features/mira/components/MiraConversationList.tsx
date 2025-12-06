@@ -2,6 +2,7 @@
  * Mira 会話履歴リストコンポーネント
  * 
  * 会話の一覧表示、検索、選択、削除機能を提供
+ * スライドインドロワーとして使用される
  */
 import { useState } from 'react';
 import { cn, Button, ScrollArea, Input } from '@mirel/ui';
@@ -11,7 +12,8 @@ import {
   Trash2, 
   Search, 
   Clock,
-  MessageCircle
+  MessageCircle,
+  X,
 } from 'lucide-react';
 import type { MiraConversation } from '@/stores/miraStore';
 
@@ -21,6 +23,7 @@ interface MiraConversationListProps {
   onSelect: (conversationId: string) => void;
   onDelete: (conversationId: string) => void;
   onNewConversation: () => void;
+  onClose?: () => void;
 }
 
 export function MiraConversationList({
@@ -29,6 +32,7 @@ export function MiraConversationList({
   onSelect,
   onDelete,
   onNewConversation,
+  onClose,
 }: MiraConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -41,29 +45,39 @@ export function MiraConversationList({
     );
   });
   
-  // 会話を日付でソート（新しい順）
-  const sortedConversations = [...filteredConversations].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  // 会話を日付でグルーピング
+  const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-80 border-r flex flex-col bg-surface-subtle/30">
+    <div className="w-80 h-full border-r flex flex-col bg-surface shadow-lg">
       {/* ヘッダー */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-primary" />
-            <h1 className="font-semibold">Mira</h1>
+            <h1 className="font-semibold">会話履歴</h1>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onNewConversation}
-            className="gap-1"
-          >
-            <MessageSquarePlus className="w-4 h-4" />
-            新規
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNewConversation}
+              className="gap-1"
+            >
+              <MessageSquarePlus className="w-4 h-4" />
+              新規
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="w-8 h-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* 検索 */}
@@ -79,22 +93,31 @@ export function MiraConversationList({
         </div>
       </div>
       
-      {/* 会話リスト */}
+      {/* 会話リスト（日付グループ） */}
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {sortedConversations.length === 0 ? (
+        <div className="p-2">
+          {Object.keys(groupedConversations).length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
-            sortedConversations.map((conv) => (
-              <ConversationItem
-                key={conv.id}
-                conversation={conv}
-                isActive={activeConversationId === conv.id}
-                onSelect={() => onSelect(conv.id)}
-                onDelete={() => onDelete(conv.id)}
-              />
+            Object.entries(groupedConversations).map(([dateGroup, convs]) => (
+              <div key={dateGroup} className="mb-4">
+                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
+                  {dateGroup}
+                </p>
+                <div className="space-y-1">
+                  {convs.map((conv) => (
+                    <ConversationItem
+                      key={conv.id}
+                      conversation={conv}
+                      isActive={activeConversationId === conv.id}
+                      onSelect={() => onSelect(conv.id)}
+                      onDelete={() => onDelete(conv.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -201,4 +224,47 @@ function getModeLabel(mode?: string): string | null {
     WORKFLOW_AGENT: 'Workflow',
   };
   return mode ? labels[mode] || mode : null;
+}
+
+// 日付グループ名を取得
+function getDateGroupLabel(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const weekAgo = new Date(today.getTime() - 7 * 86400000);
+  
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  if (targetDate.getTime() >= today.getTime()) return '今日';
+  if (targetDate.getTime() >= yesterday.getTime()) return '昨日';
+  if (targetDate.getTime() >= weekAgo.getTime()) return '今週';
+  return 'それ以前';
+}
+
+// 会話を日付でグルーピング
+function groupConversationsByDate(conversations: MiraConversation[]): Record<string, MiraConversation[]> {
+  // まず日付でソート（新しい順）
+  const sorted = [...conversations].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+  
+  const groups: Record<string, MiraConversation[]> = {};
+  const order = ['今日', '昨日', '今週', 'それ以前'];
+  
+  for (const conv of sorted) {
+    const label = getDateGroupLabel(new Date(conv.updatedAt));
+    if (!groups[label]) {
+      groups[label] = [];
+    }
+    groups[label].push(conv);
+  }
+  
+  // 順序を保持したオブジェクトを返す
+  const orderedGroups: Record<string, MiraConversation[]> = {};
+  for (const key of order) {
+    if (groups[key]) {
+      orderedGroups[key] = groups[key];
+    }
+  }
+  return orderedGroups;
 }
