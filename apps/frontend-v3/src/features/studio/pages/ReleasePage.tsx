@@ -1,19 +1,17 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getReleases, createRelease } from '@/lib/api/release';
 import { ReleaseList } from '../components/ReleaseCenter/ReleaseList';
 import { Button, toast } from '@mirel/ui';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { StudioLayout } from '../../layouts';
-import { StudioContextBar } from '../../components';
-import { StudioNavigation } from '../../components/StudioNavigation';
-import React from 'react';
+import { StudioLayout } from '@/features/studio/layouts';
+import { StudioContextBar } from '@/features/studio/components';
+import { StudioNavigation } from '@/features/studio/components/StudioNavigation';
 
 export const ReleasePage: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: releases, isLoading } = useQuery({
