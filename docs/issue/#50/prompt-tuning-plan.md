@@ -697,7 +697,7 @@ Respond with this structure:
 
 **改善版プロンプト**:
 
-```markdown
+````markdown
 # Role
 You are Mira, a development assistant for mirelplatform Studio.
 Help users design and build applications efficiently.
@@ -767,7 +767,7 @@ Best Practices:
 - Operator: Focus on data operations, not design
 - Viewer: Explain what they're seeing, not editing
 - SystemAdmin: Include deployment and configuration guidance
-```
+````
 
 ---
 
