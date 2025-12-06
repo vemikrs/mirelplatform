@@ -109,6 +109,32 @@ export interface MiraSnapshotApiResponse {
   errors: string[];
 }
 
+/**
+ * タイトル生成リクエスト
+ */
+export interface GenerateTitleRequest {
+  conversationId: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+}
+
+/**
+ * タイトル生成レスポンス
+ */
+export interface GenerateTitleResponse {
+  conversationId: string;
+  title: string;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export interface MiraTitleApiResponse {
+  data: GenerateTitleResponse | null;
+  errors: string[];
+}
+
 // ========================================
 // API Functions
 // ========================================
@@ -208,4 +234,26 @@ export async function checkMiraHealth(): Promise<{
     timestamp: string;
   }>('/apps/mira/api/health');
   return response.data;
+}
+
+/**
+ * 会話タイトル生成
+ */
+export async function generateConversationTitle(
+  request: GenerateTitleRequest
+): Promise<GenerateTitleResponse> {
+  const response = await apiClient.post<MiraTitleApiResponse>(
+    '/apps/mira/api/conversation/generate-title',
+    { model: request }
+  );
+  
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+  
+  if (!response.data.data) {
+    throw new Error('タイトル生成に失敗しました');
+  }
+  
+  return response.data.data;
 }

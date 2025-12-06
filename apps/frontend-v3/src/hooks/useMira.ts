@@ -11,6 +11,7 @@ import {
   saveContextSnapshot,
   clearConversation as clearConversationApi,
   checkMiraHealth,
+  generateConversationTitle,
   type ChatRequest,
   type ErrorReportRequest,
   type ContextSnapshotRequest,
@@ -31,9 +32,11 @@ export function useMiraChat() {
     setLoading,
     setError,
     activeConversationId,
+    conversations,
     startConversation,
     addUserMessage,
     addAssistantMessage,
+    updateConversationTitle,
   } = useMiraStore();
   
   const mutation = useMutation({
@@ -42,9 +45,33 @@ export function useMiraChat() {
       setLoading(true);
       setError(null);
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       const conversationId = activeConversationId || response.conversationId;
       addAssistantMessage(conversationId, response);
+      
+      // タイトル未設定の会話で最初の応答後にタイトル生成
+      const conversation = conversations[conversationId];
+      if (conversation && !conversation.title && conversation.messages.length >= 2) {
+        try {
+          // 最初の2-4メッセージを使用
+          const messagesToUse = conversation.messages.slice(0, 4).map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }));
+          
+          const titleResponse = await generateConversationTitle({
+            conversationId,
+            messages: messagesToUse,
+          });
+          
+          if (titleResponse.success && titleResponse.title) {
+            updateConversationTitle(conversationId, titleResponse.title);
+          }
+        } catch (error) {
+          // タイトル生成失敗はサイレントに無視
+          console.warn('タイトル生成失敗:', error);
+        }
+      }
     },
     onError: (error: Error) => {
       setError(error.message);
