@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
-import jp.vemi.mirel.apps.mira.config.MiraAiProperties;
+import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

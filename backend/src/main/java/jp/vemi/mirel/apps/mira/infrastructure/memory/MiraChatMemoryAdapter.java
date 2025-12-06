@@ -88,13 +88,44 @@ public class MiraChatMemoryAdapter implements ChatMemory {
     }
 
     /**
+     * 会話の全メッセージを取得.
+     * 
+     * @param conversationId 会話ID
+     * @return メッセージリスト（古い順）
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Message> get(String conversationId) {
+        if (log.isDebugEnabled()) {
+            log.debug("[MiraChatMemoryAdapter] get: conversationId={}", conversationId);
+        }
+
+        List<MiraMessage> allMessages = messageRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversationId);
+
+        if (allMessages.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Message> result = new ArrayList<>(allMessages.size());
+        for (MiraMessage msg : allMessages) {
+            result.add(toSpringAiMessage(msg));
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("[MiraChatMemoryAdapter] Retrieved {} messages", result.size());
+        }
+
+        return result;
+    }
+
+    /**
      * 会話から直近N件のメッセージを取得.
      * 
      * @param conversationId 会話ID
      * @param lastN 取得件数
      * @return メッセージリスト（古い順）
      */
-    @Override
     @Transactional(readOnly = true)
     public List<Message> get(String conversationId, int lastN) {
         if (log.isDebugEnabled()) {

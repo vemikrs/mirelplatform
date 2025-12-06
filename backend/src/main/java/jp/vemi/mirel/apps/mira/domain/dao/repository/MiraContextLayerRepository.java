@@ -3,18 +3,16 @@
  */
 package jp.vemi.mirel.apps.mira.domain.dao.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer;
-import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.LayerType;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.ContextScope;
 
 /**
  * Mira コンテキストレイヤーリポジトリ.
@@ -26,78 +24,58 @@ import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.LayerType;
 public interface MiraContextLayerRepository extends JpaRepository<MiraContextLayer, String> {
 
     /**
-     * レイヤー種別でコンテキストを検索（優先度順）.
+     * スコープでコンテキストを検索（優先度順）.
      *
-     * @param layerType レイヤー種別
+     * @param scope スコープ
      * @return コンテキストリスト（優先度の高い順）
      */
-    List<MiraContextLayer> findByLayerTypeOrderByPriorityDesc(LayerType layerType);
+    List<MiraContextLayer> findByScopeAndEnabledTrueOrderByPriorityDesc(ContextScope scope);
 
     /**
-     * システムレイヤーの有効なコンテキストを取得.
+     * システムスコープの有効なコンテキストを取得.
      *
-     * @param now 現在日時
      * @return 有効なシステムコンテキスト
      */
-    @Query("SELECT c FROM MiraContextLayer c WHERE c.layerType = 'SYSTEM' " +
-           "AND (c.validFrom IS NULL OR c.validFrom <= :now) " +
-           "AND (c.validUntil IS NULL OR c.validUntil > :now) " +
+    @Query("SELECT c FROM MiraContextLayer c WHERE c.scope = 'SYSTEM' " +
+           "AND c.enabled = true " +
            "ORDER BY c.priority DESC")
-    List<MiraContextLayer> findActiveSystemContexts(@Param("now") LocalDateTime now);
+    List<MiraContextLayer> findActiveSystemContexts();
 
     /**
-     * テナントレイヤーの有効なコンテキストを取得.
+     * テナントスコープの有効なコンテキストを取得.
      *
-     * @param tenantId テナントID
-     * @param now 現在日時
+     * @param scopeId テナントID（scopeId に格納）
      * @return 有効なテナントコンテキスト
      */
-    @Query("SELECT c FROM MiraContextLayer c WHERE c.layerType = 'TENANT' " +
-           "AND c.tenantId = :tenantId " +
-           "AND (c.validFrom IS NULL OR c.validFrom <= :now) " +
-           "AND (c.validUntil IS NULL OR c.validUntil > :now) " +
+    @Query("SELECT c FROM MiraContextLayer c WHERE c.scope = 'TENANT' " +
+           "AND c.scopeId = :scopeId " +
+           "AND c.enabled = true " +
            "ORDER BY c.priority DESC")
-    List<MiraContextLayer> findActiveTenantContexts(
-            @Param("tenantId") String tenantId,
-            @Param("now") LocalDateTime now);
+    List<MiraContextLayer> findActiveTenantContexts(@Param("scopeId") String scopeId);
 
     /**
-     * 組織レイヤーの有効なコンテキストを取得.
+     * 組織スコープの有効なコンテキストを取得.
      *
-     * @param tenantId テナントID
-     * @param organizationId 組織ID
-     * @param now 現在日時
+     * @param scopeId 組織ID（scopeId に格納）
      * @return 有効な組織コンテキスト
      */
-    @Query("SELECT c FROM MiraContextLayer c WHERE c.layerType = 'ORGANIZATION' " +
-           "AND c.tenantId = :tenantId " +
-           "AND c.organizationId = :organizationId " +
-           "AND (c.validFrom IS NULL OR c.validFrom <= :now) " +
-           "AND (c.validUntil IS NULL OR c.validUntil > :now) " +
+    @Query("SELECT c FROM MiraContextLayer c WHERE c.scope = 'ORGANIZATION' " +
+           "AND c.scopeId = :scopeId " +
+           "AND c.enabled = true " +
            "ORDER BY c.priority DESC")
-    List<MiraContextLayer> findActiveOrganizationContexts(
-            @Param("tenantId") String tenantId,
-            @Param("organizationId") String organizationId,
-            @Param("now") LocalDateTime now);
+    List<MiraContextLayer> findActiveOrganizationContexts(@Param("scopeId") String scopeId);
 
     /**
-     * ユーザーレイヤーの有効なコンテキストを取得.
+     * ユーザースコープの有効なコンテキストを取得.
      *
-     * @param tenantId テナントID
-     * @param userId ユーザーID
-     * @param now 現在日時
+     * @param scopeId ユーザーID（scopeId に格納）
      * @return 有効なユーザーコンテキスト
      */
-    @Query("SELECT c FROM MiraContextLayer c WHERE c.layerType = 'USER' " +
-           "AND c.tenantId = :tenantId " +
-           "AND c.userId = :userId " +
-           "AND (c.validFrom IS NULL OR c.validFrom <= :now) " +
-           "AND (c.validUntil IS NULL OR c.validUntil > :now) " +
+    @Query("SELECT c FROM MiraContextLayer c WHERE c.scope = 'USER' " +
+           "AND c.scopeId = :scopeId " +
+           "AND c.enabled = true " +
            "ORDER BY c.priority DESC")
-    List<MiraContextLayer> findActiveUserContexts(
-            @Param("tenantId") String tenantId,
-            @Param("userId") String userId,
-            @Param("now") LocalDateTime now);
+    List<MiraContextLayer> findActiveUserContexts(@Param("scopeId") String scopeId);
 
     /**
      * 全階層の有効なコンテキストをマージ取得（System + Tenant + Org + User）.
@@ -108,50 +86,45 @@ public interface MiraContextLayerRepository extends JpaRepository<MiraContextLay
      * @param tenantId テナントID
      * @param organizationId 組織ID（nullable）
      * @param userId ユーザーID
-     * @param now 現在日時
-     * @return 全階層のコンテキスト（レイヤー優先度 → priority 順）
+     * @return 全階層のコンテキスト（スコープ優先度 → priority 順）
      */
     @Query("SELECT c FROM MiraContextLayer c WHERE " +
-           "((c.layerType = 'SYSTEM') " +
-           " OR (c.layerType = 'TENANT' AND c.tenantId = :tenantId) " +
-           " OR (c.layerType = 'ORGANIZATION' AND c.tenantId = :tenantId AND c.organizationId = :organizationId) " +
-           " OR (c.layerType = 'USER' AND c.tenantId = :tenantId AND c.userId = :userId)) " +
-           "AND (c.validFrom IS NULL OR c.validFrom <= :now) " +
-           "AND (c.validUntil IS NULL OR c.validUntil > :now) " +
-           "ORDER BY c.layerType DESC, c.priority DESC")
+           "((c.scope = 'SYSTEM') " +
+           " OR (c.scope = 'TENANT' AND c.scopeId = :tenantId) " +
+           " OR (c.scope = 'ORGANIZATION' AND c.scopeId = :organizationId) " +
+           " OR (c.scope = 'USER' AND c.scopeId = :userId)) " +
+           "AND c.enabled = true " +
+           "ORDER BY c.scope DESC, c.priority DESC")
     List<MiraContextLayer> findAllActiveContextsForUser(
             @Param("tenantId") String tenantId,
             @Param("organizationId") String organizationId,
-            @Param("userId") String userId,
-            @Param("now") LocalDateTime now);
+            @Param("userId") String userId);
 
     /**
-     * 特定キーのコンテキストを取得.
+     * スコープとカテゴリでコンテキストを取得.
      *
-     * @param layerType レイヤー種別
-     * @param contextKey コンテキストキー
+     * @param scope スコープ
+     * @param category カテゴリ
      * @return コンテキスト
      */
-    Optional<MiraContextLayer> findByLayerTypeAndContextKey(LayerType layerType, String contextKey);
+    Optional<MiraContextLayer> findByScopeAndCategory(ContextScope scope, String category);
 
     /**
-     * テナント・キーでコンテキストを取得.
+     * スコープ、スコープID、カテゴリでコンテキストを取得.
      *
-     * @param layerType レイヤー種別
-     * @param tenantId テナントID
-     * @param contextKey コンテキストキー
+     * @param scope スコープ
+     * @param scopeId スコープID
+     * @param category カテゴリ
      * @return コンテキスト
      */
-    Optional<MiraContextLayer> findByLayerTypeAndTenantIdAndContextKey(
-            LayerType layerType, String tenantId, String contextKey);
+    Optional<MiraContextLayer> findByScopeAndScopeIdAndCategory(
+            ContextScope scope, String scopeId, String category);
 
     /**
-     * 期限切れコンテキストを削除.
+     * カテゴリでコンテキストを検索.
      *
-     * @param now 現在日時
-     * @return 削除件数
+     * @param category カテゴリ
+     * @return コンテキストリスト
      */
-    @Modifying
-    @Query("DELETE FROM MiraContextLayer c WHERE c.validUntil IS NOT NULL AND c.validUntil < :now")
-    int deleteExpiredContexts(@Param("now") LocalDateTime now);
+    List<MiraContextLayer> findByCategoryAndEnabledTrueOrderByPriorityDesc(String category);
 }

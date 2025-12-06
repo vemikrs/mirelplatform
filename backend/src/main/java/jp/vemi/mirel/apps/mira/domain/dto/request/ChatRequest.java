@@ -54,6 +54,10 @@ public class ChatRequest {
         /** アプリケーションロール（SystemAdmin / Builder / Operator / Viewer） */
         private String appRole;
 
+        /** ロケール（ja / en） */
+        @Builder.Default
+        private String locale = "ja";
+
         /** 画面固有コンテキスト */
         private Map<String, Object> payload;
     }

@@ -3,13 +3,11 @@
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer;
-import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.LayerType;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.ContextScope;
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraContextLayerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,13 +42,13 @@ public class MiraContextLayerService {
     /**
      * 階層コンテキストをマージして最終コンテキストを生成.
      * <p>
-     * 同一キーの場合、より上位のレイヤー（User &gt; Org &gt; Tenant &gt; System）で上書きされる。
+     * 同一カテゴリの場合、より上位のスコープ（User &gt; Org &gt; Tenant &gt; System）で上書きされる。
      * </p>
      *
      * @param tenantId テナントID
      * @param organizationId 組織ID（nullable）
      * @param userId ユーザーID
-     * @return マージされたコンテキスト（key → value）
+     * @return マージされたコンテキスト（category → content）
      */
     @Transactional(readOnly = true)
     public Map<String, String> buildMergedContext(
@@ -63,29 +61,27 @@ public class MiraContextLayerService {
                     tenantId, organizationId, userId);
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
         // 全階層のコンテキストを取得
         List<MiraContextLayer> layers = repository.findAllActiveContextsForUser(
-                tenantId, organizationId, userId, now);
+                tenantId, organizationId, userId);
 
         if (log.isDebugEnabled()) {
             log.debug("[MiraContextLayerService] Found {} context layers", layers.size());
         }
 
-        // レイヤー種別・優先度でソートしてマージ
+        // スコープ・優先度でソートしてマージ
         // System(0) < Tenant(1) < Organization(2) < User(3)
         Map<String, String> merged = new HashMap<>();
 
         layers.stream()
                 .sorted(Comparator
-                        .comparingInt((MiraContextLayer l) -> l.getLayerType().ordinal())
+                        .comparingInt((MiraContextLayer l) -> l.getScope().ordinal())
                         .thenComparingInt(l -> Optional.ofNullable(l.getPriority()).orElse(0)))
                 .forEach(layer -> {
-                    merged.put(layer.getContextKey(), layer.getContextValue());
+                    merged.put(layer.getCategory(), layer.getContent());
                     if (log.isTraceEnabled()) {
-                        log.trace("[MiraContextLayerService] Applied context: layer={}, key={}",
-                                layer.getLayerType(), layer.getContextKey());
+                        log.trace("[MiraContextLayerService] Applied context: scope={}, category={}",
+                                layer.getScope(), layer.getCategory());
                     }
                 });
 
@@ -102,7 +98,7 @@ public class MiraContextLayerService {
      * @return マージされたコンテキスト内容（なければnull）
      */
     @Transactional(readOnly = true)
-    public String getMergedContextByKey(
+    public String getMergedContextByCategory(
             String tenantId,
             String organizationId,
             String userId,
@@ -113,24 +109,24 @@ public class MiraContextLayerService {
     }
 
     /**
-     * システムレイヤーのコンテキストを取得.
+     * システムスコープのコンテキストを取得.
      *
      * @return システムコンテキスト一覧
      */
     @Transactional(readOnly = true)
     public List<MiraContextLayer> getSystemContexts() {
-        return repository.findActiveSystemContexts(LocalDateTime.now());
+        return repository.findActiveSystemContexts();
     }
 
     /**
-     * テナントレイヤーのコンテキストを取得.
+     * テナントスコープのコンテキストを取得.
      *
      * @param tenantId テナントID
      * @return テナントコンテキスト一覧
      */
     @Transactional(readOnly = true)
     public List<MiraContextLayer> getTenantContexts(String tenantId) {
-        return repository.findActiveTenantContexts(tenantId, LocalDateTime.now());
+        return repository.findActiveTenantContexts(tenantId);
     }
 
     /**
@@ -142,45 +138,31 @@ public class MiraContextLayerService {
     @Transactional
     public MiraContextLayer saveContext(MiraContextLayer layer) {
         if (log.isDebugEnabled()) {
-            log.debug("[MiraContextLayerService] saveContext: layer={}, key={}",
-                    layer.getLayerType(), layer.getContextKey());
+            log.debug("[MiraContextLayerService] saveContext: scope={}, category={}",
+                    layer.getScope(), layer.getCategory());
         }
 
         MiraContextLayer saved = repository.save(layer);
-        log.info("[MiraContextLayerService] Saved context: id={}, layer={}, key={}",
-                saved.getId(), saved.getLayerType(), saved.getContextKey());
+        log.info("[MiraContextLayerService] Saved context: id={}, scope={}, category={}",
+                saved.getId(), saved.getScope(), saved.getCategory());
         return saved;
-    }
-
-    /**
-     * 期限切れコンテキストをクリーンアップ.
-     *
-     * @return 削除件数
-     */
-    @Transactional
-    public int cleanupExpiredContexts() {
-        int deleted = repository.deleteExpiredContexts(LocalDateTime.now());
-        if (deleted > 0) {
-            log.info("[MiraContextLayerService] Cleaned up {} expired contexts", deleted);
-        }
-        return deleted;
     }
 
     /**
      * コンテキスト値をJSON Mapとしてパース.
      *
-     * @param contextValue JSON文字列
+     * @param contextContent JSON文字列
      * @return パースされたMap
      */
-    public Map<String, Object> parseContextValue(String contextValue) {
-        if (contextValue == null || contextValue.isEmpty()) {
+    public Map<String, Object> parseContextContent(String contextContent) {
+        if (contextContent == null || contextContent.isEmpty()) {
             return Map.of();
         }
         try {
-            return objectMapper.readValue(contextValue, new TypeReference<>() {});
+            return objectMapper.readValue(contextContent, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
-            log.warn("[MiraContextLayerService] Failed to parse context value as JSON", e);
-            return Map.of("raw", contextValue);
+            log.warn("[MiraContextLayerService] Failed to parse context content as JSON", e);
+            return Map.of("raw", contextContent);
         }
     }
 
@@ -190,14 +172,14 @@ public class MiraContextLayerService {
      * @param value 変換するMap
      * @return JSON文字列
      */
-    public String toJsonContextValue(Map<String, Object> value) {
+    public String toJsonContextContent(Map<String, Object> value) {
         if (value == null || value.isEmpty()) {
             return "{}";
         }
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            log.warn("[MiraContextLayerService] Failed to serialize context value to JSON", e);
+            log.warn("[MiraContextLayerService] Failed to serialize context content to JSON", e);
             return "{}";
         }
     }
@@ -225,9 +207,9 @@ public class MiraContextLayerService {
         StringBuilder sb = new StringBuilder();
         sb.append("\n\n# Additional Context\n\n");
 
-        contexts.forEach((key, value) -> {
-            sb.append("## ").append(key).append("\n");
-            sb.append(value).append("\n\n");
+        contexts.forEach((category, content) -> {
+            sb.append("## ").append(category).append("\n");
+            sb.append(content).append("\n\n");
         });
 
         if (log.isDebugEnabled()) {
