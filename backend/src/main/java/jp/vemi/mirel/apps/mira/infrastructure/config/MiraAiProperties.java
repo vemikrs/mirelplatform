@@ -230,7 +230,7 @@ public class MiraAiProperties {
     @Data
     public static class SecurityConfig {
         /** プロンプトインジェクション検出 */
-        private InjectionDetectionConfig injectionDetection = new InjectionDetectionConfig();
+        private PromptInjectionConfig promptInjection = new PromptInjectionConfig();
         
         /** PII マスキング */
         private PiiMaskingConfig piiMasking = new PiiMaskingConfig();
@@ -245,7 +245,7 @@ public class MiraAiProperties {
         private RetentionConfig retention = new RetentionConfig();
         
         @Data
-        public static class InjectionDetectionConfig {
+        public static class PromptInjectionConfig {
             private boolean enabled = true;
             private int softBlockThreshold = 3;
             private int hardBlockThreshold = 5;
