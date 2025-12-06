@@ -1,7 +1,7 @@
 # E2E (packages/e2e)
 
 ## スコープ
-Playwright 1.56 で ProMarker UI を E2E テストするパッケージ。`tests/specs/promarker-v3/` に React 版のシナリオを集約し、ページ操作は `tests/page-objects/` を経由させる。テスト実行時は Playwright がバックエンド/フロントエンドを自動起動するため、手動でサーバーを立てない。
+Playwright 1.57 で ProMarker UI を E2E テストするパッケージ。`tests/specs/promarker-v3/` に React 版のシナリオを集約し、ページ操作は `tests/page-objects/` を経由させる。テスト実行時は Playwright がバックエンド/フロントエンドを自動起動するため、手動でサーバーを立てない。
 
 ## コマンド
 | 用途 | コマンド |

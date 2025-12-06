@@ -4,16 +4,23 @@
 package jp.vemi.mirel;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration;
+import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration;
+import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiImageAutoConfiguration;
+import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAudioTranscriptionAutoConfiguration;
 
-@SpringBootApplication
-@EnableAutoConfiguration
+@SpringBootApplication(exclude = {
+    AzureOpenAiChatAutoConfiguration.class,
+    AzureOpenAiEmbeddingAutoConfiguration.class,
+    AzureOpenAiImageAutoConfiguration.class,
+    AzureOpenAiAudioTranscriptionAutoConfiguration.class
+})
 @EnableAspectJAutoProxy
 @EnableMethodSecurity(prePostEnabled = true)
 @EntityScan(basePackages = { "jp.vemi.mirel", "jp.vemi.framework" }) // 要整理

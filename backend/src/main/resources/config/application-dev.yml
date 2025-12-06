@@ -1,6 +1,16 @@
 # application-dev.yml - Development Environment Configuration
 # PostgreSQL (docker-compose.dev.yml) を使用
 spring:
+  # Spring AI autoconfigure を無効化（Mira独自の設定で制御）
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
   datasource:
     url: jdbc:postgresql://localhost:5432/mirelplatform
     driver-class-name: org.postgresql.Driver
@@ -97,3 +107,39 @@ email:
   smtp:
     host: localhost
     port: 1025
+
+# Mira AI 設定（開発環境）
+# Spring AI autoconfigure は spring.ai.model.chat=none で無効化済み
+# このアプリ独自の設定で AI 機能を制御
+mira:
+  ai:
+    enabled: true                    # Mira AI 機能を有効化
+    provider: github-models          # GitHub Models REST API（Llama 3.3）を使用
+    mock:
+      enabled: false                 # GitHub Models を直接使用（true にするとモック）
+      response-delay-ms: 300         # 応答遅延シミュレーション
+      default-response: "ご質問ありがとうございます。現在開発環境のためモックで応答しています。"
+    # GitHub Models 設定（開発環境でローカルテスト用）
+    # 参考: https://docs.github.com/en/rest/models/inference
+    # `gh auth token` で取得したトークンを環境変数 GITHUB_TOKEN に設定
+    # PAT には models:read パーミッションが必要
+    github-models:
+      api-key: ${GITHUB_TOKEN:}
+      # 新しい GitHub Models REST API エンドポイント (2025年更新)
+      # Spring AI OpenAiApi は {base-url}/chat/completions にアクセスするため
+      # base-url は /inference まで指定
+      base-url: https://models.github.ai/inference
+      # モデルID形式: {publisher}/{model_name} (すべて小文字)
+      # 利用可能モデル: https://models.github.ai/catalog/models
+      model: ${GITHUB_MODELS_MODEL:meta/llama-3.3-70b-instruct}
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 60
+    # Azure OpenAI 設定（本番/ステージング環境用）
+    azure-openai:
+      endpoint: ${AZURE_OPENAI_ENDPOINT:}
+      api-key: ${AZURE_OPENAI_API_KEY:}
+      deployment-name: gpt-4o
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 60

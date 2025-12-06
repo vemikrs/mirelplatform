@@ -157,6 +157,17 @@ management:
     os:
       enabled: true
 
+# Mira (mirel Assist) AI アシスタント設定
+# 詳細設定は各環境の application-{profile}.yml で定義
+mira:
+  ai:
+    # AI プロバイダ: azure-openai | github-models | openai | mock
+    provider: ${MIRA_AI_PROVIDER:mock}
+    audit:
+      # 保存ポリシー: FULL | SUMMARY | METADATA_ONLY
+      storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
+      retention-days: 90
+
 # アプリケーション情報（actuator/info で公開）
 info:
   app:

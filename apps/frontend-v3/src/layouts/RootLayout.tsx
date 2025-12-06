@@ -9,6 +9,8 @@ import { SideNavigation } from '@/components/layouts/SideNavigation';
 import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { MiraFab } from '@/features/mira/components/MiraFab';
+import { MiraChatPanel } from '@/features/mira/components/MiraChatPanel';
 
 
 /**
@@ -126,6 +128,10 @@ export function RootLayout() {
         </div>
       </div>
       <Toaster />
+      
+      {/* Mira AI Assistant */}
+      <MiraFab />
+      <MiraChatPanel />
     </div>
   );
 }
