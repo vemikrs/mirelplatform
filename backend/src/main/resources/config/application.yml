@@ -49,6 +49,17 @@ spring:
             client-secret: ${GITHUB_CLIENT_SECRET:#{null}}
             scope:
               - read:user
+  # Spring AI 設定（Azure OpenAI）
+  ai:
+    azure:
+      openai:
+        endpoint: ${AZURE_OPENAI_ENDPOINT:}
+        api-key: ${AZURE_OPENAI_API_KEY:}
+        chat:
+          options:
+            deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-4o}
+            temperature: 0.7
+            max-tokens: 4096
               - user:email
         provider:
           github:
