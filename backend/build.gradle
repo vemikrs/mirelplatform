@@ -23,6 +23,17 @@ repositories {
     maven { url 'https://packages.adoptium.net/artifactory/api/maven/adoptium' }
 }
 
+// Spring AI BOM for dependency management
+ext {
+    springAiVersion = '1.1.0'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-aop:3.3.0'
@@ -66,6 +77,9 @@ dependencies {
     // Azure Communication Services (メール送信)
     implementation 'com.azure:azure-communication-email:1.0.0'
 
+    // Spring AI - Azure OpenAI (Mira AI アシスタント)
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-openai'
+
     // Jackson CSV support (バージョンはSpring Bootの依存管理に従う)
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     
@@ -80,6 +94,8 @@ dependencies {
     testImplementation 'org.springframework.batch:spring-batch-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.0'
+    // WireMock for AI client testing
+    testImplementation 'org.wiremock:wiremock-standalone:3.3.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

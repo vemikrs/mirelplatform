@@ -1,0 +1,103 @@
+/*
+ * Copyright(c) 2015-2025 mirelplatform.
+ */
+package jp.vemi.mirel.apps.mira.infrastructure.ai;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * AI 応答 DTO.
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AiResponse {
+
+    /** 応答内容 */
+    private String content;
+
+    /** メタデータ */
+    @Builder.Default
+    private Metadata metadata = new Metadata();
+
+    /** エラー情報（エラー時のみ） */
+    private ErrorInfo error;
+
+    /**
+     * 応答メタデータ.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Metadata {
+        /** 使用モデル名 */
+        private String model;
+
+        /** 終了理由（stop / length / content_filter 等） */
+        private String finishReason;
+
+        /** プロンプトトークン数 */
+        private Integer promptTokens;
+
+        /** 応答トークン数 */
+        private Integer completionTokens;
+
+        /** 合計トークン数 */
+        private Integer totalTokens;
+
+        /** レイテンシ（ミリ秒） */
+        private Long latencyMs;
+    }
+
+    /**
+     * エラー情報.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ErrorInfo {
+        /** エラーコード */
+        private String code;
+
+        /** エラーメッセージ */
+        private String message;
+
+        /** 詳細情報 */
+        private String detail;
+    }
+
+    /**
+     * 成功応答を生成.
+     */
+    public static AiResponse success(String content, Metadata metadata) {
+        return AiResponse.builder()
+                .content(content)
+                .metadata(metadata)
+                .build();
+    }
+
+    /**
+     * エラー応答を生成.
+     */
+    public static AiResponse error(String code, String message) {
+        return AiResponse.builder()
+                .error(ErrorInfo.builder()
+                        .code(code)
+                        .message(message)
+                        .build())
+                .build();
+    }
+
+    /**
+     * エラーかどうか判定.
+     */
+    public boolean hasError() {
+        return error != null;
+    }
+}
