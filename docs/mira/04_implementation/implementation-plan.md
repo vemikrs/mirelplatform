@@ -97,19 +97,19 @@ backend/src/main/java/jp/vemi/mirel/apps/mira/
 #### チェックリスト
 
 - [ ] **1.4** `MiraConversation.java` 作成
-  - JPA エンティティ、テーブル名 `mir_conversation`
+  - JPA エンティティ、テーブル名 `mir_mira_conversation`
   - `git commit -m "feat(backend): MiraConversation エンティティ作成 (refs #50)"`
 
 - [ ] **1.5** `MiraMessage.java` 作成
-  - テーブル名 `mir_message`
+  - テーブル名 `mir_mira_message`
   - `git commit -m "feat(backend): MiraMessage エンティティ作成 (refs #50)"`
 
 - [ ] **1.6** `MiraContextSnapshot.java` 作成
-  - テーブル名 `mir_context_snapshot`
+  - テーブル名 `mir_mira_context_snapshot`
   - `git commit -m "feat(backend): MiraContextSnapshot エンティティ作成 (refs #50)"`
 
 - [ ] **1.7** `MiraAuditLog.java` 作成
-  - テーブル名 `mir_audit_log`
+  - テーブル名 `mir_mira_audit_log`
   - `git commit -m "feat(backend): MiraAuditLog エンティティ作成 (refs #50)"`
 
 - [ ] **1.8** Repository インタフェース作成
