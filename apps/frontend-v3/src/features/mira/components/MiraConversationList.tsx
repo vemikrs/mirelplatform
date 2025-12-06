@@ -146,10 +146,18 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
   const ModeIcon = modeConfig.icon;
   
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className={cn(
-        "w-full text-left px-3 py-2.5 rounded-lg transition-colors group",
+        "w-full text-left px-3 py-2.5 rounded-lg transition-colors group cursor-pointer",
         isActive
           ? "bg-primary/10 border border-primary/20"
           : "hover:bg-surface-raised border border-transparent"
@@ -199,7 +207,7 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
           {relativeTime}
         </span>
       </div>
-    </button>
+    </div>
   );
 }
 
