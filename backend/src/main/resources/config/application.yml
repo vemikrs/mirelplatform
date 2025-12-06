@@ -171,7 +171,7 @@ management:
 # Mira (mirel Assist) AI アシスタント設定
 mira:
   ai:
-    # AI プロバイダ: azure-openai | openai | mock
+    # AI プロバイダ: azure-openai | github-models | openai | mock
     provider: ${MIRA_AI_PROVIDER:mock}
     azure-openai:
       endpoint: ${AZURE_OPENAI_ENDPOINT:}
@@ -180,6 +180,14 @@ mira:
       temperature: 0.7
       max-tokens: 4096
       timeout-seconds: 60
+    github-models:
+      # GitHub Models (OpenAI互換) 設定
+      # gh auth token で取得したトークンを使用
+      api-key: ${GITHUB_TOKEN:}
+      model: ${GITHUB_MODELS_MODEL:meta-llama-3.3-70b-instruct}
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 120
     openai:
       api-key: ${OPENAI_API_KEY:}
       model: gpt-4o

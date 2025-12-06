@@ -8,10 +8,15 @@ import java.time.Duration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -31,8 +36,15 @@ import lombok.extern.slf4j.Slf4j;
  * <ul>
  *   <li>{@code spring.ai.model.chat=none} で Spring AI autoconfigure を無効化</li>
  *   <li>{@code mira.ai.enabled=true} の場合のみ AI 関連 Bean を登録</li>
- *   <li>{@code mira.ai.mock.enabled=true} の場合、Azure OpenAI Bean は登録しない</li>
+ *   <li>{@code mira.ai.mock.enabled=true} の場合、実際の AI Bean は登録しない</li>
  *   <li>Mock は常に登録（MockAiClient は @Component で自動登録）</li>
+ * </ul>
+ * 
+ * <h3>プロバイダ選択</h3>
+ * <ul>
+ *   <li>{@code mira.ai.provider=github-models} - GitHub Models (Llama 3.3 等)</li>
+ *   <li>{@code mira.ai.provider=azure-openai} - Azure OpenAI Service</li>
+ *   <li>{@code mira.ai.provider=mock} - テスト用モック</li>
  * </ul>
  */
 @Slf4j
@@ -41,29 +53,85 @@ import lombok.extern.slf4j.Slf4j;
 public class MiraConfiguration {
 
     /**
-     * Azure OpenAI 関連 Bean を定義する内部設定クラス.
+     * GitHub Models 関連 Bean を定義する内部設定クラス.
      * 
-     * <p>条件: {@code mira.ai.mock.enabled=false}（デフォルト）の場合のみ有効</p>
+     * <p>GitHub Models は OpenAI 互換 API を提供するため、Spring AI の OpenAI クライアントを使用。</p>
+     * <p>条件: {@code mira.ai.provider=github-models} の場合に有効</p>
      */
     @Configuration
-    @ConditionalOnProperty(name = "mira.ai.mock.enabled", havingValue = "false", matchIfMissing = true)
+    @ConditionalOnProperty(name = "mira.ai.provider", havingValue = "github-models")
+    static class GitHubModelsConfiguration {
+
+        /**
+         * GitHub Models 用 ChatModel を構築.
+         * 
+         * <p>Spring AI の OpenAI クライアントを使用し、base-url を GitHub Models に向ける。</p>
+         */
+        @Bean
+        @Primary
+        ChatModel githubModelsChatModel(MiraAiProperties properties) {
+            var githubConfig = properties.getGithubModels();
+            
+            if (githubConfig.getApiKey() == null || githubConfig.getApiKey().isBlank()) {
+                log.error("GitHub Models API key not configured. Set GITHUB_TOKEN environment variable.");
+                throw new IllegalStateException("GitHub Models API key is required when provider=github-models");
+            }
+            
+            // OpenAI 互換 API として GitHub Models に接続
+            OpenAiApi openAiApi = OpenAiApi.builder()
+                    .baseUrl(githubConfig.getBaseUrl())
+                    .apiKey(githubConfig.getApiKey())
+                    .build();
+            
+            OpenAiChatOptions options = OpenAiChatOptions.builder()
+                    .model(githubConfig.getModel())
+                    .temperature(githubConfig.getTemperature())
+                    .maxTokens(githubConfig.getMaxTokens())
+                    .build();
+            
+            log.info("[MiraConfiguration] GitHub Models ChatModel initialized: baseUrl={}, model={}",
+                    githubConfig.getBaseUrl(), githubConfig.getModel());
+            
+            return OpenAiChatModel.builder()
+                    .openAiApi(openAiApi)
+                    .defaultOptions(options)
+                    .build();
+        }
+
+        /**
+         * ChatClient.Builder を構築.
+         */
+        @Bean
+        ChatClient.Builder chatClientBuilder(ChatModel chatModel) {
+            return ChatClient.builder(chatModel);
+        }
+    }
+
+    /**
+     * Azure OpenAI 関連 Bean を定義する内部設定クラス.
+     * 
+     * <p>条件: {@code mira.ai.provider=azure-openai} の場合に有効</p>
+     */
+    @Configuration
+    @ConditionalOnProperty(name = "mira.ai.provider", havingValue = "azure-openai")
     static class AzureOpenAiConfiguration {
 
         /**
          * Azure OpenAI ChatModel を構築.
          */
         @Bean
-        AzureOpenAiChatModel azureOpenAiChatModel(MiraAiProperties properties) {
+        @Primary
+        ChatModel azureOpenAiChatModel(MiraAiProperties properties) {
             var azureConfig = properties.getAzureOpenai();
             
             if (azureConfig.getEndpoint() == null || azureConfig.getEndpoint().isBlank()) {
-                log.warn("Azure OpenAI endpoint not configured, AzureOpenAiChatModel will not be created");
-                return null;
+                log.error("Azure OpenAI endpoint not configured");
+                throw new IllegalStateException("Azure OpenAI endpoint is required when provider=azure-openai");
             }
             
             if (azureConfig.getApiKey() == null || azureConfig.getApiKey().isBlank()) {
-                log.warn("Azure OpenAI API key not configured, AzureOpenAiChatModel will not be created");
-                return null;
+                log.error("Azure OpenAI API key not configured");
+                throw new IllegalStateException("Azure OpenAI API key is required when provider=azure-openai");
             }
             
             HttpClientOptions clientOptions = new HttpClientOptions()
@@ -81,7 +149,7 @@ public class MiraConfiguration {
                     .maxTokens(azureConfig.getMaxTokens())
                     .build();
             
-            log.info("Azure OpenAI ChatModel initialized: endpoint={}, deployment={}",
+            log.info("[MiraConfiguration] Azure OpenAI ChatModel initialized: endpoint={}, deployment={}",
                     azureConfig.getEndpoint(), azureConfig.getDeploymentName());
             
             return AzureOpenAiChatModel.builder()
@@ -94,11 +162,7 @@ public class MiraConfiguration {
          * ChatClient.Builder を構築.
          */
         @Bean
-        ChatClient.Builder chatClientBuilder(AzureOpenAiChatModel chatModel) {
-            if (chatModel == null) {
-                log.warn("AzureOpenAiChatModel is null, ChatClient.Builder will not be created");
-                return null;
-            }
+        ChatClient.Builder chatClientBuilder(ChatModel chatModel) {
             return ChatClient.builder(chatModel);
         }
     }

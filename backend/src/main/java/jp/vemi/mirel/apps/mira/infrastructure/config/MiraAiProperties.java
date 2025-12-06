@@ -112,14 +112,14 @@ public class MiraAiProperties {
      */
     @Data
     public static class GitHubModelsConfig {
-        /** GitHub トークン（gh auth token で取得可能） */
-        private String token;
+        /** GitHub トークン/API キー（gh auth token で取得可能） */
+        private String apiKey;
         
         /** ベース URL */
-        private String baseUrl = "https://models.github.ai/inference";
+        private String baseUrl = "https://models.inference.ai.azure.com";
         
         /** モデル名 */
-        private String model = "meta/llama-3.3-70b-instruct";
+        private String model = "meta-llama-3.3-70b-instruct";
         
         /** Temperature (0.0 - 2.0) */
         private Double temperature = 0.7;
@@ -128,7 +128,7 @@ public class MiraAiProperties {
         private Integer maxTokens = 4096;
         
         /** タイムアウト（秒） */
-        private Integer timeoutSeconds = 60;
+        private Integer timeoutSeconds = 120;
     }
 
     /**
