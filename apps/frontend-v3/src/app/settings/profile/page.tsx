@@ -73,7 +73,7 @@ export default function ProfilePage() {
 
   // Update tab when URL param changes
   useEffect(() => {
-    if (tabParam && tabParam !== activeTab) {
+    if (tabParam) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
