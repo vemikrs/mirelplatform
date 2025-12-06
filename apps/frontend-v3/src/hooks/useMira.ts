@@ -34,7 +34,6 @@ export function useMiraChat() {
     startConversation,
     addUserMessage,
     addAssistantMessage,
-    getActiveConversation,
   } = useMiraStore();
   
   const mutation = useMutation({

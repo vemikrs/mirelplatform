@@ -30,14 +30,14 @@ public class PolicyEnforcer {
         Pattern.compile("(?i)(jdbc|mysql|postgres|oracle)://[^\\s]+")
     );
     
-    /** 禁止キーワード（システム操作系） */
+    /** 禁止キーワード（システム操作系） - 大文字で統一 */
     private static final Set<String> PROHIBITED_KEYWORDS = Set.of(
         "DROP TABLE",
         "DELETE FROM",
         "TRUNCATE",
-        "rm -rf",
-        "shutdown",
-        "format"
+        "RM -RF",
+        "SHUTDOWN",
+        "FORMAT"
     );
     
     /** 管理者専用機能 */

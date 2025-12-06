@@ -3,8 +3,7 @@
  * 
  * チャット・コンテキストヘルプ・エラー分析機能のAPI呼び出し
  */
-import { apiClient, createApiRequest } from './client';
-import type { ApiResponse } from './types';
+import { apiClient } from './client';
 
 // ========================================
 // Types
