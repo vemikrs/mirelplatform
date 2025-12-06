@@ -12,6 +12,7 @@ import {
   clearConversation as clearConversationApi,
   checkMiraHealth,
   generateConversationTitle,
+  updateConversationTitle as updateConversationTitleApi,
   type ChatRequest,
   type ErrorReportRequest,
   type ContextSnapshotRequest,
@@ -230,6 +231,36 @@ export function useMiraConversation() {
 }
 
 // ========================================
+// Title Update Hook
+// ========================================
+
+/**
+ * タイトル更新フック
+ */
+export function useMiraTitleUpdate() {
+  const { updateConversationTitle } = useMiraStore();
+  
+  const mutation = useMutation({
+    mutationFn: updateConversationTitleApi,
+    onSuccess: (response) => {
+      if (response.success) {
+        updateConversationTitle(response.conversationId, response.title);
+      }
+    },
+  });
+  
+  const updateTitle = async (conversationId: string, title: string) => {
+    await mutation.mutateAsync({ conversationId, title });
+  };
+  
+  return {
+    updateTitle,
+    isUpdating: mutation.isPending,
+    error: mutation.error,
+  };
+}
+
+// ========================================
 // Health Check Hook
 // ========================================
 
@@ -280,6 +311,7 @@ export function useMira() {
   const panel = useMiraPanel();
   const errorAnalysis = useMiraErrorAnalysis();
   const contextSnapshot = useMiraContextSnapshot();
+  const titleUpdate = useMiraTitleUpdate();
   const {
     editingMessageId,
     editingMessageContent,
@@ -307,6 +339,10 @@ export function useMira() {
     conversations: conversation.conversations,
     clearConversation: conversation.clear,
     newConversation: () => conversation.setActive(null),
+    
+    // タイトル更新
+    updateConversationTitle: titleUpdate.updateTitle,
+    isUpdatingTitle: titleUpdate.isUpdating,
     
     // メッセージ編集
     editingMessageId,
