@@ -28,6 +28,7 @@ public class ModelService {
     private final StuModelHeaderRepository modelHeaderRepository;
     private final FlowManageService flowManageService;
     private final ReleaseService releaseService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * Search models.
@@ -156,8 +157,60 @@ public class ModelService {
         if (releases.isEmpty()) {
             throw new IllegalStateException("No release found to restore from.");
         }
-        // StuRelease latest = releases.get(0);
-        // Restore from snapshot (TODO: Implement logic)
+        StuRelease latest = releases.get(0);
+
+        try {
+            // Deserialize snapshot
+            java.util.Map<String, Object> snapshot = objectMapper.readValue(latest.getSnapshot(),
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
+                    });
+
+            // Restore Header
+            StuModelHeader header = objectMapper.convertValue(snapshot.get("header"), StuModelHeader.class);
+            stuModelService.saveHeader(header);
+
+            // Restore Fields
+            List<StuModel> fields = objectMapper.convertValue(snapshot.get("fields"),
+                    new com.fasterxml.jackson.core.type.TypeReference<List<StuModel>>() {
+                    });
+            stuModelService.updateDraft(modelId, header.getModelName(), header.getDescription(), fields);
+
+            // Restore Flows (TODO: FlowService needs updateDraft support)
+            if (snapshot.containsKey("flows")) {
+                List<StuFlow> flows = objectMapper.convertValue(snapshot.get("flows"),
+                        new com.fasterxml.jackson.core.type.TypeReference<List<StuFlow>>() {
+                        });
+                // flowManageService.saveAll(flows); // Assuming this method exists or similar
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to restore from snapshot", e);
+        }
+    }
+
+    /**
+     * Validate model.
+     * 
+     * @param modelId
+     *            Model ID
+     * @return Validation results
+     */
+    public ValidationResult validate(String modelId) {
+        StuModelHeader header = stuModelService.findHeader(modelId);
+        List<StuModel> fields = stuModelService.findModels(modelId);
+
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        if (header == null)
+            errors.add("Header missing");
+        if (fields.isEmpty())
+            errors.add("No fields defined");
+
+        // TODO: More complex validation
+
+        return new ValidationResult(errors.isEmpty(), errors);
+    }
+
+    public record ValidationResult(boolean valid, java.util.List<String> errors) {
     }
 
     public record UpdateDraftRequest(String headerName, String headerDescription, List<StuModel> fields) {

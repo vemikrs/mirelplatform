@@ -76,4 +76,10 @@ public class ModelController {
         modelService.discardDraft(modelId);
         return ApiResponse.success();
     }
+
+    @PostMapping("/{modelId}/validate")
+    public ApiResponse<jp.vemi.mirel.apps.studio.domain.service.ModelService.ValidationResult> validate(
+            @PathVariable String modelId) {
+        return ApiResponse.success(modelService.validate(modelId));
+    }
 }
