@@ -21,9 +21,11 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.GenerateTitleRequest;
+import jp.vemi.mirel.apps.mira.domain.dto.request.UpdateTitleRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.GenerateTitleResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.UpdateTitleResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
@@ -299,6 +301,45 @@ public class MiraChatService {
             log.error("タイトル生成エラー: conversationId={}", request.getConversationId(), e);
             return GenerateTitleResponse.error(request.getConversationId(), 
                 "タイトル生成中にエラーが発生しました");
+        }
+    }
+    
+    /**
+     * 会話タイトル更新.
+     */
+    @Transactional
+    public UpdateTitleResponse updateTitle(UpdateTitleRequest request, String tenantId, String userId) {
+        try {
+            // 会話を取得
+            Optional<MiraConversation> conversationOpt = conversationRepository.findById(request.getConversationId());
+            
+            if (conversationOpt.isEmpty()) {
+                log.warn("会話が見つかりません: conversationId={}", request.getConversationId());
+                return UpdateTitleResponse.error(request.getConversationId(), "会話が見つかりません");
+            }
+            
+            MiraConversation conversation = conversationOpt.get();
+            
+            // テナント・ユーザー検証
+            if (!conversation.getTenantId().equals(tenantId) || !conversation.getUserId().equals(userId)) {
+                log.warn("会話へのアクセス権限がありません: conversationId={}, tenantId={}, userId={}", 
+                    request.getConversationId(), tenantId, userId);
+                return UpdateTitleResponse.error(request.getConversationId(), "会話へのアクセス権限がありません");
+            }
+            
+            // タイトル更新
+            conversation.setTitle(request.getTitle());
+            conversationRepository.save(conversation);
+            
+            log.debug("タイトル更新完了: conversationId={}, title={}", 
+                request.getConversationId(), request.getTitle());
+            
+            return UpdateTitleResponse.success(request.getConversationId(), request.getTitle());
+            
+        } catch (Exception e) {
+            log.error("タイトル更新エラー: conversationId={}", request.getConversationId(), e);
+            return UpdateTitleResponse.error(request.getConversationId(), 
+                "タイトル更新中にエラーが発生しました");
         }
     }
     
