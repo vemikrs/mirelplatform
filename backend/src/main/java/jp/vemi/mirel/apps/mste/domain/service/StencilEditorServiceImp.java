@@ -70,6 +70,8 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
             // レイヤー検索: user → standard → samples
             // フォルダ名を正とする（ディレクトリ名完全一致のみ）
+            // レイヤー検索: user → standard → samples
+            // フォルダ名を正とする（ディレクトリ名完全一致のみ）
             String[] layers = {
                     StorageConfig.getUserStencilDir(),
                     StorageConfig.getStandardStencilDir()
@@ -77,10 +79,23 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
             Path stencilPath = null;
             for (String layer : layers) {
-                Path candidatePath = Paths.get(layer, stencilId, serial);
-                if (Files.exists(candidatePath)) {
-                    stencilPath = candidatePath;
-                    break;
+                try {
+                    Path baseLayerPath = Paths.get(layer).toAbsolutePath().normalize();
+                    Path candidatePath = baseLayerPath.resolve(stencilId).resolve(serial).toAbsolutePath().normalize();
+
+                    // Path injection対策: ベースパス配下にあるかチェック
+                    if (!candidatePath.startsWith(baseLayerPath)) {
+                        logger.warn("Invalid path traversal attempt skipped: layer={}, stencilId={}, serial={}", layer,
+                                stencilId, serial);
+                        continue;
+                    }
+
+                    if (Files.exists(candidatePath)) {
+                        stencilPath = candidatePath;
+                        break;
+                    }
+                } catch (Exception e) {
+                    logger.warn("Path resolution failed", e);
                 }
             }
 
@@ -90,7 +105,12 @@ public class StencilEditorServiceImp implements StencilEditorService {
             }
 
             // stencil-settings.yml読み込み
-            Path settingsPath = stencilPath.resolve("stencil-settings.yml");
+            Path settingsPath = stencilPath.resolve("stencil-settings.yml").normalize();
+            if (!settingsPath.startsWith(stencilPath)) {
+                response.addError("不正なファイルパス");
+                return response;
+            }
+
             if (!Files.exists(settingsPath)) {
                 response.addError("stencil-settings.ymlが見つかりません");
                 return response;
@@ -138,12 +158,26 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
             // userレイヤーに保存
             String userDir = StorageConfig.getUserStencilDir();
-            Path stencilPath = Paths.get(userDir, param.getStencilId(), newSerial);
+            Path baseUserPath = Paths.get(userDir).toAbsolutePath().normalize();
+            Path stencilPath = baseUserPath.resolve(param.getStencilId()).resolve(newSerial).toAbsolutePath()
+                    .normalize();
+
+            // Path injection対策
+            if (!stencilPath.startsWith(baseUserPath)) {
+                throw new SecurityException("Invalid path traversal detected: " + stencilPath);
+            }
+
             Files.createDirectories(stencilPath);
 
             // ファイル保存
             for (StencilFileDto file : param.getFiles()) {
-                Path filePath = stencilPath.resolve(file.getPath());
+                Path filePath = stencilPath.resolve(file.getPath()).toAbsolutePath().normalize();
+
+                // Path injection対策: stencilPath配下にあるかチェック
+                if (!filePath.startsWith(stencilPath)) {
+                    throw new SecurityException("Invalid file path detected: " + file.getPath());
+                }
+
                 Files.createDirectories(filePath.getParent());
                 Files.writeString(filePath, file.getContent());
             }
@@ -253,8 +287,16 @@ public class StencilEditorServiceImp implements StencilEditorService {
         Yaml yaml = new Yaml();
 
         // userレイヤーから履歴を取得
+        // userレイヤーから履歴を取得
         String userDir = StorageConfig.getUserStencilDir();
-        Path categoryPath = Paths.get(userDir, stencilId);
+        Path baseUserPath = Paths.get(userDir).toAbsolutePath().normalize();
+        Path categoryPath = baseUserPath.resolve(stencilId).toAbsolutePath().normalize();
+
+        // Path injection対策
+        if (!categoryPath.startsWith(baseUserPath)) {
+            logger.warn("Invalid path traversal attempt in loadVersionHistory: stencilId={}", stencilId);
+            return new ArrayList<>();
+        }
 
         if (Files.exists(categoryPath)) {
             try {

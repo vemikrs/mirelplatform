@@ -53,20 +53,18 @@ import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
 import type { NavigationConfig } from './navigation.schema';
 
-// キャッシュ用の変数（同一セッション内での重複API呼び出しを防ぐ）
-let cachedData: { profile: unknown; navigation: NavigationConfig } | null = null;
-let cacheKey = '';
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5000; // 5秒
+// キャッシュ変数を削除
+// let cachedData: ... (removed)
+// let cacheKey = ... (removed)
+// let cacheTimestamp = ... (removed)
+// const CACHE_DURATION = ... (removed)
 
 /** * Clear authentication loader cache
  * Should be called on logout to ensure fresh authentication check on next navigation
+ * (No-op now as cache is removed)
  */
 export function clearAuthLoaderCache() {
-  cachedData = null;
-  cacheKey = '';
-  cacheTimestamp = 0;
-  console.log('[authLoader] Cache cleared');
+  // console.log('[authLoader] Cache cleared (no-op)');
 }
 
 /** * Authentication Loader
@@ -75,23 +73,13 @@ export function clearAuthLoaderCache() {
  */
 async function authLoader(): Promise<NavigationConfig> {
   try {
-    const now = Date.now();
-    const currentKey = window.location.pathname;
-    
-    // キャッシュが有効かつ同じURLならスキップ
-    if (cachedData && cacheKey === currentKey && (now - cacheTimestamp) < CACHE_DURATION) {
-      return cachedData.navigation;
-    }
+    // キャッシュロジックを削除: 常に最新の認証状態を確認する
     
     // サーバセッションから authStore を再構築
     const { rehydrateFromServerSession } = useAuthStore.getState();
     await rehydrateFromServerSession();
 
     const navigation = await loadNavigationConfig();
-    
-    cachedData = { profile: null, navigation };
-    cacheKey = currentKey;
-    cacheTimestamp = now;
     
     return navigation;
   } catch (error) {

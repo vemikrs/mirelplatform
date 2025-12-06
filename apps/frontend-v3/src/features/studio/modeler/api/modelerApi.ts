@@ -1,6 +1,6 @@
 import type { SchemaApiResponse } from '../types/modeler';
 
-const BASE_URL = '/api/studio/modeler';
+const BASE_URL = '/mapi/api/studio/modeler';
 
 async function request(path: string, content: Record<string, any>): Promise<SchemaApiResponse> {
   const response = await fetch(`${BASE_URL}/${path}`, {
@@ -23,7 +23,7 @@ export const modelerApi = {
       // Use DataController (REST)
       // GET /api/studio/data/{modelId}?page=...
       const params = new URLSearchParams({ page: page.toString(), size: size.toString(), q: query });
-      const response = await fetch(`/api/studio/data/${modelId}?${params}`);
+      const response = await fetch(`/mapi/api/studio/data/${modelId}?${params}`);
       if (!response.ok) throw new Error('Data API Error');
       const data = await response.json();
       return { data }; // Wrap to match expected SchemaApiResponse structure if needed, or update callers
@@ -35,7 +35,7 @@ export const modelerApi = {
 
   // Model Operations (REST)
   listModels: async () => {
-    const response = await fetch('/api/studio/models');
+    const response = await fetch('/mapi/api/studio/models');
     if (!response.ok) throw new Error('Failed to list models');
     const result = await response.json(); // ApiResponse<List<StuModelHeader>>
     // Transform to expected format { models: { value, text }[] }
@@ -47,7 +47,7 @@ export const modelerApi = {
   },
 
   listModel: async (modelId: string) => {
-      const response = await fetch(`/api/studio/models/${modelId}`);
+      const response = await fetch(`/mapi/api/studio/models/${modelId}`);
       if (!response.ok) throw new Error('Failed to get model');
       const result = await response.json();
       // Transform to expected format if necessary. 
@@ -60,13 +60,13 @@ export const modelerApi = {
 
   saveModel: async (modelId: string, modelName: string, isHiddenModel: boolean, _modelType: 'transaction' | 'master', fields: any[]) => {
       // 1. Update Header
-      await fetch(`/api/studio/models/${modelId}`, {
+      await fetch(`/mapi/api/studio/models/${modelId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ modelName, isHidden: isHiddenModel })
       });
       // 2. Update Draft (Fields)
-      await fetch(`/api/studio/models/${modelId}/draft`, {
+      await fetch(`/mapi/api/studio/models/${modelId}/draft`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ headerName: modelName, fields })
@@ -75,7 +75,7 @@ export const modelerApi = {
   },
 
   deleteModel: async (modelId: string) => {
-      await fetch(`/api/studio/models/${modelId}`, { method: 'DELETE' });
+      await fetch(`/mapi/api/studio/models/${modelId}`, { method: 'DELETE' });
       return { data: { deleted: true } };
   },
 

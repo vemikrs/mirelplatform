@@ -2,10 +2,12 @@ name: E2E Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   workflow_dispatch:
+
+permissions: read-all
 
 env:
   # Timezone setting for Japanese environment
@@ -24,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -77,24 +79,24 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium]
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      
+          node-version: "22"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-      
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-      
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -102,18 +104,18 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      
+
       - name: Verify Node.js version
         run: |
           echo "Node version: $(node --version)"
           node --version | grep "v22" || (echo "ERROR: Node 22 not detected!" && exit 1)
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-      
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -123,15 +125,15 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      
+
       - name: Install E2E test dependencies
         working-directory: packages/e2e
         run: pnpm install --frozen-lockfile
-      
+
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(pnpm list @playwright/test --depth=0 --json | jq -r '.[0].devDependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
-      
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
@@ -141,18 +143,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
             ${{ runner.os }}-playwright-
-      
+
       - name: Install Playwright Browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: packages/e2e
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
-      
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      
+
       - name: Start E2E services (PostgreSQL, Redis, MailHog)
         run: |
           echo "Starting E2E services with docker-compose..."
@@ -201,10 +203,10 @@ jobs:
             fi
           done
           echo "✅ All E2E services are healthy!"
-      
+
       - name: Build backend
         run: ./gradlew :backend:build -x test
-      
+
       - name: Start backend service
         run: |
           echo "Starting backend service..."
@@ -226,7 +228,7 @@ jobs:
           sleep 5
           echo "Backend process status:"
           ps aux | grep $BACKEND_PID || echo "Backend process not found"
-      
+
       - name: Start frontend service
         run: |
           echo "Starting frontend-v3 service (Vite)..."
@@ -237,13 +239,13 @@ jobs:
           sleep 5
           echo "Frontend process status:"
           ps aux | grep $FRONTEND_PID || echo "Frontend process not found"
-      
+
       - name: Wait for services to be ready
         run: |
           echo "Waiting for backend to be ready..."
           echo "Backend log (first 50 lines):"
           head -50 backend.log 2>/dev/null || echo "No backend log yet"
-          
+
           for i in {1..60}; do
             if curl -sf http://localhost:3000/mipla2/actuator/health; then
               echo "✅ Backend is ready!"
@@ -261,11 +263,11 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "Waiting for frontend to be ready..."
           echo "Frontend log (first 50 lines):"
           head -50 frontend.log 2>/dev/null || echo "No frontend log yet"
-          
+
           for i in {1..60}; do
             if curl -sf http://localhost:5173/; then
               echo "✅ Frontend is ready!"
@@ -283,9 +285,9 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "✅ All services are ready!"
-      
+
       - name: Run E2E tests
         working-directory: packages/e2e
         run: pnpm exec playwright test --project=${{ matrix.browser }}
@@ -293,7 +295,7 @@ jobs:
           CI: true
           E2E_BASE_URL: http://localhost:5173
           MAILHOG_API_URL: http://localhost:8026
-      
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -303,7 +305,7 @@ jobs:
             packages/e2e/test-results/
             packages/e2e/playwright-report/
           retention-days: 7
-      
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         if: failure()
@@ -311,7 +313,7 @@ jobs:
           name: playwright-screenshots-${{ matrix.browser }}
           path: packages/e2e/test-results/screenshots/
           retention-days: 7
-      
+
       - name: Stop services
         if: always()
         run: |
@@ -334,24 +336,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: validate-setup
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      
+          node-version: "22"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-      
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-      
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -359,13 +361,13 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-      
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -375,15 +377,15 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      
+
       - name: Install dependencies
         working-directory: packages/e2e
         run: pnpm install --frozen-lockfile
-      
+
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(pnpm list @playwright/test --depth=0 --json | jq -r '.[0].devDependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
-      
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
@@ -393,18 +395,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
             ${{ runner.os }}-playwright-
-      
+
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: packages/e2e
         run: pnpm exec playwright install --with-deps chromium
-      
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      
+
       - name: Start E2E services (PostgreSQL, Redis, MailHog)
         run: |
           echo "Starting E2E services with docker-compose..."
@@ -453,10 +455,10 @@ jobs:
             fi
           done
           echo "✅ All E2E services are healthy!"
-      
+
       - name: Build backend
         run: ./gradlew :backend:build -x test
-      
+
       - name: Start services
         run: |
           echo "Starting backend service..."
@@ -473,13 +475,13 @@ jobs:
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
           echo "Backend started with PID: $BACKEND_PID"
-          
+
           echo "Starting frontend-v3 service (Vite)..."
           pnpm --filter frontend-v3 dev > frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
           echo "Frontend started with PID: $FRONTEND_PID"
-          
+
           echo "Waiting for backend..."
           for i in {1..60}; do
             if curl -sf http://localhost:3000/mipla2/actuator/health; then
@@ -494,7 +496,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "Waiting for frontend..."
           for i in {1..60}; do
             if curl -sf http://localhost:5173/; then
@@ -509,16 +511,16 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "✅ All services ready!"
-      
+
       - name: Run accessibility tests
         working-directory: packages/e2e
         run: pnpm exec playwright test --project=chromium --grep="@a11y"
         env:
           E2E_BASE_URL: http://localhost:5173
           MAILHOG_API_URL: http://localhost:8026
-      
+
       - name: Upload accessibility results
         uses: actions/upload-artifact@v4
         if: always()
@@ -528,7 +530,7 @@ jobs:
             packages/e2e/test-results/
             packages/e2e/playwright-report/
           retention-days: 7
-      
+
       - name: Stop services
         if: always()
         run: |

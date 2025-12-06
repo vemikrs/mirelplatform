@@ -281,7 +281,7 @@ public class AuthenticationController {
             return ResponseEntity.status(400).body("Invalid or expired token");
         } catch (IllegalStateException e) {
             logger.error("Password reset failed: {}", e.getMessage());
-            return ResponseEntity.status(400).body(e.getMessage());
+            return ResponseEntity.status(400).body("Password reset failed due to invalid state");
         } catch (Exception e) {
             logger.error("Password reset failed", e);
             return ResponseEntity.status(500).body("Error processing request");
