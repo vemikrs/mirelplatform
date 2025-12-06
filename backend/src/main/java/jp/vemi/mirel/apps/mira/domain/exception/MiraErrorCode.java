@@ -73,6 +73,9 @@ public enum MiraErrorCode {
     
     /** テンプレート未発見 */
     TEMPLATE_NOT_FOUND("MIRA-4003", "プロンプトテンプレートが見つかりません", false),
+    
+    /** テンプレート読み込みエラー */
+    TEMPLATE_LOAD_ERROR("MIRA-4004", "プロンプトテンプレートの読み込みに失敗しました", false),
 
     // ========================================
     // モデルエラー (5xxx)
