@@ -18,6 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
   toast,
+  Input,
 } from '@mirel/ui';
 import { 
   Sparkles,
@@ -26,11 +27,13 @@ import {
   Plus,
   Keyboard,
   Download,
+  Edit2,
+  Check,
+  X,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
-import type { MiraMode } from '@/lib/api/mira';
-import { exportUserData } from '@/lib/api/mira';
+import { exportUserData, type MiraMode } from '@/lib/api/mira';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
@@ -55,6 +58,8 @@ export function MiraPage() {
     startEditMessage,
     cancelEditMessage,
     resendEditedMessage,
+    updateConversationTitle,
+    isUpdatingTitle,
   } = useMira();
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
@@ -69,6 +74,10 @@ export function MiraPage() {
   
   // 会話クリア確認ダイアログの状態
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
+  // タイトル編集状態
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
   
   // エクスポート処理状態
   const [isExporting, setIsExporting] = useState(false);
@@ -146,6 +155,27 @@ export function MiraPage() {
       messageEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [messages]);
+  
+  // メッセージ編集ハンドラ（useEffectより前に定義）
+  const handleEditMessage = useCallback((messageId: string) => {
+    if (!activeConversation?.id) return;
+    
+    // 編集点以降のメッセージ数をカウント
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+    
+    const affectedCount = messages.length - messageIndex - 1;
+    
+    if (affectedCount > 0) {
+      // 以降にメッセージがある場合は警告ダイアログを表示
+      setPendingEditMessageId(messageId);
+      setAffectedMessagesCount(affectedCount);
+      setShowEditConfirm(true);
+    } else {
+      // 最新メッセージの場合は直ちに編集モードへ
+      startEditMessage(activeConversation.id, messageId);
+    }
+  }, [activeConversation, messages, startEditMessage]);
   
   // グローバルキーボードショートカット
   useEffect(() => {
@@ -287,27 +317,6 @@ export function MiraPage() {
     }
   }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
   
-  // メッセージ編集ハンドラ
-  const handleEditMessage = useCallback((messageId: string) => {
-    if (!activeConversation?.id) return;
-    
-    // 編集点以降のメッセージ数をカウント
-    const messageIndex = messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1) return;
-    
-    const affectedCount = messages.length - messageIndex - 1;
-    
-    if (affectedCount > 0) {
-      // 以降にメッセージがある場合は警告ダイアログを表示
-      setPendingEditMessageId(messageId);
-      setAffectedMessagesCount(affectedCount);
-      setShowEditConfirm(true);
-    } else {
-      // 最新メッセージの場合は直ちに編集モードへ
-      startEditMessage(activeConversation.id, messageId);
-    }
-  }, [activeConversation, messages, startEditMessage]);
-  
   // 編集確認ハンドラ
   const handleConfirmEdit = useCallback(() => {
     if (activeConversation?.id && pendingEditMessageId) {
@@ -364,6 +373,32 @@ export function MiraPage() {
     return mode ? labels[mode] || mode : null;
   };
   
+  // タイトル編集開始
+  const handleStartEditTitle = useCallback(() => {
+    if (activeConversation) {
+      setEditedTitle(activeConversation.title || getConversationSummary());
+      setIsEditingTitle(true);
+    }
+  }, [activeConversation, getConversationSummary]);
+  
+  // タイトル編集保存
+  const handleSaveTitle = useCallback(async () => {
+    if (activeConversation && editedTitle.trim()) {
+      try {
+        await updateConversationTitle(activeConversation.id, editedTitle.trim());
+        setIsEditingTitle(false);
+      } catch (error) {
+        console.error('タイトル更新エラー:', error);
+      }
+    }
+  }, [activeConversation, editedTitle, updateConversationTitle]);
+  
+  // タイトル編集キャンセル
+  const handleCancelEditTitle = useCallback(() => {
+    setIsEditingTitle(false);
+    setEditedTitle('');
+  }, []);
+  
   return (
     <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
       {/* 左ドロワー: 会話履歴（Mira表示内に制限） */}
@@ -394,7 +429,7 @@ export function MiraPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* チャットヘッダー */}
         <div className="flex items-center justify-between p-3 border-b bg-surface">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button
               variant="ghost"
               size="icon"
@@ -403,13 +438,65 @@ export function MiraPage() {
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h2 className="font-medium text-sm">
-                {getConversationSummary()}
-              </h2>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Sparkles className="w-4 h-4 text-primary shrink-0" />
+              {isEditingTitle ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Input
+                    value={editedTitle}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedTitle(e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === 'Enter') {
+                        handleSaveTitle();
+                      } else if (e.key === 'Escape') {
+                        handleCancelEditTitle();
+                      }
+                    }}
+                    className="h-8 text-sm flex-1"
+                    autoFocus
+                    disabled={isUpdatingTitle}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSaveTitle}
+                    disabled={isUpdatingTitle}
+                    title="保存 (Enter)"
+                    className="h-8 w-8"
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCancelEditTitle}
+                    disabled={isUpdatingTitle}
+                    title="キャンセル (Esc)"
+                    className="h-8 w-8"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="font-medium text-sm truncate">
+                    {getConversationSummary()}
+                  </h2>
+                  {activeConversation && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleStartEditTitle}
+                      title="タイトルを編集"
+                      className="h-6 w-6 shrink-0"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </>
+              )}
               {activeConversation?.mode && activeConversation.mode !== 'GENERAL_CHAT' && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
                   {getModeLabel(activeConversation.mode)}
                 </span>
               )}
