@@ -104,14 +104,14 @@ export function MiraChatInput({
   const CurrentIcon = currentModeConfig.icon;
   
   return (
-    <div className={cn('bg-background', className)}>
+    <div className={cn('', className)}>
       {/* メッセージ入力エリア */}
-      <div className="relative p-3">
+      <div className="relative px-3 py-2">
         {/* モード選択メニュー */}
         {showModeMenu && (
           <div 
             ref={menuRef}
-            className="absolute bottom-full left-3 mb-2 w-56 py-1 bg-popover border rounded-lg shadow-lg z-50"
+            className="absolute bottom-full left-3 mb-2 w-56 py-1 bg-popover border rounded-lg shadow-lg z-10"
           >
             <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               モードを選択
@@ -158,10 +158,11 @@ export function MiraChatInput({
             disabled={isLoading || disabled}
             rows={1}
             className={cn(
-              'flex-1 resize-none rounded-md border border-input bg-background px-3 py-2',
+              'flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2',
               'text-sm placeholder:text-muted-foreground',
               'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-              'disabled:cursor-not-allowed disabled:opacity-50'
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'overflow-hidden'
             )}
           />
           

@@ -49,7 +49,7 @@ export function MiraConversationList({
   const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-80 h-full border-r flex flex-col bg-surface shadow-lg">
+    <div className="w-[320px] h-full border-r flex flex-col bg-surface shadow-lg">
       {/* ヘッダー */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
@@ -186,11 +186,13 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
 
 // ユーティリティ関数
 function getConversationSummary(conv: MiraConversation): string {
-  const firstUserMessage = conv.messages.find((m) => m.role === 'user');
-  if (firstUserMessage) {
-    return firstUserMessage.content.length > 50
-      ? firstUserMessage.content.substring(0, 50) + '...'
-      : firstUserMessage.content;
+  // 最後のユーザーメッセージを取得
+  const userMessages = conv.messages.filter((m) => m.role === 'user');
+  const lastUserMessage = userMessages[userMessages.length - 1];
+  if (lastUserMessage) {
+    return lastUserMessage.content.length > 40
+      ? lastUserMessage.content.substring(0, 40) + '...'
+      : lastUserMessage.content;
   }
   return '新しい会話';
 }
