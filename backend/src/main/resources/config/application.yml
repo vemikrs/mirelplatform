@@ -49,17 +49,6 @@ spring:
             client-secret: ${GITHUB_CLIENT_SECRET:#{null}}
             scope:
               - read:user
-  # Spring AI 設定（Azure OpenAI）
-  ai:
-    azure:
-      openai:
-        endpoint: ${AZURE_OPENAI_ENDPOINT:}
-        api-key: ${AZURE_OPENAI_API_KEY:}
-        chat:
-          options:
-            deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-4o}
-            temperature: 0.7
-            max-tokens: 4096
               - user:email
         provider:
           github:
@@ -169,34 +158,11 @@ management:
       enabled: true
 
 # Mira (mirel Assist) AI アシスタント設定
+# 詳細設定は各環境の application-{profile}.yml で定義
 mira:
   ai:
     # AI プロバイダ: azure-openai | github-models | openai | mock
     provider: ${MIRA_AI_PROVIDER:mock}
-    azure-openai:
-      endpoint: ${AZURE_OPENAI_ENDPOINT:}
-      api-key: ${AZURE_OPENAI_API_KEY:}
-      deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-4o}
-      temperature: 0.7
-      max-tokens: 4096
-      timeout-seconds: 60
-    github-models:
-      # GitHub Models (OpenAI互換) 設定
-      # gh auth token で取得したトークンを使用
-      api-key: ${GITHUB_TOKEN:}
-      model: ${GITHUB_MODELS_MODEL:meta-llama-3.3-70b-instruct}
-      temperature: 0.7
-      max-tokens: 4096
-      timeout-seconds: 120
-    openai:
-      api-key: ${OPENAI_API_KEY:}
-      model: gpt-4o
-      temperature: 0.7
-      max-tokens: 4096
-    mock:
-      enabled: ${MIRA_MOCK_ENABLED:true}
-      response-delay-ms: 500
-      default-response: "ご質問ありがとうございます。詳細をお知らせください。"
     audit:
       # 保存ポリシー: FULL | SUMMARY | METADATA_ONLY
       storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
