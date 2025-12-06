@@ -5,15 +5,19 @@
  * スライドインドロワーとして使用される
  */
 import { useState } from 'react';
-import { cn, Button, ScrollArea, Input } from '@mirel/ui';
+import { cn, Button, ScrollArea, Input, Badge } from '@mirel/ui';
 import { 
   Bot, 
   MessageSquarePlus, 
   Trash2, 
   Search, 
   Clock,
-  MessageCircle,
   X,
+  HelpCircle,
+  AlertTriangle,
+  Paintbrush2,
+  Workflow,
+  MessageSquare,
 } from 'lucide-react';
 import type { MiraConversation } from '@/stores/miraStore';
 
@@ -49,7 +53,7 @@ export function MiraConversationList({
   const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-[320px] h-full border-r flex flex-col bg-surface shadow-lg">
+    <div className="w-[380px] h-full border-r flex flex-col bg-surface shadow-lg">
       {/* ヘッダー */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
@@ -95,7 +99,7 @@ export function MiraConversationList({
       
       {/* 会話リスト（日付グループ） */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="p-3">
           {Object.keys(groupedConversations).length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
@@ -103,10 +107,10 @@ export function MiraConversationList({
           ) : (
             Object.entries(groupedConversations).map(([dateGroup, convs]) => (
               <div key={dateGroup} className="mb-4">
-                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
+                <p className="text-xs font-medium text-muted-foreground px-1 py-1 mb-2">
                   {dateGroup}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {convs.map((conv) => (
                     <ConversationItem
                       key={conv.id}
@@ -135,9 +139,11 @@ interface ConversationItemProps {
 }
 
 function ConversationItem({ conversation, isActive, onSelect, onDelete }: ConversationItemProps) {
-  const summary = getConversationSummary(conversation);
+  const title = getConversationTitle(conversation);
+  const preview = getConversationPreview(conversation);
   const relativeTime = getRelativeTime(conversation.updatedAt);
-  const modeLabel = getModeLabel(conversation.mode);
+  const modeConfig = getModeConfig(conversation.mode);
+  const ModeIcon = modeConfig.icon;
   
   return (
     <button
@@ -146,32 +152,18 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
         "w-full text-left p-3 rounded-lg transition-colors group",
         isActive
           ? "bg-primary/10 border border-primary/20"
-          : "hover:bg-surface-raised"
+          : "hover:bg-surface-raised border border-transparent"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <MessageCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium truncate">
-              {summary}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{relativeTime}</span>
-            {modeLabel && (
-              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                {modeLabel}
-              </span>
-            )}
-            <span>{conversation.messages.length}件</span>
-          </div>
-        </div>
+      {/* 上段: タイトルと削除ボタン */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="text-sm font-medium line-clamp-1 flex-1">
+          {title}
+        </h3>
         <Button
           variant="ghost"
           size="icon"
-          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mt-0.5"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
@@ -180,21 +172,62 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
+      
+      {/* 中段: プレビュー */}
+      {preview && (
+        <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+          {preview}
+        </p>
+      )}
+      
+      {/* 下段: メタ情報（モード、時間、メッセージ数） */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Badge 
+          variant="outline" 
+          className={cn("gap-1 py-0 h-5", modeConfig.color)}
+        >
+          <ModeIcon className="w-3 h-3" />
+          {modeConfig.label}
+        </Badge>
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {relativeTime}
+        </span>
+        <span>{conversation.messages.length}件</span>
+      </div>
     </button>
   );
 }
 
 // ユーティリティ関数
-function getConversationSummary(conv: MiraConversation): string {
-  // 最後のユーザーメッセージを取得
-  const userMessages = conv.messages.filter((m) => m.role === 'user');
-  const lastUserMessage = userMessages[userMessages.length - 1];
-  if (lastUserMessage) {
-    return lastUserMessage.content.length > 40
-      ? lastUserMessage.content.substring(0, 40) + '...'
-      : lastUserMessage.content;
+
+/** 会話タイトルを取得（title優先、なければ最初のメッセージ） */
+function getConversationTitle(conv: MiraConversation): string {
+  if (conv.title) {
+    return conv.title;
+  }
+  // 最初のユーザーメッセージをタイトルとして使用
+  const firstUserMessage = conv.messages.find((m) => m.role === 'user');
+  if (firstUserMessage) {
+    return firstUserMessage.content.length > 50
+      ? firstUserMessage.content.substring(0, 50) + '...'
+      : firstUserMessage.content;
   }
   return '新しい会話';
+}
+
+/** 会話プレビューを取得（最後のメッセージの先頭） */
+function getConversationPreview(conv: MiraConversation): string | null {
+  if (conv.messages.length <= 1) return null;
+  const lastMessage = conv.messages[conv.messages.length - 1];
+  if (lastMessage) {
+    const prefix = lastMessage.role === 'user' ? 'You: ' : 'Mira: ';
+    const content = lastMessage.content.length > 40
+      ? lastMessage.content.substring(0, 40) + '...'
+      : lastMessage.content;
+    return prefix + content;
+  }
+  return null;
 }
 
 function getRelativeTime(date: Date | string): string {
@@ -212,20 +245,19 @@ function getRelativeTime(date: Date | string): string {
   return target.toLocaleDateString('ja-JP');
 }
 
-function getModeLabel(mode?: string): string | null {
-  const labels: Record<string, string> = {
-    general_chat: 'General',
-    context_help: 'Help',
-    error_analyze: 'Error',
-    studio_agent: 'Studio',
-    workflow_agent: 'Workflow',
-    GENERAL_CHAT: 'General',
-    CONTEXT_HELP: 'Help',
-    ERROR_ANALYZE: 'Error',
-    STUDIO_AGENT: 'Studio',
-    WORKFLOW_AGENT: 'Workflow',
+/** モード設定を取得 */
+function getModeConfig(mode?: string): { label: string; icon: typeof MessageSquare; color: string } {
+  type ModeConfig = { label: string; icon: typeof MessageSquare; color: string };
+  const defaultConfig: ModeConfig = { label: 'General', icon: MessageSquare, color: '' };
+  const configs: Record<string, ModeConfig> = {
+    GENERAL_CHAT: defaultConfig,
+    CONTEXT_HELP: { label: 'Help', icon: HelpCircle, color: 'text-blue-500 border-blue-500/30' },
+    ERROR_ANALYZE: { label: 'Error', icon: AlertTriangle, color: 'text-red-500 border-red-500/30' },
+    STUDIO_AGENT: { label: 'Studio', icon: Paintbrush2, color: 'text-purple-500 border-purple-500/30' },
+    WORKFLOW_AGENT: { label: 'Workflow', icon: Workflow, color: 'text-green-500 border-green-500/30' },
   };
-  return mode ? labels[mode] || mode : null;
+  if (!mode) return defaultConfig;
+  return configs[mode] ?? defaultConfig;
 }
 
 // 日付グループ名を取得

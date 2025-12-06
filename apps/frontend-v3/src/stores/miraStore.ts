@@ -33,6 +33,7 @@ export interface MiraMessage {
 export interface MiraConversation {
   id: string;
   mode: MiraMode;
+  title?: string; // AI生成または初期メッセージから自動生成
   messages: MiraMessage[];
   context?: ChatContext;
   createdAt: Date;
@@ -63,6 +64,7 @@ interface MiraState {
   // 会話管理
   startConversation: (mode?: MiraMode, context?: ChatContext) => string;
   setActiveConversation: (conversationId: string | null) => void;
+  updateConversationTitle: (conversationId: string, title: string) => void;
   addUserMessage: (conversationId: string, content: string) => void;
   addAssistantMessage: (conversationId: string, response: ChatResponse) => void;
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
@@ -127,6 +129,24 @@ export const useMiraStore = create<MiraState>()(
       
       setActiveConversation: (conversationId) => 
         set({ activeConversationId: conversationId }),
+      
+      updateConversationTitle: (conversationId, title) => {
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+          
+          return {
+            conversations: {
+              ...state.conversations,
+              [conversationId]: {
+                ...conversation,
+                title,
+                updatedAt: new Date(),
+              },
+            },
+          };
+        });
+      },
       
       addUserMessage: (conversationId, content) => {
         const message: MiraMessage = {

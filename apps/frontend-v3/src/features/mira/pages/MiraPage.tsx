@@ -114,9 +114,16 @@ export function MiraPage() {
     setIsDrawerOpen(false);
   }, [newConversation]);
   
-  // 会話の要約を取得
+  // 会話の要約を取得（タイトル優先、なければ最初のメッセージ）
   const getConversationSummary = useCallback(() => {
     if (!activeConversation) return 'Mira';
+    // タイトルがあればそれを使用
+    if (activeConversation.title) {
+      return activeConversation.title.length > 40
+        ? activeConversation.title.substring(0, 40) + '...'
+        : activeConversation.title;
+    }
+    // なければ最初のユーザーメッセージ
     const firstUserMessage = activeConversation.messages.find((m) => m.role === 'user');
     if (firstUserMessage) {
       return firstUserMessage.content.length > 40
@@ -139,29 +146,29 @@ export function MiraPage() {
   };
   
   return (
-    <div className="h-[calc(100vh-6rem)] flex relative">
-      {/* オーバーレイ背景（ドロワー開閉時） */}
-      {isDrawerOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 z-40 transition-opacity"
-          onClick={() => setIsDrawerOpen(false)}
-        />
-      )}
-      
-      {/* 左ドロワー: 会話履歴 */}
+    <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
+      {/* 左ドロワー: 会話履歴（Mira表示内に制限） */}
       <div 
         className={`
-          fixed left-0 top-0 h-full z-50
+          absolute left-0 top-0 bottom-0 z-20
           transform transition-transform duration-300 ease-in-out
           ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
+        {/* オーバーレイ背景 */}
+        {isDrawerOpen && (
+          <div 
+            className="fixed inset-0 bg-black/20 -z-10"
+            onClick={() => setIsDrawerOpen(false)}
+          />
+        )}
         <MiraConversationList
           conversations={conversations}
           activeConversationId={activeConversation?.id ?? null}
           onSelect={handleSelectConversation}
           onDelete={handleDeleteConversation}
           onNewConversation={handleNewConversation}
+          onClose={() => setIsDrawerOpen(false)}
         />
       </div>
       
