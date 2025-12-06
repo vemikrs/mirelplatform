@@ -11,7 +11,7 @@ export interface UserProfile {
   displayName: string;
   firstName?: string;
   lastName?: string;
-  avatarUrl?: string;
+  avatarUrl?: string; // URL starts with /mapi/api/..., transformed from /mipla2/api/...
   bio?: string;
   phoneNumber?: string;
   preferredLanguage?: string;
@@ -64,11 +64,24 @@ export interface LicenseInfo {
 }
 
 /**
+ * Helper to transform avatar URL from backend context to frontend proxy
+ */
+function transformAvatarUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  // Replace backend context /mipla2 with frontend proxy /mapi
+  return url.replace(/^\/mipla2/, '/mapi');
+}
+
+/**
  * Get current user profile
  */
 export async function getUserProfile(): Promise<UserProfile> {
   const response = await apiClient.get<UserProfile>('/users/me');
-  return response.data;
+  const profile = response.data;
+  if (profile.avatarUrl) {
+    profile.avatarUrl = transformAvatarUrl(profile.avatarUrl);
+  }
+  return profile;
 }
 
 /**
@@ -81,7 +94,11 @@ export async function updateProfile(
     '/users/me',
     request
   );
-  return response.data;
+  const profile = response.data;
+  if (profile.avatarUrl) {
+    profile.avatarUrl = transformAvatarUrl(profile.avatarUrl);
+  }
+  return profile;
 }
 
 /**
@@ -104,7 +121,11 @@ export async function updateEmail(email: string): Promise<UserProfile> {
     '/users/me/email',
     { email }
   );
-  return response.data;
+  const profile = response.data;
+  if (profile.avatarUrl) {
+    profile.avatarUrl = transformAvatarUrl(profile.avatarUrl);
+  }
+  return profile;
 }
 
 /**
@@ -123,7 +144,12 @@ export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
       },
     }
   );
-  return response.data;
+  
+  const result = response.data;
+  if (result.avatarUrl) {
+    result.avatarUrl = transformAvatarUrl(result.avatarUrl) || '';
+  }
+  return result;
 }
 
 /**

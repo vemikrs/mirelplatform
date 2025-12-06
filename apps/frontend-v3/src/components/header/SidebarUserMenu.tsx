@@ -18,6 +18,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuPortal,
+  DropdownMenuLabel,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -102,7 +103,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
                 className="w-full h-10 flex items-center justify-center"
               >
                 <Avatar 
-                  src={undefined}
+                  src={user.avatarUrl}
                   alt={user.displayName || user.email}
                   fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                   size="sm"
@@ -145,7 +146,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
           className="w-full flex items-center gap-2 px-2 py-1.5 h-[68px] justify-start hover:bg-surface-raised"
         >
           <Avatar 
-            src={undefined}
+            src={user.avatarUrl}
             alt={user.displayName || user.email}
             fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
             size="sm"
@@ -186,7 +187,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
 
 // Shared menu content component
 interface UserMenuContentProps {
-  user: { displayName?: string; email?: string; username?: string };
+  user: { displayName?: string; email?: string; username?: string; avatarUrl?: string };
   currentTenant: { tenantId: string; displayName: string } | null;
   tenants: Array<{ tenantId: string; displayName: string }>;
   currentTier: LicenseTier;
@@ -221,7 +222,7 @@ function UserMenuContent({
       <div className="px-2 py-1.5">
         <div className="flex items-center gap-3 mb-2">
           <Avatar 
-            src={undefined}
+            src={user.avatarUrl}
             alt={user.displayName || user.email}
             fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
             size="md"
@@ -240,6 +241,7 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>ワークスペース</DropdownMenuLabel>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <Building2 className="mr-2 h-4 w-4" />
@@ -262,11 +264,12 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>アカウント設定</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
           <User className="mr-2 h-4 w-4" />
           <span>プロフィール設定</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+        <DropdownMenuItem onClick={() => navigate('/settings/profile?tab=security')}>
           <Settings className="mr-2 h-4 w-4" />
           <span>セキュリティ設定</span>
         </DropdownMenuItem>
@@ -275,6 +278,7 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>表示設定</DropdownMenuLabel>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             {themeMode === 'light' ? <SunMedium className="mr-2 h-4 w-4" /> : 

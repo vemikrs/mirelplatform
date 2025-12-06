@@ -66,12 +66,8 @@ export const FormDesigner: React.FC = () => {
         return;
     }
 
-    // Handle reordering - NOT SUPPORTED IN GRID MODE YET via dnd-kit
-    // if (active.id !== over.id) {
-    //   const oldIndex = widgets.findIndex((w) => w.id === active.id);
-    //   const newIndex = widgets.findIndex((w) => w.id === over.id);
-    //   setWidgets(arrayMove(widgets, oldIndex, newIndex));
-    // }
+    // Dnd-kit handles new items from palette.
+    // Existing item reordering is handled by react-grid-layout in GridFormDesigner.
   };
 
   const dropAnimation = {

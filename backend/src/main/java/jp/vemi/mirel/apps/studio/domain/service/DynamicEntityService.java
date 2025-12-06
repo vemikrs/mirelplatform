@@ -59,7 +59,7 @@ public class DynamicEntityService {
         String tableName = "dyn_" + modelId;
         String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
         try {
-            return jdbcTemplate.queryForMap(sql, UUID.fromString(id));
+            return jdbcTemplate.queryForMap(sql, id);
         } catch (Exception e) {
             return null;
         }
@@ -91,7 +91,7 @@ public class DynamicEntityService {
         StringBuilder values = new StringBuilder("VALUES (?, ?, ?");
         List<Object> params = new ArrayList<>();
 
-        UUID id = UUID.randomUUID();
+        String id = data.containsKey("id") ? data.get("id").toString() : UUID.randomUUID().toString();
         params.add(id);
         params.add(LocalDateTime.now());
         params.add(LocalDateTime.now());
@@ -146,7 +146,7 @@ public class DynamicEntityService {
         }
 
         sql.append(" WHERE id = ?");
-        params.add(UUID.fromString(id));
+        params.add(id);
 
         jdbcTemplate.update(sql.toString(), params.toArray());
     }
@@ -164,7 +164,7 @@ public class DynamicEntityService {
         validateModelId(modelId);
         String tableName = "dyn_" + modelId;
         String sql = "DELETE FROM " + tableName + " WHERE id = ?";
-        jdbcTemplate.update(sql, UUID.fromString(id));
+        jdbcTemplate.update(sql, id);
     }
 
     private void validateData(Map<String, Object> data, Map<String, StuModel> fieldMap) {

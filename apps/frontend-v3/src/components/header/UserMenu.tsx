@@ -16,7 +16,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuPortal
+  DropdownMenuPortal,
+  DropdownMenuLabel
 } from '@mirel/ui';
 import { User, Settings, LogOut, ChevronDown, SunMedium, MoonStar, Building2 } from 'lucide-react';
 
@@ -117,6 +118,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>ワークスペース</DropdownMenuLabel>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Building2 className="mr-2 h-4 w-4" />
@@ -139,11 +141,12 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>アカウント設定</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
             <User className="mr-2 h-4 w-4" />
             <span>プロフィール設定</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+          <DropdownMenuItem onClick={() => navigate('/settings/profile?tab=security')}>
             <Settings className="mr-2 h-4 w-4" />
             <span>セキュリティ設定</span>
           </DropdownMenuItem>
@@ -152,6 +155,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuLabel>表示設定</DropdownMenuLabel>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               {themeMode === 'light' ? <SunMedium className="mr-2 h-4 w-4" /> : 

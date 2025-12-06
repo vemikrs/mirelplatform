@@ -10,11 +10,11 @@ mirel Studio Modeler の REST API 仕様を定義する。すべてのエンド�
 
 ### 1.1 設計原則
 
-| 原則 | API 設計への反映 |
-|------|-----------------|
+| 原則                        | API 設計への反映                                              |
+| --------------------------- | ------------------------------------------------------------- |
 | **Model-Driven Everything** | Model 定義を取得すれば UI/バリデーション/データ構造が決定する |
-| **Consistency First** | 型変更は Draft → Publish フローで整合性を検証 |
-| **Release as a Unit** | Release Center 連携 API で一括デプロイ可能 |
+| **Consistency First**       | 型変更は Draft → Publish フローで整合性を検証                 |
+| **Release as a Unit**       | Release Center 連携 API で一括デプロイ可能                    |
 
 ---
 
@@ -41,14 +41,14 @@ interface ApiResponse<T = Record<string, any>> {
 
 ### 2.3 エラーコード
 
-| コード | 説明 |
-|-------|------|
-| `VALIDATION_ERROR` | 入力検証エラー |
-| `NOT_FOUND` | リソースが見つからない |
-| `DUPLICATE_KEY` | キー重複 |
-| `PERMISSION_DENIED` | 権限不足 |
-| `DRAFT_CONFLICT` | Draft 競合 |
-| `PUBLISH_FAILED` | 公開失敗 |
+| コード              | 説明                   |
+| ------------------- | ---------------------- |
+| `VALIDATION_ERROR`  | 入力検証エラー         |
+| `NOT_FOUND`         | リソースが見つからない |
+| `DUPLICATE_KEY`     | キー重複               |
+| `PERMISSION_DENIED` | 権限不足               |
+| `DRAFT_CONFLICT`    | Draft 競合             |
+| `PUBLISH_FAILED`    | 公開失敗               |
 
 ---
 
@@ -58,7 +58,7 @@ interface ApiResponse<T = Record<string, any>> {
 
 **`POST /mapi/studio/listModels`**
 
-```typescript
+````typescript
 // Request
 interface ListModelsRequest {
   includeHidden?: boolean;
@@ -72,30 +72,52 @@ interface ListModelsResponse {
   codes: CodeGroupSummary[];
   draftCount: number;
 }
-```
 
 ### 3.2 モデル詳細取得
 
-**`POST /mapi/studio/getModel`**
+ **`GET /api/studio/models/{id}`**
+
+ ```typescript
+ // Response
+ interface ModelDetailsDto {
+   header: StuModelHeader;
+   fields: StuModel[];
+   flows: StuFlow[];
+ }
+````
+
+### 3.3 モデル検索
+
+**`GET /api/studio/models?q={query}&status={status}`**
 
 ```typescript
-// Request
-interface GetModelRequest {
-  modelId: string;
-  includeRelations?: boolean;
-  includeUsage?: boolean;
-  includeDraft?: boolean;
-}
-
 // Response
-interface GetModelResponse {
-  header: ModelHeader;
-  fields: FieldDefinition[];
-  relations?: RelationInfo[];
-  usage?: UsageInfo;
-  draftChanges?: DraftChange[];
-}
+interface List<StuModelHeader> {}
 ```
+
+---
+
+## 4. Model Designer API (REST)
+
+### 4.1 モデル作成
+
+**`POST /api/studio/models`**
+
+### 4.2 ドラフト保存
+
+**`PUT /api/studio/models/{id}/draft`**
+
+### 4.3 公開
+
+**`POST /api/studio/models/{id}/publish`**
+
+### 4.4 ドラフト破棄
+
+**`DELETE /api/studio/models/{id}/draft`**
+
+### 4.5 バリデーション
+
+**`POST /api/studio/models/{id}/validate`**
 
 ### 3.3 モデル検索
 
@@ -105,7 +127,7 @@ interface GetModelResponse {
 // Request
 interface SearchModelsRequest {
   query: string;
-  types?: ('entity' | 'view' | 'code')[];
+  types?: ("entity" | "view" | "code")[];
   limit?: number;
 }
 
@@ -202,8 +224,8 @@ interface DiscardDraftResponse {
 interface CreateModelRequest {
   modelId: string;
   modelName: string;
-  modelType: 'entity' | 'view';
-  modelCategory: 'transaction' | 'master';
+  modelType: "entity" | "view";
+  modelCategory: "transaction" | "master";
   description?: string;
   copyFrom?: string;
 }
@@ -262,7 +284,7 @@ interface ListCodeGroupsResponse {
 ```typescript
 // Request
 interface ListCodeRequest {
-  id: string;  // groupId
+  id: string; // groupId
   includeDeleted?: boolean;
 }
 
@@ -270,7 +292,7 @@ interface ListCodeRequest {
 interface ListCodeResponse {
   valueTexts: CodeValue[];
   groupName?: string;
-  status?: 'draft' | 'published';
+  status?: "draft" | "published";
 }
 ```
 
@@ -310,7 +332,7 @@ interface ListRecordsRequest {
   size?: number;
   query?: string;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
   filters?: Record<string, any>;
 }
 
@@ -419,4 +441,4 @@ interface ValidateReleaseResponse {
 
 ---
 
-*Powered by Copilot 🤖*
+_Powered by Copilot 🤖_
