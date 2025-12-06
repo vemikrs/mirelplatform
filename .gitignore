@@ -64,3 +64,6 @@ packages/e2e/traces/
 
 ### Temp Files ###
 tmp/
+
+# Environment variables
+.env
