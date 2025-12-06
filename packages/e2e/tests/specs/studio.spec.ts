@@ -4,14 +4,26 @@ import { LoginPage } from '../pages/auth/login.page';
 test.describe('Studio Application', () => {
   test.beforeEach(async ({ page }) => {
     // Mock Modeler API - the frontend uses /api/studio/modeler which is a direct path
-    await page.route('**/api/studio/modeler/**', async route => {
+    // Mock Studio API
+    await page.route('**/api/studio/**', async route => {
       const url = route.request().url();
-      if (url.includes('listModels')) {
-         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { models: [] } }) });
-      } else if (url.includes('listModel')) {
-         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { modelers: [] } }) });
-      } else if (url.includes('list')) {
-         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { records: [], total: 0 } }) });
+      if (url.includes('/models')) {
+         // REST API for models
+         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
+      } else if (url.includes('/data/')) {
+         // REST API for data
+         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: [], totalElements: 0 }) });
+      } else if (url.includes('/modeler/')) {
+         // Legacy or specific Modeler API paths
+         if (url.includes('listModels')) {
+           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { models: [] } }) });
+         } else if (url.includes('listModel')) {
+           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { modelers: [] } }) });
+         } else if (url.includes('list')) { // legacy list
+           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { records: [], total: 0 } }) });
+         } else {
+           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: {} }) });
+         }
       } else {
          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: {} }) });
       }
