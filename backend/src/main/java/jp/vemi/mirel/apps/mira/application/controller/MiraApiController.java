@@ -28,13 +28,17 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.GenerateTitleRequest;
+import jp.vemi.mirel.apps.mira.domain.dto.request.UpdateTitleRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.ExportDataResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.GenerateTitleResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.UpdateTitleResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.UserContextResponse;
 import jp.vemi.mirel.apps.mira.domain.service.MiraAuditService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraChatService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService;
+import jp.vemi.mirel.apps.mira.domain.service.MiraExportService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraRbacAdapter;
 import jp.vemi.mirel.apps.mira.domain.service.MiraTenantContextManager;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
@@ -56,6 +60,7 @@ public class MiraApiController {
     private final MiraRbacAdapter rbacAdapter;
     private final MiraAuditService auditService;
     private final MiraTenantContextManager tenantContextManager;
+    private final MiraExportService exportService;
     
     // ========================================
     // Chat Endpoints
@@ -371,6 +376,59 @@ public class MiraApiController {
         }
     }
     
+    @PutMapping("/conversation/update-title")
+    @Operation(
+        summary = "会話タイトル更新",
+        description = "会話のタイトルを手動で更新します。"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = MiraUpdateTitleApiResponse.class),
+                examples = @ExampleObject(
+                    name = "成功例",
+                    value = """
+                    {
+                      "data": {
+                        "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "新しいタイトル",
+                        "success": true
+                      },
+                      "errors": []
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(responseCode = "400", description = "リクエストエラー"),
+        @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraUpdateTitleApiResponse> updateTitle(
+        @RequestBody ApiRequest<UpdateTitleRequest> request) {
+        
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            
+            UpdateTitleRequest titleRequest = request.getModel();
+            UpdateTitleResponse response = chatService.updateTitle(titleRequest, tenantId, userId);
+            
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(MiraUpdateTitleApiResponse.success(response));
+            } else {
+                return ResponseEntity.ok(MiraUpdateTitleApiResponse.error(response.getErrorMessage()));
+            }
+            
+        } catch (Exception e) {
+            log.error("タイトル更新処理エラー", e);
+            return ResponseEntity.internalServerError()
+                .body(MiraUpdateTitleApiResponse.error("タイトル更新中にエラーが発生しました"));
+        }
+    }
+    
     // ========================================
     // User Context Endpoints
     // ========================================
@@ -470,6 +528,89 @@ public class MiraApiController {
     }
     
     // ========================================
+    // Export Endpoints
+    // ========================================
+    
+    @GetMapping("/export")
+    @Operation(
+        summary = "ユーザーデータエクスポート",
+        description = "現在のユーザーの会話履歴とユーザーコンテキストをすべてエクスポートします。"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = MiraExportApiResponse.class),
+                examples = @ExampleObject(
+                    name = "成功例",
+                    value = """
+                    {
+                      "data": {
+                        "metadata": {
+                          "exportedAt": "2025-12-07T10:00:00Z",
+                          "userId": "user123",
+                          "tenantId": "tenant1",
+                          "conversationCount": 5,
+                          "totalMessageCount": 42,
+                          "version": "1.0"
+                        },
+                        "conversations": [...],
+                        "userContext": {
+                          "terminology": "...",
+                          "style": "...",
+                          "workflow": "..."
+                        }
+                      },
+                      "errors": []
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(responseCode = "401", description = "認証エラー"),
+        @ApiResponse(responseCode = "403", description = "権限エラー"),
+        @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraExportApiResponse> exportUserData() {
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+            
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                log.warn("Mira エクスポートアクセス拒否: tenantId={}, userId={}, role={}", 
+                    tenantId, userId, systemRole);
+                return ResponseEntity.status(403)
+                    .body(MiraExportApiResponse.error("Mira の利用権限がありません"));
+            }
+            
+            log.info("[MiraApi] Starting export for user: userId={}", userId);
+            
+            // エクスポート実行
+            ExportDataResponse exportData = exportService.exportUserData(tenantId, userId);
+            
+            log.info("[MiraApi] Export completed: userId={}, conversations={}, messages={}",
+                userId, exportData.metadata().conversationCount(), exportData.metadata().totalMessageCount());
+            
+            return ResponseEntity.ok(MiraExportApiResponse.success(exportData));
+            
+        } catch (Exception e) {
+            log.error("エクスポート処理エラー", e);
+            auditService.logApiError(
+                tenantContextManager.getCurrentTenantId(),
+                tenantContextManager.getCurrentUserId(),
+                "export",
+                e.getMessage()
+            );
+            return ResponseEntity.internalServerError()
+                .body(MiraExportApiResponse.error("エクスポート処理中にエラーが発生しました"));
+        }
+    }
+    
+    // ========================================
     // Response Wrapper Classes
     // ========================================
     
@@ -531,6 +672,25 @@ public class MiraApiController {
     }
     
     /**
+     * タイトル更新 API レスポンス.
+     */
+    @Schema(description = "Mira タイトル更新 API レスポンス")
+    public record MiraUpdateTitleApiResponse(
+        @Schema(description = "レスポンスデータ")
+        UpdateTitleResponse data,
+        @Schema(description = "エラーメッセージリスト")
+        java.util.List<String> errors
+    ) {
+        public static MiraUpdateTitleApiResponse success(UpdateTitleResponse data) {
+            return new MiraUpdateTitleApiResponse(data, java.util.List.of());
+        }
+        
+        public static MiraUpdateTitleApiResponse error(String message) {
+            return new MiraUpdateTitleApiResponse(null, java.util.List.of(message));
+        }
+    }
+    
+    /**
      * ユーザーコンテキスト API レスポンス.
      */
     @Schema(description = "Mira ユーザーコンテキスト API レスポンス")
@@ -561,4 +721,23 @@ public class MiraApiController {
         @Schema(description = "ワークフローコンテキスト")
         String workflow
     ) {}
+    
+    /**
+     * エクスポート API レスポンス.
+     */
+    @Schema(description = "Mira エクスポート API レスポンス")
+    public record MiraExportApiResponse(
+        @Schema(description = "レスポンスデータ")
+        ExportDataResponse data,
+        @Schema(description = "エラーメッセージリスト")
+        java.util.List<String> errors
+    ) {
+        public static MiraExportApiResponse success(ExportDataResponse data) {
+            return new MiraExportApiResponse(data, java.util.List.of());
+        }
+        
+        public static MiraExportApiResponse error(String message) {
+            return new MiraExportApiResponse(null, java.util.List.of(message));
+        }
+    }
 }
