@@ -287,8 +287,16 @@ public class StencilEditorServiceImp implements StencilEditorService {
         Yaml yaml = new Yaml();
 
         // userレイヤーから履歴を取得
+        // userレイヤーから履歴を取得
         String userDir = StorageConfig.getUserStencilDir();
-        Path categoryPath = Paths.get(userDir, stencilId);
+        Path baseUserPath = Paths.get(userDir).toAbsolutePath().normalize();
+        Path categoryPath = baseUserPath.resolve(stencilId).toAbsolutePath().normalize();
+
+        // Path injection対策
+        if (!categoryPath.startsWith(baseUserPath)) {
+            logger.warn("Invalid path traversal attempt in loadVersionHistory: stencilId={}", stencilId);
+            return new ArrayList<>();
+        }
 
         if (Files.exists(categoryPath)) {
             try {
