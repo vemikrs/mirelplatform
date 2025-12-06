@@ -81,8 +81,9 @@ public class MiraChatService {
         // 5. 会話履歴取得
         List<AiRequest.Message> history = loadConversationHistory(conversation.getId());
         
-        // 6. プロンプト構築
-        AiRequest aiRequest = promptBuilder.buildChatRequest(request, mode, history);
+        // 6. プロンプト構築（コンテキストレイヤーを反映）
+        AiRequest aiRequest = promptBuilder.buildChatRequest(
+            request, mode, history, tenantId, null, userId);
         
         // 7. AI 呼び出し
         AiProviderClient client = aiProviderFactory.getProvider();

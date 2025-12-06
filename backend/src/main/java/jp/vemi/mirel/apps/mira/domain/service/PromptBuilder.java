@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,7 +25,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PromptBuilder {
+    
+    private final MiraContextLayerService contextLayerService;
     
     /** Mustache プレースホルダーパターン */
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{(\\w+)}}");
@@ -44,10 +48,42 @@ public class PromptBuilder {
             ChatRequest request,
             MiraMode mode,
             List<AiRequest.Message> conversationHistory) {
+        return buildChatRequest(request, mode, conversationHistory, null, null, null);
+    }
+    
+    /**
+     * チャットリクエストからAIリクエストを構築（コンテキストレイヤー対応）.
+     *
+     * @param request チャットリクエスト
+     * @param mode 動作モード
+     * @param conversationHistory 会話履歴（古い順）
+     * @param tenantId テナントID（コンテキスト取得用）
+     * @param organizationId 組織ID（コンテキスト取得用、nullable）
+     * @param userId ユーザーID（コンテキスト取得用）
+     * @return AIリクエスト
+     */
+    public AiRequest buildChatRequest(
+            ChatRequest request,
+            MiraMode mode,
+            List<AiRequest.Message> conversationHistory,
+            String tenantId,
+            String organizationId,
+            String userId) {
         
         PromptTemplate template = PromptTemplate.fromMode(mode);
         Map<String, String> variables = buildContextVariables(request);
         String systemPrompt = renderTemplate(template.getSystemPrompt(), variables);
+        
+        // ユーザーコンテキストレイヤーを追加
+        if (tenantId != null && userId != null) {
+            String contextAddition = contextLayerService.buildContextPromptAddition(
+                    tenantId, organizationId, userId);
+            if (contextAddition != null && !contextAddition.isEmpty()) {
+                systemPrompt = systemPrompt + contextAddition;
+                log.debug("[PromptBuilder] Added context layer to system prompt: {} chars",
+                        contextAddition.length());
+            }
+        }
         
         List<AiRequest.Message> messages = new ArrayList<>();
         messages.add(AiRequest.Message.system(systemPrompt));
