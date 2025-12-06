@@ -5,7 +5,7 @@
  * スライドインドロワーとして使用される
  */
 import { useState } from 'react';
-import { cn, Button, ScrollArea, Input } from '@mirel/ui';
+import { cn, Button, ScrollArea, Input, toast } from '@mirel/ui';
 import { 
   Bot, 
   MessageSquarePlus, 
@@ -20,6 +20,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import type { MiraConversation } from '@/stores/miraStore';
+import { MiraDeleteConfirmDialog } from './MiraDeleteConfirmDialog';
 
 interface MiraConversationListProps {
   conversations: MiraConversation[];
@@ -39,6 +40,7 @@ export function MiraConversationList({
   onClose,
 }: MiraConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   
   // 会話をフィルタリング
   const filteredConversations = conversations.filter((conv) => {
@@ -117,7 +119,10 @@ export function MiraConversationList({
                       conversation={conv}
                       isActive={activeConversationId === conv.id}
                       onSelect={() => onSelect(conv.id)}
-                      onDelete={() => onDelete(conv.id)}
+                      onDelete={() => {
+                        const title = getConversationTitle(conv);
+                        setDeleteTarget({ id: conv.id, title });
+                      }}
                     />
                   ))}
                 </div>
@@ -125,8 +130,26 @@ export function MiraConversationList({
             ))
           )}
         </div>
-      </ScrollArea>
-    </div>
+      </ScrollArea>      
+      {/* 削除確認ダイアログ */}
+      <MiraDeleteConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) {
+            const title = deleteTarget.title;
+            onDelete(deleteTarget.id);
+            setDeleteTarget(null);
+            toast({
+              title: '成功',
+              description: `「${title}」を削除しました`,
+            });
+          }
+        }}
+        title="会話を削除しますか?"
+        description={deleteTarget ? `「${deleteTarget.title}」を削除します。この操作は取り消せません。` : ''}
+        confirmLabel="削除"
+      />    </div>
   );
 }
 
