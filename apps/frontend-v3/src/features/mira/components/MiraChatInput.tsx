@@ -1,22 +1,22 @@
 /**
  * Mira Chat Input Component
  * 
- * メッセージ入力フォーム + ショートカットボタン
+ * メッセージ入力フォーム + @メンション風モード選択
  */
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { Button, cn } from '@mirel/ui';
-import { Send, Loader2, ChevronDown, ChevronUp, HelpCircle, AlertCircle, Settings, Wrench, GitBranch } from 'lucide-react';
-
-/** ショートカットボタンの定義 */
-const SHORTCUT_BUTTONS = [
-  { id: 'help', label: 'この画面の説明', icon: HelpCircle, mode: 'CONTEXT_HELP' as const },
-  { id: 'error', label: 'エラーを説明', icon: AlertCircle, mode: 'ERROR_ANALYZE' as const },
-  { id: 'settings', label: '設定手順を教えて', icon: Settings, mode: 'CONTEXT_HELP' as const },
-  { id: 'studio', label: 'Studio 設計相談', icon: Wrench, mode: 'STUDIO_AGENT' as const },
-  { id: 'workflow', label: 'Workflow 設計相談', icon: GitBranch, mode: 'WORKFLOW_AGENT' as const },
-] as const;
+import { Send, Loader2, ChevronDown, HelpCircle, AlertTriangle, Paintbrush2, Workflow, MessageSquare } from 'lucide-react';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
+
+/** モード定義 */
+const MODES: { mode: MiraMode; label: string; shortLabel: string; icon: typeof MessageSquare; color: string }[] = [
+  { mode: 'GENERAL_CHAT', label: 'General', shortLabel: 'General', icon: MessageSquare, color: 'text-foreground' },
+  { mode: 'CONTEXT_HELP', label: 'Help - 機能の説明', shortLabel: 'Help', icon: HelpCircle, color: 'text-blue-500' },
+  { mode: 'ERROR_ANALYZE', label: 'Error - エラー分析', shortLabel: 'Error', icon: AlertTriangle, color: 'text-red-500' },
+  { mode: 'STUDIO_AGENT', label: 'Studio - モデル設計', shortLabel: 'Studio', icon: Paintbrush2, color: 'text-purple-500' },
+  { mode: 'WORKFLOW_AGENT', label: 'Workflow - フロー設計', shortLabel: 'Workflow', icon: Workflow, color: 'text-green-500' },
+];
 
 interface MiraChatInputProps {
   onSend: (message: string, mode?: MiraMode) => void;
@@ -25,6 +25,7 @@ interface MiraChatInputProps {
   placeholder?: string;
   className?: string;
   showShortcuts?: boolean;
+  initialMode?: MiraMode;
 }
 
 export function MiraChatInput({
@@ -33,11 +34,13 @@ export function MiraChatInput({
   disabled = false,
   placeholder = 'メッセージを入力...',
   className,
-  showShortcuts = true,
+  initialMode = 'GENERAL_CHAT',
 }: MiraChatInputProps) {
   const [message, setMessage] = useState('');
-  const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
+  const [showModeMenu, setShowModeMenu] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   
   // 自動リサイズ
   useEffect(() => {
@@ -48,24 +51,31 @@ export function MiraChatInput({
     }
   }, [message]);
   
-  const handleSend = (overrideMessage?: string, mode?: MiraMode) => {
-    const trimmed = (overrideMessage ?? message).trim();
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowModeMenu(false);
+      }
+    };
+    if (showModeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showModeMenu]);
+  
+  const handleSend = () => {
+    const trimmed = message.trim();
     if (trimmed && !isLoading && !disabled) {
-      onSend(trimmed, mode);
+      onSend(trimmed, selectedMode);
       setMessage('');
     }
   };
   
-  const handleShortcut = (shortcut: typeof SHORTCUT_BUTTONS[number]) => {
-    // ショートカットボタンに対応するメッセージを送信
-    const shortcutMessages: Record<string, string> = {
-      help: 'この画面について説明してください',
-      error: '発生したエラーについて説明してください',
-      settings: 'この機能の設定手順を教えてください',
-      studio: 'Studio での設計について相談させてください',
-      workflow: 'ワークフローの設計について相談させてください',
-    };
-    handleSend(shortcutMessages[shortcut.id], shortcut.mode);
+  const handleModeSelect = (mode: MiraMode) => {
+    setSelectedMode(mode);
+    setShowModeMenu(false);
+    textareaRef.current?.focus();
   };
   
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -74,81 +84,106 @@ export function MiraChatInput({
       e.preventDefault();
       handleSend();
     }
-    // Shift + Enter は改行（デフォルト動作）
-    // Enter のみは送信
+    // Enter のみは送信（Shift + Enter は改行）
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       handleSend();
     }
+    // @ でモードメニューを開く
+    if (e.key === '@' && message === '') {
+      e.preventDefault();
+      setShowModeMenu(true);
+    }
+    // Escape でメニューを閉じる
+    if (e.key === 'Escape' && showModeMenu) {
+      setShowModeMenu(false);
+    }
   };
   
+  const currentModeConfig = MODES.find(m => m.mode === selectedMode) ?? MODES[0];
+  const CurrentIcon = currentModeConfig.icon;
+  
   return (
-    <div className={cn('border-t bg-background', className)}>
-      {/* ショートカットボタン */}
-      {showShortcuts && (
-        <div className="px-3 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShortcutsExpanded(!shortcutsExpanded)}
-            className="h-6 px-2 text-xs text-muted-foreground"
+    <div className={cn('bg-background', className)}>
+      {/* メッセージ入力エリア */}
+      <div className="relative p-3">
+        {/* モード選択メニュー */}
+        {showModeMenu && (
+          <div 
+            ref={menuRef}
+            className="absolute bottom-full left-3 mb-2 w-56 py-1 bg-popover border rounded-lg shadow-lg z-50"
           >
-            ショートカット
-            {shortcutsExpanded ? (
-              <ChevronUp className="ml-1 w-3 h-3" />
+            <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              モードを選択
+            </p>
+            {MODES.map(({ mode, label, icon: Icon, color }) => (
+              <button
+                key={mode}
+                onClick={() => handleModeSelect(mode)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
+                  selectedMode === mode && "bg-muted"
+                )}
+              >
+                <Icon className={cn("w-4 h-4", color)} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex items-end gap-2">
+          {/* モード選択ボタン */}
+          <button
+            onClick={() => setShowModeMenu(!showModeMenu)}
+            className={cn(
+              "flex items-center gap-1 px-2 py-1.5 text-xs rounded-md border",
+              "hover:bg-muted transition-colors shrink-0",
+              currentModeConfig.color
+            )}
+            title="モードを変更 (@)"
+          >
+            <CurrentIcon className="w-3.5 h-3.5" />
+            <span>{currentModeConfig.shortLabel}</span>
+            <ChevronDown className="w-3 h-3 opacity-50" />
+          </button>
+          
+          {/* テキストエリア */}
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={isLoading || disabled}
+            rows={1}
+            className={cn(
+              'flex-1 resize-none rounded-md border border-input bg-background px-3 py-2',
+              'text-sm placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'disabled:cursor-not-allowed disabled:opacity-50'
+            )}
+          />
+          
+          {/* 送信ボタン */}
+          <Button
+            onClick={handleSend}
+            disabled={!message.trim() || isLoading || disabled}
+            size="icon"
+            className="shrink-0"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <ChevronDown className="ml-1 w-3 h-3" />
+              <Send className="w-4 h-4" />
             )}
           </Button>
-          {shortcutsExpanded && (
-            <div className="flex flex-wrap gap-1 mt-1 pb-1">
-              {SHORTCUT_BUTTONS.map((shortcut) => (
-                <Button
-                  key={shortcut.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleShortcut(shortcut)}
-                  disabled={isLoading || disabled}
-                  className="h-7 px-2 text-xs"
-                >
-                  <shortcut.icon className="w-3 h-3 mr-1" />
-                  {shortcut.label}
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
-      )}
-      
-      {/* メッセージ入力エリア */}
-      <div className="flex gap-2 p-3">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isLoading || disabled}
-          rows={1}
-          className={cn(
-            'flex-1 resize-none rounded-md border border-input bg-background px-3 py-2',
-            'text-sm placeholder:text-muted-foreground',
-            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-            'disabled:cursor-not-allowed disabled:opacity-50'
-          )}
-        />
-        <Button
-          onClick={() => handleSend()}
-          disabled={!message.trim() || isLoading || disabled}
-          size="icon"
-          className="flex-shrink-0"
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </Button>
+        
+        {/* ヒント表示 */}
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          Enter で送信 • Shift+Enter で改行 • @ でモード選択
+        </p>
       </div>
     </div>
   );
