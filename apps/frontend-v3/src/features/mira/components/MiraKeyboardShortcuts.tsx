@@ -12,14 +12,42 @@ interface MiraKeyboardShortcutsProps {
   onClose: () => void;
 }
 
-const SHORTCUTS = [
-  { keys: ['Enter'], description: 'メッセージを送信' },
-  { keys: ['Shift', 'Enter'], description: '改行を挿入' },
-  { keys: ['@'], description: 'モードを選択' },
-  { keys: ['⌘/Ctrl', 'H'], description: '会話履歴を開く' },
-  { keys: ['⌘/Ctrl', 'N'], description: '新しい会話' },
-  { keys: ['Esc'], description: 'メニュー/ダイアログを閉じる' },
-  { keys: ['?'], description: 'ショートカット一覧を表示' },
+// ショートカットをカテゴリ別に整理
+const SHORTCUT_CATEGORIES = [
+  {
+    category: '入力',
+    shortcuts: [
+      { keys: ['Enter'], description: 'メッセージを送信' },
+      { keys: ['Shift', 'Enter'], description: '改行を挿入' },
+      { keys: ['@'], description: 'モードを選択' },
+      { keys: ['↑', '↓'], description: '入力履歴をナビゲート' },
+    ],
+  },
+  {
+    category: 'ナビゲーション',
+    shortcuts: [
+      { keys: ['N'], description: '入力欄にフォーカス' },
+      { keys: ['J'], description: '次のメッセージへ' },
+      { keys: ['K'], description: '前のメッセージへ' },
+      { keys: ['G', 'G'], description: '最初のメッセージへ' },
+      { keys: ['G', 'E'], description: '最新のメッセージへ' },
+    ],
+  },
+  {
+    category: '会話',
+    shortcuts: [
+      { keys: ['⌘/Ctrl', 'H'], description: '会話履歴を開く' },
+      { keys: ['⌘/Ctrl', 'N'], description: '新しい会話' },
+      { keys: ['C'], description: 'メッセージをコピー' },
+    ],
+  },
+  {
+    category: 'その他',
+    shortcuts: [
+      { keys: ['Esc'], description: 'メニュー/ダイアログを閉じる' },
+      { keys: ['?'], description: 'ショートカット一覧を表示' },
+    ],
+  },
 ];
 
 export function MiraKeyboardShortcuts({ isOpen, onClose }: MiraKeyboardShortcutsProps) {
@@ -62,29 +90,38 @@ export function MiraKeyboardShortcuts({ isOpen, onClose }: MiraKeyboardShortcuts
           </button>
         </div>
         
-        {/* ショートカット一覧 */}
-        <div className="p-4 space-y-3">
-          {SHORTCUTS.map(({ keys, description }) => (
-            <div 
-              key={description}
-              className="flex items-center justify-between"
-            >
-              <span className="text-sm text-muted-foreground">{description}</span>
-              <div className="flex items-center gap-1">
-                {keys.map((key, i) => (
-                  <span key={i} className="flex items-center gap-1">
-                    <kbd
-                      className={cn(
-                        "px-2 py-1 text-xs font-mono",
-                        "bg-muted border rounded shadow-sm"
-                      )}
-                    >
-                      {key}
-                    </kbd>
-                    {i < keys.length - 1 && (
-                      <span className="text-muted-foreground text-xs">+</span>
-                    )}
-                  </span>
+        {/* ショートカット一覧 - カテゴリ別 */}
+        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {SHORTCUT_CATEGORIES.map(({ category, shortcuts }) => (
+            <div key={category}>
+              <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
+                {category}
+              </h3>
+              <div className="space-y-2">
+                {shortcuts.map(({ keys, description }) => (
+                  <div 
+                    key={description}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-sm text-muted-foreground">{description}</span>
+                    <div className="flex items-center gap-1">
+                      {keys.map((key, i) => (
+                        <span key={i} className="flex items-center gap-1">
+                          <kbd
+                            className={cn(
+                              "px-2 py-1 text-xs font-mono",
+                              "bg-muted border rounded shadow-sm"
+                            )}
+                          >
+                            {key}
+                          </kbd>
+                          {i < keys.length - 1 && (
+                            <span className="text-muted-foreground text-xs">+</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

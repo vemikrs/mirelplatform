@@ -62,12 +62,27 @@ export function MiraPage() {
   const currentMode = activeConversation?.mode ?? 'GENERAL_CHAT';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  
+  // 現在選択中のメッセージインデックス（j/kナビゲーション用）
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState(-1);
+  
+  // 連続キー入力の追跡（gg, ge用）
+  const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   
   // 新規会話作成ハンドラ（useEffectより前に定義）
   const handleNewConversation = useCallback(() => {
     newConversation();
     setIsDrawerOpen(false);
   }, [newConversation]);
+  
+  // 選択中メッセージへスクロール
+  const scrollToMessage = useCallback((index: number) => {
+    if (messages[index]) {
+      const messageEl = messageRefs.current.get(messages[index].id);
+      messageEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [messages]);
   
   // グローバルキーボードショートカット
   useEffect(() => {
@@ -78,33 +93,113 @@ export function MiraPage() {
         return;
       }
       
+      const now = Date.now();
+      
       // ? でショートカット一覧を表示
       if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setShowKeyboardShortcuts(true);
+        return;
       }
       
       // ⌘/Ctrl + H で会話履歴を開く
       if (e.key === 'h' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         setIsDrawerOpen((prev) => !prev);
+        return;
       }
       
       // ⌘/Ctrl + N で新規会話
       if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         handleNewConversation();
+        return;
       }
       
-      // Escape でドロワーを閉じる
+      // n で入力欄にフォーカス（Ctrl/Cmdなし）
+      if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        // MiraChatInput内のtextareaにフォーカス
+        const textarea = document.querySelector('.mira-chat-input textarea') as HTMLTextAreaElement;
+        textarea?.focus();
+        return;
+      }
+      
+      // j で次のメッセージへ
+      if (e.key === 'j' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (messages.length > 0) {
+          const newIndex = Math.min(selectedMessageIndex + 1, messages.length - 1);
+          setSelectedMessageIndex(newIndex);
+          scrollToMessage(newIndex);
+        }
+        lastKeyRef.current = { key: 'j', time: now };
+        return;
+      }
+      
+      // k で前のメッセージへ
+      if (e.key === 'k' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (messages.length > 0) {
+          const newIndex = Math.max(selectedMessageIndex - 1, 0);
+          setSelectedMessageIndex(newIndex);
+          scrollToMessage(newIndex);
+        }
+        lastKeyRef.current = { key: 'k', time: now };
+        return;
+      }
+      
+      // g + g で最初のメッセージへ（500ms以内の連続押下）
+      if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+        if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
+          e.preventDefault();
+          setSelectedMessageIndex(0);
+          scrollToMessage(0);
+          lastKeyRef.current = { key: '', time: 0 };
+        } else {
+          lastKeyRef.current = { key: 'g', time: now };
+        }
+        return;
+      }
+      
+      // g + e で最後のメッセージへ（500ms以内）
+      if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
+        if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
+          e.preventDefault();
+          const lastIndex = messages.length - 1;
+          setSelectedMessageIndex(lastIndex);
+          scrollToMessage(lastIndex);
+          lastKeyRef.current = { key: '', time: 0 };
+        } else {
+          lastKeyRef.current = { key: 'e', time: now };
+        }
+        return;
+      }
+      
+      // c で選択中メッセージをコピー
+      if (e.key === 'c' && !e.ctrlKey && !e.metaKey && selectedMessageIndex >= 0) {
+        e.preventDefault();
+        const msg = messages[selectedMessageIndex];
+        if (msg) {
+          navigator.clipboard.writeText(msg.content);
+        }
+        return;
+      }
+      
+      // Escape でドロワーを閉じる / メッセージ選択解除
       if (e.key === 'Escape') {
-        if (isDrawerOpen) setIsDrawerOpen(false);
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false);
+        } else if (selectedMessageIndex >= 0) {
+          setSelectedMessageIndex(-1);
+        }
+        return;
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen, handleNewConversation]);
+  }, [isDrawerOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage]);
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -256,8 +351,16 @@ export function MiraPage() {
               <MiraEmptyState onSendMessage={handleSend} currentMode={currentMode} />
             ) : (
               <>
-                {messages.map((message) => (
-                  <MiraChatMessage key={message.id} message={message} />
+                {messages.map((message, index) => (
+                  <div
+                    key={message.id}
+                    ref={(el) => {
+                      if (el) messageRefs.current.set(message.id, el);
+                    }}
+                    className={selectedMessageIndex === index ? 'ring-2 ring-primary/50 rounded-lg' : ''}
+                  >
+                    <MiraChatMessage message={message} />
+                  </div>
                 ))}
                 <div ref={messagesEndRef} />
               </>
@@ -272,6 +375,7 @@ export function MiraPage() {
               onSend={handleSend}
               isLoading={isLoading}
               placeholder="メッセージを入力... (Enter で送信)"
+              className="mira-chat-input"
             />
           </div>
         </div>
