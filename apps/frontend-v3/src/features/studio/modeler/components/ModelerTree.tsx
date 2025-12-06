@@ -36,15 +36,13 @@ export const ModelerTree: React.FC<{ className?: string }> = ({ className }) => 
         ]);
         
         // Transform API response to TreeNodes
-        // modelerApi.listModels returns { data: { modelers: SchDicModel[] } } ?? Need to verify response structure
-        // Based on modelerApi.ts, it returns Promise<SchemaApiResponse> which is any.
-        // Let's assume structure based on usage in DataBrowserPage: modelerResponse.data.modelers
+        // modelerApi.listModels returns { data: { models: { value: string, text: string }[] } }
         
-        const entities: TreeNode[] = (modelsRes.data?.modelers || []).map((m: any) => ({
-          id: m.modelId,
-          label: m.modelName || m.modelId,
+        const entities: TreeNode[] = (modelsRes.data?.models || []).map((m: any) => ({
+          id: m.value,
+          label: m.text,
           type: 'entity',
-          path: `/apps/studio/modeler/entities/${m.modelId}`
+          path: `/apps/studio/modeler/entities/${m.value}`
         }));
 
         const codes: TreeNode[] = (codesRes.data?.groups || []).map((c: any) => ({

@@ -33,7 +33,6 @@ import { ProtectedRoute } from '@/components/auth';
 import { ForbiddenPage, NotFoundPage, InternalServerErrorPage } from '@/features/error';
 import { loadNavigationConfig } from './navigation.schema';
 import ProfilePage from '@/app/settings/profile/page';
-import SecurityPage from '@/app/settings/security/page';
 import { ModelerCodeMasterPage } from '@/features/studio/modeler/pages/ModelerCodeMasterPage';
 import { ModelerHomePage } from '@/features/studio/modeler/pages/ModelerHomePage';
 import { StudioHomePage } from '@/features/studio/pages/StudioHomePage';
@@ -239,10 +238,7 @@ export const router = createBrowserRouter([
             path: 'settings/profile',
             element: <ProfilePage />,
           },
-          {
-            path: 'settings/security',
-            element: <SecurityPage />,
-          },
+
           // Admin routes - Platform Management (requires ADMIN role)
           {
             path: 'admin/platform/tenants',

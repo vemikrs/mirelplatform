@@ -44,6 +44,9 @@ public class StuModelHeader {
     @Column(name = "model_type")
     private String modelType;
 
+    @Column(name = "model_category")
+    private String modelCategory;
+
     @Column(name = "tenant_id", nullable = false)
     private String tenantId;
 

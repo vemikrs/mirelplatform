@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/auth/login.page';
 
-test.describe.skip('Studio Seeded Data', () => {
+test.describe('Studio Seeded Data', () => {
     test.beforeEach(async ({ page }) => {
         const loginPage = new LoginPage(page);
         await loginPage.goto();

@@ -22,6 +22,12 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
    * フォールバック文字（画像がない場合に表示）
    */
   fallback?: string;
+  
+  /**
+   * 画像の読み込み方法
+   * @default 'lazy'
+   */
+  loading?: "eager" | "lazy";
 }
 
 const sizeClasses = {
@@ -71,6 +77,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             )}
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
+            loading={props.loading}
           />
         )}
         
