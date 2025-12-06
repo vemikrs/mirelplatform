@@ -20,11 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ModeResolver {
 
-    // 意図推定パターン
+    // 意図推定パターン (ReDoS 対策: .* を .*? に変更し、文字数制限を追加)
     private static final Map<MiraMode, Pattern[]> INTENT_PATTERNS = Map.of(
             MiraMode.CONTEXT_HELP, new Pattern[] {
-                    Pattern.compile("この画面.*(?:説明|教え|何)", Pattern.CASE_INSENSITIVE),
-                    Pattern.compile("(?:how|what).*(?:screen|page)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("この画面.{0,50}?(?:説明|教え|何)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?:how|what).{0,50}?(?:screen|page)", Pattern.CASE_INSENSITIVE),
                     Pattern.compile("(?:使い方|操作方法|機能)", Pattern.CASE_INSENSITIVE)
             },
             MiraMode.ERROR_ANALYZE, new Pattern[] {
@@ -33,8 +33,8 @@ public class ModeResolver {
                     Pattern.compile("(?:動かない|うまくいかない|できない)", Pattern.CASE_INSENSITIVE)
             },
             MiraMode.STUDIO_AGENT, new Pattern[] {
-                    Pattern.compile("(?:モデル|エンティティ|フィールド).*(?:作成|追加|編集)", Pattern.CASE_INSENSITIVE),
-                    Pattern.compile("(?:ステンシル|テンプレート).*(?:生成|作成)", Pattern.CASE_INSENSITIVE)
+                    Pattern.compile("(?:モデル|エンティティ|フィールド).{0,30}?(?:作成|追加|編集)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?:ステンシル|テンプレート).{0,30}?(?:生成|作成)", Pattern.CASE_INSENSITIVE)
             },
             MiraMode.WORKFLOW_AGENT, new Pattern[] {
                     Pattern.compile("(?:ワークフロー|フロー|自動化)", Pattern.CASE_INSENSITIVE),
