@@ -56,4 +56,24 @@ public class ModelController {
         modelService.delete(modelId);
         return ApiResponse.success();
     }
+
+    @PutMapping("/{modelId}/draft")
+    public ApiResponse<Void> updateDraft(
+            @PathVariable String modelId,
+            @RequestBody jp.vemi.mirel.apps.studio.domain.service.ModelService.UpdateDraftRequest request) {
+        modelService.updateDraft(modelId, request);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{modelId}/publish")
+    public ApiResponse<Void> publish(@PathVariable String modelId) {
+        modelService.publish(modelId);
+        return ApiResponse.success();
+    }
+
+    @DeleteMapping("/{modelId}/draft")
+    public ApiResponse<Void> discardDraft(@PathVariable String modelId) {
+        modelService.discardDraft(modelId);
+        return ApiResponse.success();
+    }
 }

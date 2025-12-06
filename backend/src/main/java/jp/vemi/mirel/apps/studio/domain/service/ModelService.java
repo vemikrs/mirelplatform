@@ -16,6 +16,10 @@ import lombok.RequiredArgsConstructor;
 /**
  * Service for managing Studio Models (REST).
  */
+import jp.vemi.mirel.apps.studio.domain.dao.entity.StuRelease;
+import jp.vemi.mirel.apps.studio.domain.service.ReleaseService;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class ModelService {
@@ -23,6 +27,7 @@ public class ModelService {
     private final StuModelService stuModelService;
     private final StuModelHeaderRepository modelHeaderRepository;
     private final FlowManageService flowManageService;
+    private final ReleaseService releaseService;
 
     /**
      * Search models.
@@ -105,6 +110,57 @@ public class ModelService {
 
         stuModelService.saveHeader(header);
         return header;
+    }
+
+    /**
+     * Update draft (Fields/Flows).
+     * 
+     * @param modelId
+     *            Model ID
+     * @param request
+     *            Update request
+     */
+    @Transactional
+    public void updateDraft(String modelId, UpdateDraftRequest request) {
+        if (request.fields() != null) {
+            // Manual field replacement
+            stuModelService.updateDraft(modelId, request.headerName(), request.headerDescription(), request.fields());
+        }
+    }
+
+    /**
+     * Publish model.
+     * 
+     * @param modelId
+     *            Model ID
+     */
+    @Transactional
+    public void publish(String modelId) {
+        releaseService.createRelease(modelId);
+        // Update header status
+        StuModelHeader header = stuModelService.findHeader(modelId);
+        header.setStatus("PUBLISHED");
+        stuModelService.saveHeader(header);
+    }
+
+    /**
+     * Discard draft (Restore from Release).
+     * 
+     * @param modelId
+     *            Model ID
+     */
+    @Transactional
+    public void discardDraft(String modelId) {
+        // Find latest release
+        List<StuRelease> releases = releaseService.getReleases(modelId);
+        if (releases.isEmpty()) {
+            throw new IllegalStateException("No release found to restore from.");
+        }
+        // StuRelease latest = releases.get(0);
+        // Restore from snapshot (TODO: Implement logic)
+    }
+
+    public record UpdateDraftRequest(String headerName, String headerDescription, List<StuModel> fields) {
     }
 
     /**
