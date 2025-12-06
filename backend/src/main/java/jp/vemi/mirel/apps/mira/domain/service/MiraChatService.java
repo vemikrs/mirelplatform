@@ -20,8 +20,10 @@ import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraMessageRepository;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
+import jp.vemi.mirel.apps.mira.domain.dto.request.GenerateTitleRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.GenerateTitleResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
@@ -216,6 +218,86 @@ public class MiraChatService {
                 .isPresent();
         } catch (IllegalArgumentException e) {
             return false;
+        }
+    }
+    
+    /**
+     * 会話タイトルを AI で生成.
+     * 
+     * @param request タイトル生成リクエスト
+     * @param tenantId テナントID
+     * @param userId ユーザーID
+     * @return 生成されたタイトル
+     */
+    public GenerateTitleResponse generateTitle(GenerateTitleRequest request, String tenantId, String userId) {
+        try {
+            // 会話履歴からプロンプト生成
+            StringBuilder conversationSummary = new StringBuilder();
+            for (GenerateTitleRequest.MessageSummary msg : request.getMessages()) {
+                String role = "user".equals(msg.getRole()) ? "ユーザー" : "アシスタント";
+                String content = msg.getContent();
+                // 長すぎるメッセージは切り詰め
+                if (content.length() > 200) {
+                    content = content.substring(0, 200) + "...";
+                }
+                conversationSummary.append(role).append(": ").append(content).append("\n");
+            }
+            
+            // タイトル生成用プロンプト
+            String prompt = """
+                以下の会話内容を要約し、会話のタイトルを生成してください。
+                
+                要件:
+                - タイトルは15文字以内の簡潔な日本語
+                - 会話の主題や目的を端的に表現
+                - 絵文字や記号は使用しない
+                - タイトルのみを出力（説明や装飾は不要）
+                
+                会話内容:
+                %s
+                """.formatted(conversationSummary.toString());
+            
+            // AI 呼び出し
+            AiRequest aiRequest = AiRequest.builder()
+                .messages(List.of(
+                    AiRequest.Message.builder()
+                        .role("user")
+                        .content(prompt)
+                        .build()
+                ))
+                .maxTokens(50)
+                .temperature(0.3)
+                .build();
+            
+            AiProviderClient client = aiProviderFactory.getProvider();
+            AiResponse aiResponse = client.chat(aiRequest);
+            
+            if (!aiResponse.isSuccess()) {
+                log.warn("タイトル生成失敗: {}", aiResponse.getErrorMessage());
+                return GenerateTitleResponse.error(request.getConversationId(), 
+                    "タイトル生成に失敗しました");
+            }
+            
+            // タイトル整形（余計な改行や空白を除去）
+            String title = aiResponse.getContent()
+                .trim()
+                .replaceAll("[\r\n]+", "")
+                .replaceAll("^[「『]|[」』]$", "");  // 括弧があれば除去
+            
+            // 15文字を超える場合は切り詰め
+            if (title.length() > 15) {
+                title = title.substring(0, 14) + "…";
+            }
+            
+            log.debug("タイトル生成完了: conversationId={}, title={}", 
+                request.getConversationId(), title);
+            
+            return GenerateTitleResponse.success(request.getConversationId(), title);
+            
+        } catch (Exception e) {
+            log.error("タイトル生成エラー: conversationId={}", request.getConversationId(), e);
+            return GenerateTitleResponse.error(request.getConversationId(), 
+                "タイトル生成中にエラーが発生しました");
         }
     }
     

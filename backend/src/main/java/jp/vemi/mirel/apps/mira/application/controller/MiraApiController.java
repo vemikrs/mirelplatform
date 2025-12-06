@@ -25,8 +25,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ErrorReportRequest;
+import jp.vemi.mirel.apps.mira.domain.dto.request.GenerateTitleRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
+import jp.vemi.mirel.apps.mira.domain.dto.response.GenerateTitleResponse;
 import jp.vemi.mirel.apps.mira.domain.service.MiraAuditService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraChatService;
 import jp.vemi.mirel.apps.mira.domain.service.MiraRbacAdapter;
@@ -308,6 +310,63 @@ public class MiraApiController {
     }
     
     // ========================================
+    // Title Generation Endpoints
+    // ========================================
+    
+    @PostMapping("/conversation/generate-title")
+    @Operation(
+        summary = "会話タイトル生成",
+        description = "会話内容を AI が分析し、適切なタイトルを生成します。"
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "成功",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = MiraTitleApiResponse.class),
+                examples = @ExampleObject(
+                    name = "成功例",
+                    value = """
+                    {
+                      "data": {
+                        "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "ステンシル作成の質問",
+                        "success": true
+                      },
+                      "errors": []
+                    }
+                    """
+                )
+            )
+        ),
+        @ApiResponse(responseCode = "400", description = "リクエストエラー"),
+        @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraTitleApiResponse> generateTitle(
+        @RequestBody ApiRequest<GenerateTitleRequest> request) {
+        
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            
+            GenerateTitleRequest titleRequest = request.getModel();
+            GenerateTitleResponse response = chatService.generateTitle(titleRequest, tenantId, userId);
+            
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(MiraTitleApiResponse.success(response));
+            } else {
+                return ResponseEntity.ok(MiraTitleApiResponse.error(response.getErrorMessage()));
+            }
+            
+        } catch (Exception e) {
+            log.error("タイトル生成処理エラー", e);
+            return ResponseEntity.internalServerError()
+                .body(MiraTitleApiResponse.error("タイトル生成中にエラーが発生しました"));
+        }
+    }
+    
+    // ========================================
     // Health Check
     // ========================================
     
@@ -363,6 +422,25 @@ public class MiraApiController {
         
         public static MiraSnapshotApiResponse error(String message) {
             return new MiraSnapshotApiResponse(null, java.util.List.of(message));
+        }
+    }
+    
+    /**
+     * タイトル生成 API レスポンス.
+     */
+    @Schema(description = "Mira タイトル生成 API レスポンス")
+    public record MiraTitleApiResponse(
+        @Schema(description = "レスポンスデータ")
+        GenerateTitleResponse data,
+        @Schema(description = "エラーメッセージリスト")
+        java.util.List<String> errors
+    ) {
+        public static MiraTitleApiResponse success(GenerateTitleResponse data) {
+            return new MiraTitleApiResponse(data, java.util.List.of());
+        }
+        
+        public static MiraTitleApiResponse error(String message) {
+            return new MiraTitleApiResponse(null, java.util.List.of(message));
         }
     }
 }
