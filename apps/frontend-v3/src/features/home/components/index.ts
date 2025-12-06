@@ -1,2 +1,2 @@
 export { LicenseSection } from './LicenseSection';
-export { AvailableFeaturesSection, InDevelopmentSection } from './FeatureSection';
+export { UnifiedFeatureSection } from './FeatureSection';

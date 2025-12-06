@@ -113,9 +113,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           currentTenant: response.currentTenant,
           tokens: response.tokens,
         });
-        // Refresh licenses as they might be tenant-specific
-        const licenses = await getUserLicenses();
-        set({ licenses });
+        
+        // テナント切り替え後は権限（ロール）が変わる可能性があるため、
+        // ナビゲーションやアクセス権を確実に再評価するために画面をリロード
+        // authLoaderのキャッシュをクリアして、次回読み込み時に最新状態を取得
+        try {
+          const { clearAuthLoaderCache } = await import('@/app/router.config');
+          clearAuthLoaderCache();
+        } catch (error) {
+          console.warn('Failed to clear authLoader cache', error);
+        }
+        
+        // 現在のページをリロードして権限を再評価
+        window.location.reload();
       },
 
       fetchProfile: async () => {

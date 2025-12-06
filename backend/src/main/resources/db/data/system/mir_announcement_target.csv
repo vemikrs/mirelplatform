@@ -1,0 +1,5 @@
+id,announcement_id,target_type,target_id
+tgt-001,ann-001,ALL,
+tgt-002,ann-002,ALL,
+tgt-003,ann-003,ALL,
+tgt-004,ann-004,TENANT,tenant-default

@@ -29,6 +29,7 @@ import { handleApiError } from '@/lib/utils/error'
  */
 export function useSuggest() {
   return useMutation({
+    retry: 1,
     mutationFn: async (params: SuggestRequest) => {
       const request: ApiRequest<SuggestRequest> = { content: params }
       

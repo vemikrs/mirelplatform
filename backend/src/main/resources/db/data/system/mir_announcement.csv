@@ -1,0 +1,5 @@
+announcement_id,tenant_id,title,content,summary,category,priority,status,publish_at,expire_at,is_pinned,requires_acknowledgment,author_id,created_at,updated_at
+ann-001,,システムメンテナンスのお知らせ,"# システムメンテナンスのお知らせ\n\n2025年12月10日 22:00〜24:00の間、定期メンテナンスを実施します。\nこの間、システムにアクセスできなくなる場合があります。\n\nご不便をおかけしますが、ご理解とご協力をお願いいたします。",定期メンテナンスを実施します,MAINTENANCE,HIGH,PUBLISHED,2025-12-01T00:00:00Z,2025-12-11T00:00:00Z,true,false,admin,2025-12-01T00:00:00Z,2025-12-01T00:00:00Z
+ann-002,,新機能リリース: mirel Studio Beta,"# 新機能リリース\n\nデータモデリング機能を含むmirel Studioのベータ版が利用可能になりました。\n\n## 主な機能\n- データモデリング\n- 画面設計\n- コード生成\n\nぜひお試しください。",mirel Studio Beta版リリース,RELEASE,NORMAL,PUBLISHED,2025-11-28T10:00:00Z,,false,false,admin,2025-11-28T10:00:00Z,2025-11-28T10:00:00Z
+ann-003,,セキュリティアップデート完了,"# セキュリティアップデート\n\n最新のセキュリティパッチを適用しました。\n特に対応いただく必要はありません。",セキュリティパッチ適用完了,INFO,LOW,PUBLISHED,2025-11-25T09:00:00Z,,false,false,admin,2025-11-25T09:00:00Z,2025-11-25T09:00:00Z
+ann-004,tenant-default,テナント管理者からのお知らせ,"# 社内連絡\n\n来週の月曜日は全社ミーティングです。",全社ミーティングのお知らせ,INFO,NORMAL,PUBLISHED,2025-12-02T09:00:00Z,,false,false,tenant-admin,2025-12-02T09:00:00Z,2025-12-02T09:00:00Z

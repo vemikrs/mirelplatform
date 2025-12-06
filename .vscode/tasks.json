@@ -76,7 +76,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -105,7 +105,7 @@
     {
       "label": "Backend: Start WITHOUT Devtools",
       "type": "shell",
-      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -134,7 +134,7 @@
     {
       "label": "Backend: Start with CLEAN_INSERT",
       "type": "shell",
-      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=CLEAN_INSERT'",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=CLEAN_INSERT'",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -163,7 +163,7 @@
     {
       "label": "Backend: Start with UPSERT",
       "type": "shell",
-      "command": "fuser -k 3000/tcp 2>/dev/null || true; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=UPSERT'",
+      "command": "fuser -k 3000/tcp 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=UPSERT'",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {

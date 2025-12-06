@@ -4,13 +4,7 @@
     "shortName": "mirel",
     "tagline": "業務アプリケーション基盤"
   },
-  "primary": [
-    { "id": "home", "label": "ホーム", "path": "/home" },
-    { "id": "promarker", "label": "ProMarker", "path": "/promarker", "description": "コード生成支援" },
-    { "id": "schema", "label": "Schema", "path": "/apps/schema", "description": "スキーマ管理" },
-    { "id": "catalog", "label": "UIカタログ", "path": "/catalog", "description": "UI部品デモ" },
-    { "id": "sitemap", "label": "サイトマップ", "path": "/sitemap", "description": "全機能一覧" }
-  ],
+  "primary": [],
   "secondary": [
     {
       "id": "docs",
@@ -20,62 +14,8 @@
       "badge": { "label": "外部", "tone": "neutral" }
     }
   ],
-  "quickLinks": [
-    { "id": "users", "label": "ユーザ管理", "path": "/users" },
-    { "id": "workflow", "label": "ワークフロー", "path": "/workflow" },
-    { "id": "tenants", "label": "テナント管理", "path": "/tenants" }
-  ],
-  "inDevelopment": [
-    {
-      "id": "saas-status",
-      "label": "SaaS実装状況",
-      "path": "/saas-status",
-      "description": "Phase 1-4 実装進捗確認（開発者向け）",
-      "badge": { "label": "開発中", "tone": "warning" }
-    },
-    {
-      "id": "admin-features",
-      "label": "フィーチャーフラグ管理",
-      "path": "/admin/features",
-      "description": "機能フラグの管理・制御（管理者向け）",
-      "badge": { "label": "新機能", "tone": "success" }
-    },
-    {
-      "id": "ui-system",
-      "label": "@mirel/ui",
-      "path": "/catalog",
-      "description": "デザインシステム - shadcn/ui + Radix UI ベースコンポーネント",
-      "badge": { "label": "稼働中", "tone": "success" }
-    },
-    {
-      "id": "users-tenants",
-      "label": "ユーザ & テナント管理",
-      "path": "/users",
-      "description": "認証・権限・テナントスコープを統合的に設定",
-      "badge": { "label": "準備中", "tone": "info" }
-    },
-    {
-      "id": "themes",
-      "label": "テーマスイッチャ",
-      "path": "/themes",
-      "description": "ブランド毎のテーマ・配色を切り替え",
-      "badge": { "label": "実装中", "tone": "warning" }
-    },
-    {
-      "id": "menu-nav",
-      "label": "メニュー / ナビ集中管理",
-      "path": "/menu",
-      "description": "メニューを集中管理",
-      "badge": { "label": "計画中", "tone": "neutral" }
-    },
-    {
-      "id": "context",
-      "label": "コンテキスト管理",
-      "path": "/context",
-      "description": "利用者・テナント・業務文脈の状態共有",
-      "badge": { "label": "研究中", "tone": "neutral" }
-    }
-  ],
+  "quickLinks": [],
+  "inDevelopment": [],
   "globalActions": [
     { "id": "theme-toggle", "type": "theme" },
     { "id": "notifications", "type": "notifications" },

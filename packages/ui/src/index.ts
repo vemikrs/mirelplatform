@@ -79,6 +79,11 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs'
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './components/Accordion'
 export { Combobox, type ComboboxOption } from './components/combobox'
 export { Avatar, type AvatarProps } from './components/Avatar'
+export { Popover, PopoverTrigger, PopoverContent } from './components/Popover'
+export { Label } from './components/Label'
+export { Textarea } from './components/Textarea'
+export { Switch } from './components/Switch'
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './components/Tooltip'
 
 // Utils
 export { cn } from './lib/utils'

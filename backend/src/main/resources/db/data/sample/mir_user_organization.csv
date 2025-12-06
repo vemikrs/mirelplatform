@@ -1,0 +1,8 @@
+id,user_id,unit_id,position_type,job_title,job_grade,is_manager,can_approve,start_date,version,delete_flag,create_user_id,create_date,update_user_id,update_date
+uo-001,user-admin-001,unit-root,PRIMARY,President,10,true,true,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-002,user-tenant-admin,unit-div-admin,PRIMARY,Division Head,8,true,true,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-003,user-regular-001,unit-dept-dom-sales,PRIMARY,Department Head,6,true,true,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-004,user-regular-002,unit-sect-dom-1,PRIMARY,Section Head,4,true,true,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-005,user-regular-003,unit-sect-dom-1,PRIMARY,Member,2,false,false,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-006,user-regular-004,unit-sect-dom-2,PRIMARY,Section Head,4,true,true,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+uo-007,user-regular-005,unit-sect-dom-2,PRIMARY,Member,2,false,false,2023-04-01,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast, Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator, type StepState } from '@mirel/ui';
+import { Card, CardHeader, CardTitle, CardContent, SectionHeading, Badge, StepIndicator, type StepState, toast } from '@mirel/ui';
 import { useSuggest } from '../hooks/useSuggest';
 import { useGenerate } from '../hooks/useGenerate';
 import { useReloadStencilMaster } from '../hooks/useReloadStencilMaster';
@@ -235,7 +235,9 @@ export function ProMarkerPage() {
     await fetchSuggestData('*', '*', '*', false);
     if (!silent) {
       toast({
-        ...toastMessages.clearAll,
+        title: toastMessages.clearAll.title,
+        description: toastMessages.clearAll.description,
+        variant: 'info',
       });
     }
   };
@@ -249,7 +251,9 @@ export function ProMarkerPage() {
     // Re-fetch current stencil data
     await fetchSuggestData(categories.selected, stencils.selected, serials.selected, false);
     toast({
-      ...toastMessages.clearStencil,
+      title: toastMessages.clearStencil.title,
+      description: toastMessages.clearStencil.description,
+      variant: 'info',
     });
   };
 

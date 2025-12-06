@@ -21,9 +21,8 @@ public class DatabaseInitializer {
     @ConditionalOnProperty(name = "mirel.database.initialize", havingValue = "true", matchIfMissing = true)
     public ApplicationRunner initializer() {
         return args -> {
-            DataSeeder.initializeDefaultTenant();
-            DataSeeder.initializeSaasTestData();
-            DataSeeder.initializeSchemaSampleData();
+            DataSeeder.initializeSystemData();
+            DataSeeder.initializeSampleData();
         };
     }
 }

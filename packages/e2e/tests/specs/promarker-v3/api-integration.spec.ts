@@ -71,28 +71,27 @@ test.describe('ProMarker v3 API Integration', () => {
     await page.goto('/promarker');
     await page.waitForLoadState('networkidle');
     
-    // Setup: Mock API error for manual action
-    await page.route('**/mapi/apps/mste/api/suggest', route => {
+    // Setup: Mock API error for reload action
+    await page.route('**/mapi/apps/mste/api/reloadStencilMaster', route => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify(API_MOCK_RESPONSES.suggest.error)
+        body: JSON.stringify({
+          data: null,
+          messages: [],
+          errors: ['サーバーエラーが発生しました']
+        })
       });
     });
     
-    // Action: Trigger API call manually (e.g., by clicking category select)
-    await expect(page.locator('[data-testid="category-select"]')).toBeVisible({ timeout: 15000 });
-    await page.locator('[data-testid="category-select"]').click();
+    // Action: Click reload button
+    await expect(page.locator('[data-testid="reload-stencil-btn"]')).toBeVisible();
+    await page.locator('[data-testid="reload-stencil-btn"]').click();
     
-    // Wait for error handling
-    await page.waitForTimeout(2000);
-    
-    // Assert: Verify error toast appears or page shows error state
-    const hasToast = await promarkerPage.isToastVisible();
-    if (hasToast) {
-      const toastMessage = await promarkerPage.getToastMessage();
-      expect(toastMessage).toContain('エラー');
-    }
+    // Assert: Verify error toast appears
+    // @mirel/ui Toast (shadcn/ui) uses role="status" or "alert" usually, but text check is most robust
+    const toast = page.getByRole('status').filter({ hasText: /エラー|Error|failed|失敗/i });
+    await expect(toast).toBeVisible({ timeout: 10000 });
   });
   
   test('should set correct request headers', async ({ page }) => {

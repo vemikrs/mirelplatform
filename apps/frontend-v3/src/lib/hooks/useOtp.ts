@@ -156,7 +156,7 @@ export function useOtpFlow(
   });
 
   const resendMutation = useResendOtp({
-    onSuccess: options?.onRequestSuccess,
+    onSuccess: (data) => options?.onRequestSuccess?.(data.expirationMinutes),
     onError: options?.onError,
   });
 

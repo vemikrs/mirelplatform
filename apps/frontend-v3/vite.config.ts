@@ -25,8 +25,8 @@ export default defineConfig({
         // Cookie のドメインとパスを書き換える
         cookieDomainRewrite: 'localhost',
         cookiePathRewrite: '/',
-        configure: (proxy, _options) => {
-          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
             // Log only that Set-Cookie header exists to avoid leaking sensitive values
             const setCookie = proxyRes.headers['set-cookie'];
             if (setCookie) {

@@ -24,8 +24,18 @@ public class UserProfileDto {
     private String displayName;
     private String firstName;
     private String lastName;
+    private String avatarUrl;
+    private String bio;
+    private String phoneNumber;
+    private String preferredLanguage;
+    private String timezone;
     private Boolean isActive;
     private Boolean emailVerified;
     private Instant lastLoginAt;
     private TenantInfoDto currentTenant;
+    private java.util.List<String> roles;
+    
+    // OAuth2連携情報
+    private String oauth2Provider;
+    private Boolean hasPassword;
 }

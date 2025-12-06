@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.Instant;
-import java.util.Date;
 
 /**
  * 監査ログエンティティ.
@@ -16,12 +15,11 @@ import java.util.Date;
 @Setter
 @Getter
 @Entity
-@Table(name = "mir_audit_log",
-       indexes = {
-           @Index(name = "idx_audit_user", columnList = "user_id,created_at"),
-           @Index(name = "idx_audit_tenant", columnList = "tenant_id,created_at"),
-           @Index(name = "idx_audit_event", columnList = "event_type,created_at")
-       })
+@Table(name = "mir_audit_log", indexes = {
+        @Index(name = "idx_audit_user", columnList = "user_id,created_at"),
+        @Index(name = "idx_audit_tenant", columnList = "tenant_id,created_at"),
+        @Index(name = "idx_audit_event", columnList = "event_type,created_at")
+})
 public class AuditLog {
 
     @Id

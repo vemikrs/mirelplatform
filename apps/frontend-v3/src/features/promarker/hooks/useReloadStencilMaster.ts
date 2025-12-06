@@ -35,14 +35,17 @@ export function useReloadStencilMaster() {
     },
     onSuccess: () => {
       toast({
-        ...toastMessages.reloadSuccess,
+        title: toastMessages.reloadSuccess.title,
+        description: toastMessages.reloadSuccess.description,
+        variant: 'success',
       })
     },
     onError: (error) => {
       console.error('ReloadStencilMaster API error:', error)
       toast({
-        ...toastMessages.reloadError,
+        title: toastMessages.reloadError.title,
         description: formatError(error),
+        variant: 'destructive',
       })
     },
   })

@@ -50,4 +50,26 @@ public class ApiResponse<T> {
     public ApiResponse(T data) {
         this.data = data;
     }
+
+    /**
+     * 成功レスポンス生成
+     * 
+     * @param <T>
+     *            データ型
+     * @param data
+     *            データ
+     * @return レスポンス
+     */
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(data);
+    }
+
+    /**
+     * 成功レスポンス生成（データなし）
+     * 
+     * @return レスポンス
+     */
+    public static ApiResponse<Void> success() {
+        return new ApiResponse<>(null);
+    }
 }
