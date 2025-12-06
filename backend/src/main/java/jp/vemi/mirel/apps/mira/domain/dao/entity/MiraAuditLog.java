@@ -128,7 +128,43 @@ public class MiraAuditLog {
         /** モード切替 */
         MODE_SWITCH,
         /** コンテキストスナップショット */
-        CONTEXT_SNAPSHOT
+        CONTEXT_SNAPSHOT,
+        
+        // セキュリティイベント
+        /** プロンプトインジェクション検出 */
+        PROMPT_INJECTION_DETECTED,
+        /** プロンプトインジェクションブロック */
+        PROMPT_INJECTION_BLOCKED,
+        /** 認可拒否 */
+        AUTHORIZATION_DENIED,
+        /** クロステナントアクセス試行 */
+        CROSS_TENANT_ATTEMPT,
+        
+        // データイベント
+        /** 機密データアクセス */
+        SENSITIVE_DATA_ACCESS,
+        /** データエクスポート要求 */
+        DATA_EXPORT_REQUESTED,
+        /** PII検出 */
+        PII_DETECTED,
+        
+        // レート制限
+        /** レート制限超過 */
+        RATE_LIMIT_EXCEEDED,
+        /** クォータ枯渇 */
+        QUOTA_EXHAUSTED,
+        
+        // フィルタリング
+        /** 出力フィルタリング */
+        OUTPUT_FILTERED,
+        
+        // システムイベント
+        /** サーキットブレーカーオープン */
+        CIRCUIT_BREAKER_OPENED,
+        /** サーキットブレーカークローズ */
+        CIRCUIT_BREAKER_CLOSED,
+        /** フォールバック有効化 */
+        FALLBACK_ACTIVATED
     }
 
     /** 監査ステータス */
