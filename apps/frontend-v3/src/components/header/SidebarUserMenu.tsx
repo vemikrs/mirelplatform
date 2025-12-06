@@ -18,6 +18,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuPortal,
+  DropdownMenuLabel,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -240,6 +241,7 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>ワークスペース</DropdownMenuLabel>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <Building2 className="mr-2 h-4 w-4" />
@@ -262,11 +264,12 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>アカウント設定</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
           <User className="mr-2 h-4 w-4" />
           <span>プロフィール設定</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/settings/security')}>
+        <DropdownMenuItem onClick={() => navigate('/settings/profile?tab=security')}>
           <Settings className="mr-2 h-4 w-4" />
           <span>セキュリティ設定</span>
         </DropdownMenuItem>
@@ -275,6 +278,7 @@ function UserMenuContent({
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel>表示設定</DropdownMenuLabel>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             {themeMode === 'light' ? <SunMedium className="mr-2 h-4 w-4" /> : 
