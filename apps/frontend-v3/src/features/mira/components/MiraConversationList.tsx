@@ -5,7 +5,7 @@
  * スライドインドロワーとして使用される
  */
 import { useState } from 'react';
-import { cn, Button, ScrollArea, Input, Badge } from '@mirel/ui';
+import { cn, Button, ScrollArea, Input } from '@mirel/ui';
 import { 
   Bot, 
   MessageSquarePlus, 
@@ -53,22 +53,22 @@ export function MiraConversationList({
   const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-[380px] h-full border-r flex flex-col bg-surface shadow-lg">
+    <div className="w-[320px] md:w-[400px] lg:w-[440px] h-full border-r flex flex-col bg-surface shadow-lg">
       {/* ヘッダー */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
-            <h1 className="font-semibold">会話履歴</h1>
+      <div className="px-3 py-2 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Bot className="w-4 h-4 text-primary" />
+            <h1 className="font-semibold text-sm">会話履歴</h1>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Button
               variant="outline"
               size="sm"
               onClick={onNewConversation}
-              className="gap-1"
+              className="gap-1 h-7 text-xs"
             >
-              <MessageSquarePlus className="w-4 h-4" />
+              <MessageSquarePlus className="w-3.5 h-3.5" />
               新規
             </Button>
             {onClose && (
@@ -76,9 +76,9 @@ export function MiraConversationList({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="w-8 h-8"
+                className="w-7 h-7"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
@@ -86,31 +86,31 @@ export function MiraConversationList({
         
         {/* 検索 */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="会話を検索..."
+            placeholder="検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9"
+            className="pl-7 h-7 text-xs"
           />
         </div>
       </div>
       
       {/* 会話リスト（日付グループ） */}
       <ScrollArea className="flex-1">
-        <div className="p-3">
+        <div className="p-2">
           {Object.keys(groupedConversations).length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
+            <div className="p-3 text-center text-muted-foreground text-xs">
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
             Object.entries(groupedConversations).map(([dateGroup, convs]) => (
-              <div key={dateGroup} className="mb-4">
-                <p className="text-xs font-medium text-muted-foreground px-1 py-1 mb-2">
+              <div key={dateGroup} className="mb-2">
+                <p className="text-[10px] font-medium text-muted-foreground px-1 py-0.5 mb-1">
                   {dateGroup}
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-0.5">
                   {convs.map((conv) => (
                     <ConversationItem
                       key={conv.id}
@@ -149,51 +149,55 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
     <button
       onClick={onSelect}
       className={cn(
-        "w-full text-left p-3 rounded-lg transition-colors group",
+        "w-full text-left px-2 py-1.5 rounded transition-colors group",
         isActive
           ? "bg-primary/10 border border-primary/20"
           : "hover:bg-surface-raised border border-transparent"
       )}
     >
-      {/* 上段: タイトルと削除ボタン */}
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-sm font-medium line-clamp-1 flex-1">
+      {/* メイン行: モードアイコン、タイトル、メタ情報、削除 */}
+      <div className="flex items-center gap-1.5">
+        {/* モードアイコン */}
+        <ModeIcon className={cn("w-3.5 h-3.5 shrink-0", modeConfig.color.split(' ')[0] || 'text-muted-foreground')} />
+        
+        {/* タイトル */}
+        <span className="text-xs font-medium line-clamp-1 flex-1 min-w-0">
           {title}
-        </h3>
+        </span>
+        
+        {/* メタ情報（デスクトップで表示） */}
+        <span className="hidden md:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+          <span>{relativeTime}</span>
+          <span className="text-muted-foreground/50">·</span>
+          <span>{conversation.messages.length}件</span>
+        </span>
+        
+        {/* 削除ボタン */}
         <Button
           variant="ghost"
           size="icon"
-          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mt-0.5"
+          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-3 h-3" />
         </Button>
       </div>
       
-      {/* 中段: プレビュー */}
-      {preview && (
-        <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
-          {preview}
-        </p>
-      )}
-      
-      {/* 下段: メタ情報（モード、時間、メッセージ数） */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Badge 
-          variant="outline" 
-          className={cn("gap-1 py-0 h-5", modeConfig.color)}
-        >
-          <ModeIcon className="w-3 h-3" />
-          {modeConfig.label}
-        </Badge>
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+      {/* サブ行: プレビューとモバイルメタ情報 */}
+      <div className="flex items-center gap-1.5 mt-0.5 pl-5">
+        {preview && (
+          <p className="text-[10px] text-muted-foreground line-clamp-1 flex-1 min-w-0">
+            {preview}
+          </p>
+        )}
+        {/* モバイル用メタ情報 */}
+        <span className="md:hidden flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 ml-auto">
+          <Clock className="w-2.5 h-2.5" />
           {relativeTime}
         </span>
-        <span>{conversation.messages.length}件</span>
       </div>
     </button>
   );
