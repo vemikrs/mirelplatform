@@ -27,9 +27,9 @@ import lombok.Setter;
  * <p>メッセージ送信時の画面コンテキスト情報を保存します。</p>
  */
 @Entity
-@Table(name = "mir_context_snapshot", indexes = {
-    @Index(name = "idx_mir_ctx_tenant_user", columnList = "tenantId, userId"),
-    @Index(name = "idx_mir_ctx_app_screen", columnList = "appId, screenId")
+@Table(name = "mir_mira_context_snapshot", indexes = {
+    @Index(name = "idx_mir_mira_ctx_tenant_user", columnList = "tenantId, userId"),
+    @Index(name = "idx_mir_mira_ctx_app_screen", columnList = "appId, screenId")
 })
 @Getter
 @Setter

@@ -27,9 +27,9 @@ import lombok.Setter;
  * <p>会話内の個々のメッセージを管理します。</p>
  */
 @Entity
-@Table(name = "mir_message", indexes = {
-    @Index(name = "idx_mir_msg_conversation", columnList = "conversationId"),
-    @Index(name = "idx_mir_msg_created", columnList = "createdAt")
+@Table(name = "mir_mira_message", indexes = {
+    @Index(name = "idx_mir_mira_msg_conversation", columnList = "conversationId"),
+    @Index(name = "idx_mir_mira_msg_created", columnList = "createdAt")
 })
 @Getter
 @Setter

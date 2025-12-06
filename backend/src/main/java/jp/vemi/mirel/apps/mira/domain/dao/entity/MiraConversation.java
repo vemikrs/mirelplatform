@@ -27,9 +27,9 @@ import lombok.Setter;
  * <p>チャット会話のセッション情報を管理します。</p>
  */
 @Entity
-@Table(name = "mir_conversation", indexes = {
-    @Index(name = "idx_mir_conv_tenant_user", columnList = "tenantId, userId"),
-    @Index(name = "idx_mir_conv_created", columnList = "createdAt")
+@Table(name = "mir_mira_conversation", indexes = {
+    @Index(name = "idx_mir_mira_conv_tenant_user", columnList = "tenantId, userId"),
+    @Index(name = "idx_mir_mira_conv_created", columnList = "createdAt")
 })
 @Getter
 @Setter

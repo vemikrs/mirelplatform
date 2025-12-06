@@ -26,10 +26,10 @@ import lombok.Setter;
  * <p>Mira のすべての AI 操作を監査目的で記録します。</p>
  */
 @Entity
-@Table(name = "mira_audit_log", indexes = {
-    @Index(name = "idx_mira_audit_tenant_created", columnList = "tenantId, createdAt"),
-    @Index(name = "idx_mira_audit_user_created", columnList = "userId, createdAt"),
-    @Index(name = "idx_mira_audit_conversation", columnList = "conversationId")
+@Table(name = "mir_mira_audit_log", indexes = {
+    @Index(name = "idx_mir_mira_audit_tenant_created", columnList = "tenantId, createdAt"),
+    @Index(name = "idx_mir_mira_audit_user_created", columnList = "userId, createdAt"),
+    @Index(name = "idx_mir_mira_audit_conversation", columnList = "conversationId")
 })
 @Getter
 @Setter
