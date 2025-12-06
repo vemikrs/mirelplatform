@@ -92,6 +92,18 @@ public class MiraAuditLog {
     @Column(length = 100)
     private String usedModel;
 
+    /** 入力トークン数 */
+    @Column
+    private Integer inputTokens;
+
+    /** 出力トークン数 */
+    @Column
+    private Integer outputTokens;
+
+    /** 合計トークン数 */
+    @Column
+    private Integer totalTokens;
+
     /** レイテンシ（ミリ秒） */
     @Column
     private Integer latencyMs;
