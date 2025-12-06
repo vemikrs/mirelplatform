@@ -1,11 +1,27 @@
 /**
  * Mira Chat Input Component
  * 
- * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴
+ * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
-import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
 import { Button, cn } from '@mirel/ui';
-import { Send, Loader2, ChevronDown, HelpCircle, AlertTriangle, Paintbrush2, Workflow, MessageSquare } from 'lucide-react';
+import { 
+  Send, 
+  Loader2, 
+  ChevronDown, 
+  HelpCircle, 
+  AlertTriangle, 
+  Paintbrush2, 
+  Workflow, 
+  MessageSquare,
+  Paperclip,
+  X,
+  FileText,
+  Image,
+  FileCode,
+  File,
+  Upload,
+} from 'lucide-react';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
 
@@ -20,6 +36,28 @@ const MODES: { mode: MiraMode; label: string; shortLabel: string; icon: typeof M
 
 // 入力履歴の最大保持数
 const MAX_HISTORY = 50;
+
+// 添付ファイルの最大サイズ（10MB）
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// 許可するファイルタイプ
+const ALLOWED_FILE_TYPES = [
+  'image/*',
+  'text/*',
+  'application/json',
+  'application/javascript',
+  'application/typescript',
+  'application/pdf',
+  '.md', '.tsx', '.ts', '.jsx', '.js', '.py', '.java', '.xml', '.yaml', '.yml', '.sql', '.sh', '.css', '.scss', '.html',
+];
+
+/** 添付ファイル型 */
+export interface AttachedFile {
+  id: string;
+  file: File;
+  preview?: string;
+  type: 'image' | 'code' | 'text' | 'document' | 'other';
+}
 
 interface MiraChatInputProps {
   onSend: (message: string, mode?: MiraMode) => void;
@@ -57,8 +95,13 @@ export function MiraChatInput({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempMessage, setTempMessage] = useState(''); // 履歴ナビ前のメッセージを保持
   
+  // 添付ファイル管理
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 自動リサイズ
   useEffect(() => {
@@ -98,19 +141,97 @@ export function MiraChatInput({
     }
   }, [autoFocus, isLoading, disabled]);
   
+  // ファイルタイプを判定
+  const getFileType = (file: File): AttachedFile['type'] => {
+    const mime = file.type;
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    if (mime.startsWith('image/')) return 'image';
+    if (['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh', 'css', 'scss', 'html'].includes(ext)) return 'code';
+    if (mime.startsWith('text/') || ['md', 'txt', 'log'].includes(ext)) return 'text';
+    if (mime === 'application/pdf') return 'document';
+    return 'other';
+  };
+  
+  // ファイル追加処理
+  const handleAddFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    
+    const newFiles: AttachedFile[] = fileArray
+      .filter(file => file.size <= MAX_FILE_SIZE)
+      .map(file => ({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        type: getFileType(file),
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      }));
+    
+    setAttachedFiles(prev => [...prev, ...newFiles]);
+  };
+  
+  // ファイル削除処理
+  const handleRemoveFile = (id: string) => {
+    setAttachedFiles(prev => {
+      const file = prev.find(f => f.id === id);
+      if (file?.preview) {
+        URL.revokeObjectURL(file.preview);
+      }
+      return prev.filter(f => f.id !== id);
+    });
+  };
+  
+  // ドラッグ&ドロップ処理
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files.length > 0) {
+      handleAddFiles(e.dataTransfer.files);
+    }
+  };
+  
+  // ファイル選択処理
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleAddFiles(e.target.files);
+      e.target.value = ''; // リセット
+    }
+  };
+  
   const handleSend = () => {
     const trimmed = message.trim();
-    if (trimmed && !isLoading && !disabled) {
+    if ((trimmed || attachedFiles.length > 0) && !isLoading && !disabled) {
       // 履歴に追加（重複は除く）
-      setInputHistory((prev) => {
-        const filtered = prev.filter((h) => h !== trimmed);
-        return [trimmed, ...filtered].slice(0, MAX_HISTORY);
-      });
+      if (trimmed) {
+        setInputHistory((prev) => {
+          const filtered = prev.filter((h) => h !== trimmed);
+          return [trimmed, ...filtered].slice(0, MAX_HISTORY);
+        });
+      }
       
+      // TODO: 添付ファイルも送信処理に含める
       onSend(trimmed, selectedMode);
       setMessage('');
       setHistoryIndex(-1);
       setTempMessage('');
+      // 添付ファイルをクリア
+      attachedFiles.forEach(f => {
+        if (f.preview) URL.revokeObjectURL(f.preview);
+      });
+      setAttachedFiles([]);
     }
   };
   
@@ -154,7 +275,8 @@ export function MiraChatInput({
       }
       const newIndex = Math.min(historyIndex + 1, inputHistory.length - 1);
       setHistoryIndex(newIndex);
-      setMessage(inputHistory[newIndex]);
+      const historyValue = inputHistory[newIndex];
+      if (historyValue) setMessage(historyValue);
       return;
     }
     
@@ -166,7 +288,8 @@ export function MiraChatInput({
         // 履歴を抜けたら保存していた入力を復元
         setMessage(tempMessage);
       } else {
-        setMessage(inputHistory[newIndex]);
+        const historyValue = inputHistory[newIndex];
+        if (historyValue) setMessage(historyValue);
       }
       return;
     }
@@ -177,11 +300,36 @@ export function MiraChatInput({
     setShowModeMenu((prev) => !prev);
   };
   
-  const currentModeConfig = MODES.find(m => m.mode === selectedMode) ?? MODES[0];
+  const currentModeConfig = MODES.find(m => m.mode === selectedMode) ?? MODES[0]!;
   const CurrentIcon = currentModeConfig.icon;
   
   return (
-    <div className={cn('', className)}>
+    <div 
+      className={cn('', className)}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* 隠しファイル入力 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={ALLOWED_FILE_TYPES.join(',')}
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+      
+      {/* ドラッグ&ドロップオーバーレイ */}
+      {isDragging && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-lg">
+          <div className="flex flex-col items-center gap-2 text-primary">
+            <Upload className="w-8 h-8 animate-bounce" />
+            <p className="text-sm font-medium">ファイルをドロップ</p>
+          </div>
+        </div>
+      )}
+      
       {/* メッセージ入力エリア */}
       <div className="relative px-3 py-2">
         {/* モード選択メニュー */}
@@ -209,7 +357,34 @@ export function MiraChatInput({
           </div>
         )}
         
+        {/* 添付ファイルプレビュー */}
+        {attachedFiles.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {attachedFiles.map((file) => (
+              <AttachmentPreview
+                key={file.id}
+                file={file}
+                onRemove={() => handleRemoveFile(file.id)}
+              />
+            ))}
+          </div>
+        )}
+        
         <div className="flex items-end gap-2">
+          {/* 添付ボタン */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "p-1.5 rounded-md border",
+              "hover:bg-muted transition-colors shrink-0",
+              "text-muted-foreground hover:text-foreground"
+            )}
+            title="ファイルを添付"
+            disabled={isLoading || disabled}
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+          
           {/* モード選択ボタン */}
           <button
             onClick={handleModeButtonClick}
@@ -253,7 +428,7 @@ export function MiraChatInput({
           {/* 送信ボタン */}
           <Button
             onClick={handleSend}
-            disabled={!message.trim() || isLoading || disabled}
+            disabled={(!message.trim() && attachedFiles.length === 0) || isLoading || disabled}
             size="icon"
             className="shrink-0"
           >
@@ -270,6 +445,102 @@ export function MiraChatInput({
           Enter で送信 • Shift+Enter で改行 • @ でモード選択 • ↑↓ で履歴
         </p>
       </div>
+    </div>
+  );
+}
+
+/** ファイルタイプに応じたアイコンマップ */
+const FILE_ICON_MAP = {
+  image: Image,
+  code: FileCode,
+  text: FileText,
+  document: FileText,
+  other: File,
+} as const;
+
+/** ファイルサイズをフォーマット */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** 添付ファイルプレビューコンポーネント */
+function AttachmentPreview({ 
+  file, 
+  onRemove 
+}: { 
+  file: AttachedFile; 
+  onRemove: () => void;
+}) {
+  const IconComponent = FILE_ICON_MAP[file.type];
+  
+  // 画像の場合はサムネイルプレビュー
+  if (file.type === 'image' && file.preview) {
+    return (
+      <div className="group relative">
+        <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-muted">
+          <img 
+            src={file.preview} 
+            alt={file.file.name}
+            className="w-full h-full object-cover"
+          />
+          {/* ホバー時のオーバーレイ */}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <button
+              onClick={onRemove}
+              className="p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+        {/* ファイル名ツールチップ風 */}
+        <p className="mt-0.5 text-[9px] text-muted-foreground truncate max-w-16 text-center">
+          {file.file.name.length > 10 
+            ? file.file.name.substring(0, 7) + '...' 
+            : file.file.name}
+        </p>
+      </div>
+    );
+  }
+  
+  // その他のファイルはアイコン + 情報表示
+  return (
+    <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors max-w-[200px]">
+      {/* ファイルアイコン */}
+      <div className={cn(
+        "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
+        file.type === 'code' && "bg-blue-500/10 text-blue-500",
+        file.type === 'text' && "bg-green-500/10 text-green-500",
+        file.type === 'document' && "bg-orange-500/10 text-orange-500",
+        file.type === 'other' && "bg-gray-500/10 text-gray-500",
+      )}>
+        <IconComponent className="w-4 h-4" />
+      </div>
+      
+      {/* ファイル情報 */}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium truncate" title={file.file.name}>
+          {file.file.name}
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          {formatFileSize(file.file.size)}
+        </p>
+      </div>
+      
+      {/* 削除ボタン */}
+      <button
+        onClick={onRemove}
+        className={cn(
+          "p-1 rounded-full shrink-0",
+          "opacity-0 group-hover:opacity-100 transition-opacity",
+          "hover:bg-destructive/10 text-destructive"
+        )}
+        title="削除"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }
