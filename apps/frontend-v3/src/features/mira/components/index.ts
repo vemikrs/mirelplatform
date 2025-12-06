@@ -12,3 +12,4 @@ export { MiraFullscreenView } from './MiraFullscreenView';
 export { MiraConversationList } from './MiraConversationList';
 export { MiraContextPanel } from './MiraContextPanel';
 export { MiraChatArea } from './MiraChatArea';
+export { MiraKeyboardShortcuts } from './MiraKeyboardShortcuts';

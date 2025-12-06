@@ -13,6 +13,7 @@ import {
   Trash2,
   Menu,
   Plus,
+  Keyboard,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
@@ -20,6 +21,7 @@ import type { MiraMode } from '@/lib/api/mira';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
+import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 
 export function MiraPage() {
   const {
@@ -40,10 +42,50 @@ export function MiraPage() {
   // ドロワーの開閉状態
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
+  // キーボードショートカットオーバーレイの状態
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  
   // 現在のモードはアクティブな会話から取得
   const currentMode = activeConversation?.mode ?? 'GENERAL_CHAT';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // グローバルキーボードショートカット
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // テキストエリアにフォーカスがある場合は無視
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+      
+      // ? でショートカット一覧を表示
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+      
+      // ⌘/Ctrl + H で会話履歴を開く
+      if (e.key === 'h' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setIsDrawerOpen((prev) => !prev);
+      }
+      
+      // ⌘/Ctrl + N で新規会話
+      if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleNewConversation();
+      }
+      
+      // Escape でドロワーを閉じる
+      if (e.key === 'Escape') {
+        if (isDrawerOpen) setIsDrawerOpen(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen]);
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -152,8 +194,16 @@ export function MiraPage() {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setShowKeyboardShortcuts(true)}
+              title="キーボードショートカット (?)"
+            >
+              <Keyboard className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleNewConversation}
-              title="新しい会話"
+              title="新しい会話 (⌘+N)"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -203,11 +253,16 @@ export function MiraPage() {
               onSend={handleSend}
               isLoading={isLoading}
               placeholder="メッセージを入力... (Enter で送信)"
-              showShortcuts={false}
             />
           </div>
         </div>
       </div>
+      
+      {/* キーボードショートカットオーバーレイ */}
+      <MiraKeyboardShortcuts
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
   );
 }
