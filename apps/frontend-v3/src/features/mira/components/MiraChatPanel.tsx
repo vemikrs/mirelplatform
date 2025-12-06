@@ -6,9 +6,11 @@
 import { useEffect, useRef } from 'react';
 import { cn, Button, ScrollArea } from '@mirel/ui';
 import { X, MessageSquarePlus, Trash2, Bot } from 'lucide-react';
-import { useMira } from '@/hooks/useMira';
+import { useMira, useMiraPanel } from '@/hooks/useMira';
+import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
 import { MiraChatInput } from './MiraChatInput';
+import type { MiraMode } from '@/lib/api/mira';
 
 interface MiraChatPanelProps {
   className?: string;
@@ -16,8 +18,6 @@ interface MiraChatPanelProps {
 
 export function MiraChatPanel({ className }: MiraChatPanelProps) {
   const {
-    isOpen,
-    closePanel,
     sendMessage,
     isLoading,
     error,
@@ -28,6 +28,9 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     newConversation,
   } = useMira();
   
+  const { isOpen, close: closePanel } = useMiraPanel();
+  const togglePanel = useMiraStore((state) => state.togglePanel);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // メッセージ追加時に自動スクロール
@@ -35,9 +38,43 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
+  // Ctrl+Shift+M でパネル開閉
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+        e.preventDefault();
+        togglePanel();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePanel]);
+  
+  const handleSend = (message: string, mode?: MiraMode) => {
+    sendMessage(message, { mode });
+  };
+  
   if (!isOpen) {
     return null;
   }
+  
+  // モード表示用のバッジラベル
+  const getModeLabel = (mode?: string) => {
+    const labels: Record<string, string> = {
+      general_chat: 'General',
+      context_help: 'Help',
+      error_analyze: 'Error',
+      studio_agent: 'Studio',
+      workflow_agent: 'Workflow',
+      GENERAL_CHAT: 'General',
+      CONTEXT_HELP: 'Help',
+      ERROR_ANALYZE: 'Error',
+      STUDIO_AGENT: 'Studio',
+      WORKFLOW_AGENT: 'Workflow',
+    };
+    return mode ? labels[mode] || mode : null;
+  };
   
   return (
     <div
@@ -47,15 +84,17 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
         'flex flex-col',
         className
       )}
+      role="dialog"
+      aria-label="Mira AI アシスタント"
     >
       {/* ヘッダー */}
       <div className="flex items-center justify-between p-3 border-b">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-primary" />
           <h2 className="font-semibold">Mira</h2>
-          {activeConversation && (
-            <span className="text-xs text-muted-foreground">
-              ({activeConversation.mode})
+          {activeConversation?.mode && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+              {getModeLabel(activeConversation.mode)}
             </span>
           )}
         </div>
@@ -82,7 +121,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
             variant="ghost"
             size="icon"
             onClick={closePanel}
-            title="閉じる"
+            title="閉じる (Ctrl+Shift+M)"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -113,6 +152,10 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
                 こんにちは！<br />
                 何かお手伝いできることはありますか？
               </p>
+              <p className="text-xs mt-2 text-center opacity-70">
+                ショートカットボタンから<br />
+                質問を始めることもできます
+              </p>
             </div>
           ) : (
             <>
@@ -127,9 +170,10 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
       
       {/* 入力エリア */}
       <MiraChatInput
-        onSend={sendMessage}
+        onSend={handleSend}
         isLoading={isLoading}
         placeholder="メッセージを入力... (Enter で送信)"
+        showShortcuts={true}
       />
     </div>
   );
