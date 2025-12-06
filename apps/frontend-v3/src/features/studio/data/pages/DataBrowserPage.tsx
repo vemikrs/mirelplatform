@@ -36,13 +36,17 @@ export const DataBrowserPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // TODO: Fetch available models from API
-    // For now, hardcode or fetch if endpoint exists
-    // modelerApi.getApps().then(...)
-    setModels([
-      { value: 'sample_model', text: 'Sample Model' },
-      // Add more models as needed
-    ]);
+    const fetchModels = async () => {
+      try {
+         const res = await modelerApi.listModels();
+         setModels(res.data.models);
+      } catch (e) {
+         console.error('Failed to load models', e);
+         // Fallback or empty
+         setModels([]);
+      }
+    };
+    fetchModels();
   }, []);
 
   useEffect(() => {

@@ -14,10 +14,19 @@ test.describe('Studio Seeded Data', () => {
         await page.goto('/apps/studio/data');
         
         // Wait for models to load
+        await expect(page.getByText('読み込み中...')).toBeHidden();
+
         const select = page.locator('select');
         await expect(select).toBeVisible();
         
+        // Debug: Log options
+        const options = await select.locator('option').allTextContents();
+        console.log('Available models:', options);
+
         // Select 'customer' model (Label: 顧客情報)
+        // Ensure options are loaded
+        await expect(select).not.toHaveValue(''); // Assuming default is placeholder with empty value
+        
         await select.selectOption({ value: 'customer' });
         
         // Verify records exist in the table
