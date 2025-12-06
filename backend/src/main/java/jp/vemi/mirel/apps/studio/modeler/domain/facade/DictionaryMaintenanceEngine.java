@@ -19,6 +19,10 @@ public class DictionaryMaintenanceEngine {
         return schemaModelService.findModels(modelId);
     }
 
+    public List<StuModelHeader> getModelList() {
+        return schemaModelService.findAll();
+    }
+
     public void saveModel(String modelId, String modelName, Boolean isHidden, String modelType,
             List<StuModel> fields) {
         StuModelHeader header = StuModelHeader.builder()

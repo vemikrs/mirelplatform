@@ -17,6 +17,7 @@ import jp.vemi.mirel.apps.studio.modeler.domain.dto.request.StuApiRequest;
 import jp.vemi.mirel.apps.studio.modeler.domain.dto.response.StuApiResponse;
 import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuCode;
 import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModel;
+import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuModelHeader;
 import jp.vemi.mirel.apps.studio.modeler.domain.entity.StuRecord;
 import jp.vemi.mirel.apps.studio.modeler.domain.facade.CodeMaintenanceEngine;
 import jp.vemi.mirel.apps.studio.modeler.domain.facade.DictionaryMaintenanceEngine;
@@ -108,6 +109,10 @@ public class StuApiController {
                 case "listCodeGroups":
                     List<String> groups = codeMaintenanceEngine.getGroupList();
                     response.setData(Map.of("groups", groups));
+                    break;
+                case "listModels":
+                    List<StuModelHeader> headers = dictionaryMaintenanceEngine.getModelList();
+                    response.setData(Map.of("models", headers));
                     break;
                 default:
                     response.setErrors(List.of("Unknown path: " + path));
