@@ -112,4 +112,11 @@ public class MiraConversation {
     public void preUpdate() {
         this.lastActivityAt = LocalDateTime.now();
     }
+
+    /**
+     * 最終アクティビティを現在時刻に更新.
+     */
+    public void updateLastActivity() {
+        this.lastActivityAt = LocalDateTime.now();
+    }
 }
