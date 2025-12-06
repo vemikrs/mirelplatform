@@ -50,6 +50,12 @@ export function MiraPage() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // 新規会話作成ハンドラ（useEffectより前に定義）
+  const handleNewConversation = useCallback(() => {
+    newConversation();
+    setIsDrawerOpen(false);
+  }, [newConversation]);
+  
   // グローバルキーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -85,7 +91,7 @@ export function MiraPage() {
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, handleNewConversation]);
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -107,12 +113,6 @@ export function MiraPage() {
   const handleDeleteConversation = useCallback((conversationId: string) => {
     deleteConversation(conversationId);
   }, [deleteConversation]);
-  
-  // 新規会話作成ハンドラ
-  const handleNewConversation = useCallback(() => {
-    newConversation();
-    setIsDrawerOpen(false);
-  }, [newConversation]);
   
   // 会話の要約を取得（タイトル優先、なければ最初のメッセージ）
   const getConversationSummary = useCallback(() => {
@@ -148,6 +148,12 @@ export function MiraPage() {
   return (
     <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
       {/* 左ドロワー: 会話履歴（Mira表示内に制限） */}
+      {isDrawerOpen && (
+        <div 
+          className="absolute inset-0 bg-black/20 z-10"
+          onClick={() => setIsDrawerOpen(false)}
+        />
+      )}
       <div 
         className={`
           absolute left-0 top-0 bottom-0 z-20
@@ -155,13 +161,6 @@ export function MiraPage() {
           ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* オーバーレイ背景 */}
-        {isDrawerOpen && (
-          <div 
-            className="fixed inset-0 bg-black/20 -z-10"
-            onClick={() => setIsDrawerOpen(false)}
-          />
-        )}
         <MiraConversationList
           conversations={conversations}
           activeConversationId={activeConversation?.id ?? null}

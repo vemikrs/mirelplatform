@@ -53,22 +53,22 @@ export function MiraConversationList({
   const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-[320px] md:w-[400px] lg:w-[440px] h-full border-r flex flex-col bg-surface shadow-lg">
+    <div className="w-[360px] md:w-[480px] lg:w-[520px] h-full border-r flex flex-col bg-surface shadow-lg">
       {/* ヘッダー */}
-      <div className="px-3 py-2 border-b">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Bot className="w-4 h-4 text-primary" />
-            <h1 className="font-semibold text-sm">会話履歴</h1>
+      <div className="px-4 py-3 border-b">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary" />
+            <h1 className="font-semibold">会話履歴</h1>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="sm"
               onClick={onNewConversation}
-              className="gap-1 h-7 text-xs"
+              className="gap-1.5"
             >
-              <MessageSquarePlus className="w-3.5 h-3.5" />
+              <MessageSquarePlus className="w-4 h-4" />
               新規
             </Button>
             {onClose && (
@@ -76,9 +76,9 @@ export function MiraConversationList({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="w-7 h-7"
+                className="w-8 h-8"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </Button>
             )}
           </div>
@@ -86,31 +86,31 @@ export function MiraConversationList({
         
         {/* 検索 */}
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="検索..."
+            placeholder="会話を検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 h-7 text-xs"
+            className="pl-8 h-9"
           />
         </div>
       </div>
       
       {/* 会話リスト（日付グループ） */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="p-3">
           {Object.keys(groupedConversations).length === 0 ? (
-            <div className="p-3 text-center text-muted-foreground text-xs">
+            <div className="p-4 text-center text-muted-foreground text-sm">
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
             Object.entries(groupedConversations).map(([dateGroup, convs]) => (
-              <div key={dateGroup} className="mb-2">
-                <p className="text-[10px] font-medium text-muted-foreground px-1 py-0.5 mb-1">
+              <div key={dateGroup} className="mb-3">
+                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1.5">
                   {dateGroup}
                 </p>
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {convs.map((conv) => (
                     <ConversationItem
                       key={conv.id}
@@ -149,24 +149,24 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
     <button
       onClick={onSelect}
       className={cn(
-        "w-full text-left px-2 py-1.5 rounded transition-colors group",
+        "w-full text-left px-3 py-2.5 rounded-lg transition-colors group",
         isActive
           ? "bg-primary/10 border border-primary/20"
           : "hover:bg-surface-raised border border-transparent"
       )}
     >
       {/* メイン行: モードアイコン、タイトル、メタ情報、削除 */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         {/* モードアイコン */}
-        <ModeIcon className={cn("w-3.5 h-3.5 shrink-0", modeConfig.color.split(' ')[0] || 'text-muted-foreground')} />
+        <ModeIcon className={cn("w-4 h-4 shrink-0", modeConfig.color.split(' ')[0] || 'text-muted-foreground')} />
         
         {/* タイトル */}
-        <span className="text-xs font-medium line-clamp-1 flex-1 min-w-0">
+        <span className="text-sm font-medium line-clamp-1 flex-1 min-w-0">
           {title}
         </span>
         
         {/* メタ情報（デスクトップで表示） */}
-        <span className="hidden md:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+        <span className="hidden md:flex items-center gap-2 text-xs text-muted-foreground shrink-0">
           <span>{relativeTime}</span>
           <span className="text-muted-foreground/50">·</span>
           <span>{conversation.messages.length}件</span>
@@ -176,26 +176,26 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
         <Button
           variant="ghost"
           size="icon"
-          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
       
       {/* サブ行: プレビューとモバイルメタ情報 */}
-      <div className="flex items-center gap-1.5 mt-0.5 pl-5">
+      <div className="flex items-center gap-2 mt-1 pl-6">
         {preview && (
-          <p className="text-[10px] text-muted-foreground line-clamp-1 flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground line-clamp-1 flex-1 min-w-0">
             {preview}
           </p>
         )}
         {/* モバイル用メタ情報 */}
-        <span className="md:hidden flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 ml-auto">
-          <Clock className="w-2.5 h-2.5" />
+        <span className="md:hidden flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-auto">
+          <Clock className="w-3 h-3" />
           {relativeTime}
         </span>
       </div>
