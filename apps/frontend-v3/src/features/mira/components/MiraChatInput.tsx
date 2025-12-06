@@ -4,7 +4,7 @@
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
 import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn } from '@mirel/ui';
+import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@mirel/ui';
 import { 
   Send, 
   Loader2, 
@@ -21,6 +21,9 @@ import {
   FileCode,
   File,
   Upload,
+  Eye,
+  Download,
+  Maximize2,
 } from 'lucide-react';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
@@ -473,46 +476,196 @@ function AttachmentPreview({
   file: AttachedFile; 
   onRemove: () => void;
 }) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [textContent, setTextContent] = useState<string | null>(null);
   const IconComponent = FILE_ICON_MAP[file.type];
+  
+  // テキスト/コードファイルの内容を読み込み
+  useEffect(() => {
+    if (file.type === 'text' || file.type === 'code') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setTextContent(e.target?.result as string);
+      };
+      reader.readAsText(file.file);
+    }
+  }, [file]);
   
   // 画像の場合はサムネイルプレビュー
   if (file.type === 'image' && file.preview) {
     return (
-      <div className="group relative">
-        <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-muted">
-          <img 
-            src={file.preview} 
-            alt={file.file.name}
-            className="w-full h-full object-cover"
-          />
-          {/* ホバー時のオーバーレイ */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <button
-              onClick={onRemove}
-              className="p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
+      <>
+        <div className="group relative">
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="relative w-16 h-16 rounded-lg overflow-hidden border bg-muted cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          >
+            <img 
+              src={file.preview} 
+              alt={file.file.name}
+              className="w-full h-full object-cover"
+            />
+            {/* ホバー時のオーバーレイ */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Maximize2 className="w-4 h-4 text-white" />
+            </div>
+          </button>
+          {/* 削除ボタン */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+          >
+            <X className="w-3 h-3" />
+          </button>
+          {/* ファイル名ツールチップ風 */}
+          <p className="mt-0.5 text-[9px] text-muted-foreground truncate max-w-16 text-center">
+            {file.file.name.length > 10 
+              ? file.file.name.substring(0, 7) + '...' 
+              : file.file.name}
+          </p>
         </div>
-        {/* ファイル名ツールチップ風 */}
-        <p className="mt-0.5 text-[9px] text-muted-foreground truncate max-w-16 text-center">
-          {file.file.name.length > 10 
-            ? file.file.name.substring(0, 7) + '...' 
-            : file.file.name}
-        </p>
-      </div>
+        
+        {/* 画像プレビューダイアログ */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+            <DialogHeader className="px-4 py-3 border-b bg-muted/30">
+              <DialogTitle className="flex items-center gap-2 text-sm font-medium">
+                <Image className="w-4 h-4 text-primary" />
+                {file.file.name}
+                <span className="text-muted-foreground font-normal">
+                  ({formatFileSize(file.file.size)})
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="p-4 flex items-center justify-center bg-muted/20 min-h-[300px] max-h-[70vh] overflow-auto">
+              <img 
+                src={file.preview} 
+                alt={file.file.name}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+              />
+            </div>
+            <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                クリックで拡大 • Escで閉じる
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = file.preview!;
+                  link.download = file.file.name;
+                  link.click();
+                }}
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                ダウンロード
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
   
-  // その他のファイルはアイコン + 情報表示
+  // テキスト/コードファイルの場合
+  if ((file.type === 'text' || file.type === 'code') && textContent !== null) {
+    return (
+      <>
+        <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors max-w-[200px] cursor-pointer hover:ring-2 hover:ring-primary/50"
+          onClick={() => setIsPreviewOpen(true)}
+        >
+          {/* ファイルアイコン */}
+          <div className={cn(
+            "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
+            file.type === 'code' && "bg-blue-500/10 text-blue-500",
+            file.type === 'text' && "bg-green-500/10 text-green-500",
+          )}>
+            <IconComponent className="w-4 h-4" />
+          </div>
+          
+          {/* ファイル情報 */}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate" title={file.file.name}>
+              {file.file.name}
+            </p>
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              {formatFileSize(file.file.size)}
+              <Eye className="w-3 h-3 opacity-60" />
+            </p>
+          </div>
+          
+          {/* 削除ボタン */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className={cn(
+              "p-1 rounded-full shrink-0",
+              "opacity-0 group-hover:opacity-100 transition-opacity",
+              "hover:bg-destructive/10 text-destructive"
+            )}
+            title="削除"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        
+        {/* テキスト/コードプレビューダイアログ */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+            <DialogHeader className="px-4 py-3 border-b bg-muted/30">
+              <DialogTitle className="flex items-center gap-2 text-sm font-medium">
+                <IconComponent className={cn(
+                  "w-4 h-4",
+                  file.type === 'code' ? "text-blue-500" : "text-green-500"
+                )} />
+                {file.file.name}
+                <span className="text-muted-foreground font-normal">
+                  ({formatFileSize(file.file.size)})
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="overflow-auto max-h-[60vh] bg-muted/10">
+              <pre className={cn(
+                "p-4 text-xs font-mono leading-relaxed whitespace-pre-wrap break-all",
+                file.type === 'code' && "bg-slate-950 text-slate-50"
+              )}>
+                <code>{textContent}</code>
+              </pre>
+            </div>
+            <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {textContent.split('\n').length} 行 • Escで閉じる
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(textContent);
+                  }}
+                >
+                  コピー
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+  
+  // その他のファイルはアイコン + 情報表示（プレビュー不可）
   return (
     <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors max-w-[200px]">
       {/* ファイルアイコン */}
       <div className={cn(
         "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
-        file.type === 'code' && "bg-blue-500/10 text-blue-500",
-        file.type === 'text' && "bg-green-500/10 text-green-500",
         file.type === 'document' && "bg-orange-500/10 text-orange-500",
         file.type === 'other' && "bg-gray-500/10 text-gray-500",
       )}>
