@@ -3,6 +3,7 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.config;
 
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -20,13 +21,16 @@ import lombok.Data;
  * mira:
  *   ai:
  *     enabled: true           # Mira AI 機能全体の有効/無効
- *     provider: azure-openai  # azure-openai | mock
+ *     provider: github-models # github-models | azure-openai | mock
+ *     github-models:
+ *       token: ${GITHUB_TOKEN}
+ *       model: meta/llama-3.3-70b-instruct
  *     azure-openai:
  *       endpoint: ${AZURE_OPENAI_ENDPOINT}
  *       api-key: ${AZURE_OPENAI_API_KEY}
  *       deployment-name: gpt-4o
  *     mock:
- *       enabled: false        # provider=azure-openai でも true にすると mock を使用
+ *       enabled: false        # provider=xxx でも true にすると mock を使用
  *       response-delay-ms: 500
  * </pre>
  * 
@@ -52,13 +56,19 @@ public class MiraAiProperties {
      * AI プロバイダ種別.
      * 
      * <ul>
-     *   <li>{@code azure-openai} - Azure OpenAI Service（デフォルト）</li>
+     *   <li>{@code github-models} - GitHub Models API（デフォルト）</li>
+     *   <li>{@code azure-openai} - Azure OpenAI Service</li>
      *   <li>{@code mock} - テスト用モックプロバイダ</li>
      * </ul>
      * 
      * <p>注意: {@code mock.enabled=true} の場合、この設定に関わらず mock が使用されます。</p>
      */
-    private String provider = "azure-openai";
+    private String provider = "github-models";
+
+    /**
+     * GitHub Models 設定.
+     */
+    private GitHubModelsConfig githubModels = new GitHubModelsConfig();
 
     /**
      * Azure OpenAI 設定.
@@ -79,6 +89,47 @@ public class MiraAiProperties {
      * 監査ログ設定.
      */
     private AuditConfig audit = new AuditConfig();
+
+    /**
+     * セキュリティ設定.
+     */
+    private SecurityConfig security = new SecurityConfig();
+
+    /**
+     * クォータ設定.
+     */
+    private QuotaConfig quota = new QuotaConfig();
+
+    /**
+     * モニタリング設定.
+     */
+    private MonitoringConfig monitoring = new MonitoringConfig();
+
+    /**
+     * GitHub Models 設定.
+     * 
+     * <p>GitHub Models API を使用する場合の設定です。</p>
+     */
+    @Data
+    public static class GitHubModelsConfig {
+        /** GitHub トークン（gh auth token で取得可能） */
+        private String token;
+        
+        /** ベース URL */
+        private String baseUrl = "https://models.github.ai/inference";
+        
+        /** モデル名 */
+        private String model = "meta/llama-3.3-70b-instruct";
+        
+        /** Temperature (0.0 - 2.0) */
+        private Double temperature = 0.7;
+        
+        /** 最大トークン数 */
+        private Integer maxTokens = 4096;
+        
+        /** タイムアウト（秒） */
+        private Integer timeoutSeconds = 60;
+    }
 
     /**
      * Azure OpenAI 設定.
@@ -168,5 +219,94 @@ public class MiraAiProperties {
         
         /** 保持期間（日） */
         private Integer retentionDays = 90;
+        
+        /** メッセージ内容をログに含めるか */
+        private boolean logContent = false;
+    }
+
+    /**
+     * セキュリティ設定.
+     */
+    @Data
+    public static class SecurityConfig {
+        /** プロンプトインジェクション検出 */
+        private InjectionDetectionConfig injectionDetection = new InjectionDetectionConfig();
+        
+        /** PII マスキング */
+        private PiiMaskingConfig piiMasking = new PiiMaskingConfig();
+        
+        /** 出力フィルタリング */
+        private OutputFilteringConfig outputFiltering = new OutputFilteringConfig();
+        
+        /** レート制限 */
+        private RateLimitConfig rateLimit = new RateLimitConfig();
+        
+        /** データ保持 */
+        private RetentionConfig retention = new RetentionConfig();
+        
+        @Data
+        public static class InjectionDetectionConfig {
+            private boolean enabled = true;
+            private int softBlockThreshold = 3;
+            private int hardBlockThreshold = 5;
+        }
+        
+        @Data
+        public static class PiiMaskingConfig {
+            private boolean enabled = true;
+            private List<String> patterns = List.of("email", "phone", "credit_card", "my_number");
+        }
+        
+        @Data
+        public static class OutputFilteringConfig {
+            private boolean enabled = true;
+            private boolean blockSystemPromptLeak = true;
+        }
+        
+        @Data
+        public static class RateLimitConfig {
+            private boolean enabled = true;
+            private int requestsPerMinute = 60;
+            private int requestsPerMinutePerUser = 20;
+        }
+        
+        @Data
+        public static class RetentionConfig {
+            private int conversationDays = 90;
+            private int auditLogDays = 365;
+        }
+    }
+
+    /**
+     * クォータ設定.
+     */
+    @Data
+    public static class QuotaConfig {
+        /** クォータ有効化フラグ */
+        private boolean enabled = true;
+        
+        /** 日次トークン制限 */
+        private long dailyTokenLimit = 1_000_000L;
+        
+        /** 警告閾値 (0.0 - 1.0) */
+        private double warningThreshold = 0.8;
+    }
+
+    /**
+     * モニタリング設定.
+     */
+    @Data
+    public static class MonitoringConfig {
+        /** メトリクス有効化フラグ */
+        private boolean enabled = true;
+        
+        /** 詳細タイミング計測 */
+        private boolean detailedTiming = true;
+        
+        /** レスポンス時間閾値（ミリ秒） */
+        private long responseTimeThresholdMs = 5000;
+        
+        /** エラー率閾値 (0.0 - 1.0) */
+        private double errorRateThreshold = 0.05;
     }
 }
