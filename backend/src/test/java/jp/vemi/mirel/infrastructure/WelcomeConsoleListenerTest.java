@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,13 @@ class WelcomeConsoleListenerTest {
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
+    }
+
+    @AfterEach
+    void tearDown() {
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(WelcomeConsoleListener.class);
+        logger.detachAppender(listAppender);
+        listAppender.stop();
     }
 
     @Test
