@@ -1,0 +1,7 @@
+id,model_id,record_data,text,tenant_id,version,created_at,created_by,updated_at,updated_by
+cust-001,customer,"{""id"":""cust-001"",""name"":""山田 太郎"",""email"":""taro@example.com""}",山田 太郎,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+cust-002,customer,"{""id"":""cust-002"",""name"":""鈴木 次郎"",""email"":""jiro@example.com""}",鈴木 次郎,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+cust-003,customer,"{""id"":""cust-003"",""name"":""田中 花子"",""email"":""hanako@example.com""}",田中 花子,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+prod-001,product,"{""id"":""prod-001"",""name"":""ノートPC A"",""price"":150000}",ノートPC A,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+prod-002,product,"{""id"":""prod-002"",""name"":""マウス B"",""price"":3000}",マウス B,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+ord-001,order,"{""id"":""ord-001"",""customer_id"":""cust-001"",""amount"":153000}",注文 001,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system

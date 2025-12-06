@@ -1,0 +1,4 @@
+model_id,model_name,description,is_hidden,model_type,tenant_id,status,version,created_at,created_by,updated_at,updated_by
+customer,顧客情報,顧客管理用モデル,false,master,default,ACTIVE,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+order,注文情報,注文管理用モデル,false,transaction,default,ACTIVE,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+product,商品情報,商品管理用モデル,false,master,default,ACTIVE,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system

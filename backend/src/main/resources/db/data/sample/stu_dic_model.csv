@@ -1,0 +1,10 @@
+model_id,field_id,field_name,widget_type,data_type,is_required,is_key,sort,min_length,max_length,tenant_id,version,created_at,created_by,updated_at,updated_by
+customer,id,顧客ID,text,string,true,true,1,1,20,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+customer,name,氏名,text,string,true,false,2,1,100,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+customer,email,メールアドレス,text,string,false,false,3,0,255,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+order,id,注文ID,text,string,true,true,1,1,20,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+order,customer_id,顧客ID,text,string,true,false,2,1,20,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+order,amount,金額,number,decimal,true,false,3,0,0,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+product,id,商品ID,text,string,true,true,1,1,20,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+product,name,商品名,text,string,true,false,2,1,100,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
+product,price,価格,number,decimal,true,false,3,0,0,default,1,2024-01-01T00:00:00,system,2024-01-01T00:00:00,system
