@@ -1,6 +1,12 @@
 # application-dev.yml - Development Environment Configuration
 # PostgreSQL (docker-compose.dev.yml) を使用
 spring:
+  # Spring AI autoconfigure を無効化（Mira独自の設定で制御）
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
   datasource:
     url: jdbc:postgresql://localhost:5432/mirelplatform
     driver-class-name: org.postgresql.Driver
@@ -97,3 +103,24 @@ email:
   smtp:
     host: localhost
     port: 1025
+
+# Mira AI 設定（開発環境）
+# Spring AI autoconfigure は spring.ai.model.chat=none で無効化済み
+# このアプリ独自の設定で AI 機能を制御
+mira:
+  ai:
+    enabled: true                    # Mira AI 機能を有効化
+    provider: azure-openai           # 本番プロバイダ（mock が無効時に使用）
+    mock:
+      enabled: true                  # 開発環境ではモックを使用
+      response-delay-ms: 300         # 応答遅延シミュレーション
+      default-response: "ご質問ありがとうございます。現在開発環境のためモックで応答しています。"
+    # Azure OpenAI 設定（本番/ステージング環境用）
+    # mock.enabled=false の場合にこの設定が使用される
+    azure-openai:
+      endpoint: ${AZURE_OPENAI_ENDPOINT:}
+      api-key: ${AZURE_OPENAI_API_KEY:}
+      deployment-name: gpt-4o
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 60

@@ -13,6 +13,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +24,14 @@ import lombok.extern.slf4j.Slf4j;
  * Azure OpenAI AI クライアント.
  * 
  * <p>Spring AI 1.1 を使用した Azure OpenAI Service への接続を提供します。</p>
+ * 
+ * <p>このコンポーネントは {@code mira.ai.mock.enabled=false}（デフォルト）かつ
+ * {@link ChatClient.Builder} Bean が存在する場合にのみ有効になります。</p>
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "mira.ai.provider", havingValue = "azure-openai", matchIfMissing = false)
+@ConditionalOnProperty(name = "mira.ai.mock.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnBean(ChatClient.Builder.class)
 public class AzureOpenAiClient implements AiProviderClient {
 
     private final ChatClient chatClient;

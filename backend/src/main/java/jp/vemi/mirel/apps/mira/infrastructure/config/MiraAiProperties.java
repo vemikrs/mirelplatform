@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 import lombok.Data;
 
@@ -20,29 +19,44 @@ import lombok.Data;
  * <pre>
  * mira:
  *   ai:
- *     provider: azure-openai  # azure-openai | openai | mock
+ *     enabled: true           # Mira AI 機能全体の有効/無効
+ *     provider: azure-openai  # azure-openai | mock
  *     azure-openai:
  *       endpoint: ${AZURE_OPENAI_ENDPOINT}
  *       api-key: ${AZURE_OPENAI_API_KEY}
  *       deployment-name: gpt-4o
  *     mock:
- *       enabled: false
+ *       enabled: false        # provider=azure-openai でも true にすると mock を使用
  *       response-delay-ms: 500
  * </pre>
+ * 
+ * <h3>Spring AI ベストプラクティス</h3>
+ * <ul>
+ *   <li>Spring AI の autoconfigure は {@code spring.ai.model.chat=none} で無効化</li>
+ *   <li>このアプリ独自の {@code mira.ai.*} 設定で AI 機能を制御</li>
+ *   <li>開発環境では {@code mira.ai.mock.enabled=true} でモック使用</li>
+ * </ul>
  */
 @Data
-@Configuration
 @ConfigurationProperties(prefix = "mira.ai")
 public class MiraAiProperties {
+
+    /**
+     * Mira AI 機能全体の有効化フラグ.
+     * 
+     * <p>false の場合、AI 関連の Bean は登録されません。</p>
+     */
+    private boolean enabled = true;
 
     /**
      * AI プロバイダ種別.
      * 
      * <ul>
      *   <li>{@code azure-openai} - Azure OpenAI Service（デフォルト）</li>
-     *   <li>{@code openai} - OpenAI API</li>
      *   <li>{@code mock} - テスト用モックプロバイダ</li>
      * </ul>
+     * 
+     * <p>注意: {@code mock.enabled=true} の場合、この設定に関わらず mock が使用されます。</p>
      */
     private String provider = "azure-openai";
 
@@ -110,13 +124,20 @@ public class MiraAiProperties {
 
     /**
      * モック設定.
+     * 
+     * <p>開発/テスト環境で外部 AI サービスに依存せず動作確認を行う場合に使用します。</p>
      */
     @Data
     public static class MockConfig {
-        /** モック有効化フラグ */
+        /**
+         * モック有効化フラグ.
+         * 
+         * <p>true の場合、{@code provider} の設定に関わらず mock クライアントが使用されます。
+         * 開発環境では通常 true に設定し、本番環境では false にします。</p>
+         */
         private boolean enabled = false;
         
-        /** 応答遅延（ミリ秒） */
+        /** 応答遅延シミュレーション（ミリ秒） */
         private Integer responseDelayMs = 500;
         
         /** デフォルト応答 */
