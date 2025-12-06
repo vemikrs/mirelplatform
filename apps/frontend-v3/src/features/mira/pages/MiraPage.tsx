@@ -8,22 +8,35 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, ScrollArea } from '@mirel/ui';
+import {
+  Button,
+  ScrollArea,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  toast,
+} from '@mirel/ui';
 import { 
   Sparkles,
   Trash2,
   Menu,
   Plus,
   Keyboard,
+  Download,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import type { MiraMode } from '@/lib/api/mira';
+import { exportUserData } from '@/lib/api/mira';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
+import { MiraDeleteConfirmDialog } from '../components/MiraDeleteConfirmDialog';
 
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,6 +50,11 @@ export function MiraPage() {
     conversations,
     clearConversation,
     newConversation,
+    editingMessageId,
+    editingMessageContent,
+    startEditMessage,
+    cancelEditMessage,
+    resendEditedMessage,
   } = useMira();
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
@@ -48,6 +66,17 @@ export function MiraPage() {
   
   // キーボードショートカットオーバーレイの状態
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  
+  // 会話クリア確認ダイアログの状態
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
+  // エクスポート処理状態
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // メッセージ編集確認ダイアログの状態
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingEditMessageId, setPendingEditMessageId] = useState<string | null>(null);
+  const [affectedMessagesCount, setAffectedMessagesCount] = useState(0);
   
   // URLクエリパラメータから会話IDを取得して開く
   useEffect(() => {
@@ -76,6 +105,39 @@ export function MiraPage() {
     newConversation();
     setIsDrawerOpen(false);
   }, [newConversation]);
+  
+  // エクスポート処理ハンドラ
+  const handleExport = useCallback(async () => {
+    try {
+      setIsExporting(true);
+      const data = await exportUserData();
+      
+      // JSON形式でダウンロード
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mira-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'エクスポート完了',
+        description: `${data.metadata.conversationCount}件の会話をエクスポートしました`,
+      });
+    } catch (error) {
+      console.error('エクスポートエラー:', error);
+      toast({
+        title: 'エクスポート失敗',
+        description: error instanceof Error ? error.message : 'エクスポート中にエラーが発生しました',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
   
   // 選択中メッセージへスクロール
   const scrollToMessage = useCallback((index: number) => {
@@ -172,6 +234,11 @@ export function MiraPage() {
           scrollToMessage(lastIndex);
           lastKeyRef.current = { key: '', time: 0 };
         } else {
+          // 単独の e キーでメッセージ編集（選択中のメッセージがユーザーメッセージの場合）
+          if (selectedMessageIndex >= 0 && messages[selectedMessageIndex]?.role === 'user') {
+            e.preventDefault();
+            handleEditMessage(messages[selectedMessageIndex].id);
+          }
           lastKeyRef.current = { key: 'e', time: now };
         }
         return;
@@ -200,7 +267,7 @@ export function MiraPage() {
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage]);
+  }, [isDrawerOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage, handleEditMessage]);
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -209,8 +276,51 @@ export function MiraPage() {
   
   // メッセージ送信ハンドラ
   const handleSend = useCallback((message: string, mode?: MiraMode) => {
-    sendMessage(message, { mode });
-  }, [sendMessage]);
+    if (editingMessageId && activeConversation?.id) {
+      // 編集モードでの再送信
+      resendEditedMessage(activeConversation.id, editingMessageId);
+      // 編集後のメッセージで新規送信
+      sendMessage(message, { mode });
+    } else {
+      // 通常の送信
+      sendMessage(message, { mode });
+    }
+  }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
+  
+  // メッセージ編集ハンドラ
+  const handleEditMessage = useCallback((messageId: string) => {
+    if (!activeConversation?.id) return;
+    
+    // 編集点以降のメッセージ数をカウント
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+    
+    const affectedCount = messages.length - messageIndex - 1;
+    
+    if (affectedCount > 0) {
+      // 以降にメッセージがある場合は警告ダイアログを表示
+      setPendingEditMessageId(messageId);
+      setAffectedMessagesCount(affectedCount);
+      setShowEditConfirm(true);
+    } else {
+      // 最新メッセージの場合は直ちに編集モードへ
+      startEditMessage(activeConversation.id, messageId);
+    }
+  }, [activeConversation, messages, startEditMessage]);
+  
+  // 編集確認ハンドラ
+  const handleConfirmEdit = useCallback(() => {
+    if (activeConversation?.id && pendingEditMessageId) {
+      startEditMessage(activeConversation.id, pendingEditMessageId);
+    }
+    setShowEditConfirm(false);
+    setPendingEditMessageId(null);
+  }, [activeConversation, pendingEditMessageId, startEditMessage]);
+  
+  const handleCancelConfirmEdit = useCallback(() => {
+    setShowEditConfirm(false);
+    setPendingEditMessageId(null);
+  }, []);
   
   // 会話選択ハンドラ
   const handleSelectConversation = useCallback((conversationId: string) => {
@@ -318,6 +428,15 @@ export function MiraPage() {
             <Button
               variant="ghost"
               size="icon"
+              onClick={handleExport}
+              disabled={isExporting}
+              title="データをエクスポート"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleNewConversation}
               title="新しい会話 (⌘+N)"
             >
@@ -327,7 +446,7 @@ export function MiraPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => clearConversation()}
+                onClick={() => setShowClearConfirm(true)}
                 title="会話をクリア"
               >
                 <Trash2 className="w-4 h-4" />
@@ -361,7 +480,7 @@ export function MiraPage() {
                     }}
                     className={selectedMessageIndex === index ? 'ring-2 ring-primary/50 rounded-lg' : ''}
                   >
-                    <MiraChatMessage message={message} />
+                    <MiraChatMessage message={message} onEdit={handleEditMessage} />
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
@@ -379,6 +498,9 @@ export function MiraPage() {
               placeholder="メッセージを入力... (Enter で送信)"
               className="mira-chat-input"
               autoFocus
+              editingMessageId={editingMessageId || undefined}
+              editingMessageContent={editingMessageContent || undefined}
+              onCancelEdit={cancelEditMessage}
             />
           </div>
         </div>
@@ -389,6 +511,44 @@ export function MiraPage() {
         isOpen={showKeyboardShortcuts}
         onClose={() => setShowKeyboardShortcuts(false)}
       />
+      
+      {/* 会話クリア確認ダイアログ */}
+      <MiraDeleteConfirmDialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          clearConversation();
+          toast({
+            title: '成功',
+            description: '会話をクリアしました',
+          });
+        }}
+        title="この会話をクリアしますか?"
+        description="すべてのメッセージが削除されます。この操作は取り消せません。"
+        confirmLabel="クリア"
+      />
+      
+      {/* メッセージ編集確認ダイアログ */}
+      <Dialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>メッセージを編集</DialogTitle>
+            <DialogDescription>
+              このメッセージを編集すると、以降の会話履歴（{affectedMessagesCount}件）が削除されます。
+              <br />
+              よろしいですか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelConfirmEdit}>
+              キャンセル
+            </Button>
+            <Button onClick={handleConfirmEdit}>
+              削除して再送信
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

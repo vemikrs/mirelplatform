@@ -22,6 +22,7 @@ const LEFT_CATEGORIES: CategoryData[] = [
       { keys: ['Shift', 'Enter'], description: '改行' },
       { keys: ['@'], description: 'モード選択' },
       { keys: ['↑', '↓'], description: '履歴' },
+      { keys: ['Esc'], description: '編集キャンセル' },
     ],
   },
   {
@@ -45,6 +46,7 @@ const RIGHT_CATEGORIES: CategoryData[] = [
       { keys: ['⌘', 'H'], description: '履歴を開く' },
       { keys: ['⌘', 'N'], description: '新規会話' },
       { keys: ['C'], description: 'コピー' },
+      { keys: ['E'], description: 'メッセージ編集' },
     ],
   },
   {

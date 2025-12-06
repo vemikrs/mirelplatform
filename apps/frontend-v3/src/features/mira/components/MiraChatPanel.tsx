@@ -5,7 +5,17 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { cn, Button, ScrollArea } from '@mirel/ui';
+import {
+  cn,
+  Button,
+  ScrollArea,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@mirel/ui';
 import { X, MessageSquarePlus, Trash2, Bot, ExternalLink, Minus, Maximize2 } from 'lucide-react';
 import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
@@ -28,6 +38,11 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     activeConversation,
     clearConversation,
     newConversation,
+    editingMessageId,
+    editingMessageContent,
+    startEditMessage,
+    cancelEditMessage,
+    resendEditedMessage,
   } = useMira();
   
   const { isOpen, close: closePanel } = useMiraPanel();
@@ -36,6 +51,11 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   
   // 最小化状態
   const [isMinimized, setIsMinimized] = useState(false);
+  
+  // 編集確認ダイアログ
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingEditMessageId, setPendingEditMessageId] = useState<string | null>(null);
+  const [affectedMessagesCount, setAffectedMessagesCount] = useState(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -58,11 +78,52 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   }, [togglePanel]);
   
   const handleSend = (message: string, mode?: MiraMode) => {
-    sendMessage(message, { mode });
+    if (editingMessageId && activeConversationId) {
+      // 編集モードでの再送信
+      resendEditedMessage(activeConversationId, editingMessageId);
+      // 編集後のメッセージで新規送信
+      sendMessage(message, { mode });
+    } else {
+      // 通常の送信
+      sendMessage(message, { mode });
+    }
     // 送信時に最小化を解除
     if (isMinimized) {
       setIsMinimized(false);
     }
+  };
+  
+  const handleEditMessage = (messageId: string) => {
+    if (!activeConversationId) return;
+    
+    // 編集点以降のメッセージ数をカウント
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+    
+    const affectedCount = messages.length - messageIndex - 1;
+    
+    if (affectedCount > 0) {
+      // 以降にメッセージがある場合は警告ダイアログを表示
+      setPendingEditMessageId(messageId);
+      setAffectedMessagesCount(affectedCount);
+      setShowEditConfirm(true);
+    } else {
+      // 最新メッセージの場合は直ちに編集モードへ
+      startEditMessage(activeConversationId, messageId);
+    }
+  };
+  
+  const handleConfirmEdit = () => {
+    if (activeConversationId && pendingEditMessageId) {
+      startEditMessage(activeConversationId, pendingEditMessageId);
+    }
+    setShowEditConfirm(false);
+    setPendingEditMessageId(null);
+  };
+  
+  const handleCancelConfirmEdit = () => {
+    setShowEditConfirm(false);
+    setPendingEditMessageId(null);
   };
   
   // 専用画面で開く
@@ -216,7 +277,12 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
               ) : (
                 <>
                   {messages.map((message) => (
-                    <MiraChatMessage key={message.id} message={message} compact />
+                    <MiraChatMessage 
+                      key={message.id} 
+                      message={message} 
+                      compact 
+                      onEdit={handleEditMessage}
+                    />
                   ))}
                   <div ref={messagesEndRef} />
                 </>
@@ -230,9 +296,34 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
             isLoading={isLoading}
             placeholder="質問を入力... (Enter で送信)"
             compact
+            editingMessageId={editingMessageId || undefined}
+            editingMessageContent={editingMessageContent || undefined}
+            onCancelEdit={cancelEditMessage}
           />
         </>
       )}
+      
+      {/* 編集確認ダイアログ */}
+      <Dialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>メッセージを編集</DialogTitle>
+            <DialogDescription>
+              このメッセージを編集すると、以降の会話履歴（{affectedMessagesCount}件）が削除されます。
+              <br />
+              よろしいですか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelConfirmEdit}>
+              キャンセル
+            </Button>
+            <Button onClick={handleConfirmEdit}>
+              削除して再送信
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
