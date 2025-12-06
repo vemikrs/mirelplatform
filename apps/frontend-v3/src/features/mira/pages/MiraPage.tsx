@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
-import { exportUserData, type MiraMode } from '@/lib/api/mira';
+import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
@@ -305,15 +305,15 @@ export function MiraPage() {
   }, [messages]);
   
   // メッセージ送信ハンドラ
-  const handleSend = useCallback((message: string, mode?: MiraMode) => {
+  const handleSend = useCallback((message: string, mode?: MiraMode, config?: MessageConfig) => {
     if (editingMessageId && activeConversation?.id) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversation.id, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode });
+      sendMessage(message, { mode, messageConfig: config });
     } else {
       // 通常の送信
-      sendMessage(message, { mode });
+      sendMessage(message, { mode, messageConfig: config });
     }
   }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
   

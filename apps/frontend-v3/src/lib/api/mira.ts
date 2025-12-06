@@ -30,6 +30,19 @@ export interface ChatContext {
   systemRole?: string;
   appRole?: string;
   payload?: Record<string, unknown>;
+  /** メッセージ送信設定 */
+  messageConfig?: MessageConfig;
+}
+
+/**
+ * メッセージ送信設定
+ */
+export interface MessageConfig {
+  historyScope?: 'auto' | 'recent' | 'none';
+  recentCount?: number;
+  contextOverrides?: Record<string, { enabled: boolean; priority: number }>;
+  additionalPresets?: string[];
+  temporaryContext?: string;
 }
 
 /**
@@ -110,6 +123,17 @@ export interface MiraSnapshotApiResponse {
 }
 
 /**
+ * タイトル生成リクエスト
+ */
+export interface GenerateTitleRequest {
+  conversationId: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+}
+
+/**
  * タイトル生成レスポンス
  */
 export interface GenerateTitleResponse {
@@ -184,6 +208,18 @@ export interface UpdateTitleResponse {
 
 export interface MiraUpdateTitleApiResponse {
   data: UpdateTitleResponse | null;
+  errors: string[];
+}
+
+/**
+ * 設定推奨リクエスト
+ */
+export interface SuggestConfigRequest {
+  messageContent: string;
+}
+
+export interface MiraSuggestConfigApiResponse {
+  data: MessageConfig | null;
   errors: string[];
 }
 
@@ -346,6 +382,28 @@ export async function updateConversationTitle(
   
   if (!response.data.data) {
     throw new Error('タイトル更新に失敗しました');
+  }
+  
+  return response.data.data;
+}
+
+/**
+ * 設定推奨取得
+ */
+export async function suggestConfig(
+  request: SuggestConfigRequest
+): Promise<MessageConfig> {
+  const response = await apiClient.post<MiraSuggestConfigApiResponse>(
+    '/apps/mira/api/suggest-config',
+    { model: request }
+  );
+  
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+  
+  if (!response.data.data) {
+    throw new Error('推奨設定の取得に失敗しました');
   }
   
   return response.data.data;

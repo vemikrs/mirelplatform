@@ -21,7 +21,7 @@ import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
 import { MiraChatInput } from './MiraChatInput';
-import type { MiraMode } from '@/lib/api/mira';
+import type { MiraMode, MessageConfig } from '@/lib/api/mira';
 
 interface MiraChatPanelProps {
   className?: string;
@@ -77,15 +77,15 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePanel]);
   
-  const handleSend = (message: string, mode?: MiraMode) => {
+  const handleSend = (message: string, mode?: MiraMode, config?: MessageConfig) => {
     if (editingMessageId && activeConversationId) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversationId, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode });
+      sendMessage(message, { mode, messageConfig: config });
     } else {
       // 通常の送信
-      sendMessage(message, { mode });
+      sendMessage(message, { mode, messageConfig: config });
     }
     // 送信時に最小化を解除
     if (isMinimized) {

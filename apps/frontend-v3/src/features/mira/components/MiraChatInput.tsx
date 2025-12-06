@@ -24,7 +24,10 @@ import {
   Eye,
   Download,
   Maximize2,
+  Settings, // Add Settings icon
 } from 'lucide-react';
+import { ContextSwitcherModal } from './ContextSwitcherModal';
+import { type MessageConfig } from '@/lib/api/mira';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
 
@@ -63,7 +66,7 @@ export interface AttachedFile {
 }
 
 interface MiraChatInputProps {
-  onSend: (message: string, mode?: MiraMode) => void;
+  onSend: (message: string, mode?: MiraMode, config?: MessageConfig) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -107,6 +110,10 @@ export function MiraChatInput({
       return [];
     }
   });
+
+  const [contextModalOpen, setContextModalOpen] = useState(false);
+  const [messageConfig, setMessageConfig] = useState<MessageConfig>({});
+
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempMessage, setTempMessage] = useState(''); // 履歴ナビ前のメッセージを保持
   
@@ -251,9 +258,12 @@ export function MiraChatInput({
         });
       }
       
+      
       // TODO: 添付ファイルも送信処理に含める
-      onSend(trimmed, selectedMode);
+      onSend(trimmed, selectedMode, messageConfig);
+      
       setMessage('');
+      setMessageConfig({}); // Reset config
       setHistoryIndex(-1);
       setTempMessage('');
       // 添付ファイルをクリア
@@ -271,6 +281,13 @@ export function MiraChatInput({
   };
   
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl/Cmd + Shift + M でコンテキストスイッチャー
+    if (e.key === 'M' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+      e.preventDefault();
+      setContextModalOpen(true);
+      return;
+    }
+    
     // Ctrl/Cmd + Enter で送信
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -436,6 +453,22 @@ export function MiraChatInput({
           >
             <Paperclip className="w-4 h-4" />
           </button>
+
+          {/* コンテキスト設定ボタン */}
+          <button
+            onClick={() => setContextModalOpen(true)}
+            className={cn(
+              "p-1.5 rounded-md border",
+              "hover:bg-muted transition-colors shrink-0",
+              "text-muted-foreground hover:text-foreground",
+              // 設定がある場合は色を変える
+              Object.keys(messageConfig).length > 0 && "bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400"
+            )}
+            title="コンテキスト設定 (Ctrl+Shift+M)"
+            disabled={isLoading || disabled}
+          >
+            <Settings className="w-4 h-4" />
+          </button>
           
           {/* モード選択ボタン */}
           <button
@@ -499,6 +532,14 @@ export function MiraChatInput({
           </p>
         )}
       </div>
+
+      <ContextSwitcherModal 
+        open={contextModalOpen} 
+        onOpenChange={setContextModalOpen}
+        config={messageConfig}
+        onConfigChange={setMessageConfig}
+        messageContent={message}
+      />
     </div>
   );
 }

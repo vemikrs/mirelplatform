@@ -18,6 +18,7 @@ import {
   type ContextSnapshotRequest,
   type MiraMode,
   type ChatContext,
+  type MessageConfig,
 } from '@/lib/api/mira';
 
 // ========================================
@@ -87,6 +88,7 @@ export function useMiraChat() {
     options?: {
       mode?: MiraMode;
       context?: ChatContext;
+      messageConfig?: MessageConfig;
     }
   ) => {
     // 会話がなければ新規作成
@@ -102,7 +104,10 @@ export function useMiraChat() {
     const request: ChatRequest = {
       conversationId: conversationId !== activeConversationId ? undefined : conversationId,
       mode: options?.mode,
-      context: options?.context,
+      context: {
+        ...options?.context,
+        messageConfig: options?.messageConfig,
+      },
       message: { content },
     };
     
