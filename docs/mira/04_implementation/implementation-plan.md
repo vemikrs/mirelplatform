@@ -17,6 +17,7 @@
 - **API パス規約**: `/apps/mira/api/*` （mirelplatform 標準に準拠）
 - **DTO/Response 標準**: `ApiRequest<T>` / `ApiResponse<T>` を使用
 - **テスト駆動**: モック機能を活用し、外部 AI API 非依存でテスト可能な設計
+- **都度コミット**: 各実装ステップ完了後に必ずコミットし、進捗を明確化
 
 ### 1.2 フェーズ構成
 
