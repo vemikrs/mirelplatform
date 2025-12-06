@@ -11,8 +11,6 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { MiraFab } from '@/features/mira/components/MiraFab';
 import { MiraChatPanel } from '@/features/mira/components/MiraChatPanel';
-import { MiraFullscreenView } from '@/features/mira/components/MiraFullscreenView';
-import { useMiraPanel } from '@/hooks/useMira';
 
 
 /**
@@ -23,7 +21,6 @@ export function RootLayout() {
   const initialNavigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
-  const { isFullscreen, setFullscreen } = useMiraPanel();
 
   // Fetch dynamic menu from backend
   const { data: dynamicMenu } = useQuery({
@@ -135,9 +132,6 @@ export function RootLayout() {
       {/* Mira AI Assistant */}
       <MiraFab />
       <MiraChatPanel />
-      {isFullscreen && (
-        <MiraFullscreenView onMinimize={() => setFullscreen(false)} />
-      )}
     </div>
   );
 }

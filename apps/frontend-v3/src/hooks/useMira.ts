@@ -253,16 +253,13 @@ export function useMiraHealth() {
  * パネル制御フック
  */
 export function useMiraPanel() {
-  const { isOpen, isFullscreen, togglePanel, openPanel, closePanel, toggleFullscreen, setFullscreen, error, setError } = useMiraStore();
+  const { isOpen, togglePanel, openPanel, closePanel, error, setError } = useMiraStore();
   
   return {
     isOpen,
-    isFullscreen,
     toggle: togglePanel,
     open: openPanel,
     close: closePanel,
-    toggleFullscreen,
-    setFullscreen,
     error,
     clearError: () => setError(null),
   };
@@ -287,12 +284,9 @@ export function useMira() {
   return {
     // パネル
     isOpen: panel.isOpen,
-    isFullscreen: panel.isFullscreen,
     togglePanel: panel.toggle,
     openPanel: panel.open,
     closePanel: panel.close,
-    toggleFullscreen: panel.toggleFullscreen,
-    setFullscreen: panel.setFullscreen,
     
     // チャット
     sendMessage: chat.sendMessage,

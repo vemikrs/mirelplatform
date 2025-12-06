@@ -4,8 +4,9 @@
  * サイドパネル形式のチャットUI
  */
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn, Button, ScrollArea } from '@mirel/ui';
-import { X, MessageSquarePlus, Trash2, Bot, Maximize2 } from 'lucide-react';
+import { X, MessageSquarePlus, Trash2, Bot, ExternalLink } from 'lucide-react';
 import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
@@ -17,6 +18,7 @@ interface MiraChatPanelProps {
 }
 
 export function MiraChatPanel({ className }: MiraChatPanelProps) {
+  const navigate = useNavigate();
   const {
     sendMessage,
     isLoading,
@@ -28,8 +30,9 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     newConversation,
   } = useMira();
   
-  const { isOpen, isFullscreen, close: closePanel, toggleFullscreen } = useMiraPanel();
+  const { isOpen, close: closePanel } = useMiraPanel();
   const togglePanel = useMiraStore((state) => state.togglePanel);
+  const activeConversationId = useMiraStore((state) => state.activeConversationId);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -55,7 +58,18 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     sendMessage(message, { mode });
   };
   
-  if (!isOpen || isFullscreen) {
+  // 専用画面で開く
+  const handleOpenInFullPage = () => {
+    closePanel();
+    // 会話IDがあればそれを開く、なければMiraトップへ
+    if (activeConversationId) {
+      navigate(`/mira?conversation=${activeConversationId}`);
+    } else {
+      navigate('/mira');
+    }
+  };
+  
+  if (!isOpen) {
     return null;
   }
   
@@ -102,10 +116,10 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleFullscreen}
-            title="全画面表示"
+            onClick={handleOpenInFullPage}
+            title="専用画面で開く"
           >
-            <Maximize2 className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4" />
           </Button>
           <Button
             variant="ghost"

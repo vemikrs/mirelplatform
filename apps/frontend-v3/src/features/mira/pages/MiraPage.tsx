@@ -7,6 +7,7 @@
  * - 中央: チャットエリア（メイン）
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, ScrollArea } from '@mirel/ui';
 import { 
   Sparkles,
@@ -24,6 +25,7 @@ import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 
 export function MiraPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     sendMessage,
     isLoading,
@@ -38,12 +40,23 @@ export function MiraPage() {
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
   const deleteConversation = useMiraStore((state) => state.deleteConversation);
+  const storedConversations = useMiraStore((state) => state.conversations);
   
   // ドロワーの開閉状態
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // キーボードショートカットオーバーレイの状態
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  
+  // URLクエリパラメータから会話IDを取得して開く
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (conversationId && storedConversations[conversationId]) {
+      setActiveConversation(conversationId);
+      // URLパラメータをクリア（履歴を汚さないため）
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, storedConversations, setActiveConversation]);
   
   // 現在のモードはアクティブな会話から取得
   const currentMode = activeConversation?.mode ?? 'GENERAL_CHAT';
