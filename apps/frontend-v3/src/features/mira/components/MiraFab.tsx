@@ -1,10 +1,12 @@
 /**
  * Mira FAB (Floating Action Button)
  * 
- * フッターの上に表示するMira起動ボタン
+ * 右端にくっついて隠れる形式のMira起動トリガー。
+ * ホバーまたはクリックでスライドアウトして表示される。
  */
-import { cn, Button } from '@mirel/ui';
-import { Bot, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@mirel/ui';
+import { Bot, Sparkles, ChevronLeft } from 'lucide-react';
 import { useMiraPanel } from '@/hooks/useMira';
 
 interface MiraFabProps {
@@ -13,31 +15,67 @@ interface MiraFabProps {
 
 export function MiraFab({ className }: MiraFabProps) {
   const { isOpen, toggle } = useMiraPanel();
+  const [isHovered, setIsHovered] = useState(false);
   
+  // パネルが開いているときは非表示
   if (isOpen) {
     return null;
   }
   
   return (
-    <Button
+    <button
       onClick={toggle}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        'fixed bottom-16 right-6 z-40',
-        'h-12 px-4 rounded-full shadow-lg',
-        'bg-gradient-to-r from-primary to-primary/80',
-        'hover:from-primary/90 hover:to-primary/70',
-        'text-primary-foreground font-medium',
-        'transition-all duration-200 hover:scale-105 hover:shadow-xl',
+        // 右端に固定、下から80px（フッターの上）
+        'fixed right-0 bottom-20 z-40',
+        // 基本スタイル
         'flex items-center gap-2',
+        'bg-primary text-primary-foreground',
+        'rounded-l-lg shadow-lg',
+        'transition-all duration-300 ease-out',
+        // ホバー時にスライドアウト
+        isHovered 
+          ? 'translate-x-0 pr-4 pl-3 py-2.5' 
+          : 'translate-x-[calc(100%-12px)] pr-3 pl-2 py-2',
+        // ホバーエフェクト
+        'hover:shadow-xl',
         className
       )}
       title="Mira AI アシスタント (Ctrl+Shift+M)"
+      aria-label="Mira AI アシスタントを開く"
     >
-      <div className="relative">
+      {/* 隠れているときに見えるインジケータ */}
+      <ChevronLeft 
+        className={cn(
+          'w-3 h-3 transition-opacity duration-200',
+          isHovered ? 'opacity-0 w-0' : 'opacity-70'
+        )} 
+      />
+      
+      {/* アイコン */}
+      <div className="relative shrink-0">
         <Bot className="w-5 h-5" />
-        <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-yellow-300" />
+        <Sparkles 
+          className={cn(
+            'w-2.5 h-2.5 absolute -top-0.5 -right-0.5 text-yellow-300',
+            'transition-transform duration-200',
+            isHovered ? 'scale-110' : 'scale-100'
+          )} 
+        />
       </div>
-      <span className="hidden sm:inline">Mira</span>
-    </Button>
+      
+      {/* テキスト（ホバー時のみ表示） */}
+      <span 
+        className={cn(
+          'text-sm font-medium whitespace-nowrap',
+          'transition-all duration-200',
+          isHovered ? 'opacity-100 max-w-20' : 'opacity-0 max-w-0 overflow-hidden'
+        )}
+      >
+        Mira
+      </span>
+    </button>
   );
 }

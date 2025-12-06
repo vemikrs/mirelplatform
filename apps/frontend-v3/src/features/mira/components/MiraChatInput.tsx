@@ -71,6 +71,8 @@ interface MiraChatInputProps {
   showShortcuts?: boolean;
   initialMode?: MiraMode;
   autoFocus?: boolean;
+  /** コンパクト表示（ポップアップウィンドウ用） */
+  compact?: boolean;
 }
 
 export function MiraChatInput({
@@ -81,6 +83,7 @@ export function MiraChatInput({
   className,
   initialMode = 'GENERAL_CHAT',
   autoFocus = false,
+  compact = false,
 }: MiraChatInputProps) {
   const [message, setMessage] = useState('');
   const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
@@ -443,10 +446,12 @@ export function MiraChatInput({
           </Button>
         </div>
         
-        {/* ヒント表示 */}
-        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-          Enter で送信 • Shift+Enter で改行 • @ でモード選択 • ↑↓ で履歴
-        </p>
+        {/* ヒント表示（コンパクト時は非表示） */}
+        {!compact && (
+          <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+            Enter で送信 • Shift+Enter で改行 • @ でモード選択 • ↑↓ で履歴
+          </p>
+        )}
       </div>
     </div>
   );

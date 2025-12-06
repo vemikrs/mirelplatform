@@ -9,6 +9,8 @@ import { cn } from '@mirel/ui';
 interface MiraMarkdownProps {
   content: string;
   className?: string;
+  /** コンパクト表示（ポップアップウィンドウ用） */
+  compact?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface MiraMarkdownProps {
  * - リスト (- item)
  * - リンク ([text](url))
  */
-export function MiraMarkdown({ content, className }: MiraMarkdownProps) {
+export function MiraMarkdown({ content, className, compact = false }: MiraMarkdownProps) {
   const rendered = useMemo(() => {
     if (!content) return '';
     
@@ -33,25 +35,37 @@ export function MiraMarkdown({ content, className }: MiraMarkdownProps) {
       /```(\w*)\n([\s\S]*?)```/g,
       (_, lang, code) => {
         const langClass = lang ? `language-${lang}` : '';
-        return `<pre class="bg-muted rounded-md p-3 overflow-x-auto my-2"><code class="${langClass}">${code.trim()}</code></pre>`;
+        const padding = compact ? 'p-2' : 'p-3';
+        return `<pre class="bg-muted rounded-md ${padding} overflow-x-auto my-2 text-xs"><code class="${langClass}">${code.trim()}</code></pre>`;
       }
     );
     
     // インラインコード
     html = html.replace(
       /`([^`]+)`/g,
-      '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>'
+      '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>'
     );
     
-    // 見出し
-    html = html.replace(
-      /^### (.+)$/gm,
-      '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>'
-    );
-    html = html.replace(
-      /^## (.+)$/gm,
-      '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>'
-    );
+    // 見出し（コンパクト時は小さめ）
+    if (compact) {
+      html = html.replace(
+        /^### (.+)$/gm,
+        '<h3 class="text-sm font-semibold mt-2 mb-1">$1</h3>'
+      );
+      html = html.replace(
+        /^## (.+)$/gm,
+        '<h2 class="text-sm font-semibold mt-2 mb-1">$1</h2>'
+      );
+    } else {
+      html = html.replace(
+        /^### (.+)$/gm,
+        '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>'
+      );
+      html = html.replace(
+        /^## (.+)$/gm,
+        '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>'
+      );
+    }
     
     // 強調
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -77,11 +91,15 @@ export function MiraMarkdown({ content, className }: MiraMarkdownProps) {
     html = html.replace(/\n/g, '<br />');
     
     return html;
-  }, [content]);
+  }, [content, compact]);
   
   return (
     <div 
-      className={cn('prose prose-sm dark:prose-invert max-w-none', className)}
+      className={cn(
+        'prose dark:prose-invert max-w-none',
+        compact ? 'prose-xs' : 'prose-sm',
+        className
+      )}
       dangerouslySetInnerHTML={{ __html: rendered }}
     />
   );

@@ -1,12 +1,12 @@
 /**
  * Mira Chat Panel Component
  * 
- * サイドパネル形式のチャットUI
+ * GitHub Copilot風の右下コンパクトウィンドウUI
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn, Button, ScrollArea } from '@mirel/ui';
-import { X, MessageSquarePlus, Trash2, Bot, ExternalLink } from 'lucide-react';
+import { X, MessageSquarePlus, Trash2, Bot, ExternalLink, Minus, Maximize2 } from 'lucide-react';
 import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
@@ -34,6 +34,9 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   const togglePanel = useMiraStore((state) => state.togglePanel);
   const activeConversationId = useMiraStore((state) => state.activeConversationId);
   
+  // 最小化状態
+  const [isMinimized, setIsMinimized] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // メッセージ追加時に自動スクロール
@@ -56,12 +59,15 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   
   const handleSend = (message: string, mode?: MiraMode) => {
     sendMessage(message, { mode });
+    // 送信時に最小化を解除
+    if (isMinimized) {
+      setIsMinimized(false);
+    }
   };
   
   // 専用画面で開く
   const handleOpenInFullPage = () => {
     closePanel();
-    // 会話IDがあればそれを開く、なければMiraトップへ
     if (activeConversationId) {
       navigate(`/mira?conversation=${activeConversationId}`);
     } else {
@@ -93,110 +99,171 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   return (
     <div
       className={cn(
-        'fixed right-0 top-0 h-full w-[400px] max-w-full',
-        'bg-background border-l shadow-lg z-50',
-        'flex flex-col',
+        // 右下に固定配置（GitHub Copilot風）
+        'fixed right-4 bottom-4 z-50',
+        // サイズ
+        'w-[380px] max-w-[calc(100vw-2rem)]',
+        // 最小化時は高さを縮める
+        isMinimized ? 'h-auto' : 'h-[500px] max-h-[calc(100vh-6rem)]',
+        // スタイル
+        'bg-background rounded-xl border shadow-2xl',
+        'flex flex-col overflow-hidden',
+        // アニメーション
+        'animate-in slide-in-from-bottom-4 fade-in duration-200',
         className
       )}
       role="dialog"
       aria-label="Mira AI アシスタント"
     >
       {/* ヘッダー */}
-      <div className="flex items-center justify-between p-3 border-b">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Mira</h2>
-          {activeConversation?.mode && (
-            <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <span className="font-medium text-sm">Mira</span>
+          {activeConversation?.mode && activeConversation.mode !== 'GENERAL_CHAT' && (
+            <span className="px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary font-medium">
               {getModeLabel(activeConversation.mode)}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleOpenInFullPage}
-            title="専用画面で開く"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+            className="h-7 w-7"
             onClick={newConversation}
             title="新しい会話"
           >
-            <MessageSquarePlus className="w-4 h-4" />
+            <MessageSquarePlus className="w-3.5 h-3.5" />
           </Button>
           {messages.length > 0 && (
             <Button
               variant="ghost"
               size="icon"
+              className="h-7 w-7"
               onClick={() => clearConversation()}
               title="会話をクリア"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
           )}
           <Button
             variant="ghost"
             size="icon"
+            className="h-7 w-7"
+            onClick={handleOpenInFullPage}
+            title="専用画面で開く"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setIsMinimized(!isMinimized)}
+            title={isMinimized ? '展開' : '最小化'}
+          >
+            {isMinimized ? (
+              <Maximize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Minus className="w-3.5 h-3.5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
             onClick={closePanel}
             title="閉じる (Ctrl+Shift+M)"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
       
-      {/* エラー表示 */}
-      {error && (
-        <div className="p-3 bg-destructive/10 text-destructive text-sm flex items-center justify-between">
-          <span>{error}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearError}
-          >
-            閉じる
-          </Button>
-        </div>
-      )}
-      
-      {/* メッセージエリア */}
-      <ScrollArea className="flex-1">
-        <div className="p-2">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <Bot className="w-12 h-12 mb-4 opacity-50" />
-              <p className="text-center">
-                こんにちは！<br />
-                何かお手伝いできることはありますか？
-              </p>
-              <p className="text-xs mt-2 text-center opacity-70">
-                ショートカットボタンから<br />
-                質問を始めることもできます
-              </p>
+      {/* 最小化時は入力欄のみ表示 */}
+      {isMinimized ? (
+        <MiraChatInput
+          onSend={handleSend}
+          isLoading={isLoading}
+          placeholder="質問を入力..."
+          compact
+        />
+      ) : (
+        <>
+          {/* エラー表示 */}
+          {error && (
+            <div className="px-3 py-2 bg-destructive/10 text-destructive text-xs flex items-center justify-between">
+              <span className="truncate">{error}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={clearError}
+              >
+                閉じる
+              </Button>
             </div>
-          ) : (
-            <>
-              {messages.map((message) => (
-                <MiraChatMessage key={message.id} message={message} />
-              ))}
-              <div ref={messagesEndRef} />
-            </>
           )}
-        </div>
-      </ScrollArea>
-      
-      {/* 入力エリア */}
-      <MiraChatInput
-        onSend={handleSend}
-        isLoading={isLoading}
-        placeholder="メッセージを入力... (Enter で送信)"
-        showShortcuts={true}
-      />
+          
+          {/* メッセージエリア */}
+          <ScrollArea className="flex-1">
+            <div className="p-3">
+              {messages.length === 0 ? (
+                <MiraCompactEmptyState onSend={handleSend} />
+              ) : (
+                <>
+                  {messages.map((message) => (
+                    <MiraChatMessage key={message.id} message={message} compact />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+          </ScrollArea>
+          
+          {/* 入力エリア */}
+          <MiraChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            placeholder="質問を入力... (Enter で送信)"
+            compact
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+/** コンパクト空状態 */
+function MiraCompactEmptyState({ onSend }: { onSend: (message: string) => void }) {
+  const quickActions = [
+    { label: 'この画面の説明', message: 'この画面の使い方を教えてください' },
+    { label: 'エラー解析', message: 'エラーの原因を分析してください' },
+    { label: 'コードレビュー', message: 'コードをレビューしてください' },
+  ];
+  
+  return (
+    <div className="flex flex-col items-center py-8 text-center">
+      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+        <Bot className="w-5 h-5 text-primary" />
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        何かお手伝いしましょうか？
+      </p>
+      <div className="flex flex-wrap justify-center gap-2">
+        {quickActions.map((action) => (
+          <button
+            key={action.label}
+            onClick={() => onSend(action.message)}
+            className="px-2.5 py-1 text-xs rounded-full border hover:bg-muted transition-colors"
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
