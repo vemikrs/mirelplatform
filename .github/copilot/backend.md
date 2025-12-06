@@ -19,6 +19,36 @@
 - 新規 API は `/mipla2/apps/mste/...` に揃え、Swagger (`/mipla2/swagger-ui.html`) に反映されるよう `@Operation` を記述。
 - 永続化: Spring Data JPA。開発時は H2、CI では MySQL を想定。Flyway 等は未導入のため SQL 変更はドキュメント化。
 
+### Mira AI (`jp.vemi.mirel.apps.mira`)
+
+AI アシスタント機能を提供するモジュール。設定は `mira.ai.*` プレフィックスで管理。
+
+**アーキテクチャ:**
+- `application/controller/MiraApiController.java` - REST API エンドポイント (`/mipla2/apps/mira/api/*`)
+- `domain/service/MiraChatService.java` - チャットロジック、プロンプト構築
+- `infrastructure/ai/` - AI プロバイダ抽象化層
+  - `AiProviderClient` - プロバイダインタフェース
+  - `AiProviderFactory` - プロバイダ選択・フォールバック
+  - `MockAiClient` - テスト/開発用モック
+  - `AzureOpenAiClient` - Azure OpenAI 実装
+- `infrastructure/config/MiraAiProperties.java` - 設定クラス
+
+**設定例 (application.yml):**
+```yaml
+mira:
+  ai:
+    enabled: true
+    provider: azure-openai  # or github-models
+    mock:
+      enabled: false        # true で開発時モック使用
+```
+
+**新規プロバイダ追加手順:**
+1. `AiProviderClient` を実装したクラスを作成
+2. `@Component` で Bean 登録
+3. `getProviderName()` で識別子を返す
+4. `MiraAiProperties` に設定クラスを追加
+
 ## レビュー前チェックリスト
 - [ ] `./gradlew :backend:check` が成功。
 - [ ] 例外ハンドリングは `GlobalExceptionHandler` 経由で `ApiError` に変換される。
