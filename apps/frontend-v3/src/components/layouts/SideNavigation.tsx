@@ -192,8 +192,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
             onClick={() => navigate('/mira')}
           >
             <Bot className="size-4" />
-            <span>Mira</span>
-            <span className="text-xs text-muted-foreground ml-auto">(AI Assistant)</span>
+            <span>Mira (mirel Assistant)</span>
           </Button>
         </div>
       )}
