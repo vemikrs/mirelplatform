@@ -102,7 +102,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
                 className="w-full h-10 flex items-center justify-center"
               >
                 <Avatar 
-                  src={undefined}
+                  src={user.avatarUrl}
                   alt={user.displayName || user.email}
                   fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                   size="sm"
@@ -145,7 +145,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
           className="w-full flex items-center gap-2 px-2 py-1.5 h-[68px] justify-start hover:bg-surface-raised"
         >
           <Avatar 
-            src={undefined}
+            src={user.avatarUrl}
             alt={user.displayName || user.email}
             fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
             size="sm"
@@ -186,7 +186,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
 
 // Shared menu content component
 interface UserMenuContentProps {
-  user: { displayName?: string; email?: string; username?: string };
+  user: { displayName?: string; email?: string; username?: string; avatarUrl?: string };
   currentTenant: { tenantId: string; displayName: string } | null;
   tenants: Array<{ tenantId: string; displayName: string }>;
   currentTier: LicenseTier;
@@ -221,7 +221,7 @@ function UserMenuContent({
       <div className="px-2 py-1.5">
         <div className="flex items-center gap-3 mb-2">
           <Avatar 
-            src={undefined}
+            src={user.avatarUrl}
             alt={user.displayName || user.email}
             fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
             size="md"
