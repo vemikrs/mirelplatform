@@ -14,11 +14,11 @@ mirel Studio Modeler のデータモデルは、**Entity / View / Code** の 3 �
 
 ### 2.1 モデルタイプ
 
-| タイプ | 説明 | 用途 |
-|-------|------|------|
+| タイプ     | 説明                       | 用途                 |
+| ---------- | -------------------------- | -------------------- |
 | **Entity** | 実データを持つテーブル相当 | 顧客、注文、商品など |
-| **View** | 複数 Entity の結合・投影 | 一覧表示、レポート |
-| **Code** | コードマスタ（選択肢） | ステータス、区分など |
+| **View**   | 複数 Entity の結合・投影   | 一覧表示、レポート   |
+| **Code**   | コードマスタ（選択肢）     | ステータス、区分など |
 
 ### 2.2 階層構造（Recursive Domain Structure）
 
@@ -48,12 +48,12 @@ public class StuModelHeader {
     private String modelCategory;      // 'transaction' | 'master'
     private Boolean isHidden;          // 非表示フラグ
     private String primaryKeyField;    // PKフィールドID
-    
+
     // Draft/Publish 状態
     private String status;             // 'draft' | 'published'
     private Integer draftVersion;
     private Integer publishedVersion;
-    
+
     // マルチテナント・監査
     private String tenantId;
     @Version
@@ -69,32 +69,32 @@ public class StuModelHeader {
 
 ```java
 @Entity
-@Table(name = "stu_field")
-public class StuField {
+@Table(name = "stu_dic_model")
+public class StuModel {
     @EmbeddedId
     private PK pk;  // modelId + fieldId
-    
+
     // 基本情報
     private String fieldName;          // 表示名
     private String description;        // 説明
     private String dataType;           // string | number | date | boolean | domain
     private Integer sort;              // 表示順
-    
+
     // 階層構造
     private String parentFieldId;      // 親フィールドID
     private Integer depth;             // 階層深度
-    
+
     // 制約
     private Boolean isKey;
     private Boolean isRequired;
     private Boolean isArray;
-    
+
     // 表示
     private String widgetType;
     private Integer displayWidth;
     private Boolean isHeader;
     private String format;
-    
+
     // バリデーション
     private Integer minLength;
     private Integer maxLength;
@@ -102,21 +102,21 @@ public class StuField {
     private BigDecimal minValue;
     private BigDecimal maxValue;
     private Integer decimalPlaces;
-    
+
     // 関連
     private String relationCodeGroup;
     private String relationEntityId;
     private String relationFieldId;
     private String relationType;
-    
+
     // デフォルト
     private String defaultValue;
     private String function;
-    
+
     // Draft/Publish
     private String status;
     private Integer draftVersion;
-    
+
     // マルチテナント・監査
     private String tenantId;
     @Version
@@ -125,7 +125,7 @@ public class StuField {
     private String createdBy;
     private LocalDateTime updatedAt;
     private String updatedBy;
-    
+
     @Data
     @Embeddable
     public static class PK implements Serializable {
@@ -143,26 +143,26 @@ public class StuField {
 
 ```typescript
 // モデルタイプ
-type ModelType = 'entity' | 'view';
-type ModelCategory = 'transaction' | 'master';
-type ModelStatus = 'draft' | 'published';
+type ModelType = "entity" | "view";
+type ModelCategory = "transaction" | "master";
+type ModelStatus = "draft" | "published";
 
 // フィールドタイプ
-type DataType = 'string' | 'number' | 'date' | 'boolean' | 'domain';
-type WidgetType = 
-  | 'text' 
-  | 'textarea' 
-  | 'number' 
-  | 'select' 
-  | 'radio' 
-  | 'checkbox' 
-  | 'datepicker' 
-  | 'datetimepicker'
-  | 'file'
-  | 'hidden';
+type DataType = "string" | "number" | "date" | "boolean" | "domain";
+type WidgetType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "select"
+  | "radio"
+  | "checkbox"
+  | "datepicker"
+  | "datetimepicker"
+  | "file"
+  | "hidden";
 
 // リレーションタイプ
-type RelationType = 'many-to-one' | 'one-to-many' | 'many-to-many';
+type RelationType = "many-to-one" | "one-to-many" | "many-to-many";
 ```
 
 ### 4.2 モデル定義
@@ -202,17 +202,17 @@ interface FieldDefinition {
   description?: string;
   dataType: DataType;
   sort: number;
-  
+
   // 階層
   parentFieldId?: string;
   depth: number;
   children?: FieldDefinition[];
-  
+
   // 制約
   isKey: boolean;
   isRequired: boolean;
   isArray: boolean;
-  
+
   // 表示
   widgetType: WidgetType;
   displayWidth?: number;
@@ -220,22 +220,22 @@ interface FieldDefinition {
   format?: string;
   placeholder?: string;
   helpText?: string;
-  
+
   // バリデーション
   validation?: ValidationRule;
-  
+
   // 関連
   relationCodeGroup?: string;
   relationEntityId?: string;
   relationFieldId?: string;
   relationType?: RelationType;
-  
+
   // デフォルト
   defaultValue?: any;
   function?: string;
-  
+
   // 状態
-  status: 'draft' | 'published' | 'deleted';
+  status: "draft" | "published" | "deleted";
   draftVersion?: number;
 }
 
@@ -260,12 +260,12 @@ interface ValidationRule {
 function buildFieldTree(fields: FieldDefinition[]): FieldDefinition[] {
   const fieldMap = new Map<string, FieldDefinition>();
   const roots: FieldDefinition[] = [];
-  
-  fields.forEach(field => {
+
+  fields.forEach((field) => {
     fieldMap.set(field.fieldId, { ...field, children: [] });
   });
-  
-  fields.forEach(field => {
+
+  fields.forEach((field) => {
     const node = fieldMap.get(field.fieldId)!;
     if (field.parentFieldId) {
       const parent = fieldMap.get(field.parentFieldId);
@@ -277,7 +277,7 @@ function buildFieldTree(fields: FieldDefinition[]): FieldDefinition[] {
       roots.push(node);
     }
   });
-  
+
   return roots;
 }
 ```
@@ -286,13 +286,13 @@ function buildFieldTree(fields: FieldDefinition[]): FieldDefinition[] {
 
 ## 6. ウィジェットタイプマッピング
 
-| DataType | 推奨 WidgetType | 代替 WidgetType |
-|----------|----------------|----------------|
-| string | text | textarea, select, radio |
-| number | number | text |
-| date | datepicker | text |
-| boolean | checkbox | radio, select |
-| domain | - | （子フィールドで決定） |
+| DataType | 推奨 WidgetType | 代替 WidgetType         |
+| -------- | --------------- | ----------------------- |
+| string   | text            | textarea, select, radio |
+| number   | number          | text                    |
+| date     | datepicker      | text                    |
+| boolean  | checkbox        | radio, select           |
+| domain   | -               | （子フィールドで決定）  |
 
 ---
 
@@ -304,4 +304,4 @@ function buildFieldTree(fields: FieldDefinition[]): FieldDefinition[] {
 
 ---
 
-*Powered by Copilot 🤖*
+_Powered by Copilot 🤖_
