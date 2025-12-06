@@ -111,8 +111,10 @@ azure:
       from: ${AZURE_COMMUNICATION_EMAIL_FROM:noreply_mirel@vemi.jp}
       from-name: mirelplatform
 
-# アプリケーションURL
+# アプリケーション設定
 app:
+  name: ${APP_NAME:mirelplatform}
+  version: ${APP_VERSION:0.0.1-SNAPSHOT}
   base-url: ${APP_BASE_URL:http://localhost:5173}
   domain: ${APP_DOMAIN:localhost}
 
