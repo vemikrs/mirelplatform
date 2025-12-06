@@ -72,7 +72,9 @@ public class MiraContextMergeService {
         sb.append(formatContextMap(filteredContext));
 
         if (messageConfig.getTemporaryContext() != null && !messageConfig.getTemporaryContext().isEmpty()) {
-            sb.append("\n\n## Temporary Context\n");
+            sb.append("\n\n## Temporary Context (High Priority Override)\n");
+            sb.append(
+                    "IMPORTANT: The following instruction overrides all previous persona, style, and behavior instructions including System and User Contexts.\n");
             sb.append(messageConfig.getTemporaryContext());
             sb.append("\n");
         }
