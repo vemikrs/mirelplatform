@@ -45,6 +45,7 @@ export interface MiraConversation {
 interface MiraState {
   // 状態
   isOpen: boolean;
+  isFullscreen: boolean;
   isLoading: boolean;
   activeConversationId: string | null;
   conversations: Record<string, MiraConversation>;
@@ -54,6 +55,8 @@ interface MiraState {
   togglePanel: () => void;
   openPanel: () => void;
   closePanel: () => void;
+  toggleFullscreen: () => void;
+  setFullscreen: (fullscreen: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   
@@ -80,6 +83,7 @@ export const useMiraStore = create<MiraState>()(
     (set, get) => ({
       // 初期状態
       isOpen: false,
+      isFullscreen: false,
       isLoading: false,
       activeConversationId: null,
       conversations: {},
@@ -88,7 +92,9 @@ export const useMiraStore = create<MiraState>()(
       // パネル制御
       togglePanel: () => set((state) => ({ isOpen: !state.isOpen })),
       openPanel: () => set({ isOpen: true }),
-      closePanel: () => set({ isOpen: false }),
+      closePanel: () => set({ isOpen: false, isFullscreen: false }),
+      toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen, isOpen: true })),
+      setFullscreen: (fullscreen) => set({ isFullscreen: fullscreen, isOpen: true }),
       
       // ローディング・エラー
       setLoading: (loading) => set({ isLoading: loading }),
@@ -252,7 +258,7 @@ export const useMiraStore = create<MiraState>()(
     {
       name: 'mira-store',
       partialize: (state) => ({
-        // パネル状態と会話のみ永続化
+        // パネル状態と会話のみ永続化（isFullscreenは永続化しない）
         isOpen: state.isOpen,
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,

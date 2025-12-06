@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { cn, Button, ScrollArea } from '@mirel/ui';
-import { X, MessageSquarePlus, Trash2, Bot } from 'lucide-react';
+import { X, MessageSquarePlus, Trash2, Bot, Maximize2 } from 'lucide-react';
 import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
@@ -28,7 +28,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     newConversation,
   } = useMira();
   
-  const { isOpen, close: closePanel } = useMiraPanel();
+  const { isOpen, isFullscreen, close: closePanel, toggleFullscreen } = useMiraPanel();
   const togglePanel = useMiraStore((state) => state.togglePanel);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,7 +55,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     sendMessage(message, { mode });
   };
   
-  if (!isOpen) {
+  if (!isOpen || isFullscreen) {
     return null;
   }
   
@@ -99,6 +99,14 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            title="全画面表示"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
