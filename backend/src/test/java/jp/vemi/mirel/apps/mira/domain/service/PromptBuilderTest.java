@@ -26,11 +26,14 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 @ExtendWith(MockitoExtension.class)
 class PromptBuilderTest {
 
+    @org.mockito.Mock
+    private MiraContextLayerService contextLayerService;
+
     private PromptBuilder promptBuilder;
 
     @BeforeEach
     void setUp() {
-        promptBuilder = new PromptBuilder();
+        promptBuilder = new PromptBuilder(contextLayerService);
     }
 
     @Nested
@@ -56,8 +59,8 @@ class PromptBuilderTest {
             // システムプロンプトが含まれている
             assertThat(result.getMessages().get(0).getRole()).isEqualTo("system");
             // ユーザーメッセージが含まれている
-            assertThat(result.getMessages()).anyMatch(m -> 
-                "user".equals(m.getRole()) && "テストメッセージ".equals(m.getContent()));
+            assertThat(result.getMessages())
+                    .anyMatch(m -> "user".equals(m.getRole()) && "テストメッセージ".equals(m.getContent()));
             // 適切な温度設定
             assertThat(result.getTemperature()).isEqualTo(0.7);
         }
@@ -111,8 +114,7 @@ class PromptBuilderTest {
 
             List<AiRequest.Message> history = List.of(
                     AiRequest.Message.builder().role("user").content("こんにちは").build(),
-                    AiRequest.Message.builder().role("assistant").content("こんにちは！").build()
-            );
+                    AiRequest.Message.builder().role("assistant").content("こんにちは！").build());
 
             // Act
             AiRequest result = promptBuilder.buildChatRequest(request, MiraMode.GENERAL_CHAT, history);
@@ -175,7 +177,7 @@ class PromptBuilderTest {
             assertThat(result.getMessages()).hasSize(2); // system + user
             assertThat(result.getTemperature()).isEqualTo(0.3);
             assertThat(result.getMaxTokens()).isEqualTo(1000);
-            
+
             // ユーザーメッセージにエラー情報が含まれる
             String userMessage = result.getMessages().stream()
                     .filter(m -> "user".equals(m.getRole()))

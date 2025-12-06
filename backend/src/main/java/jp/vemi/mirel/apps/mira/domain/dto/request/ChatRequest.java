@@ -22,7 +22,10 @@ public class ChatRequest {
     /** 会話セッションID（null/空の場合は新規セッション） */
     private String conversationId;
 
-    /** モード（general_chat / context_help / error_analyze / studio_agent / workflow_agent） */
+    /**
+     * モード（general_chat / context_help / error_analyze / studio_agent /
+     * workflow_agent）
+     */
     private String mode;
 
     /** コンテキスト情報 */
@@ -60,6 +63,51 @@ public class ChatRequest {
 
         /** 画面固有コンテキスト */
         private Map<String, Object> payload;
+
+        /** メッセージ送信設定 */
+        private MessageConfig messageConfig;
+    }
+
+    /**
+     * メッセージ送信設定.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class MessageConfig {
+        /** 履歴スコープ (auto, recent, none) */
+        @Builder.Default
+        private String historyScope = "auto";
+
+        /** 直近履歴件数 (historyScope=recentの場合) */
+        private Integer recentCount;
+
+        /** コンテキスト設定のオーバーライド */
+        private Map<String, ContextOverride> contextOverrides;
+
+        /** 追加プリセットIDリスト */
+        private java.util.List<String> additionalPresets;
+
+        /** 一時的な追加コンテキスト */
+        private String temporaryContext;
+    }
+
+    /**
+     * コンテキスト設定のオーバーライド.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ContextOverride {
+        /** 有効/無効 */
+        @Builder.Default
+        private Boolean enabled = true;
+
+        /** 優先度 (0=normal, 1=high, -1=low) */
+        @Builder.Default
+        private Integer priority = 0;
     }
 
     /**
