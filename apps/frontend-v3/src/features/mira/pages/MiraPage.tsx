@@ -376,6 +376,7 @@ export function MiraPage() {
               isLoading={isLoading}
               placeholder="メッセージを入力... (Enter で送信)"
               className="mira-chat-input"
+              autoFocus
             />
           </div>
         </div>

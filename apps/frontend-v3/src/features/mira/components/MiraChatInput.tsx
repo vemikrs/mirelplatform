@@ -29,6 +29,7 @@ interface MiraChatInputProps {
   className?: string;
   showShortcuts?: boolean;
   initialMode?: MiraMode;
+  autoFocus?: boolean;
 }
 
 export function MiraChatInput({
@@ -38,6 +39,7 @@ export function MiraChatInput({
   placeholder = 'メッセージを入力...',
   className,
   initialMode = 'GENERAL_CHAT',
+  autoFocus = false,
 }: MiraChatInputProps) {
   const [message, setMessage] = useState('');
   const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
@@ -84,6 +86,17 @@ export function MiraChatInput({
   useEffect(() => {
     localStorage.setItem('mira-input-history', JSON.stringify(inputHistory));
   }, [inputHistory]);
+  
+  // autoFocusまたはisLoadingがfalseになった時にフォーカス
+  useEffect(() => {
+    if (autoFocus && !isLoading && !disabled) {
+      // 少し遅延を入れてDOM更新後にフォーカス
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus, isLoading, disabled]);
   
   const handleSend = () => {
     const trimmed = message.trim();

@@ -3,9 +3,9 @@
  * 
  * ?キーで表示されるキーボードショートカット一覧
  */
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, type ReactNode } from 'react';
 import { cn } from '@mirel/ui';
-import { X, Keyboard } from 'lucide-react';
+import { X, Keyboard, Pencil, Compass, MessageSquare, Settings } from 'lucide-react';
 
 interface MiraKeyboardShortcutsProps {
   isOpen: boolean;
@@ -13,10 +13,10 @@ interface MiraKeyboardShortcutsProps {
 }
 
 // ショートカットをカテゴリ別に整理（2カラム用に左右に分割）
-const LEFT_CATEGORIES = [
+const LEFT_CATEGORIES: CategoryData[] = [
   {
     category: '入力',
-    icon: '✏️',
+    icon: <Pencil className="w-3.5 h-3.5" />,
     shortcuts: [
       { keys: ['Enter'], description: '送信' },
       { keys: ['Shift', 'Enter'], description: '改行' },
@@ -26,7 +26,7 @@ const LEFT_CATEGORIES = [
   },
   {
     category: 'ナビゲーション',
-    icon: '🧭',
+    icon: <Compass className="w-3.5 h-3.5" />,
     shortcuts: [
       { keys: ['N'], description: '入力欄へ' },
       { keys: ['J'], description: '次へ' },
@@ -37,10 +37,10 @@ const LEFT_CATEGORIES = [
   },
 ];
 
-const RIGHT_CATEGORIES = [
+const RIGHT_CATEGORIES: CategoryData[] = [
   {
     category: '会話',
-    icon: '💬',
+    icon: <MessageSquare className="w-3.5 h-3.5" />,
     shortcuts: [
       { keys: ['⌘', 'H'], description: '履歴を開く' },
       { keys: ['⌘', 'N'], description: '新規会話' },
@@ -49,13 +49,19 @@ const RIGHT_CATEGORIES = [
   },
   {
     category: 'その他',
-    icon: '⚙️',
+    icon: <Settings className="w-3.5 h-3.5" />,
     shortcuts: [
       { keys: ['Esc'], description: '閉じる' },
       { keys: ['?'], description: 'ヘルプ' },
     ],
   },
 ];
+
+interface CategoryData {
+  category: string;
+  icon: ReactNode;
+  shortcuts: { keys: string[]; description: string }[];
+}
 
 export function MiraKeyboardShortcuts({ isOpen, onClose }: MiraKeyboardShortcutsProps) {
   // Escapeキーで閉じる
@@ -133,13 +139,13 @@ function ShortcutCategory({
   shortcuts 
 }: { 
   category: string; 
-  icon: string; 
+  icon: ReactNode; 
   shortcuts: { keys: string[]; description: string }[];
 }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5 pb-1 border-b border-border/50">
-        <span className="text-sm">{icon}</span>
+        <span className="text-primary">{icon}</span>
         <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
           {category}
         </h3>
