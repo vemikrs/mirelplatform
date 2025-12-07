@@ -11,7 +11,7 @@ import {
   MessageSquarePlus, 
   Trash2, 
   Search, 
-  Clock,
+
   X,
   HelpCircle,
   AlertTriangle,
@@ -55,7 +55,7 @@ export function MiraConversationList({
   const groupedConversations = groupConversationsByDate(filteredConversations);
   
   return (
-    <div className="w-[360px] md:w-[480px] lg:w-[520px] h-full border-r flex flex-col bg-surface shadow-lg">
+    <div className="w-64 h-full border-r flex flex-col bg-surface-subtle">
       {/* ヘッダー */}
       <div className="px-4 py-3 border-b">
         <div className="flex items-center justify-between mb-3">
@@ -163,10 +163,9 @@ interface ConversationItemProps {
 
 function ConversationItem({ conversation, isActive, onSelect, onDelete }: ConversationItemProps) {
   const title = getConversationTitle(conversation);
-  const preview = getConversationPreview(conversation);
-  const relativeTime = getRelativeTime(conversation.updatedAt);
   const modeConfig = getModeConfig(conversation.mode);
   const ModeIcon = modeConfig.icon;
+
   
   return (
     <div
@@ -180,34 +179,27 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
         }
       }}
       className={cn(
-        "w-full text-left px-3 py-2.5 rounded-lg transition-colors group cursor-pointer",
+        "w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer",
         isActive
-          ? "bg-primary/10 border border-primary/20"
-          : "hover:bg-surface-raised border border-transparent"
+          ? "bg-primary/10 border border-primary/20 text-primary"
+          : "hover:bg-muted text-muted-foreground hover:text-foreground border border-transparent"
       )}
     >
-      {/* メイン行: モードアイコン、タイトル、メタ情報、削除 */}
+      {/* メイン行: モードアイコン、タイトル */}
       <div className="flex items-center gap-2">
         {/* モードアイコン */}
-        <ModeIcon className={cn("w-4 h-4 shrink-0", modeConfig.color.split(' ')[0] || 'text-muted-foreground')} />
+        <ModeIcon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
         
         {/* タイトル */}
         <span className="text-sm font-medium line-clamp-1 flex-1 min-w-0">
           {title}
         </span>
         
-        {/* メタ情報（デスクトップで表示） */}
-        <span className="hidden md:flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-          <span>{relativeTime}</span>
-          <span className="text-muted-foreground/50">·</span>
-          <span>{conversation.messages.length}件</span>
-        </span>
-        
         {/* 削除ボタン */}
         <Button
           variant="ghost"
           size="icon"
-          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-auto"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
@@ -215,20 +207,6 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
         >
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
-      </div>
-      
-      {/* サブ行: プレビューとモバイルメタ情報 */}
-      <div className="flex items-center gap-2 mt-1 pl-6">
-        {preview && (
-          <p className="text-xs text-muted-foreground line-clamp-1 flex-1 min-w-0">
-            {preview}
-          </p>
-        )}
-        {/* モバイル用メタ情報 */}
-        <span className="md:hidden flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-auto">
-          <Clock className="w-3 h-3" />
-          {relativeTime}
-        </span>
       </div>
     </div>
   );
@@ -251,34 +229,9 @@ function getConversationTitle(conv: MiraConversation): string {
   return '新しい会話';
 }
 
-/** 会話プレビューを取得（最後のメッセージの先頭） */
-function getConversationPreview(conv: MiraConversation): string | null {
-  if (conv.messages.length <= 1) return null;
-  const lastMessage = conv.messages[conv.messages.length - 1];
-  if (lastMessage) {
-    const prefix = lastMessage.role === 'user' ? 'You: ' : 'Mira: ';
-    const content = lastMessage.content.length > 40
-      ? lastMessage.content.substring(0, 40) + '...'
-      : lastMessage.content;
-    return prefix + content;
-  }
-  return null;
-}
 
-function getRelativeTime(date: Date | string): string {
-  const now = new Date();
-  const target = new Date(date);
-  const diffMs = now.getTime() - target.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return 'たった今';
-  if (diffMins < 60) return `${diffMins}分前`;
-  if (diffHours < 24) return `${diffHours}時間前`;
-  if (diffDays < 7) return `${diffDays}日前`;
-  return target.toLocaleDateString('ja-JP');
-}
+
+
 
 /** モード設定を取得 */
 function getModeConfig(mode?: string): { label: string; icon: typeof MessageSquare; color: string } {
