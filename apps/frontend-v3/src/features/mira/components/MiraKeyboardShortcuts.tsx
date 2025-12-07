@@ -44,8 +44,8 @@ const RIGHT_CATEGORIES = (metaKey: string): CategoryData[] => [
     category: '会話',
     icon: <MessageSquare className="w-3.5 h-3.5" />,
     shortcuts: [
-      { keys: [metaKey, 'H'], description: '履歴を開く' },
-      { keys: [metaKey, 'N'], description: '新規会話' },
+      { keys: [metaKey, 'Shift', 'S'], description: '履歴を開く' },
+      { keys: [metaKey, 'Shift', 'O'], description: '新規会話' },
       { keys: ['C'], description: 'コピー' },
       { keys: ['E'], description: 'メッセージ編集' },
     ],

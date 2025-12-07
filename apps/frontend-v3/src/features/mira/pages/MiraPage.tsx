@@ -195,15 +195,15 @@ export function MiraPage() {
         return;
       }
       
-      // ⌘/Ctrl + H でサイドバーを切り替え
-      if (e.key === 'h' && (e.ctrlKey || e.metaKey)) {
+      // ⌘/Ctrl + Shift + S でサイドバーを切り替え
+      if (e.key === 's' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
         setIsSidebarOpen((prev) => !prev);
         return;
       }
       
-      // ⌘/Ctrl + N で新規会話
-      if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
+      // ⌘/Ctrl + Shift + O で新規会話
+      if (e.key === 'o' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
         handleNewConversation();
         return;
@@ -424,7 +424,7 @@ export function MiraPage() {
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title={`サイドバーを切替 (${metaKey}+H)`}
+              title={`サイドバーを切替 (${metaKey}+Shift+S)`}
             >
               <PanelLeft className="w-5 h-5" />
             </Button>
