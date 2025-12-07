@@ -19,6 +19,7 @@ export interface ChatRequest {
   message: {
     content: string;
   };
+  forceProvider?: string;
 }
 
 /**
