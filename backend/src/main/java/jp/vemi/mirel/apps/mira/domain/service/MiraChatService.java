@@ -130,10 +130,10 @@ public class MiraChatService {
                                 "Provider not found: " + request.getForceProvider()));
             } else {
                 log.warn("User {} tried to force provider {} without admin role", userId, request.getForceProvider());
-                client = aiProviderFactory.getProvider();
+                client = aiProviderFactory.createClient(tenantId);
             }
         } else {
-            client = aiProviderFactory.getProvider();
+            client = aiProviderFactory.createClient(tenantId);
         }
         AiResponse aiResponse = client.chat(aiRequest);
 
