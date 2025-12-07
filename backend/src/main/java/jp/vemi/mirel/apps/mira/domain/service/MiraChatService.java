@@ -121,7 +121,20 @@ public class MiraChatService {
                 request, mode, history, finalContext);
 
         // 7. AI 呼び出し
-        AiProviderClient client = aiProviderFactory.getProvider();
+        AiProviderClient client;
+        if (request.getForceProvider() != null && !request.getForceProvider().isEmpty()) {
+            // Admin role check for force provider
+            if (systemRole != null && systemRole.contains("ADMIN")) {
+                client = aiProviderFactory.getProvider(request.getForceProvider())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Provider not found: " + request.getForceProvider()));
+            } else {
+                log.warn("User {} tried to force provider {} without admin role", userId, request.getForceProvider());
+                client = aiProviderFactory.getProvider();
+            }
+        } else {
+            client = aiProviderFactory.getProvider();
+        }
         AiResponse aiResponse = client.chat(aiRequest);
 
         long latency = System.currentTimeMillis() - startTime;

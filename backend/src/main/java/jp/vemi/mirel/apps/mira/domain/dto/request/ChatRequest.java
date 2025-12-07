@@ -34,6 +34,9 @@ public class ChatRequest {
     /** メッセージ */
     private Message message;
 
+    /** 強制プロバイダ指定 (Admin only, testing purpose) */
+    private String forceProvider;
+
     /**
      * コンテキスト情報.
      */
