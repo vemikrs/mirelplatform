@@ -121,7 +121,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   return (
     <nav 
       className={cn(
-        "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300 ease-in-out",
+        "bg-surface-subtle border-r border-outline/20 flex h-full flex-col transition-all duration-300 ease-in-out",
         isExpanded ? "w-72" : "w-14",
         isTemporaryExpanded && !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-xl",
         className
