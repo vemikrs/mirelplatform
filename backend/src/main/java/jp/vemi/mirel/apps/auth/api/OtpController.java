@@ -5,10 +5,12 @@ package jp.vemi.mirel.apps.auth.api;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jp.vemi.mirel.apps.auth.dto.MagicLinkVerifyDto;
 import jp.vemi.mirel.apps.auth.dto.OtpRequestDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResendDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResponseDto;
 import jp.vemi.mirel.apps.auth.dto.OtpVerifyDto;
+import jp.vemi.mirel.foundation.abst.dao.entity.OtpToken;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.entity.User;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
@@ -56,6 +58,12 @@ public class OtpController {
             @RequestBody ApiRequest<OtpRequestDto> request,
             HttpServletRequest httpRequest) {
         OtpRequestDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<OtpResponseDto>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
@@ -111,12 +119,27 @@ public class OtpController {
      *            HTTPリクエスト
      * @return 検証結果
      */
+    /**
+     * OTP検証
+     * 
+     * @param request
+     *            リクエスト
+     * @param httpRequest
+     *            HTTPリクエスト
+     * @return 検証結果
+     */
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Object>> verifyOtp(
             @RequestBody ApiRequest<OtpVerifyDto> request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         OtpVerifyDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
@@ -202,6 +225,108 @@ public class OtpController {
     }
 
     /**
+     * マジックリンク検証
+     * *
+     * 
+     * @param request
+     *            リクエスト
+     * @param httpRequest
+     *            HTTPリクエスト
+     * @return 検証結果 (ログイン成功時はJWT含む)
+     */
+    @PostMapping("/magic-verify")
+    public ResponseEntity<ApiResponse<Object>> magicVerify(
+            @RequestBody ApiRequest<MagicLinkVerifyDto> request,
+            HttpServletRequest httpRequest) {
+        MagicLinkVerifyDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
+
+        if (dto.getToken() == null || dto.getToken().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .errors(java.util.List.of("トークンは必須です"))
+                            .build());
+        }
+
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        try {
+            // トークン検証
+            OtpToken token = otpService.verifyMagicLink(
+                    dto.getToken(),
+                    ipAddress,
+                    userAgent);
+
+            // 検証成功後、用途に応じた処理
+            if ("LOGIN".equals(token.getPurpose())) {
+                // SystemUser -> User 解決
+                User applicationUser = userRepository.findBySystemUserId(token.getSystemUserId())
+                        .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
+
+                AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
+
+                log.info("マジックリンクログイン成功: JWTトークン発行 - userId={}", applicationUser.getUserId());
+
+                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+                responseData.put("verified", true);
+                responseData.put("purpose", "LOGIN");
+                // MagicLinkの場合 DTOにemailはない。token.systemUserIdから引く必要がある
+                // ここでは applicationUser.getEmail() がある。
+                responseData.put("email", applicationUser.getEmail());
+                responseData.put("auth", authResponse);
+
+                return ResponseEntity.ok(ApiResponse.<Object>builder()
+                        .data(responseData)
+                        .messages(java.util.List.of("認証に成功しました"))
+                        .build());
+            }
+
+            // LOGIN以外 (PASSWORD_RESET, EMAIL_VERIFICATION)
+            // フロントエンドには検証成功の事実と、元のemail/code情報を返して
+            // 既存の画面フローに乗せることも可能だが、
+            // ここではシンプルに検証成功のみを返す。
+
+            // 汎用的なレスポンスデータを作成
+            java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+            responseData.put("verified", true);
+            responseData.put("purpose", token.getPurpose());
+
+            // 必要に応じてユーザー情報を付加
+            systemUserRepository.findById(token.getSystemUserId()).ifPresent(sysUser -> {
+                responseData.put("email", sysUser.getEmail());
+            });
+
+            // EMAIL_VERIFICATIONの場合、ログインさせる
+            if ("EMAIL_VERIFICATION".equals(token.getPurpose())) {
+                // ユーザーがいればログイン
+                userRepository.findBySystemUserId(token.getSystemUserId()).ifPresent(appUser -> {
+                    AuthenticationResponse authResponse = authenticationService.loginWithUser(appUser);
+                    responseData.put("auth", authResponse);
+                });
+            }
+
+            return ResponseEntity.ok(ApiResponse.<Object>builder()
+                    .data(responseData)
+                    .messages(java.util.List.of("認証に成功しました"))
+                    .build());
+
+        } catch (RuntimeException e) {
+            log.error("マジックリンク検証失敗: error={}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .data(false)
+                            .errors(java.util.List.of(e.getMessage()))
+                            .build());
+        }
+    }
+
+    /**
      * OTP再送信
      * 
      * @param request
@@ -215,6 +340,12 @@ public class OtpController {
             @RequestBody ApiRequest<OtpResendDto> request,
             HttpServletRequest httpRequest) {
         OtpResendDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<OtpResponseDto>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {

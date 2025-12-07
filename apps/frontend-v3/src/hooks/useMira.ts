@@ -89,6 +89,7 @@ export function useMiraChat() {
       mode?: MiraMode;
       context?: ChatContext;
       messageConfig?: MessageConfig;
+      forceProvider?: string;
     }
   ) => {
     // 会話がなければ新規作成
@@ -109,6 +110,7 @@ export function useMiraChat() {
         messageConfig: options?.messageConfig,
       },
       message: { content },
+      forceProvider: options?.forceProvider,
     };
     
     return mutation.mutateAsync(request);

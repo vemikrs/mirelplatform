@@ -72,6 +72,10 @@
             <div class="expiry">有効期限: ${expirationMinutes}分</div>
         </div>
         
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${magicLink}" style="background-color: #28a745; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">メールアドレスを検証</a>
+        </div>
+        
         <p>このコードを入力することで、メールアドレスの所有権が確認され、アカウントの登録が完了します。</p>
         
         <p>このメールに心当たりがない場合は、無視していただいて構いません。</p>

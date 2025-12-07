@@ -5,6 +5,7 @@ package jp.vemi.mirel.apps.mira.domain.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -30,10 +31,13 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
+
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
+import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter; // Import TokenCounter
 
 /**
  * MiraChatService のユニットテスト.
@@ -68,6 +72,24 @@ class MiraChatServiceTest {
     @Mock
     private MiraContextSnapshotRepository contextSnapshotRepository;
 
+    @Mock
+    private MiraAuditService auditService;
+
+    @Mock
+    private MiraRateLimitService rateLimitService;
+
+    @Mock
+    private MiraMetrics metrics;
+
+    @Mock
+    private TokenQuotaService tokenQuotaService;
+
+    @Mock
+    private MiraContextMergeService contextMergeService;
+
+    @Mock
+    private TokenCounter tokenCounter; // Mock TokenCounter
+
     @InjectMocks
     private MiraChatService miraChatService;
 
@@ -82,6 +104,22 @@ class MiraChatServiceTest {
 
         @BeforeEach
         void setUp() {
+            miraChatService = new MiraChatService(
+                    aiProviderFactory,
+                    modeResolver,
+                    promptBuilder,
+                    policyEnforcer,
+                    responseFormatter,
+                    conversationRepository,
+                    messageRepository,
+                    contextSnapshotRepository,
+                    contextMergeService,
+                    auditService,
+                    rateLimitService,
+                    metrics,
+                    tokenQuotaService,
+                    tokenCounter); // Add tokenCounter
+
             validRequest = ChatRequest.builder()
                     .message(ChatRequest.Message.builder()
                             .content("テストメッセージ")
@@ -113,10 +151,13 @@ class MiraChatServiceTest {
             when(messageRepository.findByConversationIdOrderByCreatedAtAsc(any()))
                     .thenReturn(List.of());
 
+            when(contextMergeService.buildFinalContextPrompt(any(), any(), any(), any()))
+                    .thenReturn("Context Prompt");
+
             AiRequest aiRequest = AiRequest.builder()
                     .messages(List.of(AiRequest.Message.user("テストメッセージ")))
                     .build();
-            when(promptBuilder.buildChatRequest(any(), any(), any())).thenReturn(aiRequest);
+            when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
             when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
             AiResponse aiResponse = AiResponse.success(
@@ -124,8 +165,7 @@ class MiraChatServiceTest {
                     AiResponse.Metadata.builder()
                             .model("gpt-4o")
                             .latencyMs(500L)
-                            .build()
-            );
+                            .build());
             when(aiProviderClient.chat(any())).thenReturn(aiResponse);
 
             when(policyEnforcer.filterResponse(any(), any())).thenAnswer(i -> i.getArgument(0));
@@ -210,7 +250,10 @@ class MiraChatServiceTest {
             AiRequest aiRequest = AiRequest.builder()
                     .messages(List.of(AiRequest.Message.user("テストメッセージ")))
                     .build();
-            when(promptBuilder.buildChatRequest(any(), any(), any())).thenReturn(aiRequest);
+            when(contextMergeService.buildFinalContextPrompt(any(), any(), any(), any()))
+                    .thenReturn("Context Prompt");
+
+            when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
             when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
             AiResponse errorResponse = AiResponse.error("API_ERROR", "APIエラーが発生しました");
@@ -271,16 +314,17 @@ class MiraChatServiceTest {
                     .messages(List.of(
                             AiRequest.Message.user("前のメッセージ"),
                             AiRequest.Message.assistant("前の応答"),
-                            AiRequest.Message.user("続きのメッセージ")
-                    ))
+                            AiRequest.Message.user("続きのメッセージ")))
                     .build();
-            when(promptBuilder.buildChatRequest(any(), any(), any())).thenReturn(aiRequest);
+            when(contextMergeService.buildFinalContextPrompt(any(), any(), any(), any()))
+                    .thenReturn("Context Prompt");
+
+            when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
             when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
             AiResponse aiResponse = AiResponse.success(
                     "続きの応答です",
-                    AiResponse.Metadata.builder().model("gpt-4o").build()
-            );
+                    AiResponse.Metadata.builder().model("gpt-4o").build());
             when(aiProviderClient.chat(any())).thenReturn(aiResponse);
 
             when(policyEnforcer.filterResponse(any(), any())).thenAnswer(i -> i.getArgument(0));
@@ -466,7 +510,8 @@ class MiraChatServiceTest {
                     .build();
 
             when(contextSnapshotRepository.save(any())).thenAnswer(invocation -> {
-                var snapshot = invocation.getArgument(0, jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextSnapshot.class);
+                var snapshot = invocation.getArgument(0,
+                        jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextSnapshot.class);
                 return snapshot;
             });
 

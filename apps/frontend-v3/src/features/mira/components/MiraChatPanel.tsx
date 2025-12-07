@@ -16,12 +16,23 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@mirel/ui';
-import { X, MessageSquarePlus, Trash2, Bot, ExternalLink, Minus, Maximize2 } from 'lucide-react';
+import { X, MessageSquarePlus, Trash2, Bot, ExternalLink, Minus, Maximize2, Settings as SettingsIcon } from 'lucide-react';
 import { useMira, useMiraPanel } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { MiraChatMessage } from './MiraChatMessage';
 import { MiraChatInput } from './MiraChatInput';
 import type { MiraMode, MessageConfig } from '@/lib/api/mira';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from '@mirel/ui';
 
 interface MiraChatPanelProps {
   className?: string;
@@ -57,6 +68,13 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   const [pendingEditMessageId, setPendingEditMessageId] = useState<string | null>(null);
   const [affectedMessagesCount, setAffectedMessagesCount] = useState(0);
   
+
+
+  // Settings State (G-5)
+  const [selectedProvider, setSelectedProvider] = useState<string>(''); // empty = auto
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('SYSTEM_ADMIN');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // メッセージ追加時に自動スクロール
@@ -82,10 +100,10 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversationId, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode, messageConfig: config });
+      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined });
     } else {
       // 通常の送信
-      sendMessage(message, { mode, messageConfig: config });
+      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined });
     }
     // 送信時に最小化を解除
     if (isMinimized) {
@@ -190,6 +208,25 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
           )}
         </div>
         <div className="flex items-center gap-0.5">
+          {isAdmin && (
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" size="icon" className="h-7 w-7" title="管理者設定">
+                   <SettingsIcon className="w-3.5 h-3.5" />
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end">
+                 <DropdownMenuLabel>AI Provider (Debug)</DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuRadioGroup value={selectedProvider} onValueChange={setSelectedProvider}>
+                   <DropdownMenuRadioItem value="">Auto (Default)</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="azure-openai">Azure OpenAI</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="openai">OpenAI (Original)</DropdownMenuRadioItem>
+                   <DropdownMenuRadioItem value="mock">Mock Provider</DropdownMenuRadioItem>
+                 </DropdownMenuRadioGroup>
+               </DropdownMenuContent>
+             </DropdownMenu>
+          )}
           <Button
             variant="ghost"
             size="icon"

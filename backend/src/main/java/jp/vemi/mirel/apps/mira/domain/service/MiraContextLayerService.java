@@ -29,7 +29,9 @@ import lombok.extern.slf4j.Slf4j;
  * マージされたコンテキストを提供する。
  * </p>
  * 
- * <p><b>優先度:</b> System &lt; Tenant &lt; Organization &lt; User</p>
+ * <p>
+ * <b>優先度:</b> System &lt; Tenant &lt; Organization &lt; User
+ * </p>
  */
 @Slf4j
 @Service
@@ -45,9 +47,12 @@ public class MiraContextLayerService {
      * 同一カテゴリの場合、より上位のスコープ（User &gt; Org &gt; Tenant &gt; System）で上書きされる。
      * </p>
      *
-     * @param tenantId テナントID
-     * @param organizationId 組織ID（nullable）
-     * @param userId ユーザーID
+     * @param tenantId
+     *            テナントID
+     * @param organizationId
+     *            組織ID（nullable）
+     * @param userId
+     *            ユーザーID
      * @return マージされたコンテキスト（category → content）
      */
     @Transactional(readOnly = true)
@@ -55,7 +60,7 @@ public class MiraContextLayerService {
             String tenantId,
             String organizationId,
             String userId) {
-        
+
         if (log.isDebugEnabled()) {
             log.debug("[MiraContextLayerService] buildMergedContext: tenant={}, org={}, user={}",
                     tenantId, organizationId, userId);
@@ -91,10 +96,14 @@ public class MiraContextLayerService {
     /**
      * 特定カテゴリのコンテキストを取得.
      *
-     * @param tenantId テナントID
-     * @param organizationId 組織ID
-     * @param userId ユーザーID
-     * @param category カテゴリ（例: "terminology", "style"）
+     * @param tenantId
+     *            テナントID
+     * @param organizationId
+     *            組織ID
+     * @param userId
+     *            ユーザーID
+     * @param category
+     *            カテゴリ（例: "terminology", "style"）
      * @return マージされたコンテキスト内容（なければnull）
      */
     @Transactional(readOnly = true)
@@ -103,7 +112,7 @@ public class MiraContextLayerService {
             String organizationId,
             String userId,
             String category) {
-        
+
         Map<String, String> merged = buildMergedContext(tenantId, organizationId, userId);
         return merged.get(category);
     }
@@ -121,7 +130,8 @@ public class MiraContextLayerService {
     /**
      * テナントスコープのコンテキストを取得.
      *
-     * @param tenantId テナントID
+     * @param tenantId
+     *            テナントID
      * @return テナントコンテキスト一覧
      */
     @Transactional(readOnly = true)
@@ -132,7 +142,8 @@ public class MiraContextLayerService {
     /**
      * コンテキストを保存または更新.
      *
-     * @param layer コンテキストレイヤー
+     * @param layer
+     *            コンテキストレイヤー
      * @return 保存されたエンティティ
      */
     @Transactional
@@ -149,11 +160,26 @@ public class MiraContextLayerService {
     }
 
     /**
+     * コンテキストを削除.
+     *
+     * @param contextId
+     *            コンテキストID
+     */
+    @Transactional
+    public void deleteContext(String contextId) {
+        log.info("[MiraContextLayerService] Deleting context: id={}", contextId);
+        repository.deleteById(contextId);
+    }
+
+    /**
      * ユーザーコンテキストを保存または更新（upsert）.
      *
-     * @param userId ユーザーID
-     * @param category カテゴリ
-     * @param content コンテンツ
+     * @param userId
+     *            ユーザーID
+     * @param category
+     *            カテゴリ
+     * @param content
+     *            コンテンツ
      * @return 保存されたエンティティ
      */
     @Transactional
@@ -166,7 +192,7 @@ public class MiraContextLayerService {
         // 既存のレコードを検索
         Optional<MiraContextLayer> existing = repository.findByScopeAndScopeIdAndCategory(
                 ContextScope.USER, userId, category);
-        
+
         MiraContextLayer layer;
         if (existing.isPresent()) {
             // 更新
@@ -196,7 +222,8 @@ public class MiraContextLayerService {
     /**
      * コンテキスト値をJSON Mapとしてパース.
      *
-     * @param contextContent JSON文字列
+     * @param contextContent
+     *            JSON文字列
      * @return パースされたMap
      */
     public Map<String, Object> parseContextContent(String contextContent) {
@@ -204,7 +231,8 @@ public class MiraContextLayerService {
             return Map.of();
         }
         try {
-            return objectMapper.readValue(contextContent, new TypeReference<>() {});
+            return objectMapper.readValue(contextContent, new TypeReference<>() {
+            });
         } catch (JsonProcessingException e) {
             log.warn("[MiraContextLayerService] Failed to parse context content as JSON", e);
             return Map.of("raw", contextContent);
@@ -214,7 +242,8 @@ public class MiraContextLayerService {
     /**
      * MapをJSON文字列に変換.
      *
-     * @param value 変換するMap
+     * @param value
+     *            変換するMap
      * @return JSON文字列
      */
     public String toJsonContextContent(Map<String, Object> value) {
@@ -232,9 +261,12 @@ public class MiraContextLayerService {
     /**
      * 階層コンテキストをプロンプト用のテキストに変換.
      *
-     * @param tenantId テナントID
-     * @param organizationId 組織ID
-     * @param userId ユーザーID
+     * @param tenantId
+     *            テナントID
+     * @param organizationId
+     *            組織ID
+     * @param userId
+     *            ユーザーID
      * @return プロンプトに追加するコンテキストテキスト
      */
     @Transactional(readOnly = true)
@@ -242,9 +274,9 @@ public class MiraContextLayerService {
             String tenantId,
             String organizationId,
             String userId) {
-        
+
         Map<String, String> contexts = buildMergedContext(tenantId, organizationId, userId);
-        
+
         if (contexts.isEmpty()) {
             return "";
         }

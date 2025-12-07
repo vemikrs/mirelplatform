@@ -20,6 +20,7 @@ adm-license-plan,ライセンスプラン定義,/admin/platform/license-plans,,a
 adm-system,システム共通設定,/admin/platform/system,,adm-platform,30,ADMIN|TENANT_ADMIN,
 adm-status,システムステータス,/admin/platform/status,,adm-platform,35,ADMIN|TENANT_ADMIN,
 adm-menu,メニュー定義管理,/admin/platform/menu,,adm-platform,40,ADMIN|TENANT_ADMIN,
+adm-mira,Mira AI設定,/admin/mira,sparkles,adm-platform,45,ADMIN|TENANT_ADMIN,Mira AIの設定管理
 sitemap,サイトマップ,/admin/platform/sitemap,,adm-platform,50,ADMIN|TENANT_ADMIN,
 adm-workspace,テナント管理,/admin/workspace,,admin,20,ADMIN|TENANT_ADMIN,ワークスペース管理者向け
 adm-license,契約・ライセンス管理,/admin/workspace/license,,adm-workspace,10,ADMIN|TENANT_ADMIN,

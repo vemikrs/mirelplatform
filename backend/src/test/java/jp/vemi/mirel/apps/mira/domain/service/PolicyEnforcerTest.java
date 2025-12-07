@@ -8,14 +8,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
+import jp.vemi.mirel.apps.mira.infrastructure.security.PiiMasker;
+import jp.vemi.mirel.apps.mira.infrastructure.security.PromptInjectionDetector;
 
 /**
  * PolicyEnforcer のユニットテスト.
@@ -23,11 +30,22 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 @ExtendWith(MockitoExtension.class)
 class PolicyEnforcerTest {
 
+    @Mock
+    private PiiMasker piiMasker;
+
+    @Mock
+    private PromptInjectionDetector promptInjectionDetector;
+
+    @InjectMocks
     private PolicyEnforcer policyEnforcer;
 
     @BeforeEach
     void setUp() {
-        policyEnforcer = new PolicyEnforcer();
+        // デフォルトのモック動作を設定（必要に応じて各テストで上書き）
+        // lenient()を使って、不要なスタブ設定による例外を防ぐ
+        org.mockito.Mockito.lenient().when(promptInjectionDetector.check(anyString()))
+                .thenReturn(PromptInjectionDetector.InjectionCheckResult.safe());
+        org.mockito.Mockito.lenient().when(piiMasker.mask(anyString())).thenAnswer(i -> i.getArguments()[0]);
     }
 
     @Nested
@@ -213,6 +231,8 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("通常テキストはそのまま返す")
         void shouldReturnNormalText() {
+            when(piiMasker.mask(anyString())).thenReturn("通常の応答です");
+
             // Act
             String result = policyEnforcer.filterResponse("通常の応答です", "USER");
 
@@ -223,6 +243,8 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("パスワード情報をマスク")
         void shouldMaskPassword() {
+            when(piiMasker.mask(anyString())).thenReturn("password=[REDACTED]");
+
             // Act
             String result = policyEnforcer.filterResponse("password=secret123", "USER");
 
@@ -234,6 +256,8 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("APIキー情報をマスク")
         void shouldMaskApiKey() {
+            when(piiMasker.mask(anyString())).thenReturn("api_key=[REDACTED]");
+
             // Act
             String result = policyEnforcer.filterResponse("api_key=sk-1234567890", "USER");
 
@@ -245,6 +269,8 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("JDBCURLをマスク")
         void shouldMaskJdbcUrl() {
+            when(piiMasker.mask(anyString())).thenReturn("接続先: [REDACTED]");
+
             // Act
             String result = policyEnforcer.filterResponse(
                     "接続先: jdbc://localhost:5432/db", "USER");
@@ -256,6 +282,9 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("非管理者にはIPアドレスをマスク")
         void shouldMaskIpForNonAdmin() {
+            // PiiMaskerはそのまま通すが、filterResponse内のmaskSystemDetailsでIPが隠されることを期待
+            when(piiMasker.mask(anyString())).thenAnswer(i -> i.getArguments()[0]);
+
             // Act
             String result = policyEnforcer.filterResponse(
                     "サーバー: 192.168.1.100", "USER");
@@ -268,6 +297,8 @@ class PolicyEnforcerTest {
         @Test
         @DisplayName("管理者にはIPアドレスを表示")
         void shouldShowIpForAdmin() {
+            when(piiMasker.mask(anyString())).thenAnswer(i -> i.getArguments()[0]);
+
             // Act
             String result = policyEnforcer.filterResponse(
                     "サーバー: 192.168.1.100", "ADMIN");
