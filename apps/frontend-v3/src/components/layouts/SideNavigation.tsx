@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -109,6 +109,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   // Flatten items for collapsed state
   // Logic: Only show items that are children of groups (level 2+). 
   // Top level items (like 'Portal') are hidden to avoid duplication with Brand or because they are headers.
+  /*
   const collapsedItems = useMemo(() => {
     const flattenChildren = (links: NavigationLink[]): NavigationLink[] => {
       const result: NavigationLink[] = [];
@@ -130,6 +131,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
     }
     return rootResult;
   }, [items]);
+  */
 
   return (
     <nav 
@@ -205,33 +207,12 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       ) : (
         /* Collapsed Icon Menu - No scroll needed typically, but safe to allow */
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-2 scrollbar-none flex flex-col items-center">
+          {/* Backend menus are hidden in collapsed mode as per requirement */}
+          {/*
           {collapsedItems.map((item) => (
             <CollapsedNavItem key={item.id} item={item} />
           ))}
-          
-          {/* Mira AI Assistant Icon */}
-          <div className="border-t border-outline/20 w-full pt-2 flex justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <NavLink
-                  to="/mira"
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
-                    )
-                  }
-                >
-                  <Bot className="size-4" />
-                </NavLink>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                Mira (mirel Assistant)
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          */}
         </div>
       )}
 
@@ -321,6 +302,29 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         ) : (
           // Collapsed mode UI - Simple vertical stack
           <div className="flex flex-col items-center gap-2">
+            
+            {/* Mira AI Assistant (Pinned to bottom) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NavLink
+                  to="/mira"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+                    )
+                  }
+                >
+                  <Bot className="size-4" />
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Mira (mirel Assistant)
+              </TooltipContent>
+            </Tooltip>
+
             {/* User Menu - Collapsed (Popover) */}
             <SidebarUserMenu isExpanded={false} />
             
@@ -495,6 +499,7 @@ function NavItem({ item, depth = 0, expandedItems, onToggle }: NavItemProps) {
 }
 
 // Collapsed Icon-only NavItem
+/*
 function CollapsedNavItem({ item }: { item: NavigationLink }) {
   const Icon = item.icon ? ICON_MAP[item.icon] : null;
   if (!Icon) return null;
@@ -522,3 +527,4 @@ function CollapsedNavItem({ item }: { item: NavigationLink }) {
     </Tooltip>
   );
 }
+*/
