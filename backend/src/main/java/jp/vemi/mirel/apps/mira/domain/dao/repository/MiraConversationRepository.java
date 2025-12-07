@@ -37,6 +37,12 @@ public interface MiraConversationRepository extends JpaRepository<MiraConversati
             String tenantId, String userId, Pageable pageable);
 
     /**
+     * テナント会話一覧 (Admin export用)
+     */
+    Page<MiraConversation> findByTenantIdOrderByLastActivityAtDesc(
+            String tenantId, Pageable pageable);
+
+    /**
      * テナント・ユーザ・モードで直近の会話を取得.
      */
     Optional<MiraConversation> findFirstByTenantIdAndUserIdAndModeAndStatusOrderByLastActivityAtDesc(
