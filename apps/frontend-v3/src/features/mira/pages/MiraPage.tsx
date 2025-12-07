@@ -22,10 +22,6 @@ import {
 } from '@mirel/ui';
 import { 
   Sparkles,
-  Trash2,
-  Plus,
-  Keyboard,
-  Download,
   Edit2,
   Check,
   X,
@@ -34,6 +30,7 @@ import {
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
+import { MiraMenu } from '../components/MiraMenu';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
@@ -86,6 +83,9 @@ export function MiraPage() {
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditMessageId, setPendingEditMessageId] = useState<string | null>(null);
   const [affectedMessagesCount, setAffectedMessagesCount] = useState(0);
+
+  // コンテキストエディタの表示状態
+  const [isContextEditorOpen, setIsContextEditorOpen] = useState(false);
   
   // URLクエリパラメータから会話IDを取得して開く
   useEffect(() => {
@@ -489,43 +489,16 @@ export function MiraPage() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <MiraUserContextEditor />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowKeyboardShortcuts(true)}
-              title="キーボードショートカット (?)"
-            >
-              <Keyboard className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleExport}
-              disabled={isExporting}
-              title="データをエクスポート"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNewConversation}
-              title="新しい会話 (⌘+N)"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowClearConfirm(true)}
-                title="会話をクリア"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
+          <div>
+            <MiraMenu 
+              onNewConversation={handleNewConversation}
+              onOpenContextEditor={() => setIsContextEditorOpen(true)}
+              onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
+              onExport={handleExport}
+              onClearConversation={() => setShowClearConfirm(true)}
+              isExporting={isExporting}
+              hasMessages={messages.length > 0}
+            />
           </div>
         </div>
         
@@ -584,6 +557,13 @@ export function MiraPage() {
       <MiraKeyboardShortcuts
         isOpen={showKeyboardShortcuts}
         onClose={() => setShowKeyboardShortcuts(false)}
+      />
+      
+      {/* ユーザーコンテキスト設定ダイアログ */}
+      <MiraUserContextEditor 
+        open={isContextEditorOpen} 
+        onOpenChange={setIsContextEditorOpen}
+        showTrigger={false}
       />
       
       {/* 会話クリア確認ダイアログ */}
