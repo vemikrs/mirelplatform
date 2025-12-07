@@ -25,9 +25,8 @@ public class MiraRateLimitService {
     private final MiraAiProperties properties;
     private final MiraSettingService settingService;
 
-    // Simple in-memory rate limiter for demonstration.
-    // In production, use Redis or similar distributed cache.
-    private final Map<String, UserRateLimit> userLimits = new ConcurrentHashMap<>();
+    private final Map<String, UserRateLimit> rpmLimits = new ConcurrentHashMap<>();
+    private final Map<String, UserRateLimit> rphLimits = new ConcurrentHashMap<>();
 
     /**
      * レート制限チェック.
@@ -45,23 +44,25 @@ public class MiraRateLimitService {
         }
 
         int rpmLimit = settingService.getRateLimitRpm(tenantId);
-        // int rphLimit = settingService.getRateLimitRph(tenantId); // TODO: Implement
-        // RPH logic
+        int rphLimit = settingService.getRateLimitRph(tenantId);
 
-        UserRateLimit limit = userLimits.computeIfAbsent(userId, k -> new UserRateLimit());
-
-        // RPM Check
-        limit.cleanUp(60); // 1 minute window
-        if (limit.getCount() >= rpmLimit) {
+        // RPM Check (1 minute)
+        UserRateLimit limitMin = rpmLimits.computeIfAbsent(userId, k -> new UserRateLimit());
+        limitMin.cleanUp(60);
+        if (limitMin.getCount() >= rpmLimit) {
             throw new RuntimeException("Rate limit exceeded (RPM). Please try again later.");
         }
 
-        // RPH (Requests Per Hour) check could be implemented here similarly
-        // using a separate list or extending UserRateLimit to handle multiple windows.
-        // For now, we will stick to RPM as the primary short-term protection.
-        // TODO: Implement RPH check
+        // RPH Check (1 hour = 3600 seconds)
+        UserRateLimit limitHour = rphLimits.computeIfAbsent(userId, k -> new UserRateLimit());
+        limitHour.cleanUp(3600);
+        if (limitHour.getCount() >= rphLimit) {
+            throw new RuntimeException("Rate limit exceeded (RPH). You have reached your hourly limit.");
+        }
 
-        limit.addRequest();
+        // Add request to both counters
+        limitMin.addRequest();
+        limitHour.addRequest();
     }
 
     // Helper class for in-memory rate limiting

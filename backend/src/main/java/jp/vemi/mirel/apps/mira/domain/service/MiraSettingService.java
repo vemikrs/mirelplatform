@@ -3,18 +3,10 @@
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraSystemSetting;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraTenantSetting;
@@ -31,15 +23,14 @@ import lombok.extern.slf4j.Slf4j;
  * 優先順位: テナント設定 > システム設定 > application.yml (MiraAiProperties)
  * </p>
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MiraSettingService {
 
     private final MiraSystemSettingRepository systemSettingRepository;
     private final MiraTenantSettingRepository tenantSettingRepository;
     private final MiraAiProperties miraAiProperties;
-    private final ObjectMapper objectMapper;
 
     // Keys
     public static final String KEY_AI_PROVIDER = "ai.provider";
