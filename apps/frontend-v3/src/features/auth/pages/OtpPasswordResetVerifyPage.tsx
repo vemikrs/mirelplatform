@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@mirel/ui';
 import { useVerifyOtp, useResendOtp } from '@/lib/hooks/useOtp';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,6 +18,7 @@ export function OtpPasswordResetVerifyPage() {
   const [canResend, setCanResend] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const otpState = useAuthStore((state) => state.otpState);
   const clearOtpState = useAuthStore((state) => state.clearOtpState);
@@ -40,6 +41,14 @@ export function OtpPasswordResetVerifyPage() {
       setCanResend(true);
     }
   }, [countdown]);
+
+  useEffect(() => {
+    // マジックリンク等で既に検証済みの場合はパスワード設定ステップへ
+    const state = location.state as { verified?: boolean } | null;
+    if (state?.verified) {
+      setStep('password');
+    }
+  }, [location]);
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp({
     onSuccess: () => {

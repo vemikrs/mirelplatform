@@ -18,6 +18,7 @@ import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
 import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage';
 import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
+import { MagicVerifyPage } from '@/features/auth/pages/MagicVerifyPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { LogoutPage } from '@/features/auth/pages/LogoutPage';
 import { AdminFeaturesPage } from '@/features/admin';
@@ -150,6 +151,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/otp-verify',
     element: <OtpVerifyPage />,
+  },
+  {
+    path: '/auth/magic-verify',
+    element: <MagicVerifyPage />,
   },
   {
     path: '/auth/password-reset',
