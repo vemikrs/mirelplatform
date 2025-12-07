@@ -24,7 +24,7 @@ import {
   TooltipContent,
   cn
 } from '@mirel/ui';
-import { User, Settings, LogOut, SunMedium, MoonStar, Eye, EyeOff, Building2, ChevronDown, ChevronRight, ChevronsUpDown } from 'lucide-react';
+import { User, Settings, LogOut, SunMedium, MoonStar, Eye, EyeOff, Building2, ChevronsUpDown } from 'lucide-react';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
@@ -51,11 +51,6 @@ export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
     const stored = window.localStorage.getItem(QUICK_LINKS_STORAGE_KEY);
     return stored === null ? true : stored === 'true';
   });
-
-  // Inline menu state
-  const [isOpen, setIsOpen] = useState(false);
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-  const [isThemeOpen, setIsThemeOpen] = useState(false);
 
   const toggleQuickLinks = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -101,11 +96,12 @@ export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
     ENTERPRISE: 'Enterprise',
   };
 
-  // --- 1. 折りたたみモード (アイコンのみ) ---
-  // インライン展開できないため、DropdownMenuを使用
-  if (!isExpanded) {
-    return (
-      <DropdownMenu>
+  // 展開時・折りたたみ時ともにDropdownMenuを使用
+  // トリガーボタンのスタイルのみを変更
+  return (
+    <DropdownMenu modal={false}>
+      {!isExpanded ? (
+        // 折りたたみ時: アイコンのみのトリガー
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
@@ -127,205 +123,59 @@ export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
             {user.displayName || user.email}
           </TooltipContent>
         </Tooltip>
-        
-        <DropdownMenuContent className="w-64" side="right" align="end">
-          <UserMenuContent 
-            user={user}
-            currentTenant={currentTenant}
-            tenants={tenants}
-            currentTier={currentTier}
-            tierColors={tierColors}
-            tierLabels={tierLabels}
-            themeMode={themeMode}
-            setTheme={setTheme}
-            quickLinksVisible={quickLinksVisible}
-            toggleQuickLinks={() => toggleQuickLinks()}
-            handleTenantSwitch={handleTenantSwitch}
-            handleLogout={handleLogout}
-            navigate={navigate}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
-  // --- 2. 展開モード (フル表示) ---
-  // DropdownMenuを廃止し、単純な開閉ロジックを使用したインライン展開に変更
-  return (
-    <div className="w-full h-full">
-      <Button 
-        variant="ghost" 
-        className="w-full h-full flex items-center gap-2 px-2 py-2 justify-between hover:bg-surface-raised group"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-1 text-left">
-          <Avatar 
-            src={user.avatarUrl}
-            alt={user.displayName || user.email}
-            fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-            size="sm"
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium leading-tight truncate">
-              {user.displayName || user.email}
-            </span>
-            {currentTenant && (
-              <span className="text-xs text-muted-foreground mt-0.5 truncate">
-                {currentTenant.displayName}
-              </span>
-            )}
-          </div>
-        </div>
-        <ChevronsUpDown className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
-      </Button>
-      
-      {isOpen && (
-        <div className="space-y-1 px-1 py-1 animate-in fade-in slide-in-from-top-1 duration-200">
-          {/* ユーザー詳細・プラン情報 */}
-          <div className="p-2 bg-surface-raised/50 rounded-md mb-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="overflow-hidden">
-                <p className="text-xs font-medium text-muted-foreground">@{user.username}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+      ) : (
+        // 展開時: フル幅のトリガー
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="w-full h-full flex items-center gap-2 px-2 py-2 justify-between hover:bg-surface-raised group"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1 text-left">
+              <Avatar 
+                src={user.avatarUrl}
+                alt={user.displayName || user.email}
+                fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                size="sm"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium leading-tight truncate">
+                  {user.displayName || user.email}
+                </span>
+                {currentTenant && (
+                  <span className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {currentTenant.displayName}
+                  </span>
+                )}
               </div>
             </div>
-            <Badge className={cn("w-full justify-center text-[10px] py-0 h-5", tierColors[currentTier])}>
-              {tierLabels[currentTier]} プラン
-            </Badge>
-          </div>
-
-          {/* ワークスペース切替 (サブアコーディオン) */}
-          <div className="space-y-0.5">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full justify-start text-xs font-normal h-8 px-2"
-              onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
-            >
-              <Building2 className="mr-2 h-3.5 w-3.5" />
-              <span className="flex-1 text-left">ワークスペース切替</span>
-              {isWorkspaceOpen ? <ChevronDown className="h-3 w-3 opacity-50" /> : <ChevronRight className="h-3 w-3 opacity-50" />}
-            </Button>
-            
-            {isWorkspaceOpen && (
-              <div className="pl-4 space-y-0.5 border-l border-outline/20 ml-3.5 my-1">
-                {tenants.map((tenant) => (
-                  <Button
-                    key={tenant.tenantId}
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "w-full justify-start text-xs h-7 px-2",
-                      currentTenant?.tenantId === tenant.tenantId && "bg-primary/5 text-primary"
-                    )}
-                    onClick={() => handleTenantSwitch(tenant.tenantId)}
-                  >
-                    <span className="truncate">{tenant.displayName}</span>
-                    {currentTenant?.tenantId === tenant.tenantId && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* プロフィール設定 */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-xs font-normal h-8 px-2"
-            onClick={() => navigate('/settings/profile')}
-          >
-            <User className="mr-2 h-3.5 w-3.5" />
-            <span>プロフィール設定</span>
+            <ChevronsUpDown className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
           </Button>
-
-          {/* セキュリティ設定 */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-xs font-normal h-8 px-2"
-            onClick={() => navigate('/settings/profile?tab=security')}
-          >
-            <Settings className="mr-2 h-3.5 w-3.5" />
-            <span>セキュリティ設定</span>
-          </Button>
-
-          <div className="h-px bg-outline/20 my-1 mx-2" />
-
-          {/* テーマ設定 (サブアコーディオン) */}
-          <div className="space-y-0.5">
-             <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full justify-start text-xs font-normal h-8 px-2"
-              onClick={() => setIsThemeOpen(!isThemeOpen)}
-            >
-              {themeMode === 'light' ? <SunMedium className="mr-2 h-3.5 w-3.5" /> : 
-               themeMode === 'dark' ? <MoonStar className="mr-2 h-3.5 w-3.5" /> : 
-               <Settings className="mr-2 h-3.5 w-3.5" />}
-              <span className="flex-1 text-left">テーマ設定</span>
-              {isThemeOpen ? <ChevronDown className="h-3 w-3 opacity-50" /> : <ChevronRight className="h-3 w-3 opacity-50" />}
-            </Button>
-            
-            {isThemeOpen && (
-              <div className="pl-4 space-y-0.5 border-l border-outline/20 ml-3.5 my-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("w-full justify-start text-xs h-7 px-2", themeMode === 'light' && "text-primary")}
-                  onClick={() => setTheme('light')}
-                >
-                  <SunMedium className="mr-2 h-3 w-3" />
-                  <span>ライトモード</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("w-full justify-start text-xs h-7 px-2", themeMode === 'dark' && "text-primary")}
-                  onClick={() => setTheme('dark')}
-                >
-                  <MoonStar className="mr-2 h-3 w-3" />
-                  <span>ダークモード</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("w-full justify-start text-xs h-7 px-2", themeMode === 'system' && "text-primary")}
-                  onClick={() => setTheme('system')}
-                >
-                  <Settings className="mr-2 h-3 w-3" />
-                  <span>システムに従う</span>
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Links Toggle */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-xs font-normal h-8 px-2"
-            onClick={toggleQuickLinks}
-          >
-            {quickLinksVisible ? <EyeOff className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
-            <span>Quick Links {quickLinksVisible ? '非表示' : '表示'}</span>
-          </Button>
-
-          <div className="h-px bg-outline/20 my-1 mx-2" />
-
-          {/* ログアウト */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-xs font-normal h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-3.5 w-3.5" />
-            <span>ログアウト</span>
-          </Button>
-        </div>
+        </DropdownMenuTrigger>
       )}
-    </div>
+      
+      <DropdownMenuContent 
+        className="w-64" 
+        side={isExpanded ? "top" : "right"} 
+        align="end" 
+        sideOffset={8}
+      >
+        <UserMenuContent 
+          user={user}
+          currentTenant={currentTenant}
+          tenants={tenants}
+          currentTier={currentTier}
+          tierColors={tierColors}
+          tierLabels={tierLabels}
+          themeMode={themeMode}
+          setTheme={setTheme}
+          quickLinksVisible={quickLinksVisible}
+          toggleQuickLinks={() => toggleQuickLinks()}
+          handleTenantSwitch={handleTenantSwitch}
+          handleLogout={handleLogout}
+          navigate={navigate}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

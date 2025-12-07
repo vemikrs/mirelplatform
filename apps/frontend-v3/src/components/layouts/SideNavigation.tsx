@@ -18,7 +18,6 @@ import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
 import type { NavigationLink, NavigationAction } from '@/app/navigation.schema';
 import { SidebarUserMenu } from '@/components/header/SidebarUserMenu';
 import { NotificationPopover } from '@/components/header/NotificationPopover';
-import { GlobalSearch } from '@/components/header/GlobalSearch';
 
 // Icon mapping
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -207,13 +206,36 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
           {collapsedItems.map((item) => (
             <CollapsedNavItem key={item.id} item={item} />
           ))}
+          
+          {/* Mira AI Assistant Icon */}
+          <div className="border-t border-outline/20 w-full pt-2 flex justify-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NavLink
+                  to="/mira"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+                    )
+                  }
+                >
+                  <Bot className="size-4" />
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Mira (mirel Assistant)
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       )}
 
-      {/* Search Section (Expanded only) */}
+      {/* Mira AI Assistant Section (Expanded only) */}
       {isExpanded && (
-        <div className="px-3 py-2 border-t border-outline/20 space-y-2 shrink-0">
-          <GlobalSearch />
+        <div className="px-3 py-2 border-t border-outline/20 shrink-0">
           {/* Mira AI Assistant Button */}
           <Button
             variant="outline"
