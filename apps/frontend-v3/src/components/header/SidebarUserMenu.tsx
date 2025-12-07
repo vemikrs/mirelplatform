@@ -38,7 +38,7 @@ interface SidebarUserMenuProps {
  * サイドバー用ユーザーメニューコンポーネント
  */
 export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
-  const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
+  const { user, currentTenant, switchTenant, tenants, licenses } = useAuth();
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
@@ -55,7 +55,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
   };
 
   const handleLogout = () => {
-    logout();
+    navigate('/logout');
   };
 
   const handleTenantSwitch = async (tenantId: string) => {
