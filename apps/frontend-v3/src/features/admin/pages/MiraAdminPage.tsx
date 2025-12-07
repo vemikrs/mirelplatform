@@ -346,6 +346,7 @@ const ContextLayerEditor = ({ layer, onSave, onDelete }: { layer: MiraContextLay
 const StatsAndLimits = () => {
   const [limits, setLimits] = useState<LimitsConfig | null>(null);
   const [usage, setUsage] = useState<TokenUsageSummary | null>(null);
+  const [trend, setTrend] = useState<{ name: string; total: number }[]>([]);
   const [tenantId] = useState('default'); // Default tenant for now
 
   useEffect(() => {
@@ -355,6 +356,37 @@ const StatsAndLimits = () => {
         setLimits(l);
         const u = await miraAdminApi.getTokenUsage(tenantId);
         setUsage(u);
+
+        // Calculate last 7 days range
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - 6);
+        const startDateStr = start.toISOString().split('T')[0] || '';
+        const endDateStr = end.toISOString().split('T')[0] || '';
+
+        const trendData = await miraAdminApi.getTokenUsageTrend(tenantId, startDateStr, endDateStr);
+        
+        // Aggregate by date
+        const agg: Record<string, number> = {};
+        // Initialize last 7 days with 0
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+           const dateStr = d.toISOString().split('T')[0];
+           if (dateStr) agg[dateStr] = 0;
+        }
+
+        trendData.forEach(item => {
+           if (item.usageDate && agg[item.usageDate] !== undefined) {
+             const current = agg[item.usageDate] || 0;
+             agg[item.usageDate] = current + ((item.inputTokens || 0) + (item.outputTokens || 0));
+           }
+        });
+
+        const chartData = Object.entries(agg).map(([date, total]) => ({
+          name: date.substring(5).replace('-', '/'), // MM/DD
+          total,
+        }));
+        setTrend(chartData);
+
       } catch (e) {
         console.error(e);
       }
@@ -447,28 +479,20 @@ const StatsAndLimits = () => {
 
       <Card className="md:col-span-2">
         <CardHeader>
-          <CardTitle>週間トークン消費トレンド (Mock)</CardTitle>
+          <CardTitle>週間トークン消費トレンド</CardTitle>
           <CardDescription>過去7日間のトークン使用状況</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={[
-                    { name: 'Mon', total: 4000 },
-                    { name: 'Tue', total: 3000 },
-                    { name: 'Wed', total: 2000 },
-                    { name: 'Thu', total: 2780 },
-                    { name: 'Fri', total: 1890 },
-                    { name: 'Sat', total: 2390 },
-                    { name: 'Sun', total: 3490 },
-                  ]}
+                  data={trend}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip formatter={(value: number) => value.toLocaleString()} />
                   <Legend />
                   <Bar dataKey="total" fill="#8884d8" name="Tokens" />
                 </BarChart>

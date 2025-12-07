@@ -34,6 +34,16 @@ export interface TokenUsageSummary {
   totalTokens: number;
 }
 
+export interface MiraTokenUsage {
+  id: string;
+  tenantId: string;
+  userId: string;
+  usageDate: string;
+  inputTokens: number;
+  outputTokens: number;
+  requestCount: number;
+}
+
 export const miraAdminApi = {
   // System Context Management
   getSystemContexts: async (): Promise<MiraContextLayer[]> => {
@@ -72,6 +82,12 @@ export const miraAdminApi = {
     if (date) params.append('date', date);
     
     const response = await apiClient.get<TokenUsageSummary>(`/apps/mira/api/admin/token-usage/summary?${params.toString()}`);
+    return response.data;
+  },
+
+  getTokenUsageTrend: async (tenantId: string, startDate: string, endDate: string): Promise<MiraTokenUsage[]> => {
+    const params = new URLSearchParams({ tenantId, startDate, endDate });
+    const response = await apiClient.get<MiraTokenUsage[]>(`/apps/mira/api/admin/token-usage/trend?${params.toString()}`);
     return response.data;
   }
 };

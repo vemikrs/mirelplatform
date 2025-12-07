@@ -34,4 +34,18 @@ public interface MiraTokenUsageRepository extends JpaRepository<MiraTokenUsage, 
      * テナントと日付で使用量を検索.
      */
     List<MiraTokenUsage> findByTenantIdAndUsageDate(String tenantId, LocalDate usageDate);
+
+    /**
+     * 指定期間のトークン使用量を取得.
+     *
+     * @param tenantId
+     *            テナントID
+     * @param startDate
+     *            開始日
+     * @param endDate
+     *            終了日
+     * @return リスト
+     */
+    @Query("SELECT t FROM MiraTokenUsage t WHERE t.tenantId = :tenantId AND t.usageDate BETWEEN :startDate AND :endDate ORDER BY t.usageDate ASC")
+    List<MiraTokenUsage> findByTenantIdAndUsageDateBetween(String tenantId, LocalDate startDate, LocalDate endDate);
 }

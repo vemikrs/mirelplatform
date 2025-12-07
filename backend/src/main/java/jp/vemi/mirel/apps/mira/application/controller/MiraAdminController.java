@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraTokenUsage;
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraTokenUsageRepository;
 import jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService;
 
@@ -113,6 +114,20 @@ public class MiraAdminController {
                 .date(targetDate)
                 .totalTokens(totalTokens != null ? totalTokens : 0L)
                 .build());
+    }
+
+    @GetMapping("/token-usage/trend")
+    @Operation(summary = "トークン使用量トレンド取得 (期間)")
+    public ResponseEntity<List<MiraTokenUsage>> getTokenUsageTrend(
+            @RequestParam String tenantId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+
+        List<MiraTokenUsage> trend = tokenUsageRepository.findByTenantIdAndUsageDateBetween(tenantId, start, end);
+        return ResponseEntity.ok(trend);
     }
 
     @Data
