@@ -183,6 +183,9 @@ export function MiraPage() {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
       
+      const now = Date.now();
+      const lowerKey = e.key.toLowerCase();
+      
       // ⌘/Ctrl + Shift + S でサイドバーを切り替え (入力中でも有効)
       if (lowerKey === 's' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
