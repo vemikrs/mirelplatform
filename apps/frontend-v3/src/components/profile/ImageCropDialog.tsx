@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@mirel/ui';
 import { Button } from '@mirel/ui';
+import { Spinner } from '@mirel/ui';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
 interface ImageCropDialogProps {
@@ -9,6 +10,7 @@ interface ImageCropDialogProps {
   onOpenChange: (open: boolean) => void;
   imageSrc: string;
   onCropComplete: (croppedImageBlob: Blob) => void;
+  isLoading?: boolean;
 }
 
 interface Area {
@@ -20,11 +22,12 @@ interface Area {
 
 interface CroppedArea extends Area {}
 
-export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete }: ImageCropDialogProps) {
+export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete, isLoading = false }: ImageCropDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedArea | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const onCropChange = (location: { x: number; y: number }) => {
     setCrop(location);
@@ -66,6 +69,13 @@ export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete }
         </DialogHeader>
 
         <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden">
+          {/* Loading overlay */}
+          {(!imageLoaded || isCropping || isLoading) && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+              <Spinner size="lg" className="text-white" />
+            </div>
+          )}
+          
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -76,6 +86,7 @@ export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete }
             onCropChange={onCropChange}
             onCropComplete={onCropAreaChange}
             onZoomChange={setZoom}
+            onMediaLoaded={() => setImageLoaded(true)}
           />
         </div>
 
@@ -90,6 +101,7 @@ export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete }
               max={3}
               step={0.1}
               className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+              disabled={isCropping || isLoading}
             />
             <ZoomIn className="w-4 h-4 text-muted-foreground shrink-0" />
           </div>
@@ -99,10 +111,10 @@ export function ImageCropDialog({ open, onOpenChange, imageSrc, onCropComplete }
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isCropping}>
+          <Button variant="outline" onClick={handleCancel} disabled={isCropping || isLoading}>
             キャンセル
           </Button>
-          <Button onClick={handleCropComplete} disabled={isCropping}>
+          <Button onClick={handleCropComplete} disabled={isCropping || isLoading || !imageLoaded}>
             {isCropping ? 'トリミング中...' : 'トリミング完了'}
           </Button>
         </DialogFooter>
