@@ -30,6 +30,17 @@ import {
   type LimitsConfig, 
   type TokenUsageSummary 
 } from '@/lib/api/mira-admin';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+
+} from 'recharts';
 
 
 export const MiraAdminPage = () => {
@@ -298,9 +309,14 @@ const StatsAndLimits = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>本日の使用量</CardTitle>
-          <CardDescription>テナント: {tenantId}</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>本日の使用量</CardTitle>
+            <CardDescription>テナント: {tenantId}</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => window.open(`/apps/mira/api/admin/conversations/export?tenantId=${tenantId}`, '_blank')}>
+            <Save className="mr-2 h-4 w-4" /> CSV Export
+          </Button>
         </CardHeader>
         <CardContent>
           {usage ? (
@@ -330,6 +346,38 @@ const StatsAndLimits = () => {
           ) : (
              <Loader2 className="animate-spin" />
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="md:col-span-2">
+        <CardHeader>
+          <CardTitle>週間トークン消費トレンド (Mock)</CardTitle>
+          <CardDescription>過去7日間のトークン使用状況</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+             <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { name: 'Mon', total: 4000 },
+                    { name: 'Tue', total: 3000 },
+                    { name: 'Wed', total: 2000 },
+                    { name: 'Thu', total: 2780 },
+                    { name: 'Fri', total: 1890 },
+                    { name: 'Sat', total: 2390 },
+                    { name: 'Sun', total: 3490 },
+                  ]}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="total" fill="#8884d8" name="Tokens" />
+                </BarChart>
+             </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
     </div>
