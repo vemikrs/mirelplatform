@@ -193,28 +193,6 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       {/* Spacer when not expanded */}
       {!isExpanded && <div className="flex-1" />}
 
-      {/* Expand Button - shown when collapsed */}
-      {!isExpanded && (
-        <div className="px-2 py-3 border-t border-outline/20">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 w-full"
-                onClick={toggleExpanded}
-                aria-label="サイドバーを展開"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              サイドバーを展開
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
       {/* Search Section - Moved here */}
       {isExpanded && (
         <div className="px-3 py-2 border-t border-outline/20 space-y-2">
@@ -239,42 +217,21 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         "border-t border-outline/20 py-3",
         isExpanded ? "px-3" : "px-2"
       )}>
-        {/* User Menu + Actions + Notification + Pin Toggle */}
-        <div className={cn(
-          "flex",
-          !isExpanded ? "flex-col items-center gap-3" : "items-stretch gap-2"
-        )}>
-          {/* Left: User Menu */}
-          <div className="flex-1 min-w-0">
-            <SidebarUserMenu isExpanded={isExpanded} />
-          </div>
+        {isExpanded ? (
+          // Expanded mode UI
+          <>
+            {/* User Menu + Actions + Notification + Pin/Close Toggle */}
+            <div className={cn(
+              "flex items-stretch gap-2"
+            )}>
+              {/* Left: User Menu */}
+              <div className="flex-1 min-w-0">
+                <SidebarUserMenu isExpanded={isExpanded} />
+              </div>
 
 
-          {/* Help Action */}
-          {helpAction && (
-             !isExpanded ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="size-8"
-                    asChild={Boolean('path' in helpAction && helpAction.path)}
-                  >
-                   {'path' in helpAction && helpAction.path ? (
-                      <Link to={helpAction.path} aria-label="ヘルプセンター">
-                        <HelpCircle className="size-4" />
-                      </Link>
-                    ) : (
-                      <HelpCircle className="size-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  ヘルプセンター
-                </TooltipContent>
-              </Tooltip>
-             ) : (
+              {/* Help Action */}
+              {helpAction && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -296,54 +253,105 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                     ヘルプセンター
                   </TooltipContent>
                 </Tooltip>
-             )
-          )}
-          
-          {/* Right: Notification (top) + Pin/Close Toggle (bottom) stacked vertically */}
-          {isExpanded && (
-            <div className="flex flex-col justify-between shrink-0 h-[68px]">
-              <NotificationPopover isCompact={false} />
-              <div className="flex gap-1">
-                {/* Close button (一時展開時のみ) */}
-                {!isPinned && (
+              )}
+              
+              {/* Right: Notification (top) + Pin/Close Toggle (bottom) stacked vertically */}
+              <div className="flex flex-col justify-between shrink-0 h-[68px]">
+                <NotificationPopover isCompact={false} />
+                <div className="flex gap-1">
+                  {/* Close button (一時展開時のみ) */}
+                  {!isPinned && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="size-8"
+                          onClick={toggleExpanded}
+                          aria-label="サイドバーを閉じる"
+                        >
+                          <ChevronRight className="size-4 rotate-180" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        閉じる
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {/* Pin toggle */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
                         variant="ghost" 
                         size="icon"
                         className="size-8"
-                        onClick={toggleExpanded}
-                        aria-label="サイドバーを閉じる"
+                        onClick={togglePinned}
+                        aria-label={isPinned ? "固定を解除" : "サイドバーを固定"}
                       >
-                        <ChevronRight className="size-4" />
+                        {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      閉じる
+                      {isPinned ? "固定を解除" : "固定表示"}
                     </TooltipContent>
                   </Tooltip>
-                )}
-                {/* Pin toggle */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="size-8"
-                      onClick={togglePinned}
-                      aria-label={isPinned ? "固定を解除" : "サイドバーを固定"}
-                    >
-                      {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    {isPinned ? "固定を解除" : "固定表示"}
-                  </TooltipContent>
-                </Tooltip>
+                </div>
               </div>
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          // Collapsed mode UI - シンプルな縦並び
+          <div className="flex flex-col items-center gap-2">
+            {/* User Menu */}
+            <SidebarUserMenu isExpanded={isExpanded} />
+            
+            {/* Help Action */}
+            {helpAction && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="size-8"
+                    asChild={Boolean('path' in helpAction && helpAction.path)}
+                  >
+                    {'path' in helpAction && helpAction.path ? (
+                      <Link to={helpAction.path} aria-label="ヘルプセンター">
+                        <HelpCircle className="size-4" />
+                      </Link>
+                    ) : (
+                      <HelpCircle className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  ヘルプセンター
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Notification */}
+            <NotificationPopover isCompact={true} />
+
+            {/* Expand Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={toggleExpanded}
+                  aria-label="サイドバーを展開"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                サイドバーを展開
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
       </div>
     </nav>
   );
