@@ -57,6 +57,10 @@ export const miraAdminApi = {
     return response.data;
   },
 
+  deleteContext: async (contextId: string): Promise<void> => {
+    await apiClient.delete(`/apps/mira/api/admin/context/${contextId}`);
+  },
+
   // Limits & Usage
   getLimits: async (): Promise<LimitsConfig> => {
     const response = await apiClient.get<LimitsConfig>('/apps/mira/api/admin/limits');

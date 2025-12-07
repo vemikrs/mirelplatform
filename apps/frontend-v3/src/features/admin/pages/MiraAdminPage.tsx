@@ -22,7 +22,7 @@ import {
   // Alert, AlertDescription, AlertTitle, // Unused for now
   useToast
 } from '@mirel/ui';
-import { Loader2, Plus, Save } from 'lucide-react';
+import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
 
 import { 
   miraAdminApi, 
@@ -78,6 +78,11 @@ const ContextManagement = () => {
   const [loading, setLoading] = useState(false);
   const [tenantId, setTenantId] = useState('default'); // Tentative default
 
+  // Create State
+  const [creating, setCreating] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [newContext, setNewContext] = useState({ category: '', content: '', priority: 0 });
+
   const fetchContexts = async () => {
     setLoading(true);
     try {
@@ -97,6 +102,36 @@ const ContextManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    setCreateLoading(true);
+    try {
+      const payload: Partial<MiraContextLayer> = {
+        category: newContext.category,
+        content: newContext.content,
+        priority: newContext.priority,
+        enabled: true,
+        scope: activeTab === 'system' ? 'SYSTEM' : 'TENANT',
+        scopeId: activeTab === 'tenant' ? tenantId : undefined,
+      };
+
+      if (activeTab === 'system') {
+        await miraAdminApi.saveSystemContext(payload);
+      } else {
+        await miraAdminApi.saveTenantContext(tenantId, payload);
+      }
+
+      toast({ title: '成功', description: 'コンテキストを作成しました', variant: 'success' });
+      setCreating(false);
+      setNewContext({ category: '', content: '', priority: 0 });
+      fetchContexts();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'エラー', description: '作成に失敗しました', variant: 'destructive' });
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -155,11 +190,52 @@ const ContextManagement = () => {
               {activeTab === 'system' ? '全ユーザーに適用されるベースプロンプト' : `${tenantId} のユーザーに適用されるプロンプト`}
             </CardDescription>
           </div>
-          <Button onClick={() => toast({ title: '通知', description: '新規作成機能は未実装です（既存編集のみ）' })}>
+          <Button onClick={() => setCreating(true)}>
             <Plus className="mr-2 h-4 w-4" /> 新規追加
           </Button>
         </CardHeader>
         <CardContent>
+          {creating && (
+            <div className="mb-6 border rounded-lg p-4 bg-muted/30">
+              <h3 className="font-semibold mb-4">新規コンテキスト作成</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>カテゴリ (例: terminology, style)</Label>
+                    <Input 
+                      value={newContext.category} 
+                      onChange={(e) => setNewContext({ ...newContext, category: e.target.value })} 
+                      placeholder="terminology"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>優先度 (Priority)</Label>
+                    <Input 
+                      type="number"
+                      value={newContext.priority} 
+                      onChange={(e) => setNewContext({ ...newContext, priority: Number(e.target.value) })} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>初期コンテンツ</Label>
+                  <Textarea 
+                    value={newContext.content} 
+                    onChange={(e) => setNewContext({ ...newContext, content: e.target.value })} 
+                    className="font-mono min-h-[100px]"
+                    placeholder="# Describe context here..."
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setCreating(false)} disabled={createLoading}>キャンセル</Button>
+                  <Button onClick={handleCreate} disabled={createLoading || !newContext.category}>
+                    {createLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    作成
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -171,7 +247,7 @@ const ContextManagement = () => {
           ) : (
             <div className="space-y-4">
               {layers.map((layer) => (
-                <ContextLayerEditor key={layer.id} layer={layer} onSave={fetchContexts} />
+                <ContextLayerEditor key={layer.id} layer={layer} onSave={fetchContexts} onDelete={fetchContexts} />
               ))}
             </div>
           )}
@@ -181,11 +257,12 @@ const ContextManagement = () => {
   );
 };
 
-const ContextLayerEditor = ({ layer, onSave }: { layer: MiraContextLayer; onSave: () => void }) => {
+const ContextLayerEditor = ({ layer, onSave, onDelete }: { layer: MiraContextLayer; onSave: () => void; onDelete: () => void }) => {
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(layer.content);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -202,8 +279,21 @@ const ContextLayerEditor = ({ layer, onSave }: { layer: MiraContextLayer; onSave
     } catch (error) {
       console.error(error);
       toast({ title: 'エラー', description: '保存に失敗しました', variant: 'destructive' });
-    } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('本当に削除しますか？')) return;
+    setDeleting(true);
+    try {
+      await miraAdminApi.deleteContext(layer.id);
+      toast({ title: '成功', description: '削除しました', variant: 'success' });
+      onDelete();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'エラー', description: '削除に失敗しました', variant: 'destructive' });
+      setDeleting(false);
     }
   };
 
@@ -228,6 +318,12 @@ const ContextLayerEditor = ({ layer, onSave }: { layer: MiraContextLayer; onSave
             </>
           ) : (
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>編集</Button>
+          )}
+          {!editing && (
+             <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleting} className="text-destructive hover:text-destructive">
+               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               <Trash2 className="h-4 w-4" />
+             </Button>
           )}
         </div>
       </div>
