@@ -331,6 +331,12 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       onCancelEdit();
       return;
     }
+    // Escape で入力欄からフォーカスを外す（キーボードショートカット有効化）
+    if (e.key === 'Escape' && !showModeMenu && !editingMessageId) {
+      e.preventDefault();
+      textareaRef.current?.blur();
+      return;
+    }
     
     // 上下キーで入力履歴をナビゲート
     if (e.key === 'ArrowUp' && inputHistory.length > 0) {
