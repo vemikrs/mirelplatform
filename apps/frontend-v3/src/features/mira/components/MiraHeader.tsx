@@ -23,7 +23,6 @@ interface MiraHeaderProps {
 }
 
 export function MiraHeader({
-  isSidebarOpen,
   onToggleSidebar,
   activeConversation,
   getConversationSummary,

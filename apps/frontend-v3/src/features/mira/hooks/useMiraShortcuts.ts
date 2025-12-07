@@ -1,6 +1,12 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { type MiraChatInputHandle } from '../components/MiraChatInput';
-import { type MiraMessage } from '@/lib/api/mira';
+
+// Simple message interface for keyboard shortcuts
+interface MiraMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 interface UseMiraShortcutsProps {
   isSidebarOpen: boolean;
