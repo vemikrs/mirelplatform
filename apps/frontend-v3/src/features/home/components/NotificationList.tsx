@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@mirel/ui';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@mirel/ui';
 import { Bell, Info, AlertTriangle, CheckCircle, AlertCircle, Circle, MailOpen, Mail } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAnnouncements, markAsRead, markAsUnread } from '@/lib/api/announcement';
@@ -42,12 +43,21 @@ export function NotificationList({ variant = 'widget', onItemClick }: Notificati
     },
   });
 
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+
   const handleToggleRead = (e: React.MouseEvent, id: string, isRead: boolean) => {
     e.stopPropagation();
     if (isRead) {
       markUnreadMutation.mutate(id);
     } else {
       markReadMutation.mutate(id);
+    }
+  };
+
+  const handleItemClick = (notification: any) => {
+    setSelectedAnnouncement(notification);
+    if (onItemClick) {
+      onItemClick();
     }
   };
 
@@ -64,85 +74,131 @@ export function NotificationList({ variant = 'widget', onItemClick }: Notificati
   const readIds = new Set(data?.readIds || []);
 
   const content = (
-    <div className={`space-y-3 ${variant === 'popover' ? 'max-h-[400px]' : 'max-h-[500px]'} overflow-y-auto pr-2 custom-scrollbar`}>
-      {announcements.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          お知らせはありません
-        </div>
-      ) : (
-        announcements.map((notification) => {
-          const config = severityConfig[notification.category] || severityConfig.INFO;
-          const Icon = config.icon;
-          const isRead = readIds.has(notification.announcementId);
-          
-          return (
-            <div 
-              key={notification.announcementId} 
-              onClick={onItemClick}
-              className={`group flex gap-3 p-3 rounded-lg transition-all border cursor-default
-                ${isRead 
-                  ? 'bg-transparent border-transparent opacity-70 hover:opacity-100 hover:bg-surface-subtle' 
-                  : 'bg-surface border-outline/10 shadow-sm hover:shadow-md hover:border-outline/20'}
-              `}
-            >
-              <div className={`p-2 rounded-full h-fit shrink-0 ${config.bg} ${config.color}`}>
-                <Icon className="size-4" />
+    <>
+      <div className={`space-y-2 ${variant === 'popover' ? 'max-h-[400px]' : 'max-h-[500px]'} overflow-y-auto pr-2 custom-scrollbar`}>
+        {announcements.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            お知らせはありません
+          </div>
+        ) : (
+          announcements.map((notification) => {
+            const category = notification.category as keyof typeof severityConfig;
+            const config = severityConfig[category] || severityConfig.INFO;
+            const Icon = config.icon;
+            const isRead = readIds.has(notification.announcementId);
+            
+            return (
+              <div 
+                key={notification.announcementId} 
+                onClick={() => handleItemClick(notification)}
+                className={`group flex gap-2.5 p-2.5 rounded-lg transition-all border cursor-pointer
+                  ${isRead 
+                    ? 'bg-transparent border-transparent opacity-70 hover:opacity-100 hover:bg-surface-subtle' 
+                    : 'bg-surface border-outline/10 shadow-sm hover:shadow-md hover:border-outline/20'}
+                `}
+              >
+                <div className={`p-1.5 rounded-full h-fit shrink-0 ${config.bg} ${config.color}`}>
+                  <Icon className="size-4" />
+                </div>
+                <div className="flex-1 space-y-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className={`text-sm font-medium leading-tight ${!isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {notification.title}
+                    </h4>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {!isRead ? (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                          NEW
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded">
+                          既読
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{format(new Date(notification.publishAt), 'yyyy-MM-dd')}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                    {notification.summary || notification.content}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 space-y-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className={`text-sm font-medium leading-tight ${!isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {notification.title}
-                  </h4>
-                  {!isRead && (
-                    <Badge variant="destructive" className="shrink-0 text-[10px] px-1.5 py-0 h-5">
-                      NEW
-                    </Badge>
-                  )}
+            );
+          })
+        )}
+      </div>
+
+      <Dialog open={!!selectedAnnouncement} onOpenChange={(open) => !open && setSelectedAnnouncement(null)}>
+        <DialogContent className="max-w-2xl">
+          {selectedAnnouncement && (() => {
+            const category = selectedAnnouncement.category as keyof typeof severityConfig;
+            const config = severityConfig[category] || severityConfig.INFO;
+            const Icon = config.icon;
+            const isRead = readIds.has(selectedAnnouncement.announcementId);
+
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
+                    <div className={`p-1 rounded-full ${config.bg} ${config.color}`}>
+                      <Icon className="size-4" />
+                    </div>
+                    <span>{format(new Date(selectedAnnouncement.publishAt), 'yyyy-MM-dd')}</span>
+                    {!isRead ? (
+                      <Badge variant="destructive" className="ml-auto">未読</Badge>
+                    ) : (
+                      <Badge variant="outline" className="ml-auto">既読</Badge>
+                    )}
+                  </div>
+                  <DialogTitle className="text-xl">{selectedAnnouncement.title}</DialogTitle>
+                </DialogHeader>
+                
+                <div className="py-4 text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  {selectedAnnouncement.content}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{format(new Date(notification.publishAt), 'yyyy-MM-dd')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                  {notification.summary || notification.content}
-                </p>
-                <div className="pt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+
+                <DialogFooter className="gap-2 sm:justify-between">
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs gap-1.5"
-                    onClick={(e) => handleToggleRead(e, notification.announcementId, isRead)}
+                    onClick={(e) => handleToggleRead(e, selectedAnnouncement.announcementId, isRead)}
+                    className="gap-2"
                   >
                     {isRead ? (
                       <>
-                        <Mail className="size-3.5" />
-                        未読にする
+                        <Mail className="size-4" />
+                        未読に戻す
                       </>
                     ) : (
                       <>
-                        <MailOpen className="size-3.5" />
+                        <MailOpen className="size-4" />
                         既読にする
                       </>
                     )}
                   </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
+                  <Button onClick={() => setSelectedAnnouncement(null)}>
+                    閉じる
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 
   if (variant === 'widget') {
     return (
       <Card className="h-full bg-card/50 backdrop-blur-sm border-outline/15 shadow-sm">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Bell className="size-5 text-primary" />
             お知らせ
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-3">
           {content}
         </CardContent>
       </Card>
