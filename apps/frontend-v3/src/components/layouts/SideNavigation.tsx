@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -51,16 +51,15 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Sidebar pinned state (persisted) - デフォルトは false (一時表示モード)
+  // Sidebar pinned state (persisted) - デフォルトは false (固定表示オフ)
   const [isPinned, setIsPinned] = useState(() => {
     if (typeof window === 'undefined') return false;
     const stored = window.localStorage.getItem(SIDEBAR_PINNED_KEY);
     return stored === 'true';
   });
 
-  // Hover state for temporary expansion
-  const [isHovered, setIsHovered] = useState(false);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Temporary expansion state (ボタンクリックで制御)
+  const [isTemporaryExpanded, setIsTemporaryExpanded] = useState(false);
 
   const togglePinned = useCallback(() => {
     setIsPinned(prev => {
@@ -70,35 +69,14 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
     });
   }, []);
 
-  const handleMouseEnter = useCallback(() => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
+  const toggleExpanded = useCallback(() => {
     if (!isPinned) {
-      setIsHovered(true);
+      setIsTemporaryExpanded(prev => !prev);
     }
   }, [isPinned]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!isPinned) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setIsHovered(false);
-      }, 300);
-    }
-  }, [isPinned]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Determine if sidebar is expanded
-  const isExpanded = isPinned || isHovered;
+  const isExpanded = isPinned || isTemporaryExpanded;
   
   // Track expanded state for each menu item
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
@@ -145,12 +123,9 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       className={cn(
         "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300 ease-in-out",
         isExpanded ? "w-72" : "w-14",
-        !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-xl backdrop-blur-sm",
-        isPinned && "relative",
+        isTemporaryExpanded && !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-xl",
         className
       )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       style={{ willChange: 'width', backgroundColor: 'hsl(var(--surface-subtle))' }}
     >
       {/* Brand Section - Fixed at top */}
@@ -217,6 +192,28 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
 
       {/* Spacer when not expanded */}
       {!isExpanded && <div className="flex-1" />}
+
+      {/* Expand Button - shown when collapsed */}
+      {!isExpanded && (
+        <div className="px-2 py-3 border-t border-outline/20">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 w-full"
+                onClick={toggleExpanded}
+                aria-label="サイドバーを展開"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              サイドバーを展開
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
 
       {/* Search Section - Moved here */}
       {isExpanded && (
@@ -302,52 +299,51 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
              )
           )}
           
-          {/* Right: Notification (top) + Pin Toggle (bottom) stacked vertically */}
+          {/* Right: Notification (top) + Pin/Close Toggle (bottom) stacked vertically */}
           {isExpanded && (
             <div className="flex flex-col justify-between shrink-0 h-[68px]">
               <NotificationPopover isCompact={false} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="size-8"
-                    onClick={togglePinned}
-                    aria-label={isPinned ? "一時表示モードに切り替え" : "固定表示モードに切り替え"}
-                  >
-                    {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {isPinned ? "ホバー時のみ表示" : "サイドバーを固定"}
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex gap-1">
+                {/* Close button (一時展開時のみ) */}
+                {!isPinned && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="size-8"
+                        onClick={toggleExpanded}
+                        aria-label="サイドバーを閉じる"
+                      >
+                        <ChevronRight className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      閉じる
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Pin toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="size-8"
+                      onClick={togglePinned}
+                      aria-label={isPinned ? "固定を解除" : "サイドバーを固定"}
+                    >
+                      {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {isPinned ? "固定を解除" : "固定表示"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           )}
         </div>
-        
-        {/* Notification + Pin toggle when not expanded - below avatar */}
-        {!isExpanded && (
-          <div className="flex flex-col items-center gap-2 mt-2">
-            <NotificationPopover isCompact={true} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="size-8"
-                  onClick={togglePinned}
-                  aria-label={isPinned ? "一時表示モードに切り替え" : "固定表示モードに切り替え"}
-                >
-                  {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {isPinned ? "ホバー時のみ表示" : "サイドバーを固定"}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
       </div>
     </nav>
   );

@@ -95,10 +95,10 @@ export function RootLayout() {
           items={primaryLinks}
           brand={initialNavigation.brand}
           helpAction={helpAction}
-          className="hidden md:flex" 
+          className="hidden md:flex shrink-0" 
         />
         
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen md:pl-14">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           <main className="flex-1 bg-background py-6">
             <div className="px-4 md:px-8">
               <Outlet />
