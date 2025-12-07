@@ -141,8 +141,8 @@ apiClient.interceptors.response.use(
  * Helper function to create API request body
  * Wraps payload in 'content' field as required by backend
  */
-export function createApiRequest<T>(content: T) {
-  return { content };
+export function createApiRequest<T>(model: T) {
+  return { model };
 }
 
 /**
