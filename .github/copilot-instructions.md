@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | `apps/frontend-v3` | React 19 + Vite アプリ | TypeScript, Tailwind 4, Radix UI, Zustand, TanStack Query | `pnpm --filter frontend-v3 dev` (VS Code Task経由) | `/promarker` からアクセス。APIは `/mapi/*` を必ず経由。|
 | `packages/ui` | @mirel/ui デザインシステム | Radix + shadcn, Storybook相当のユーティリティ | 直接ビルド不要。`tsc --noEmit` に通ること | ここで Dialog 等の共通実装を定義。|
-| `packages/e2e` | Playwright E2E | Playwright 1.49+, Vite test server bootstrapping | `pnpm test:e2e` | 自動で backend/frontend を立ち上げる。|
+| `packages/e2e` | Playwright E2E | Playwright 1.57+, Vite test server bootstrapping | `pnpm test:e2e` | 自動で backend/frontend を立ち上げる。|
 | `backend` | Spring Boot 3.3 API | Java 21, Gradle 8, FreeMarker | `./gradlew :backend:bootRun --args='--spring.profiles.active=dev'` | `mipla2` コンテキスト配下で API 提供。|
 
 ## 2. 回答/コミュニケーション指針
@@ -61,6 +61,7 @@ scripts/               # サービス起動/停止/ビルドスクリプト (直
 - **Packages/ui**: Radixコンポーネントを拡張。DOM直書き禁止、アクセシビリティ属性を維持。`Dialog` 等のスタイル調整はここで集約し、アプリ側では props で調整。
 - **Backend**: `jp.vemi.mirel.apps.mste` 配下に API/Service/Domain を分離。リクエストDTOは `domain/dto`, Service戻り値は `ApiResponse` で統一。`/mapi` から流入したパラメータは `ApiRequest<*>.model` で受ける。
 - **E2E**: Playwright は `packages/e2e/tests/specs/promarker-v3/` に集約。テストは `apps/frontend-v3` を起動せず、Playwright config が `frontend-v3 dev` タスクを自動起動する。新規テストは `page-objects` を必ず経由。
+- **Mira AI**: `jp.vemi.mirel.apps.mira` 配下で AI アシスタント機能を提供。プロバイダは `AiProviderClient` インタフェースで抽象化し、`AiProviderFactory` でプロバイダ選択。設定は `mira.ai.*` プレフィックスで管理。
 
 ## 5. 開発環境とタスク実行
 

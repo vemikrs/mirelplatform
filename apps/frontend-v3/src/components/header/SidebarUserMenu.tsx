@@ -24,21 +24,26 @@ import {
   TooltipContent,
   cn
 } from '@mirel/ui';
-import { User, Settings, LogOut, SunMedium, MoonStar, Eye, EyeOff, Building2 } from 'lucide-react';
+import { User, Settings, LogOut, SunMedium, MoonStar, Eye, EyeOff, Building2, ChevronsUpDown } from 'lucide-react';
 
 const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 interface SidebarUserMenuProps {
-  isCollapsed: boolean;
+  isExpanded: boolean;
 }
 
 /**
  * サイドバー用ユーザーメニューコンポーネント
+ * 
+ * 修正:
+ * - 展開時 (isExpanded=true): インラインの単純な開閉動作に変更 (オーバーレイ廃止)
+ * - 折りたたみ時 (isExpanded=false): DropdownMenu (Popover) を維持
+ * - 固定高さ (h-[68px]) を削除
  */
-export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
-  const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
+export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
+  const { user, currentTenant, switchTenant, tenants, licenses } = useAuth();
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
   const [quickLinksVisible, setQuickLinksVisible] = useState(() => {
@@ -47,7 +52,8 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
     return stored === null ? true : stored === 'true';
   });
 
-  const toggleQuickLinks = () => {
+  const toggleQuickLinks = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const newValue = !quickLinksVisible;
     setQuickLinksVisible(newValue);
     window.localStorage.setItem(QUICK_LINKS_STORAGE_KEY, String(newValue));
@@ -55,7 +61,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
   };
 
   const handleLogout = () => {
-    logout();
+    navigate('/logout');
   };
 
   const handleTenantSwitch = async (tenantId: string) => {
@@ -90,10 +96,12 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
     ENTERPRISE: 'Enterprise',
   };
 
-  // Collapsed mode - show only avatar with tooltip
-  if (isCollapsed) {
-    return (
-      <DropdownMenu>
+  // 展開時・折りたたみ時ともにDropdownMenuを使用
+  // トリガーボタンのスタイルのみを変更
+  return (
+    <DropdownMenu modal={false}>
+      {!isExpanded ? (
+        // 折りたたみ時: アイコンのみのトリガー
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
@@ -115,56 +123,42 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
             {user.displayName || user.email}
           </TooltipContent>
         </Tooltip>
-        
-        <DropdownMenuContent className="w-64" side="right" align="end">
-          <UserMenuContent 
-            user={user}
-            currentTenant={currentTenant}
-            tenants={tenants}
-            currentTier={currentTier}
-            tierColors={tierColors}
-            tierLabels={tierLabels}
-            themeMode={themeMode}
-            setTheme={setTheme}
-            quickLinksVisible={quickLinksVisible}
-            toggleQuickLinks={toggleQuickLinks}
-            handleTenantSwitch={handleTenantSwitch}
-            handleLogout={handleLogout}
-            navigate={navigate}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
-  // Expanded mode - show full user info
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          className="w-full flex items-center gap-2 px-2 py-1.5 h-[68px] justify-start hover:bg-surface-raised"
-        >
-          <Avatar 
-            src={user.avatarUrl}
-            alt={user.displayName || user.email}
-            fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-            size="sm"
-          />
-          <div className="flex-1 flex flex-col items-start text-left min-w-0">
-            <span className="text-sm font-medium leading-tight truncate w-full">
-              {user.displayName || user.email}
-            </span>
-            {currentTenant && (
-              <span className="text-xs text-muted-foreground mt-0.5 truncate w-full">
-                {currentTenant.displayName}
-              </span>
-            )}
-          </div>
-        </Button>
-      </DropdownMenuTrigger>
+      ) : (
+        // 展開時: フル幅のトリガー
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="w-full h-full flex items-center gap-2 px-2 py-2 justify-between hover:bg-surface-raised group"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1 text-left">
+              <Avatar 
+                src={user.avatarUrl}
+                alt={user.displayName || user.email}
+                fallback={user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                size="sm"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium leading-tight truncate">
+                  {user.displayName || user.email}
+                </span>
+                {currentTenant && (
+                  <span className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {currentTenant.displayName}
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronsUpDown className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
+          </Button>
+        </DropdownMenuTrigger>
+      )}
       
-      <DropdownMenuContent className="w-64" side="right" align="end">
+      <DropdownMenuContent 
+        className="w-64" 
+        side={isExpanded ? "top" : "right"} 
+        align="end" 
+        sideOffset={8}
+      >
         <UserMenuContent 
           user={user}
           currentTenant={currentTenant}
@@ -175,7 +169,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
           themeMode={themeMode}
           setTheme={setTheme}
           quickLinksVisible={quickLinksVisible}
-          toggleQuickLinks={toggleQuickLinks}
+          toggleQuickLinks={() => toggleQuickLinks()}
           handleTenantSwitch={handleTenantSwitch}
           handleLogout={handleLogout}
           navigate={navigate}
@@ -185,7 +179,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
   );
 }
 
-// Shared menu content component
+// Shared menu content component (for Collapsed/Dropdown mode)
 interface UserMenuContentProps {
   user: { displayName?: string; email?: string; username?: string; avatarUrl?: string };
   currentTenant: { tenantId: string; displayName: string } | null;

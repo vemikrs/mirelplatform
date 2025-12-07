@@ -1,7 +1,13 @@
 # Frontend (apps/frontend-v3)
 
 ## スコープ
-React 19 + Vite 7 で実装された ProMarker フロントエンド。ルーティング設定は `src/app/router.config.tsx` / `routes.tsx` にまとまり、ユースケースは `src/features/stencil-editor`, `src/features/promarker`, `src/features/catalog` など機能単位のフォルダで管理される。共通 UI は `@mirel/ui` を利用し、API コールは `src/lib/api/client.ts` から作成した axios instance を通じて `/mapi/*` に集約する。
+React 19 + Vite 7 で実装された ProMarker フロントエンド。ルーティング設定は `src/app/router.config.tsx` / `routes.tsx` にまとまり、ユースケースは `src/features/stencil-editor`, `src/features/promarker`, `src/features/catalog`, `src/features/mira` など機能単位のフォルダで管理される。共通 UI は `@mirel/ui` を利用し、API コールは `src/lib/api/client.ts` から作成した axios instance を通じて `/mapi/*` に集約する。
+
+### Mira AI Assistant (`src/features/mira`)
+- AI アシスタント機能。専用ページ `/mira` とフローティング FAB から利用可能
+- 状態管理: `src/stores/miraStore.ts` (Zustand)、API: `src/lib/api/mira.ts`、フック: `src/hooks/useMira.ts`
+- モード: `GENERAL_CHAT` / `CONTEXT_HELP` / `ERROR_ANALYZE` / `STUDIO_AGENT` / `WORKFLOW_AGENT`
+- UI コンポーネント: `MiraPage`, `MiraChatInput`, `MiraChatMessage`, `MiraConversationList`, `MiraKeyboardShortcuts` 等
 
 ## 起動・ビルド
 | 用途 | VS Code Task | CLI (参考) |

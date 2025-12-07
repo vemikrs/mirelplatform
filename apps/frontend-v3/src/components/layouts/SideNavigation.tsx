@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Wand2, 
@@ -10,16 +10,14 @@ import {
   ChevronDown,
   Map,
   Building,
-  PanelLeftClose,
-  PanelLeft,
   HelpCircle,
+  Bot,
   type LucideIcon 
 } from 'lucide-react';
 import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
 import type { NavigationLink, NavigationAction } from '@/app/navigation.schema';
 import { SidebarUserMenu } from '@/components/header/SidebarUserMenu';
 import { NotificationPopover } from '@/components/header/NotificationPopover';
-import { GlobalSearch } from '@/components/header/GlobalSearch';
 
 // Icon mapping
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -32,8 +30,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'building': Building,
 };
 
-// LocalStorage key for sidebar collapsed state
-const SIDEBAR_COLLAPSED_KEY = 'mirel-sidebar-collapsed';
+// LocalStorage key for sidebar expanded state
+const SIDEBAR_EXPANDED_KEY = 'mirel-sidebar-expanded';
 
 interface SideNavigationProps {
   items: NavigationLink[];
@@ -48,21 +46,24 @@ interface SideNavigationProps {
 
 export function SideNavigation({ items, brand, helpAction, className }: SideNavigationProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Sidebar collapsed state (persisted)
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+  // Single source of truth for expansion state (persisted)
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem(SIDEBAR_EXPANDED_KEY);
+    // Default to true (expanded) if not set, or restore previous state
+    return stored === null ? true : stored === 'true';
   });
 
-  const toggleCollapsed = useCallback(() => {
-    setIsCollapsed(prev => {
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(prev => {
       const next = !prev;
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      window.localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(next));
       return next;
     });
   }, []);
-  
+
   // Track expanded state for each menu item
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
     // Initialize with items that contain the current path
@@ -103,28 +104,58 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
     });
   }, []);
 
+  // Flatten items for collapsed state
+  // Logic: Only show items that are children of groups (level 2+). 
+  // Top level items (like 'Portal') are hidden to avoid duplication with Brand or because they are headers.
+  const collapsedItems = useMemo(() => {
+    const flattenChildren = (links: NavigationLink[]): NavigationLink[] => {
+      const result: NavigationLink[] = [];
+      for (const link of links) {
+        if (link.children && link.children.length > 0) {
+          result.push(...flattenChildren(link.children));
+        } else {
+          result.push(link);
+        }
+      }
+      return result;
+    };
+
+    const rootResult: NavigationLink[] = [];
+    for (const item of items) {
+      if (item.children && item.children.length > 0) {
+        rootResult.push(...flattenChildren(item.children));
+      }
+    }
+    return rootResult;
+  }, [items]);
+
   return (
     <nav 
       className={cn(
-        "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300",
-        isCollapsed ? "w-14" : "w-72",
+        "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300 ease-in-out shrink-0",
+        // Sticky position to keep sidebar in view while scrolling
+        // self-start prevents the sidebar from being stretched to the full page height by the parent flex container
+        // max-h-screen ensures it never exceeds viewport height even if content pushes it
+        "sticky top-0 h-screen max-h-screen self-start overflow-hidden",
+        isExpanded ? "w-72" : "w-14",
         className
       )}
+      style={{ willChange: 'width', backgroundColor: 'hsl(var(--surface-subtle))' }}
     >
       {/* Brand Section - Fixed at top */}
       {brand && (
         <div className={cn(
-          "border-b border-outline/20 py-3",
-          isCollapsed ? "px-2" : "px-3"
+          "border-b border-outline/20 py-3 shrink-0",
+          isExpanded ? "px-3" : "px-2"
         )}>
           <Link 
             to="/home" 
             className={cn(
               "group flex items-center gap-3 text-left",
-              isCollapsed && "justify-center"
+              !isExpanded && "justify-center"
             )}
           >
-            {isCollapsed ? (
+            {!isExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
@@ -157,11 +188,9 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         </div>
       )}
 
-
-
-      {/* Menu Items - Scrollable (hidden when collapsed) */}
-      {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
+      {/* Menu Items - Scrollable */}
+      {isExpanded ? (
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-1 scrollbar-thin scrollbar-thumb-outline/20 hover:scrollbar-thumb-outline/40">
           {items.map((item) => (
             <NavItem 
               key={item.id} 
@@ -171,37 +200,130 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
             />
           ))}
         </div>
-      )}
-
-      {/* Spacer when collapsed */}
-      {isCollapsed && <div className="flex-1" />}
-
-      {/* Search Section - Moved here */}
-      {!isCollapsed && (
-        <div className="px-3 py-2 border-t border-outline/20">
-          <GlobalSearch />
+      ) : (
+        /* Collapsed Icon Menu - No scroll needed typically, but safe to allow */
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-2 scrollbar-none flex flex-col items-center">
+          {collapsedItems.map((item) => (
+            <CollapsedNavItem key={item.id} item={item} />
+          ))}
+          
+          {/* Mira AI Assistant Icon */}
+          <div className="border-t border-outline/20 w-full pt-2 flex justify-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NavLink
+                  to="/mira"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+                    )
+                  }
+                >
+                  <Bot className="size-4" />
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Mira (mirel Assistant)
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       )}
 
-      {/* Bottom Section - Fixed */}
+      {/* Mira AI Assistant Section (Expanded only) */}
+      {isExpanded && (
+        <div className="px-3 py-2 border-t border-outline/20 shrink-0">
+          {/* Mira AI Assistant Button */}
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start gap-2 text-sm font-medium",
+              location.pathname === '/mira' && "bg-primary/10 text-primary border-primary/30"
+            )}
+            onClick={() => navigate('/mira')}
+          >
+            <Bot className="size-4" />
+            <span>Mira (mirel Assistant)</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Bottom Section - Fixed at bottom */}
       <div className={cn(
-        "border-t border-outline/20 py-3",
-        isCollapsed ? "px-2" : "px-3"
+        "border-t border-outline/20 py-2 mt-auto shrink-0",
+        isExpanded ? "px-3" : "px-2"
       )}>
-        {/* User Menu + Actions + Notification + Collapse Toggle */}
-        <div className={cn(
-          "flex",
-          isCollapsed ? "flex-col items-center gap-3" : "items-stretch gap-2"
-        )}>
-          {/* Left: User Menu */}
-          <div className="flex-1 min-w-0">
-            <SidebarUserMenu isCollapsed={isCollapsed} />
+        {isExpanded ? (
+          // Expanded mode UI
+          <div className="flex items-stretch gap-2 min-w-0">
+            {/* User Menu - Expanded (Inline) - Left side */}
+            <div className="flex-1 min-w-0">
+              <SidebarUserMenu isExpanded={true} />
+            </div>
+
+            {/* Right side controls - Vertical stack */}
+            <div className="flex flex-col justify-between shrink-0 gap-1 h-auto">
+               <div className="flex flex-col gap-1 items-center">
+                 <NotificationPopover isCompact={true} />
+               </div>
+
+               <div className="flex flex-col gap-1 items-center mt-auto">
+                 {/* Help Action - optional, keeping it small if present */}
+                 {helpAction && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="size-7"
+                          asChild={Boolean('path' in helpAction && helpAction.path)}
+                        >
+                          {'path' in helpAction && helpAction.path ? (
+                            <Link to={helpAction.path} aria-label="ヘルプセンター">
+                              <HelpCircle className="size-3.5" />
+                            </Link>
+                          ) : (
+                            <HelpCircle className="size-3.5" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        ヘルプセンター
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {/* Toggle Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="size-7 text-muted-foreground hover:text-foreground"
+                        onClick={toggleExpanded}
+                        aria-label="サイドバーを折りたたむ"
+                      >
+                        <PanelLeftClose className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      サイドバーを折りたたむ
+                    </TooltipContent>
+                  </Tooltip>
+               </div>
+            </div>
           </div>
-
-
-          {/* Help Action */}
-          {helpAction && (
-             isCollapsed ? (
+        ) : (
+          // Collapsed mode UI - Simple vertical stack
+          <div className="flex flex-col items-center gap-2">
+            {/* User Menu - Collapsed (Popover) */}
+            <SidebarUserMenu isExpanded={false} />
+            
+            {/* Help Action */}
+            {helpAction && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -210,7 +332,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                     className="size-8"
                     asChild={Boolean('path' in helpAction && helpAction.path)}
                   >
-                   {'path' in helpAction && helpAction.path ? (
+                    {'path' in helpAction && helpAction.path ? (
                       <Link to={helpAction.path} aria-label="ヘルプセンター">
                         <HelpCircle className="size-4" />
                       </Link>
@@ -223,71 +345,26 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                   ヘルプセンター
                 </TooltipContent>
               </Tooltip>
-             ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="size-8"
-                      asChild={Boolean('path' in helpAction && helpAction.path)}
-                    >
-                      {'path' in helpAction && helpAction.path ? (
-                        <Link to={helpAction.path} aria-label="ヘルプセンター">
-                          <HelpCircle className="size-4" />
-                        </Link>
-                      ) : (
-                        <HelpCircle className="size-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    ヘルプセンター
-                  </TooltipContent>
-                </Tooltip>
-             )
-          )}
-          
-          {/* Right: Notification (top) + Collapse (bottom) stacked vertically */}
-          {!isCollapsed && (
-            <div className="flex flex-col justify-between shrink-0 h-[68px]">
-              <NotificationPopover isCompact={false} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="size-8"
-                    onClick={toggleCollapsed}
-                  >
-                    <PanelLeftClose className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  メニューを折りたたむ
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
-        </div>
-        
-        {/* Notification + Collapse toggle when collapsed - below avatar */}
-        {isCollapsed && (
-          <div className="flex flex-col items-center gap-2 mt-2">
+            )}
+
+            {/* Notification */}
             <NotificationPopover isCompact={true} />
+
+            {/* Expand Button */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
-                  className="size-8"
-                  onClick={toggleCollapsed}
+                  className="size-8 text-muted-foreground hover:text-foreground"
+                  onClick={toggleExpanded}
+                  aria-label="サイドバーを展開"
                 >
-                  <PanelLeft className="size-4" />
+                  <PanelLeftOpen className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                メニューを展開
+                サイドバーを展開
               </TooltipContent>
             </Tooltip>
           </div>
@@ -296,6 +373,50 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
     </nav>
   );
 }
+
+// Helper icons for toggle
+function PanelLeftClose({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <line x1="9" x2="9" y1="3" y2="21" />
+      <path d="m16 15-3-3 3-3" />
+    </svg>
+  );
+}
+
+function PanelLeftOpen({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <line x1="9" x2="9" y1="3" y2="21" />
+      <path d="m14 9 3 3-3 3" />
+    </svg>
+  );
+}
+
 
 interface NavItemProps {
   item: NavigationLink;
@@ -368,5 +489,34 @@ function NavItem({ item, depth = 0, expandedItems, onToggle }: NavItemProps) {
       {Icon && <Icon className="size-4 shrink-0" />}
       <span className="truncate">{item.label}</span>
     </NavLink>
+  );
+}
+
+// Collapsed Icon-only NavItem
+function CollapsedNavItem({ item }: { item: NavigationLink }) {
+  const Icon = item.icon ? ICON_MAP[item.icon] : null;
+  if (!Icon) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <NavLink
+          to={item.path}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+            )
+          }
+        >
+          <Icon className="size-4" />
+        </NavLink>
+      </TooltipTrigger>
+      <TooltipContent side="right">
+        {item.label}
+      </TooltipContent>
+    </Tooltip>
   );
 }

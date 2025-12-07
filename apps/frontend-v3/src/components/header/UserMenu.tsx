@@ -28,18 +28,13 @@ type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
  * ユーザーメニューコンポーネント
  */
 export function UserMenu() {
-  const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
+  const { user, currentTenant, switchTenant, tenants, licenses } = useAuth();
 
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    console.log('[DEBUG UserMenu] handleLogout called');
-    // logout() は window.location.replace('/login') を実行するため、
-    // この関数は return しない（ページ遷移する）
-    // navigate() は不要
-    logout();
-    console.log('[DEBUG UserMenu] logout() called (this may not be logged)');
+    navigate('/logout');
   };
 
   const handleTenantSwitch = async (tenantId: string) => {

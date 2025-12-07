@@ -84,6 +84,8 @@ export { Label } from './components/Label'
 export { Textarea } from './components/Textarea'
 export { Switch } from './components/Switch'
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './components/Tooltip'
+export { ScrollArea, ScrollBar } from './components/ScrollArea'
+export { Spinner, type SpinnerProps } from './components/Spinner'
 
 // Utils
 export { cn } from './lib/utils'

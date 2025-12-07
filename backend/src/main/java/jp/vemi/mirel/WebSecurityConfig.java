@@ -34,6 +34,9 @@ import jp.vemi.mirel.foundation.service.oauth2.CustomOAuth2UserService;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.http.HttpStatus;
 
 @Configuration
 @EnableWebSecurity
@@ -297,6 +300,19 @@ public class WebSecurityConfig {
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
                 .failureHandler(oauth2FailureHandler));
+
+        // APIエンドポイントの未認証アクセス時のハンドリング
+        // 302リダイレクトではなく401を返すように設定
+        http.exceptionHandling(handling -> handling
+                .defaultAuthenticationEntryPointFor(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                        new AntPathRequestMatcher("/users/**"))
+                .defaultAuthenticationEntryPointFor(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                        new AntPathRequestMatcher("/api/**"))
+                .defaultAuthenticationEntryPointFor(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                        new AntPathRequestMatcher("/actuator/**")));
     }
 
     /**

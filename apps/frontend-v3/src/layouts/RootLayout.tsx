@@ -9,6 +9,8 @@ import { SideNavigation } from '@/components/layouts/SideNavigation';
 import { getMenuTree, adaptMenuToNavigationLink } from '@/lib/api/menu';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { MiraFab } from '@/features/mira/components/MiraFab';
+import { MiraChatPanel } from '@/features/mira/components/MiraChatPanel';
 
 
 /**
@@ -93,7 +95,7 @@ export function RootLayout() {
           items={primaryLinks}
           brand={initialNavigation.brand}
           helpAction={helpAction}
-          className="hidden md:flex sticky top-0 h-screen overflow-y-auto shrink-0" 
+          className="hidden md:flex shrink-0" 
         />
         
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
@@ -126,6 +128,10 @@ export function RootLayout() {
         </div>
       </div>
       <Toaster />
+      
+      {/* Mira AI Assistant */}
+      <MiraFab />
+      <MiraChatPanel />
     </div>
   );
 }
