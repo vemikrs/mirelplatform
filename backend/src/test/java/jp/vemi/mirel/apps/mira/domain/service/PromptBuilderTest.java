@@ -58,9 +58,11 @@ class PromptBuilderTest {
             assertThat(result.getMessages()).isNotEmpty();
             // システムプロンプトが含まれている
             assertThat(result.getMessages().get(0).getRole()).isEqualTo("system");
-            // ユーザーメッセージが含まれている
+            // ユーザーメッセージが含まれている (Sandboxingタグを含む)
             assertThat(result.getMessages())
-                    .anyMatch(m -> "user".equals(m.getRole()) && "テストメッセージ".equals(m.getContent()));
+                    .anyMatch(m -> "user".equals(m.getRole()) &&
+                            m.getContent().contains("テストメッセージ") &&
+                            m.getContent().contains("<user_input>"));
             // 適切な温度設定
             assertThat(result.getTemperature()).isEqualTo(0.7);
         }

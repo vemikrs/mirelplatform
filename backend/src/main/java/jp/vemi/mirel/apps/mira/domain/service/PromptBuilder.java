@@ -134,7 +134,9 @@ public class PromptBuilder {
         }
 
         // ユーザーメッセージを追加
-        messages.add(AiRequest.Message.user(request.getMessage().getContent()));
+        // XML Sandboxing: ユーザー入力をタグで囲んでプロンプトインジェクションを防ぐ
+        String sandboxedContent = "<user_input>\n" + request.getMessage().getContent() + "\n</user_input>";
+        messages.add(AiRequest.Message.user(sandboxedContent));
 
         return AiRequest.builder()
                 .messages(messages)
