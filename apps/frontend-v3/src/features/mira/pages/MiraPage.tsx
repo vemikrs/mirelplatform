@@ -27,6 +27,7 @@ import {
   X,
   PanelLeft,
 } from 'lucide-react';
+import { useOs } from '@/lib/hooks/useOs';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
@@ -395,6 +396,8 @@ export function MiraPage() {
     setEditedTitle('');
   }, []);
   
+  const { metaKey } = useOs();
+
   return (
     <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
       {/* 左サイドバー: 会話履歴 */}
@@ -421,7 +424,7 @@ export function MiraPage() {
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title="サイドバーを切替 (⌘+H)"
+              title={`サイドバーを切替 (${metaKey}+H)`}
             >
               <PanelLeft className="w-5 h-5" />
             </Button>

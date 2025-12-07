@@ -18,6 +18,8 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { useOs } from '@/lib/hooks/useOs';
+
 interface MiraMenuProps {
   onNewConversation: () => void;
   onOpenContextEditor: () => void;
@@ -39,6 +41,8 @@ export function MiraMenu({
   hasMessages,
   className,
 }: MiraMenuProps) {
+  const { metaKey } = useOs();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -57,7 +61,7 @@ export function MiraMenu({
           <DropdownMenuItem onClick={onNewConversation}>
             <Plus className="mr-2 h-4 w-4" />
             <span>新しい会話</span>
-            <span className="ml-auto text-xs tracking-widest text-muted-foreground">⌘N</span>
+            <span className="ml-auto text-xs tracking-widest text-muted-foreground">{metaKey}N</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onOpenContextEditor}>
             <Settings2 className="mr-2 h-4 w-4" />

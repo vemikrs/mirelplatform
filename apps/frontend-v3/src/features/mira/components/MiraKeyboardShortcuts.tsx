@@ -6,6 +6,7 @@
 import { useEffect, useCallback, type ReactNode } from 'react';
 import { cn } from '@mirel/ui';
 import { X, Keyboard, Pencil, Compass, MessageSquare, Settings } from 'lucide-react';
+import { useOs } from '@/lib/hooks/useOs';
 
 interface MiraKeyboardShortcutsProps {
   isOpen: boolean;
@@ -38,13 +39,13 @@ const LEFT_CATEGORIES: CategoryData[] = [
   },
 ];
 
-const RIGHT_CATEGORIES: CategoryData[] = [
+const RIGHT_CATEGORIES = (metaKey: string): CategoryData[] => [
   {
     category: '会話',
     icon: <MessageSquare className="w-3.5 h-3.5" />,
     shortcuts: [
-      { keys: ['⌘', 'H'], description: '履歴を開く' },
-      { keys: ['⌘', 'N'], description: '新規会話' },
+      { keys: [metaKey, 'H'], description: '履歴を開く' },
+      { keys: [metaKey, 'N'], description: '新規会話' },
       { keys: ['C'], description: 'コピー' },
       { keys: ['E'], description: 'メッセージ編集' },
     ],
@@ -66,6 +67,8 @@ interface CategoryData {
 }
 
 export function MiraKeyboardShortcuts({ isOpen, onClose }: MiraKeyboardShortcutsProps) {
+  const { metaKey } = useOs();
+
   // Escapeキーで閉じる
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -118,7 +121,7 @@ export function MiraKeyboardShortcuts({ isOpen, onClose }: MiraKeyboardShortcuts
           
           {/* 右カラム */}
           <div className="space-y-5">
-            {RIGHT_CATEGORIES.map(({ category, icon, shortcuts }) => (
+            {RIGHT_CATEGORIES(metaKey).map(({ category, icon, shortcuts }) => (
               <ShortcutCategory key={category} category={category} icon={icon} shortcuts={shortcuts} />
             ))}
           </div>
