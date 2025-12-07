@@ -145,12 +145,13 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       className={cn(
         "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300 ease-in-out",
         isExpanded ? "w-72" : "w-14",
-        !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-lg",
+        !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-xl backdrop-blur-sm",
+        isPinned && "relative",
         className
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{ willChange: 'width' }}
+      style={{ willChange: 'width', backgroundColor: 'hsl(var(--surface-subtle))' }}
     >
       {/* Brand Section - Fixed at top */}
       {brand && (
