@@ -21,6 +21,7 @@ import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerifica
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { LogoutPage } from '@/features/auth/pages/LogoutPage';
 import { AdminFeaturesPage } from '@/features/admin';
+import { MiraAdminPage } from '@/features/admin/pages/MiraAdminPage'; // Add import
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
 import { LicenseManagementPage } from '@/features/admin/pages/LicenseManagementPage';
@@ -266,6 +267,12 @@ export const router = createBrowserRouter([
             path: 'admin/features',
             element: <AdminFeaturesPage />,
             handle: { title: '管理 - フィーチャーフラグ' },
+          },
+          // Mira AI Admin
+          {
+            path: 'admin/mira',
+            element: <MiraAdminPage />,
+            handle: { title: '管理 - Mira AI 設定' },
           },
           // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
           {

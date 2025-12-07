@@ -1,0 +1,73 @@
+import { apiClient } from './client';
+
+export interface MiraContextLayer {
+  id: string;
+  scope: 'SYSTEM' | 'TENANT' | 'ORGANIZATION' | 'USER';
+  scopeId?: string;
+  category: string;
+  content: string;
+  priority: number;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  version?: number;
+}
+
+export interface LimitsConfig {
+  rateLimit: {
+    enabled: boolean;
+    requestsPerMinute: number;
+    burstCapacity: number;
+  };
+  quota: {
+    enabled: boolean;
+    dailyTokenLimit: number;
+    alertThresholdPercent: number;
+  };
+}
+
+export interface TokenUsageSummary {
+  tenantId: string;
+  date: string;
+  totalTokens: number;
+}
+
+export const miraAdminApi = {
+  // System Context Management
+  getSystemContexts: async (): Promise<MiraContextLayer[]> => {
+    const response = await apiClient.get<MiraContextLayer[]>('/apps/mira/api/admin/context/system');
+    return response.data;
+  },
+
+  saveSystemContext: async (layer: Partial<MiraContextLayer>): Promise<MiraContextLayer> => {
+    const response = await apiClient.post<MiraContextLayer>('/apps/mira/api/admin/context/system', layer);
+    return response.data;
+  },
+
+  // Tenant Context Management
+  getTenantContexts: async (tenantId: string): Promise<MiraContextLayer[]> => {
+    const response = await apiClient.get<MiraContextLayer[]>(`/apps/mira/api/admin/context/tenant/${tenantId}`);
+    return response.data;
+  },
+
+  saveTenantContext: async (tenantId: string, layer: Partial<MiraContextLayer>): Promise<MiraContextLayer> => {
+    const response = await apiClient.post<MiraContextLayer>(`/apps/mira/api/admin/context/tenant/${tenantId}`, layer);
+    return response.data;
+  },
+
+  // Limits & Usage
+  getLimits: async (): Promise<LimitsConfig> => {
+    const response = await apiClient.get<LimitsConfig>('/apps/mira/api/admin/limits');
+    return response.data;
+  },
+
+  getTokenUsage: async (tenantId: string, date?: string): Promise<TokenUsageSummary> => {
+    const params = new URLSearchParams({ tenantId });
+    if (date) params.append('date', date);
+    
+    const response = await apiClient.get<TokenUsageSummary>(`/apps/mira/api/admin/token-usage/summary?${params.toString()}`);
+    return response.data;
+  }
+};
