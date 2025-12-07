@@ -40,6 +40,7 @@ import {
   Link2Off,
   AlertTriangle
 } from 'lucide-react';
+import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 
 interface ExtendedUserProfile extends UserProfile {
   bio?: string;
@@ -105,8 +106,10 @@ export default function ProfilePage() {
 
   // Avatar upload state
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [changeDialogOpen, setChangeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -216,10 +219,30 @@ export default function ProfilePage() {
       return;
     }
 
-    setPendingFile(file);
+    // Show crop dialog
     const objectUrl = URL.createObjectURL(file);
+    setSelectedImageUrl(objectUrl);
+    setCropDialogOpen(true);
+  };
+
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    // Convert blob to file
+    const croppedFile = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' });
+    setPendingFile(croppedFile);
+    
+    // Create preview URL
+    const objectUrl = URL.createObjectURL(croppedImageBlob);
     setPreviewUrl(objectUrl);
+    
+    // Close crop dialog and open confirmation dialog
+    setCropDialogOpen(false);
     setChangeDialogOpen(true);
+    
+    // Clean up selected image URL
+    if (selectedImageUrl) {
+      URL.revokeObjectURL(selectedImageUrl);
+      setSelectedImageUrl(null);
+    }
   };
 
   const confirmUpload = async () => {
@@ -228,9 +251,16 @@ export default function ProfilePage() {
     setAvatarUploading(true);
     try {
       const result = await uploadAvatar(pendingFile);
-      updateUser({ avatarUrl: result.avatarUrl } as Partial<UserProfile>);
+      
+      // Invalidate and refetch queries to get fresh data from server
+      await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      await queryClient.refetchQueries({ queryKey: ['userProfile'] });
+      
+      // Update local user context with the new avatar URL (add timestamp to bypass browser cache)
+      const avatarUrlWithTimestamp = `${result.avatarUrl}?t=${Date.now()}`;
+      updateUser({ avatarUrl: avatarUrlWithTimestamp } as Partial<UserProfile>);
+      
       setMessage({ type: 'success', text: 'アバターを更新しました' });
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       setChangeDialogOpen(false);
       setPendingFile(null);
       if (previewUrl) {
@@ -432,6 +462,26 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+
+              {/* Avatar Crop Dialog */}
+              <ImageCropDialog
+                open={cropDialogOpen}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setCropDialogOpen(false);
+                    if (selectedImageUrl) {
+                      URL.revokeObjectURL(selectedImageUrl);
+                      setSelectedImageUrl(null);
+                    }
+                    // Reset file input
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }
+                }}
+                imageSrc={selectedImageUrl || ''}
+                onCropComplete={handleCropComplete}
+              />
 
               {/* Avatar Change Confirmation Dialog */}
               <Dialog open={changeDialogOpen} onOpenChange={(open) => {
