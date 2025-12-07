@@ -23,13 +23,13 @@ import {
 import { 
   Sparkles,
   Trash2,
-  Menu,
   Plus,
   Keyboard,
   Download,
   Edit2,
   Check,
   X,
+  PanelLeft,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
@@ -66,8 +66,8 @@ export function MiraPage() {
   const deleteConversation = useMiraStore((state) => state.deleteConversation);
   const storedConversations = useMiraStore((state) => state.conversations);
   
-  // ドロワーの開閉状態
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // サイドバーの表示状態
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // キーボードショートカットオーバーレイの状態
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
@@ -112,7 +112,6 @@ export function MiraPage() {
   // 新規会話作成ハンドラ（useEffectより前に定義）
   const handleNewConversation = useCallback(() => {
     newConversation();
-    setIsDrawerOpen(false);
   }, [newConversation]);
   
   // エクスポート処理ハンドラ
@@ -195,10 +194,10 @@ export function MiraPage() {
         return;
       }
       
-      // ⌘/Ctrl + H で会話履歴を開く
+      // ⌘/Ctrl + H でサイドバーを切り替え
       if (e.key === 'h' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        setIsDrawerOpen((prev) => !prev);
+        setIsSidebarOpen((prev) => !prev);
         return;
       }
       
@@ -284,11 +283,9 @@ export function MiraPage() {
         return;
       }
       
-      // Escape でドロワーを閉じる / メッセージ選択解除
+      // Escape でサイドバーを閉じる / メッセージ選択解除
       if (e.key === 'Escape') {
-        if (isDrawerOpen) {
-          setIsDrawerOpen(false);
-        } else if (selectedMessageIndex >= 0) {
+        if (selectedMessageIndex >= 0) {
           setSelectedMessageIndex(-1);
         }
         return;
@@ -297,7 +294,7 @@ export function MiraPage() {
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage, handleEditMessage]);
+  }, [isSidebarOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage, handleEditMessage]);
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -334,7 +331,6 @@ export function MiraPage() {
   // 会話選択ハンドラ
   const handleSelectConversation = useCallback((conversationId: string) => {
     setActiveConversation(conversationId);
-    setIsDrawerOpen(false); // 選択後にドロワーを閉じる
   }, [setActiveConversation]);
   
   // 会話削除ハンドラ
@@ -401,42 +397,33 @@ export function MiraPage() {
   
   return (
     <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
-      {/* 左ドロワー: 会話履歴（Mira表示内に制限） */}
-      {isDrawerOpen && (
-        <div 
-          className="absolute inset-0 bg-black/20 z-10"
-          onClick={() => setIsDrawerOpen(false)}
-        />
+      {/* 左サイドバー: 会話履歴 */}
+      {isSidebarOpen && (
+        <div className="h-full shrink-0">
+          <MiraConversationList
+            conversations={conversations}
+            activeConversationId={activeConversation?.id ?? null}
+            onSelect={handleSelectConversation}
+            onDelete={handleDeleteConversation}
+            onNewConversation={handleNewConversation}
+            onClose={() => setIsSidebarOpen(false)}
+          />
+        </div>
       )}
-      <div 
-        className={`
-          absolute left-0 top-0 bottom-0 z-20
-          transform transition-transform duration-300 ease-in-out
-          ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <MiraConversationList
-          conversations={conversations}
-          activeConversationId={activeConversation?.id ?? null}
-          onSelect={handleSelectConversation}
-          onDelete={handleDeleteConversation}
-          onNewConversation={handleNewConversation}
-          onClose={() => setIsDrawerOpen(false)}
-        />
-      </div>
       
       {/* メインエリア: チャット（1カラム中央配置） */}
       <div className="flex-1 flex flex-col min-w-0">
+
         {/* チャットヘッダー */}
         <div className="flex items-center justify-between p-3 border-b bg-surface">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsDrawerOpen(true)}
-              title="会話履歴を開く (⌘+H)"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              title="サイドバーを切替 (⌘+H)"
             >
-              <Menu className="w-5 h-5" />
+              <PanelLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <Sparkles className="w-4 h-4 text-primary shrink-0" />
