@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient, createApiRequest } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { Spinner } from '@mirel/ui';
@@ -19,14 +19,21 @@ export function MagicVerifyPage() {
   const setAuth = useAuthStore((state) => state.setAuth);
   const setOtpState = useAuthStore((state) => state.setOtpState);
 
-  const { mutate: verifyMagicLink } = useMutation({
-    mutationFn: async (token: string) => {
+  const { data, isError, error: queryError } = useQuery({
+    queryKey: ['magicVerify', token],
+    queryFn: async () => {
       const response = await apiClient.post('/auth/otp/magic-verify', createApiRequest({ token }));
       return response.data.data;
     },
-    onSuccess: (data: any) => {
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
+  });
+
+  useEffect(() => {
+    if (data) {
       // data: { verified: true, purpose: string, email?: string, auth?: AuthResponse }
-      
       const { purpose, email, auth } = data;
 
       if (purpose === 'LOGIN') {
@@ -34,55 +41,44 @@ export function MagicVerifyPage() {
           setAuth(auth.user, auth.currentTenant, auth.tokens);
           navigate('/');
         } else {
-            // Should not happen for LOGIN based on backend logic
             navigate('/login');
         }
       } else if (purpose === 'EMAIL_VERIFICATION') {
          if (auth) {
-             // If auth data is returned (auto-login), use it
              setAuth(auth.user, auth.currentTenant, auth.tokens);
          }
-         // Redirect to success page or home
-         // Ideally show a success toast or page
-         // For now, redirect to home (if logged in) or login
          navigate('/', { replace: true });
-         // Alert or toast could be added here
          alert('メールアドレスの検証が完了しました');
       } else if (purpose === 'PASSWORD_RESET') {
-        // Update OTP State so the next page knows the context
-        // We might not have requestId or expirationMinutes from backend response yet
-        // but setOtpState requires them.
-        // We can use dummy values for requestId and expiration since we are already verified.
         if (email) {
             setOtpState(
                 email, 
                 'PASSWORD_RESET', 
-                'magic-link-req', // Dummy Request ID
-                30, // Dummy Expiration
-                0 // No cooldown needed
+                'magic-link-req',
+                30,
+                0
             );
         }
-        
-        // Navigate to Password Reset Page with verified state
         navigate('/auth/password-reset-verify', { state: { verified: true } });
       } else {
-        // Unknown purpose
         navigate('/login');
       }
-    },
-    onError: (err: any) => {
-      console.error('Magic Link Verification Failed', err);
-      setError(err.response?.data?.errors?.[0] || '無効または期限切れのリンクです');
     }
-  });
+  }, [data, navigate, setAuth, setOtpState]);
 
   useEffect(() => {
-    if (token) {
-      verifyMagicLink(token);
-    } else {
+    if (isError && queryError) {
+      console.error('Magic Link Verification Failed', queryError);
+      // @ts-ignore
+      setError(queryError.response?.data?.errors?.[0] || '無効または期限切れのリンクです');
+    }
+  }, [isError, queryError]);
+
+  useEffect(() => {
+    if (!token) {
       setError('トークンが見つかりません');
     }
-  }, [token, verifyMagicLink]);
+  }, [token]);
 
   if (error) {
     return (
