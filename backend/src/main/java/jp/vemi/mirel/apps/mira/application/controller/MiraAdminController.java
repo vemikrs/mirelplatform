@@ -22,6 +22,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer;
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraTokenUsageRepository;
 import jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService;
+
+import jp.vemi.mirel.apps.mira.domain.service.MiraDataExportService; // Import export service
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.Builder;
 import lombok.Data;
@@ -39,6 +41,7 @@ public class MiraAdminController {
 
     private final MiraContextLayerService contextLayerService;
     private final MiraTokenUsageRepository tokenUsageRepository;
+    private final MiraDataExportService dataExportService; // Inject export service
     private final MiraAiProperties properties;
 
     // ==========================================
@@ -110,5 +113,19 @@ public class MiraAdminController {
         private String tenantId;
         private LocalDate date;
         private Long totalTokens;
+    }
+
+    // ==========================================
+    // Data Management
+    // ==========================================
+
+    @GetMapping(value = "/conversations/export", produces = "text/csv")
+    @Operation(summary = "会話履歴エクスポート (CSV)")
+    public ResponseEntity<String> exportConversations(@RequestParam String tenantId) {
+        String csvContent = dataExportService.exportConversationsToCsv(tenantId);
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"mira_conversations_" + tenantId + ".csv\"")
+                .body(csvContent);
     }
 }
