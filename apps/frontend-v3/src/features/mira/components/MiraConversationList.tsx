@@ -4,7 +4,7 @@
  * 会話の一覧表示、検索、選択、削除機能を提供
  * スライドインドロワーとして使用される
  */
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { cn, Button, ScrollArea, Input, toast } from '@mirel/ui';
 import { 
   Bot, 
@@ -29,6 +29,7 @@ interface MiraConversationListProps {
   onDelete: (conversationId: string) => void;
   onNewConversation: () => void;
   onClose?: () => void;
+  searchInputRef?: RefObject<HTMLInputElement | null>;
 }
 
 export function MiraConversationList({
@@ -38,6 +39,7 @@ export function MiraConversationList({
   onDelete,
   onNewConversation,
   onClose,
+  searchInputRef,
 }: MiraConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
@@ -90,6 +92,7 @@ export function MiraConversationList({
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
+            ref={searchInputRef}
             type="search"
             placeholder="会話を検索..."
             value={searchQuery}

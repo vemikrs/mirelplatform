@@ -109,6 +109,9 @@ export function MiraPage() {
   
   // 連続キー入力の追跡（gg, ge用）
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+  // 検索入力への参照
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   // 新規会話作成ハンドラ（useEffectより前に定義）
   const handleNewConversation = useCallback(() => {
@@ -186,11 +189,27 @@ export function MiraPage() {
       const now = Date.now();
       const lowerKey = e.key.toLowerCase();
       
-      // ⌘/Ctrl + Shift + S でサイドバーを切り替え (入力中でも有効)
-      if (lowerKey === 's' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+      // ⌘/Ctrl + Shift + H でサイドバーを切り替え (入力中でも有効)
+      if (lowerKey === 'h' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
         setIsSidebarOpen((prev) => !prev);
+        return;
+      }
+      
+      // ⌘/Ctrl + K で会話検索 (入力中でも有効)
+      if (lowerKey === 'k' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // サイドバーが閉じていたら開く
+        if (!isSidebarOpen) {
+          setIsSidebarOpen(true);
+          // サイドバーが開くアニメーション/レンダリングを待つために少し遅延させる
+          setTimeout(() => searchInputRef.current?.focus(), 100);
+        } else {
+          searchInputRef.current?.focus();
+        }
         return;
       }
       
@@ -421,6 +440,7 @@ export function MiraPage() {
             onDelete={handleDeleteConversation}
             onNewConversation={handleNewConversation}
             onClose={() => setIsSidebarOpen(false)}
+            searchInputRef={searchInputRef}
           />
         </div>
       )}
@@ -435,7 +455,7 @@ export function MiraPage() {
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title={`サイドバーを切替 (${metaKey}+Shift+S)`}
+              title={`サイドバーを切替 (${metaKey}+Shift+H)`}
             >
               <PanelLeft className="w-5 h-5" />
             </Button>
