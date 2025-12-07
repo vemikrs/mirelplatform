@@ -58,6 +58,12 @@ public class OtpController {
             @RequestBody ApiRequest<OtpRequestDto> request,
             HttpServletRequest httpRequest) {
         OtpRequestDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<OtpResponseDto>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
@@ -128,6 +134,12 @@ public class OtpController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         OtpVerifyDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
@@ -227,6 +239,12 @@ public class OtpController {
             @RequestBody ApiRequest<MagicLinkVerifyDto> request,
             HttpServletRequest httpRequest) {
         MagicLinkVerifyDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Object>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         if (dto.getToken() == null || dto.getToken().isBlank()) {
             return ResponseEntity.badRequest()
@@ -251,13 +269,20 @@ public class OtpController {
                 User applicationUser = userRepository.findBySystemUserId(token.getSystemUserId())
                         .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
 
-                // JWT認証レスポンス生成
                 AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
 
                 log.info("マジックリンクログイン成功: JWTトークン発行 - userId={}", applicationUser.getUserId());
 
+                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+                responseData.put("verified", true);
+                responseData.put("purpose", "LOGIN");
+                // MagicLinkの場合 DTOにemailはない。token.systemUserIdから引く必要がある
+                // ここでは applicationUser.getEmail() がある。
+                responseData.put("email", applicationUser.getEmail());
+                responseData.put("auth", authResponse);
+
                 return ResponseEntity.ok(ApiResponse.<Object>builder()
-                        .data(authResponse)
+                        .data(responseData)
                         .messages(java.util.List.of("認証に成功しました"))
                         .build());
             }
@@ -266,34 +291,6 @@ public class OtpController {
             // フロントエンドには検証成功の事実と、元のemail/code情報を返して
             // 既存の画面フローに乗せることも可能だが、
             // ここではシンプルに検証成功のみを返す。
-            // ただし、パスワードリセットの場合は後続処理で「再設定」が必要。
-            // その際、セッションや一時トークンが必要になるが、
-            // 現状の実装では verifyOtp は単に true を返すだけ。
-            // フロントエンドは state で email/code を保持している前提。
-            // マジックリンクの場合、フロントエンドには email/code がない。
-            // なのでレスポンスに含めてあげるのが親切。
-
-            // EMAIL_VERIFICATION の場合も同様、フロントエンドで verifyOtp を呼んでいたのが
-            // magicVerify に代わる。
-            // OtpEmailVerificationPage では成功後に updateUser を呼んでいるが、
-            // updateUser は恐らく認証済みセッションが必要...
-            // いや、新規登録時はまだ未ログイン状態か？
-            // -> SignupPage -> signup API で login 状態になる (token が返る)。
-            // -> その後 Email Verification 画面。
-            // -> つまりログイン済み。 updateProfile を呼ぶにはログインが必要。
-            // -> マジックリンクを踏んだブラウザがログイン済みとは限らない（別ブラウザかも）。
-            // -> 故に、Magic Link Verification でも LOGIN と同様に Auth Response を返すべきか？
-            // -> EMAIL_VERIFICATION の場合、通常は「ログインして、メール検証完了」の状態に持っていきたい。
-            // -> なので、ここでも loginWithUser を呼んでトークンを返すべき。
-
-            // PASSWORD_RESET の場合、
-            // パスワードを忘れているのでログインはできない（パスワード変更前）。
-            // なのでトークンは返せない。
-            // 代わりに、リセット許可証となる一時トークンが必要だが、
-            // 今回は簡易的に「検証成功」を返し、フロントエンドでパスワード入力画面へ。
-            // ※本来はリセット用トークンを返すべきだが、今回は既存仕様に合わせる。
-            // ただ、誰のパスワードを変えるのか？ フロントエンドは知る必要がある。
-            // -> レスポンスに email (または userId) を含める。
 
             // 汎用的なレスポンスデータを作成
             java.util.Map<String, Object> responseData = new java.util.HashMap<>();
@@ -309,12 +306,6 @@ public class OtpController {
             if ("EMAIL_VERIFICATION".equals(token.getPurpose())) {
                 // ユーザーがいればログイン
                 userRepository.findBySystemUserId(token.getSystemUserId()).ifPresent(appUser -> {
-                    // まだ Email Verified フラグは更新されていないかもしれない（呼び出し側でやるか？）
-                    // -> OtpService.verifyMagicLink は OtpToken の verified を true にするだけ。
-                    // -> User エンティティの emailVerified は更新していない。
-                    // -> 既存の実装でも OtpEmailVerificationPage で updateUser を呼んで更新している。
-                    // -> セキュリティ的にはバックエンドで更新すべきだが、既存踏襲。
-                    // -> ただしマジックリンクでログインさせるなら、ここでトークンを返すと便利。
                     AuthenticationResponse authResponse = authenticationService.loginWithUser(appUser);
                     responseData.put("auth", authResponse);
                 });
@@ -349,6 +340,12 @@ public class OtpController {
             @RequestBody ApiRequest<OtpResendDto> request,
             HttpServletRequest httpRequest) {
         OtpResendDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<OtpResponseDto>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
 
         // バリデーション
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
