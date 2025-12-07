@@ -19,6 +19,7 @@ import { OtpPasswordResetPage } from '@/features/auth/pages/OtpPasswordResetPage
 import { OtpPasswordResetVerifyPage } from '@/features/auth/pages/OtpPasswordResetVerifyPage';
 import { OtpEmailVerificationPage } from '@/features/auth/pages/OtpEmailVerificationPage';
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
+import { LogoutPage } from '@/features/auth/pages/LogoutPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
@@ -67,11 +68,8 @@ export function clearAuthLoaderCache() {
   // console.log('[authLoader] Cache cleared (no-op)');
 }
 
-/** * Authentication Loader
- * - HttpOnly Cookie を前提とし、サーバセッション (/users/me 系) を単一の真実とする
- * - 成功時は authStore.rehydrateFromServerSession() がストアを完全に再構築
- */
-async function authLoader(): Promise<NavigationConfig> {
+
+async function authLoader({ request }: { request: Request }): Promise<NavigationConfig> {
   try {
     // キャッシュロジックを削除: 常に最新の認証状態を確認する
     
@@ -83,16 +81,21 @@ async function authLoader(): Promise<NavigationConfig> {
     
     return navigation;
   } catch (error) {
+    // redirect先のURLを構築 (returnUrlパラメータ)
+    const url = new URL(request.url);
+    const returnUrl = url.pathname + url.search;
+    const loginUrl = `/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+
     // 401の場合、インターセプターで既にログアウト&リダイレクト済み
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
-        throw redirect('/login');
+        throw redirect(loginUrl);
       }
       // ネットワークエラー（ERR_NETWORK, ERR_TOO_MANY_REDIRECTS等）の場合もログイン画面へ
       // セッション確立失敗とみなす
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
         console.warn('[authLoader] Network Error detected, redirecting to login', error);
-        throw redirect('/login');
+        throw redirect(loginUrl);
       }
     }
     throw error;
@@ -163,6 +166,11 @@ export const router = createBrowserRouter([
   {
     path: '/auth/oauth2/success',
     element: <OAuthCallbackPage />,
+  },
+  {
+    path: '/logout',
+    element: <LogoutPage />,
+    handle: { title: 'ログアウト' },
   },
   // App Root with authentication
   {
