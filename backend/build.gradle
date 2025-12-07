@@ -83,6 +83,9 @@ dependencies {
     // Spring AI - OpenAI (GitHub Models 互換)
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
+    // JTokkit for Token Counting
+    implementation 'com.knuddels:jtokkit:1.1.0'
+
     // Jackson CSV support (バージョンはSpring Bootの依存管理に従う)
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     

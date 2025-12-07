@@ -5,7 +5,7 @@ package jp.vemi.mirel.apps.mira.domain.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -31,12 +31,13 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ContextSnapshotRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ChatResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.response.ContextSnapshotResponse;
-import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig;
+
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter; // Import TokenCounter
 
 /**
  * MiraChatService のユニットテスト.
@@ -86,6 +87,9 @@ class MiraChatServiceTest {
     @Mock
     private MiraContextMergeService contextMergeService;
 
+    @Mock
+    private TokenCounter tokenCounter; // Mock TokenCounter
+
     @InjectMocks
     private MiraChatService miraChatService;
 
@@ -113,7 +117,8 @@ class MiraChatServiceTest {
                     auditService,
                     rateLimitService,
                     metrics,
-                    tokenQuotaService);
+                    tokenQuotaService,
+                    tokenCounter); // Add tokenCounter
 
             validRequest = ChatRequest.builder()
                     .message(ChatRequest.Message.builder()

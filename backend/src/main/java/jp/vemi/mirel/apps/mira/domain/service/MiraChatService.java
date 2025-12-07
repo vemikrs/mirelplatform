@@ -33,6 +33,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,6 +62,7 @@ public class MiraChatService {
     private final MiraRateLimitService rateLimitService;
     private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
+    private final TokenCounter tokenCounter;
 
     /**
      * チャット実行
@@ -71,8 +73,8 @@ public class MiraChatService {
 
         // 0. レート制限とクォータチェック
         rateLimitService.checkRateLimit(tenantId, userId);
-        // 簡易見積もり (1文字=1トークンと仮定して厳しめに見積もる、または /4 する)
-        int estimatedInputTokens = request.getMessage().getContent().length() / 2;
+        // Token Counting (G-2): Use JTokkit for accurate counting
+        int estimatedInputTokens = tokenCounter.count(request.getMessage().getContent(), "gpt-4o");
         tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
 
         // 1. ポリシー検証
