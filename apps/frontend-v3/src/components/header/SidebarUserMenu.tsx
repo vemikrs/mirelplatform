@@ -31,13 +31,13 @@ const QUICK_LINKS_STORAGE_KEY = 'mirel-quicklinks-visible';
 type LicenseTier = 'FREE' | 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 interface SidebarUserMenuProps {
-  isCollapsed: boolean;
+  isExpanded: boolean;
 }
 
 /**
  * サイドバー用ユーザーメニューコンポーネント
  */
-export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
+export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
   const { user, logout, currentTenant, switchTenant, tenants, licenses } = useAuth();
   const { themeMode, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -91,7 +91,7 @@ export function SidebarUserMenu({ isCollapsed }: SidebarUserMenuProps) {
   };
 
   // Collapsed mode - show only avatar with tooltip
-  if (isCollapsed) {
+  if (!isExpanded) {
     return (
       <DropdownMenu>
         <Tooltip>
