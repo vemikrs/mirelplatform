@@ -121,3 +121,23 @@ email:
   smtp:
     host: localhost
     port: 25
+
+# Spring AI 自動設定を無効化（CI環境ではモック使用）
+spring:
+  ai:
+    openai:
+      api-key: disabled-for-ci  # ダミー値で自動設定を抑制
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+      - org.springframework.ai.autoconfigure.openai.OpenAiChatClientAutoConfiguration
+
+# Mira AI 設定（CI環境 - モック使用）
+mira:
+  ai:
+    enabled: true
+    provider: mock
+    mock:
+      enabled: true
+      response-delay-ms: 100
+      default-response: "CI環境のモックAI応答です。"
