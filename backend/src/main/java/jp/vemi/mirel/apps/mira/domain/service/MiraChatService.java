@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraAuditLog;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextSnapshot;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraConversation;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraMessage;
@@ -31,6 +32,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
+import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,14 +57,30 @@ public class MiraChatService {
     private final MiraMessageRepository messageRepository;
     private final MiraContextSnapshotRepository contextSnapshotRepository;
     private final MiraContextMergeService contextMergeService;
+    private final MiraAuditService auditService;
+    private final MiraRateLimitService rateLimitService;
+    private final MiraMetrics metrics;
+    private final TokenQuotaService tokenQuotaService;
 
+    /**
+     * チャット実行
+     */
     @Transactional
     public ChatResponse chat(ChatRequest request, String tenantId, String userId) {
         long startTime = System.currentTimeMillis();
 
+        // 0. レート制限とクォータチェック
+        rateLimitService.checkRateLimit(tenantId, userId);
+        // 簡易見積もり (1文字=1トークンと仮定して厳しめに見積もる、または /4 する)
+        int estimatedInputTokens = request.getMessage().getContent().length() / 2;
+        tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
+
         // 1. ポリシー検証
         PolicyEnforcer.ValidationResult validation = policyEnforcer.validateRequest(request);
         if (!validation.valid()) {
+            auditService.logChatResponse(tenantId, userId, request.getConversationId(),
+                    "UNKNOWN", null, (int) (System.currentTimeMillis() - startTime), 0, 0,
+                    MiraAuditLog.AuditStatus.ERROR);
             return buildErrorResponse(request.getConversationId(), validation.errorMessage());
         }
 
@@ -73,6 +91,9 @@ public class MiraChatService {
 
         // モードアクセス権限チェック
         if (!policyEnforcer.canAccessMode(mode, systemRole, appRole)) {
+            auditService.logChatResponse(tenantId, userId, request.getConversationId(),
+                    mode.name(), null, (int) (System.currentTimeMillis() - startTime), 0, 0,
+                    MiraAuditLog.AuditStatus.ERROR);
             return buildErrorResponse(request.getConversationId(),
                     "このモードへのアクセス権限がありません");
         }
@@ -106,6 +127,14 @@ public class MiraChatService {
         // 8. 応答処理
         if (!aiResponse.isSuccess()) {
             log.error("AI呼び出し失敗: {}", aiResponse.getErrorMessage());
+            auditService.logChatResponse(tenantId, userId, conversation.getId(),
+                    mode.name(), aiResponse.getModel(), (int) latency,
+                    getTokensOrDefault(aiResponse.getPromptTokens()), 0, MiraAuditLog.AuditStatus.ERROR);
+
+            metrics.incrementChatRequest(aiResponse.getModel() != null ? aiResponse.getModel() : "unknown", tenantId,
+                    "error");
+            metrics.incrementError("ai_api_error", tenantId);
+
             return buildErrorResponse(conversation.getId(),
                     "AI応答の取得に失敗しました: " + aiResponse.getErrorMessage());
         }
@@ -118,7 +147,24 @@ public class MiraChatService {
         // 10. アシスタントメッセージ保存
         MiraMessage assistantMessage = saveAssistantMessage(conversation, formattedContent);
 
-        // 11. レスポンス構築
+        // 11. 監査ログ記録 (成功)
+        int promptTokens = getTokensOrDefault(aiResponse.getPromptTokens());
+        int completionTokens = getTokensOrDefault(aiResponse.getCompletionTokens());
+
+        auditService.logChatResponse(tenantId, userId, conversation.getId(),
+                mode.name(), aiResponse.getModel(), (int) latency,
+                promptTokens, completionTokens, MiraAuditLog.AuditStatus.SUCCESS);
+
+        // 12. トークン使用量記録
+        tokenQuotaService.consume(tenantId, userId, conversation.getId(),
+                aiResponse.getModel(), promptTokens, completionTokens);
+
+        // 13. メトリクス記録
+        metrics.incrementChatRequest(aiResponse.getModel(), tenantId, "success");
+        metrics.recordChatLatency(aiResponse.getModel(), tenantId, latency);
+        metrics.recordTokenUsage(aiResponse.getModel(), tenantId, promptTokens, completionTokens);
+
+        // 14. レスポンス構築
         return ChatResponse.builder()
                 .conversationId(conversation.getId())
                 .messageId(assistantMessage.getId())
@@ -484,6 +530,10 @@ public class MiraChatService {
             log.warn("Payload JSON変換失敗", e);
             return "{}";
         }
+    }
+
+    private int getTokensOrDefault(Integer tokens) {
+        return tokens != null ? tokens : 0;
     }
 
     private ChatResponse buildErrorResponse(String conversationId, String errorMessage) {
