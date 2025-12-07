@@ -6,6 +6,7 @@ package jp.vemi.mirel.apps.mira.domain.service;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong; // Import anyLong
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,7 +66,7 @@ class MiraRateLimitServiceTest {
         assertThatCode(() -> rateLimitService.checkRateLimit("tenant1", "user1"))
                 .doesNotThrowAnyException();
 
-        verify(redisTemplate).expire(anyString(), any(), any());
+        verify(redisTemplate).expire(anyString(), anyLong(), any());
     }
 
     @Test
