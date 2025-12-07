@@ -79,6 +79,13 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<ApiResponse<unknown>>) => {
     // Handle 401 Unauthorized globally
     if (error.response?.status === 401) {
+      // Check if redirect should be skipped (e.g. for authLoader requests)
+      // Note: error.config is the request config
+      if (error.config && error.config.headers && error.config.headers['X-Mirel-Skip-Auth-Redirect']) {
+        console.log('[401 Unauthorized] Skipping global redirect due to header');
+        return Promise.reject(error);
+      }
+
       console.error('[401 Unauthorized]', {
         url: error.config?.url,
         method: error.config?.method,

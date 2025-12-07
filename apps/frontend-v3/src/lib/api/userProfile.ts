@@ -3,6 +3,7 @@
  */
 
 import { apiClient } from './client';
+import type { AxiosRequestConfig } from 'axios';
 
 export interface UserProfile {
   userId: string;
@@ -75,8 +76,8 @@ function transformAvatarUrl(url?: string): string | undefined {
 /**
  * Get current user profile
  */
-export async function getUserProfile(): Promise<UserProfile> {
-  const response = await apiClient.get<UserProfile>('/users/me');
+export async function getUserProfile(config?: AxiosRequestConfig): Promise<UserProfile> {
+  const response = await apiClient.get<UserProfile>('/users/me', config);
   const profile = response.data;
   if (profile.avatarUrl) {
     profile.avatarUrl = transformAvatarUrl(profile.avatarUrl);
@@ -183,15 +184,15 @@ export async function setPassword(newPassword: string): Promise<void> {
 /**
  * Get user tenants
  */
-export async function getUserTenants(): Promise<TenantInfo[]> {
-  const response = await apiClient.get<TenantInfo[]>('/users/me/tenants');
+export async function getUserTenants(config?: AxiosRequestConfig): Promise<TenantInfo[]> {
+  const response = await apiClient.get<TenantInfo[]>('/users/me/tenants', config);
   return response.data || [];
 }
 
 /**
  * Get user licenses
  */
-export async function getUserLicenses(): Promise<LicenseInfo[]> {
-  const response = await apiClient.get<LicenseInfo[]>('/users/me/licenses');
+export async function getUserLicenses(config?: AxiosRequestConfig): Promise<LicenseInfo[]> {
+  const response = await apiClient.get<LicenseInfo[]>('/users/me/licenses', config);
   return response.data || [];
 }

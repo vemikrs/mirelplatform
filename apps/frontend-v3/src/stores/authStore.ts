@@ -146,10 +146,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // F5 や新規タブなどでメモリストアが空になった場合に使用
       rehydrateFromServerSession: async () => {
         try {
+          // authLoader からの呼び出し時は、グローバルな 401 リダイレクトを抑制する
+          // (authLoader 側で適切に returnUrl 付きでリダイレクトするため)
+          const config = {
+            headers: {
+              'X-Mirel-Skip-Auth-Redirect': 'true'
+            }
+          };
+
           const [user, tenants, licenses] = await Promise.all([
-            getUserProfile(),
-            getUserTenants(),
-            getUserLicenses(),
+            getUserProfile(config),
+            getUserTenants(config),
+            getUserLicenses(config),
           ]);
 
           set({
