@@ -12,6 +12,7 @@ import {
   Building,
   HelpCircle,
   Bot,
+  Sparkles,
   type LucideIcon 
 } from 'lucide-react';
 import { cn, Button, Tooltip, TooltipTrigger, TooltipContent } from '@mirel/ui';
@@ -28,6 +29,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'settings': Settings,
   'map': Map,
   'building': Building,
+  'sparkles': Sparkles,
 };
 
 // LocalStorage key for sidebar expanded state
