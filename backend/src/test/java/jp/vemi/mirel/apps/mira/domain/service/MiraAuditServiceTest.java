@@ -38,7 +38,7 @@ class MiraAuditServiceTest {
     private MiraAiProperties properties;
 
     @Mock
-    private MiraAiProperties.AuditConfig auditConfig;
+    private MiraAiProperties.Audit auditConfig;
 
     @Captor
     private ArgumentCaptor<MiraAuditLog> auditLogCaptor;
@@ -50,7 +50,7 @@ class MiraAuditServiceTest {
         lenient().when(auditConfig.isEnabled()).thenReturn(true);
         lenient().when(auditLogRepository.save(any(MiraAuditLog.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
-        
+
         miraAuditService = new MiraAuditService(auditLogRepository, properties);
     }
 
@@ -76,7 +76,7 @@ class MiraAuditServiceTest {
             // Assert
             verify(auditLogRepository).save(auditLogCaptor.capture());
             MiraAuditLog saved = auditLogCaptor.getValue();
-            
+
             assertThat(saved.getTenantId()).isEqualTo("tenant-1");
             assertThat(saved.getUserId()).isEqualTo("user-1");
             assertThat(saved.getConversationId()).isEqualTo("conv-123");
@@ -120,8 +120,7 @@ class MiraAuditServiceTest {
                     500,
                     100,
                     200,
-                    MiraAuditLog.AuditStatus.SUCCESS
-            );
+                    MiraAuditLog.AuditStatus.SUCCESS);
 
             // Assert - async なので直接検証はできないが、例外がないことを確認
             // 本番環境では async の完了を待つ必要がある
@@ -140,8 +139,7 @@ class MiraAuditServiceTest {
                     "tenant-1",
                     "user-1",
                     "CHAT",
-                    "Connection timeout"
-            );
+                    "Connection timeout");
 
             // Assert - async
         }
@@ -157,8 +155,7 @@ class MiraAuditServiceTest {
                     "tenant-1",
                     "user-1",
                     "CHAT",
-                    longError
-            );
+                    longError);
 
             // Assert - async, エラーコードは50文字以下に切り詰め
         }
