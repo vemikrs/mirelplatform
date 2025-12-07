@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -105,6 +105,31 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
     });
   }, []);
 
+  // Flatten items for collapsed state
+  // Logic: Only show items that are children of groups (level 2+). 
+  // Top level items (like 'Portal') are hidden to avoid duplication with Brand or because they are headers.
+  const collapsedItems = useMemo(() => {
+    const flattenChildren = (links: NavigationLink[]): NavigationLink[] => {
+      const result: NavigationLink[] = [];
+      for (const link of links) {
+        if (link.children && link.children.length > 0) {
+          result.push(...flattenChildren(link.children));
+        } else {
+          result.push(link);
+        }
+      }
+      return result;
+    };
+
+    const rootResult: NavigationLink[] = [];
+    for (const item of items) {
+      if (item.children && item.children.length > 0) {
+        rootResult.push(...flattenChildren(item.children));
+      }
+    }
+    return rootResult;
+  }, [items]);
+
   return (
     <nav 
       className={cn(
@@ -179,7 +204,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       ) : (
         /* Collapsed Icon Menu - No scroll needed typically, but safe to allow */
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-2 scrollbar-none flex flex-col items-center">
-          {items.map((item) => (
+          {collapsedItems.map((item) => (
             <CollapsedNavItem key={item.id} item={item} />
           ))}
         </div>
