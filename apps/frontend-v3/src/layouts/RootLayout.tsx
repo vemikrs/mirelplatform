@@ -90,7 +90,7 @@ export function RootLayout() {
         </div>
       </header>
 
-      <div className="flex flex-1 items-start">
+      <div className="flex flex-1 items-stretch">
         <SideNavigation 
           items={primaryLinks}
           brand={initialNavigation.brand}
