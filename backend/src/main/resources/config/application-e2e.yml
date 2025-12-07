@@ -122,3 +122,23 @@ email:
   smtp:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1026}
+
+# Spring AI 自動設定を無効化（E2E環境ではモック使用）
+spring:
+  ai:
+    openai:
+      api-key: disabled-for-e2e  # ダミー値で自動設定を抑制
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+      - org.springframework.ai.autoconfigure.openai.OpenAiChatClientAutoConfiguration
+
+# Mira AI 設定（E2E環境 - モック使用）
+mira:
+  ai:
+    enabled: true
+    provider: mock
+    mock:
+      enabled: true
+      response-delay-ms: 100
+      default-response: "E2E環境のモックAI応答です。"

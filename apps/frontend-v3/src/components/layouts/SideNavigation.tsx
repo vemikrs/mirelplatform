@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,8 +10,8 @@ import {
   ChevronDown,
   Map,
   Building,
-  PanelLeftClose,
-  PanelLeft,
+  Pin,
+  PinOff,
   HelpCircle,
   Bot,
   type LucideIcon 
@@ -33,8 +33,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'building': Building,
 };
 
-// LocalStorage key for sidebar collapsed state
-const SIDEBAR_COLLAPSED_KEY = 'mirel-sidebar-collapsed';
+// LocalStorage key for sidebar pinned state
+const SIDEBAR_PINNED_KEY = 'mirel-sidebar-pinned';
 
 interface SideNavigationProps {
   items: NavigationLink[];
@@ -51,19 +51,54 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Sidebar collapsed state (persisted)
-  const [isCollapsed, setIsCollapsed] = useState(() => {
+  // Sidebar pinned state (persisted) - デフォルトは false (一時表示モード)
+  const [isPinned, setIsPinned] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    const stored = window.localStorage.getItem(SIDEBAR_PINNED_KEY);
+    return stored === 'true';
   });
 
-  const toggleCollapsed = useCallback(() => {
-    setIsCollapsed(prev => {
+  // Hover state for temporary expansion
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const togglePinned = useCallback(() => {
+    setIsPinned(prev => {
       const next = !prev;
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      window.localStorage.setItem(SIDEBAR_PINNED_KEY, String(next));
       return next;
     });
   }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    if (!isPinned) {
+      setIsHovered(true);
+    }
+  }, [isPinned]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!isPinned) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsHovered(false);
+      }, 300);
+    }
+  }, [isPinned]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Determine if sidebar is expanded
+  const isExpanded = isPinned || isHovered;
   
   // Track expanded state for each menu item
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
@@ -108,25 +143,29 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   return (
     <nav 
       className={cn(
-        "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300",
-        isCollapsed ? "w-14" : "w-72",
+        "bg-surface-subtle border-r border-outline/20 flex flex-col transition-all duration-300 ease-in-out",
+        isExpanded ? "w-72" : "w-14",
+        !isPinned && "fixed left-0 top-0 h-screen z-50 shadow-lg",
         className
       )}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ willChange: 'width' }}
     >
       {/* Brand Section - Fixed at top */}
       {brand && (
         <div className={cn(
           "border-b border-outline/20 py-3",
-          isCollapsed ? "px-2" : "px-3"
+          isExpanded ? "px-3" : "px-2"
         )}>
           <Link 
             to="/home" 
             className={cn(
               "group flex items-center gap-3 text-left",
-              isCollapsed && "justify-center"
+              !isExpanded && "justify-center"
             )}
           >
-            {isCollapsed ? (
+            {!isExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
@@ -161,8 +200,8 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
 
 
 
-      {/* Menu Items - Scrollable (hidden when collapsed) */}
-      {!isCollapsed && (
+      {/* Menu Items - Scrollable (hidden when not expanded) */}
+      {isExpanded && (
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
           {items.map((item) => (
             <NavItem 
@@ -175,11 +214,11 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         </div>
       )}
 
-      {/* Spacer when collapsed */}
-      {isCollapsed && <div className="flex-1" />}
+      {/* Spacer when not expanded */}
+      {!isExpanded && <div className="flex-1" />}
 
       {/* Search Section - Moved here */}
-      {!isCollapsed && (
+      {isExpanded && (
         <div className="px-3 py-2 border-t border-outline/20 space-y-2">
           <GlobalSearch />
           {/* Mira AI Assistant Button */}
@@ -200,22 +239,22 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
       {/* Bottom Section - Fixed */}
       <div className={cn(
         "border-t border-outline/20 py-3",
-        isCollapsed ? "px-2" : "px-3"
+        isExpanded ? "px-3" : "px-2"
       )}>
-        {/* User Menu + Actions + Notification + Collapse Toggle */}
+        {/* User Menu + Actions + Notification + Pin Toggle */}
         <div className={cn(
           "flex",
-          isCollapsed ? "flex-col items-center gap-3" : "items-stretch gap-2"
+          !isExpanded ? "flex-col items-center gap-3" : "items-stretch gap-2"
         )}>
           {/* Left: User Menu */}
           <div className="flex-1 min-w-0">
-            <SidebarUserMenu isCollapsed={isCollapsed} />
+            <SidebarUserMenu isExpanded={isExpanded} />
           </div>
 
 
           {/* Help Action */}
           {helpAction && (
-             isCollapsed ? (
+             !isExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -262,8 +301,8 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
              )
           )}
           
-          {/* Right: Notification (top) + Collapse (bottom) stacked vertically */}
-          {!isCollapsed && (
+          {/* Right: Notification (top) + Pin Toggle (bottom) stacked vertically */}
+          {isExpanded && (
             <div className="flex flex-col justify-between shrink-0 h-[68px]">
               <NotificationPopover isCompact={false} />
               <Tooltip>
@@ -272,21 +311,22 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                     variant="ghost" 
                     size="icon"
                     className="size-8"
-                    onClick={toggleCollapsed}
+                    onClick={togglePinned}
+                    aria-label={isPinned ? "一時表示モードに切り替え" : "固定表示モードに切り替え"}
                   >
-                    <PanelLeftClose className="size-4" />
+                    {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  メニューを折りたたむ
+                  {isPinned ? "ホバー時のみ表示" : "サイドバーを固定"}
                 </TooltipContent>
               </Tooltip>
             </div>
           )}
         </div>
         
-        {/* Notification + Collapse toggle when collapsed - below avatar */}
-        {isCollapsed && (
+        {/* Notification + Pin toggle when not expanded - below avatar */}
+        {!isExpanded && (
           <div className="flex flex-col items-center gap-2 mt-2">
             <NotificationPopover isCompact={true} />
             <Tooltip>
@@ -295,13 +335,14 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                   variant="ghost" 
                   size="icon"
                   className="size-8"
-                  onClick={toggleCollapsed}
+                  onClick={togglePinned}
+                  aria-label={isPinned ? "一時表示モードに切り替え" : "固定表示モードに切り替え"}
                 >
-                  <PanelLeft className="size-4" />
+                  {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                メニューを展開
+                {isPinned ? "ホバー時のみ表示" : "サイドバーを固定"}
               </TooltipContent>
             </Tooltip>
           </div>
