@@ -101,18 +101,18 @@ export function MiraConversationList({
       
       {/* 会話リスト（日付グループ） */}
       <ScrollArea className="flex-1">
-        <div className="p-3">
+        <div className="p-2">
           {Object.keys(groupedConversations).length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
             Object.entries(groupedConversations).map(([dateGroup, convs]) => (
-              <div key={dateGroup} className="mb-3">
-                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1.5">
+              <div key={dateGroup} className="mb-2">
+                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
                   {dateGroup}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {convs.map((conv) => (
                     <ConversationItem
                       key={conv.id}
@@ -179,7 +179,7 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
         }
       }}
       className={cn(
-        "w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer",
+        "w-full text-left px-2 py-1.5 rounded-md transition-colors group cursor-pointer",
         isActive
           ? "bg-primary/10 border border-primary/20 text-primary"
           : "hover:bg-muted text-muted-foreground hover:text-foreground border border-transparent"
