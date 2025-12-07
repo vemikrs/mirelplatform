@@ -78,6 +78,10 @@
             <div class="expiry">有効期限: ${expirationMinutes}分</div>
         </div>
         
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${magicLink}" style="background-color: #dc3545; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">パスワードをリセット</a>
+        </div>
+        
         <div class="warning">
             <strong>⚠️ 重要なセキュリティ通知</strong>
             <ul style="margin: 10px 0 0 0; padding-left: 20px;">
