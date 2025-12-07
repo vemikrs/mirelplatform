@@ -18,26 +18,21 @@ import {
   DialogDescription,
   DialogFooter,
   toast,
-  Input,
 } from '@mirel/ui';
 import { 
   Sparkles,
-  Edit2,
-  Check,
-  X,
-  PanelLeft,
 } from 'lucide-react';
-import { useOs } from '@/lib/hooks/useOs';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
 import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
-import { MiraMenu } from '../components/MiraMenu';
+import { MiraHeader } from '../components/MiraHeader';
 import { MiraChatMessage } from '../components/MiraChatMessage';
 import { MiraChatInput, type MiraChatInputHandle } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
 import { MiraDeleteConfirmDialog } from '../components/MiraDeleteConfirmDialog';
+import { useMiraShortcuts } from '../hooks/useMiraShortcuts';
 
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,10 +68,6 @@ export function MiraPage() {
   // 会話クリア確認ダイアログの状態
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   
-  // タイトル編集状態
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
-  
   // エクスポート処理状態
   const [isExporting, setIsExporting] = useState(false);
   
@@ -106,9 +97,6 @@ export function MiraPage() {
   
   // 現在選択中のメッセージインデックス（j/kナビゲーション用）
   const [selectedMessageIndex, setSelectedMessageIndex] = useState(-1);
-  
-  // 連続キー入力の追跡（gg, ge用）
-  const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
 
   // 検索入力への参照
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -183,151 +171,20 @@ export function MiraPage() {
     }
   }, [activeConversation, messages, startEditMessage]);
   
-  // グローバルキーボードショートカット
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
-      
-      const now = Date.now();
-      const lowerKey = e.key.toLowerCase();
-      
-      // ⌘/Ctrl + Shift + H でサイドバーを切り替え (入力中でも有効)
-      if (lowerKey === 'h' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsSidebarOpen((prev) => !prev);
-        return;
-      }
-      
-      // ⌘/Ctrl + K で会話検索 (入力中でも有効)
-      if (lowerKey === 'k' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // サイドバーが閉じていたら開く
-        if (!isSidebarOpen) {
-          setIsSidebarOpen(true);
-          // サイドバーが開くアニメーション/レンダリングを待つために少し遅延させる
-          setTimeout(() => searchInputRef.current?.focus(), 100);
-        } else {
-          searchInputRef.current?.focus();
-        }
-        return;
-      }
-      
-      // ⌘/Ctrl + Shift + O で新規会話 (入力中でも有効)
-      if (lowerKey === 'o' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleNewConversation();
-        return;
-      }
-
-      // 以下は入力エリアにフォーカスがある場合は無視
-      if (isInput) {
-        return;
-      }
-      
-      // ? でショートカット一覧を表示
-      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        // ヘルプ表示は伝播しても問題ないことが多いが念のため
-        e.stopPropagation();
-        setShowKeyboardShortcuts(true);
-        return;
-      }
-      
-      // n で入力欄にフォーカス（Ctrl/Cmdなし）
-      if (lowerKey === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        // MiraChatInput内のtextareaにフォーカス (ref経由)
-        chatInputRef.current?.focus();
-        return;
-      }
-      
-      // j で次のメッセージへ
-      if (lowerKey === 'j' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        if (messages.length > 0) {
-          const newIndex = Math.min(selectedMessageIndex + 1, messages.length - 1);
-          setSelectedMessageIndex(newIndex);
-          scrollToMessage(newIndex);
-        }
-        lastKeyRef.current = { key: 'j', time: now };
-        return;
-      }
-      
-      // k で前のメッセージへ
-      if (lowerKey === 'k' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        if (messages.length > 0) {
-          const newIndex = Math.max(selectedMessageIndex - 1, 0);
-          setSelectedMessageIndex(newIndex);
-          scrollToMessage(newIndex);
-        }
-        lastKeyRef.current = { key: 'k', time: now };
-        return;
-      }
-      
-      // g + g で最初のメッセージへ（500ms以内の連続押下）
-      if (lowerKey === 'g' && !e.ctrlKey && !e.metaKey) {
-        if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
-          e.preventDefault();
-          setSelectedMessageIndex(0);
-          scrollToMessage(0);
-          lastKeyRef.current = { key: '', time: 0 };
-        } else {
-          lastKeyRef.current = { key: 'g', time: now };
-        }
-        return;
-      }
-      
-      // g + e で最後のメッセージへ（500ms以内）
-      if (lowerKey === 'e' && !e.ctrlKey && !e.metaKey) {
-        if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
-          e.preventDefault();
-          const lastIndex = messages.length - 1;
-          setSelectedMessageIndex(lastIndex);
-          scrollToMessage(lastIndex);
-          lastKeyRef.current = { key: '', time: 0 };
-        } else {
-          // 単独の e キーでメッセージ編集（選択中のメッセージがユーザーメッセージの場合）
-          if (selectedMessageIndex >= 0 && messages[selectedMessageIndex]?.role === 'user') {
-            e.preventDefault();
-            handleEditMessage(messages[selectedMessageIndex].id);
-          }
-          lastKeyRef.current = { key: 'e', time: now };
-        }
-        return;
-      }
-      
-      // c で選択中メッセージをコピー
-      if (lowerKey === 'c' && !e.ctrlKey && !e.metaKey && selectedMessageIndex >= 0) {
-        e.preventDefault();
-        const msg = messages[selectedMessageIndex];
-        if (msg) {
-          navigator.clipboard.writeText(msg.content);
-        }
-        return;
-      }
-      
-      // Escape でサイドバーを閉じる / メッセージ選択解除
-      if (e.key === 'Escape') {
-        if (selectedMessageIndex >= 0) {
-          setSelectedMessageIndex(-1);
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        return;
-      }
-    };
-    
-    // キャプチャフェーズでイベントを捕捉してブラウザのショートカットより先に処理する
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, [isSidebarOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage, handleEditMessage]);
+  // キーボードショートカット（カスタムフックに委譲）
+  useMiraShortcuts({
+    isSidebarOpen,
+    setIsSidebarOpen,
+    handleNewConversation,
+    messages,
+    selectedMessageIndex,
+    setSelectedMessageIndex,
+    scrollToMessage,
+    handleEditMessage,
+    setShowKeyboardShortcuts,
+    chatInputRef,
+    searchInputRef,
+  });
   
   // メッセージ追加時に自動スクロール
   useEffect(() => {
@@ -411,34 +268,6 @@ export function MiraPage() {
     };
     return mode ? labels[mode] || mode : null;
   };
-  
-  // タイトル編集開始
-  const handleStartEditTitle = useCallback(() => {
-    if (activeConversation) {
-      setEditedTitle(activeConversation.title || getConversationSummary());
-      setIsEditingTitle(true);
-    }
-  }, [activeConversation, getConversationSummary]);
-  
-  // タイトル編集保存
-  const handleSaveTitle = useCallback(async () => {
-    if (activeConversation && editedTitle.trim()) {
-      try {
-        await updateConversationTitle(activeConversation.id, editedTitle.trim());
-        setIsEditingTitle(false);
-      } catch (error) {
-        console.error('タイトル更新エラー:', error);
-      }
-    }
-  }, [activeConversation, editedTitle, updateConversationTitle]);
-  
-  // タイトル編集キャンセル
-  const handleCancelEditTitle = useCallback(() => {
-    setIsEditingTitle(false);
-    setEditedTitle('');
-  }, []);
-  
-  const { metaKey } = useOs();
 
   return (
     <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
@@ -461,92 +290,22 @@ export function MiraPage() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* チャットヘッダー */}
-        <div className="flex items-center justify-between p-3 border-b bg-surface">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title={`サイドバーを切替 (${metaKey}+Shift+H)`}
-            >
-              <PanelLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Sparkles className="w-4 h-4 text-primary shrink-0" />
-              {isEditingTitle ? (
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Input
-                    value={editedTitle}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedTitle(e.target.value)}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === 'Enter') {
-                        handleSaveTitle();
-                      } else if (e.key === 'Escape') {
-                        handleCancelEditTitle();
-                      }
-                    }}
-                    className="h-8 text-sm flex-1"
-                    autoFocus
-                    disabled={isUpdatingTitle}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSaveTitle}
-                    disabled={isUpdatingTitle}
-                    title="保存 (Enter)"
-                    className="h-8 w-8"
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCancelEditTitle}
-                    disabled={isUpdatingTitle}
-                    title="キャンセル (Esc)"
-                    className="h-8 w-8"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <h2 className="font-medium text-sm truncate">
-                    {getConversationSummary()}
-                  </h2>
-                  {activeConversation && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleStartEditTitle}
-                      title="タイトルを編集"
-                      className="h-6 w-6 shrink-0"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                  )}
-                </>
-              )}
-              {activeConversation?.mode && activeConversation.mode !== 'GENERAL_CHAT' && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
-                  {getModeLabel(activeConversation.mode)}
-                </span>
-              )}
-            </div>
-          </div>
-          <div>
-            <MiraMenu 
-              onNewConversation={handleNewConversation}
-              onOpenContextEditor={() => setIsContextEditorOpen(true)}
-              onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
-              onExport={handleExport}
-              onClearConversation={() => setShowClearConfirm(true)}
-              isExporting={isExporting}
-              hasMessages={messages.length > 0}
-            />
-          </div>
-        </div>
+        <MiraHeader
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          activeConversation={activeConversation}
+          getConversationSummary={getConversationSummary}
+          getModeLabel={getModeLabel}
+          onNewConversation={handleNewConversation}
+          onOpenContextEditor={() => setIsContextEditorOpen(true)}
+          onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
+          onExport={handleExport}
+          onClearConversation={() => setShowClearConfirm(true)}
+          onUpdateTitle={updateConversationTitle}
+          isExporting={isExporting}
+          isUpdatingTitle={isUpdatingTitle}
+          hasMessages={messages.length > 0}
+        />
         
         {/* エラー表示 */}
         {error && (
