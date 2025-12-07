@@ -180,38 +180,43 @@ export function MiraPage() {
   // グローバルキーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // テキストエリアにフォーカスがある場合は無視
       const target = e.target as HTMLElement;
-      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-        return;
-      }
+      const isInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
       
-      const now = Date.now();
-      
-      // ? でショートカット一覧を表示
-      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      // ⌘/Ctrl + Shift + S でサイドバーを切り替え (入力中でも有効)
+      if (lowerKey === 's' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
-        setShowKeyboardShortcuts(true);
-        return;
-      }
-      
-      // ⌘/Ctrl + Shift + S でサイドバーを切り替え
-      if (e.key === 's' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-        e.preventDefault();
+        e.stopPropagation();
         setIsSidebarOpen((prev) => !prev);
         return;
       }
       
-      // ⌘/Ctrl + Shift + O で新規会話
-      if (e.key === 'o' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+      // ⌘/Ctrl + Shift + O で新規会話 (入力中でも有効)
+      if (lowerKey === 'o' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
         e.preventDefault();
+        e.stopPropagation();
         handleNewConversation();
+        return;
+      }
+
+      // 以下は入力エリアにフォーカスがある場合は無視
+      if (isInput) {
+        return;
+      }
+      
+      // ? でショートカット一覧を表示
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        // ヘルプ表示は伝播しても問題ないことが多いが念のため
+        e.stopPropagation();
+        setShowKeyboardShortcuts(true);
         return;
       }
       
       // n で入力欄にフォーカス（Ctrl/Cmdなし）
-      if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (lowerKey === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        e.stopPropagation();
         // MiraChatInput内のtextareaにフォーカス
         const textarea = document.querySelector('.mira-chat-input textarea') as HTMLTextAreaElement;
         textarea?.focus();
@@ -219,7 +224,7 @@ export function MiraPage() {
       }
       
       // j で次のメッセージへ
-      if (e.key === 'j' && !e.ctrlKey && !e.metaKey) {
+      if (lowerKey === 'j' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         if (messages.length > 0) {
           const newIndex = Math.min(selectedMessageIndex + 1, messages.length - 1);
@@ -231,7 +236,7 @@ export function MiraPage() {
       }
       
       // k で前のメッセージへ
-      if (e.key === 'k' && !e.ctrlKey && !e.metaKey) {
+      if (lowerKey === 'k' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         if (messages.length > 0) {
           const newIndex = Math.max(selectedMessageIndex - 1, 0);
@@ -243,7 +248,7 @@ export function MiraPage() {
       }
       
       // g + g で最初のメッセージへ（500ms以内の連続押下）
-      if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+      if (lowerKey === 'g' && !e.ctrlKey && !e.metaKey) {
         if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
           e.preventDefault();
           setSelectedMessageIndex(0);
@@ -256,7 +261,7 @@ export function MiraPage() {
       }
       
       // g + e で最後のメッセージへ（500ms以内）
-      if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
+      if (lowerKey === 'e' && !e.ctrlKey && !e.metaKey) {
         if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
           e.preventDefault();
           const lastIndex = messages.length - 1;
@@ -275,7 +280,7 @@ export function MiraPage() {
       }
       
       // c で選択中メッセージをコピー
-      if (e.key === 'c' && !e.ctrlKey && !e.metaKey && selectedMessageIndex >= 0) {
+      if (lowerKey === 'c' && !e.ctrlKey && !e.metaKey && selectedMessageIndex >= 0) {
         e.preventDefault();
         const msg = messages[selectedMessageIndex];
         if (msg) {
@@ -288,13 +293,16 @@ export function MiraPage() {
       if (e.key === 'Escape') {
         if (selectedMessageIndex >= 0) {
           setSelectedMessageIndex(-1);
+          e.preventDefault();
+          e.stopPropagation();
         }
         return;
       }
     };
     
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    // キャプチャフェーズでイベントを捕捉してブラウザのショートカットより先に処理する
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [isSidebarOpen, handleNewConversation, messages, selectedMessageIndex, scrollToMessage, handleEditMessage]);
   
   // メッセージ追加時に自動スクロール
