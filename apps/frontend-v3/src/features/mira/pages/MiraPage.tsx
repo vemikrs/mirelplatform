@@ -33,7 +33,7 @@ import { useMiraStore } from '@/stores/miraStore';
 import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
 import { MiraMenu } from '../components/MiraMenu';
 import { MiraChatMessage } from '../components/MiraChatMessage';
-import { MiraChatInput } from '../components/MiraChatInput';
+import { MiraChatInput, type MiraChatInputHandle } from '../components/MiraChatInput';
 import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
@@ -113,6 +113,9 @@ export function MiraPage() {
   // 検索入力への参照
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // チャット入力への参照
+  const chatInputRef = useRef<MiraChatInputHandle>(null);
+
   // 新規会話作成ハンドラ（useEffectより前に定義）
   const handleNewConversation = useCallback(() => {
     newConversation();
@@ -239,9 +242,8 @@ export function MiraPage() {
       if (lowerKey === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         e.stopPropagation();
-        // MiraChatInput内のtextareaにフォーカス
-        const textarea = document.querySelector('.mira-chat-input textarea') as HTMLTextAreaElement;
-        textarea?.focus();
+        // MiraChatInput内のtextareaにフォーカス (ref経由)
+        chatInputRef.current?.focus();
         return;
       }
       
@@ -368,6 +370,16 @@ export function MiraPage() {
   const handleDeleteConversation = useCallback((conversationId: string) => {
     deleteConversation(conversationId);
   }, [deleteConversation]);
+  
+  // 会話切り替え時にフォーカス
+  useEffect(() => {
+    if (activeConversation?.id) {
+       // 少し遅延を入れてレンダリング完了後にフォーカス
+       setTimeout(() => {
+         chatInputRef.current?.focus();
+       }, 50);
+    }
+  }, [activeConversation?.id]); // IDが変わったときのみ発火
   
   // 会話の要約を取得（タイトル優先、なければ最初のメッセージ）
   const getConversationSummary = useCallback(() => {
@@ -574,6 +586,7 @@ export function MiraPage() {
         <div className="border-t bg-surface">
           <div className="max-w-3xl mx-auto">
             <MiraChatInput
+              ref={chatInputRef}
               onSend={handleSend}
               isLoading={isLoading}
               placeholder="メッセージを入力... (Enter で送信)"

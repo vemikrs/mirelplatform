@@ -3,7 +3,7 @@
  * 
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
-import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
 import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@mirel/ui';
 import { 
   Send, 
@@ -84,7 +84,12 @@ interface MiraChatInputProps {
   onCancelEdit?: () => void;
 }
 
-export function MiraChatInput({
+export type MiraChatInputHandle = {
+  focus: () => void;
+  setValue: (value: string) => void;
+};
+
+export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>(({
   onSend,
   isLoading = false,
   disabled = false,
@@ -96,7 +101,7 @@ export function MiraChatInput({
   editingMessageId,
   editingMessageContent,
   onCancelEdit,
-}: MiraChatInputProps) {
+}, ref) => {
   const [message, setMessage] = useState('');
   const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
   const [showModeMenu, setShowModeMenu] = useState(false);
@@ -124,6 +129,15 @@ export function MiraChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus();
+    },
+    setValue: (value: string) => {
+      setMessage(value);
+    }
+  }));
   
   // 自動リサイズ
   useEffect(() => {
@@ -542,7 +556,7 @@ export function MiraChatInput({
       />
     </div>
   );
-}
+});
 
 /** ファイルタイプに応じたアイコンマップ */
 const FILE_ICON_MAP = {
