@@ -190,9 +190,6 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         </div>
       )}
 
-      {/* Spacer when not expanded */}
-      {!isExpanded && <div className="flex-1" />}
-
       {/* Search Section - Moved here */}
       {isExpanded && (
         <div className="px-3 py-2 border-t border-outline/20 space-y-2">
@@ -212,9 +209,9 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         </div>
       )}
 
-      {/* Bottom Section - Fixed */}
+      {/* Bottom Section - Fixed at bottom */}
       <div className={cn(
-        "border-t border-outline/20 py-3",
+        "border-t border-outline/20 py-3 mt-auto",
         isExpanded ? "px-3" : "px-2"
       )}>
         {isExpanded ? (
