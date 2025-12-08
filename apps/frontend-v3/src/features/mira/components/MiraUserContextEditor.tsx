@@ -14,16 +14,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
   Textarea,
   Label,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Input,
   Badge,
 } from '@mirel/ui';
 import { Settings2, Save, RotateCcw, Loader2, BookOpen, Palette, GitBranch, Plug } from 'lucide-react';
@@ -203,83 +198,139 @@ export function MiraUserContextEditor({
   };
   
   const dialogContent = (
-    <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-      <DialogHeader>
+    <DialogContent className="sm:max-w-4xl max-h-[85vh] h-[600px] flex flex-col p-0 overflow-hidden">
+      <div className="p-6 border-b shrink-0 bg-muted/20">
         <DialogTitle className="flex items-center gap-2">
           <Settings2 className="w-5 h-5" />
           ユーザーコンテキスト設定
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="mt-1.5">
           AIアシスタントがあなたの状況をより良く理解するための情報を設定します。
-          これらの設定は全ての会話に適用されます。
         </DialogDescription>
-      </DialogHeader>
+      </div>
       
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center flex-1">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ContextCategory)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-3 w-full">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-64 border-r bg-muted/10 flex flex-col p-2 space-y-1 overflow-y-auto shrink-0">
             {(Object.keys(CATEGORY_CONFIG) as ContextCategory[]).map((category) => {
               const config = CATEGORY_CONFIG[category];
               const Icon = config.icon;
+              const isActive = activeTab === category;
               const charCount = getCharCount(category);
+              
               return (
-                <TabsTrigger key={category} value={category} className="flex items-center gap-1.5">
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{config.label}</span>
+                <button
+                  key={category}
+                  onClick={() => setActiveTab(category)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all w-full text-left",
+                    isActive 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 truncate">{config.label}</span>
                   {charCount > 0 && (
-                    <Badge variant="neutral" className="ml-1 text-xs px-1.5 py-0">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "ml-auto text-[10px] px-1 h-5 min-w-5 flex items-center justify-center border-none",
+                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                      )}
+                    >
                       {charCount}
                     </Badge>
                   )}
-                </TabsTrigger>
+                </button>
               );
             })}
-          </TabsList>
-          
-          {(Object.keys(CATEGORY_CONFIG) as ContextCategory[]).map((category) => {
-            const config = CATEGORY_CONFIG[category];
-            return (
-              <TabsContent key={category} value={category} className="flex-1 flex flex-col mt-4">
-                <div className="space-y-2 flex-1 flex flex-col">
-                  <Label htmlFor={`context-${category}`} className="text-sm text-muted-foreground">
-                    {config.description}
-                  </Label>
-                  <Textarea
-                    id={`context-${category}`}
-                    value={getContextValue(category)}
-                    onChange={(e) => handleContextChange(category, e.target.value)}
-                    placeholder={config.placeholder}
-                    className={cn(
-                        "flex-1 min-h-[200px] font-mono text-sm resize-none",
-                        category === 'integration' && "h-[50px] min-h-[50px] flex-none"
-                    )}
-                  />
-                  {category !== 'integration' && (
-                    <p className="text-xs text-muted-foreground text-right">
-                        {getCharCount(category)} 文字
-                    </p>
-                  )}
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
+                    {CATEGORY_CONFIG[activeTab].label}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {CATEGORY_CONFIG[activeTab].description}
+                  </p>
                 </div>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+
+                {activeTab === 'integration' ? (
+                  <div className="space-y-4 p-4 border rounded-lg bg-card">
+                    <div className="space-y-2">
+                      <Label htmlFor="tavily-api-key" className="text-sm font-medium">
+                        Tavily API Key
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="tavily-api-key"
+                          type="password"
+                          value={context.tavilyApiKey}
+                          onChange={(e) => handleContextChange('integration', e.target.value)}
+                          placeholder="tvly-..."
+                          className="font-mono flex-1"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Tavily Search API キーを設定すると、MiraがリアルタイムなWeb検索を行えるようになります。
+                        <br />
+                        <a 
+                          href="https://tavily.com/" 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                        >
+                          公式サイトでキーを取得 <BookOpen className="w-3 h-3" />
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 h-full flex flex-col">
+                    <Textarea
+                      id={`context-${activeTab}`}
+                      value={getContextValue(activeTab)}
+                      onChange={(e) => handleContextChange(activeTab, e.target.value)}
+                      placeholder={CATEGORY_CONFIG[activeTab].placeholder}
+                      className="flex-1 min-h-[300px] font-mono text-sm leading-relaxed p-4 resize-none focus-visible:ring-1"
+                    />
+                    <div className="flex justify-end">
+                      <span className="text-xs text-muted-foreground">
+                        {getCharCount(activeTab)} 文字
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Footer in Main Content Area if preferred, or keep global footer. 
+                Original design had a global footer. Let's keep a global footer but outside the scroll areas.
+            */}
+          </div>
+        </div>
       )}
       
-      <DialogFooter className="flex items-center justify-between sm:justify-between">
+      <div className="p-4 border-t bg-muted/20 flex items-center justify-between shrink-0">
         <Button
           variant="ghost"
           onClick={handleReset}
           disabled={!hasChanges || isSaving}
         >
           <RotateCcw className="w-4 h-4 mr-2" />
-          リセット
+          変更をリセット
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
             onClick={() => setIsOpen(false)}
@@ -290,21 +341,22 @@ export function MiraUserContextEditor({
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
+            className="min-w-[100px]"
           >
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                保存中...
+                保存中
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                保存
+                設定を保存
               </>
             )}
           </Button>
         </div>
-      </DialogFooter>
+      </div>
     </DialogContent>
   );
   
