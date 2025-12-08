@@ -23,6 +23,8 @@ interface ComboboxProps {
   allowCustom?: boolean  // 自由入力を許可
 }
 
+const EMPTY_VALUE = '__EMPTY__'
+
 export function Combobox({
   value = '',
   onValueChange,
@@ -60,6 +62,8 @@ export function Combobox({
     if (newValue === '__custom__') {
       setIsCustomInput(true)
       setCustomValue('')
+    } else if (newValue === EMPTY_VALUE) {
+      onValueChange?.('')
     } else {
       onValueChange?.(newValue)
     }
@@ -96,9 +100,11 @@ export function Combobox({
     )
   }
 
+  const internalValue = value === '' ? EMPTY_VALUE : value
+
   return (
     <div className={className}>
-      <Select value={value} onValueChange={handleSelectChange} disabled={disabled}>
+      <Select value={internalValue} onValueChange={handleSelectChange} disabled={disabled}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
@@ -108,7 +114,10 @@ export function Combobox({
           ) : (
             <>
               {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem 
+                  key={option.value} 
+                  value={option.value === '' ? EMPTY_VALUE : option.value}
+                >
                   {option.label}
                 </SelectItem>
               ))}
