@@ -284,6 +284,18 @@ public class MiraContextLayerService {
         StringBuilder sb = new StringBuilder();
         sb.append("\n\n# Additional Context\n\n");
 
+        // 1. Current Date/Time
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Tokyo"));
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss z");
+        sb.append("## Current Time\n");
+        sb.append(now.format(formatter)).append("\n\n");
+
+        // 2. System Info
+        sb.append("## System Info\n");
+        sb.append("Platform: MirelPlatform 3.0\n");
+        sb.append("App: Mira (AI Assistant)\n\n");
+
         contexts.forEach((category, content) -> {
             sb.append("## ").append(category).append("\n");
             sb.append(content).append("\n\n");

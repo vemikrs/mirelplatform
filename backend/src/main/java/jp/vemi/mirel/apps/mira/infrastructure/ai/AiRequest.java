@@ -47,6 +47,9 @@ public class AiRequest {
     /** 追加パラメータ */
     private Map<String, Object> additionalParams;
 
+    /** ツールコールバック（関数定義と実行ロジック） */
+    private List<org.springframework.ai.tool.ToolCallback> toolCallbacks;
+
     /**
      * 会話メッセージ.
      */
@@ -55,7 +58,7 @@ public class AiRequest {
     @AllArgsConstructor
     @Builder
     public static class Message {
-        /** ロール（user / assistant / system） */
+        /** ロール（user / assistant / system / tool） */
         private String role;
         /** 内容 */
         private String content;
@@ -95,7 +98,6 @@ public class AiRequest {
          *            内容
          * @return Message
          */
-        /** アシスタントメッセージを生成. */
         public static Message assistant(String content) {
             return Message.builder()
                     .role("assistant")
@@ -105,6 +107,12 @@ public class AiRequest {
 
         /** ツール呼び出しリスト (Spring AI ToolCall serialization compatibility) */
         private List<ToolCall> toolCalls;
+
+        /** ツール呼び出しID（role=toolの場合） */
+        private String toolCallId;
+
+        /** ツール名（role=toolの場合、オプション） */
+        private String toolName;
 
         @Data
         @NoArgsConstructor
