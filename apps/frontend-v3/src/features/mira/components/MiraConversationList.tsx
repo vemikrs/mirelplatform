@@ -71,24 +71,15 @@ export function MiraConversationList({
           </div>
           <div className="flex items-center gap-1">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={onNewConversation}
-              className="gap-1.5"
+              className="w-8 h-8"
+              title="新しい会話"
             >
               <MessageSquarePlus className="w-4 h-4" />
-              新規
             </Button>
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="w-8 h-8"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
+
           </div>
         </div>
         
@@ -181,6 +172,7 @@ interface ConversationItemProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+
 }
 
 function ConversationItem({ conversation, isActive, onSelect, onDelete }: ConversationItemProps) {
@@ -217,18 +209,20 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
           {title}
         </span>
         
-        {/* 削除ボタン */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0">
+          {/* 削除ボタン */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

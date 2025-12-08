@@ -56,6 +56,7 @@ export function MiraPage() {
     loadMoreConversations,
     hasMore,
     fetchConversations,
+    regenerateTitle,
   } = useMira();
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
@@ -318,6 +319,7 @@ export function MiraPage() {
           onExport={handleExport}
           onClearConversation={() => setShowClearConfirm(true)}
           onUpdateTitle={updateConversationTitle}
+          onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
           isExporting={isExporting}
           isUpdatingTitle={isUpdatingTitle}
           hasMessages={messages.length > 0}
