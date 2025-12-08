@@ -4,6 +4,7 @@
 package jp.vemi.mirel.apps.mira.infrastructure.ai.tool;
 
 import java.util.Map;
+import java.util.List;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -86,20 +87,51 @@ public class TavilySearchTool implements ToolCallback {
                             "query", request.query(),
                             "search_depth", "basic",
                             "include_answer", true,
-                            "max_results", 5))
+                            "max_results", 1)) // Aggressively reduced to 1
                     .retrieve()
                     .body(TavilyResponse.class);
 
             if (response == null) {
-                return "{\"error\": \"No response from Tavily API\"}";
+                return "Error: No response from search API.";
             }
 
-            // Convert to JSON string
-            return objectMapper.writeValueAsString(response);
+            // Format response as a plain string to avoid complex JSON parsing issues on LLM
+            // side
+            StringBuilder sb = new StringBuilder();
+            sb.append("Search Result for: ").append(response.query()).append("\n");
+
+            if (response.answer() != null && !response.answer().isEmpty()) {
+                // Limit answer length
+                String answer = response.answer();
+                if (answer.length() > 200)
+                    answer = answer.substring(0, 200) + "...";
+                sb.append("Answer: ").append(answer).append("\n");
+            }
+
+            if (response.results() != null && !response.results().isEmpty()) {
+                sb.append("Details:\n");
+                // Only take the first result (though max_results is 1)
+                TavilyResponse.Result r = response.results().get(0);
+                sb.append("- ").append(r.title()).append("\n");
+
+                String content = r.content();
+                if (content != null) {
+                    if (content.length() > 200) {
+                        content = content.substring(0, 200) + "...";
+                    }
+                    // Remove newlines and special chars
+                    content = content.replaceAll("[\\n\\r\\t]", " ");
+                    sb.append("  ").append(content).append("\n");
+                }
+            } else {
+                sb.append("No results.\n");
+            }
+
+            return sb.toString();
 
         } catch (Exception e) {
             log.error("Tavily Search failed", e);
-            return "{\"error\": \"Search failed: " + e.getMessage() + "\"}";
+            return "Search failed: " + e.getMessage();
         }
     }
 
