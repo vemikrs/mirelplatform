@@ -309,12 +309,15 @@ export function MiraUserContextEditor({
                              <div className="flex gap-2">
                                 <Input
                                   id="tavily-api-key"
+                                  name="tavily-api-key-no-autofill"
                                   type="password"
                                   value={context.tavilyApiKey}
                                   onChange={(e) => handleContextChange('integration', e.target.value)}
                                   placeholder="tvly-..."
                                   className="font-mono flex-1"
-                                  autoComplete="new-password"
+                                  autoComplete="off"
+                                  data-lpignore="true"
+                                  data-1p-ignore
                                 />
                                 {isEditingIntegration && (
                                    <Button 
