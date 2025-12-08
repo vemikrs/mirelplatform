@@ -12,7 +12,6 @@ import {
   Trash2, 
   Search, 
 
-  X,
   HelpCircle,
   AlertTriangle,
   Paintbrush2,
@@ -28,7 +27,6 @@ interface MiraConversationListProps {
   onSelect: (conversationId: string) => void;
   onDelete: (conversationId: string) => void;
   onNewConversation: () => void;
-  onClose?: () => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
   hasMore?: boolean;
   onLoadMore?: () => void;
@@ -40,7 +38,6 @@ export function MiraConversationList({
   onSelect,
   onDelete,
   onNewConversation,
-  onClose,
   searchInputRef,
   hasMore,
   onLoadMore,

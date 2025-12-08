@@ -295,7 +295,7 @@ export function MiraPage() {
             onSelect={handleSelectConversation}
             onDelete={handleDeleteConversation}
             onNewConversation={handleNewConversation}
-            onClose={() => setIsSidebarOpen(false)}
+
             searchInputRef={searchInputRef}
             hasMore={hasMore}
             onLoadMore={loadMoreConversations}
