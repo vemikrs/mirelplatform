@@ -321,11 +321,12 @@ export function MiraUserContextEditor({
                                 <Input
                                   id="tavily-api-key"
                                   name="tavily-api-key-no-autofill"
-                                  type="password"
+                                  type="text"
                                   value={context.tavilyApiKey}
                                   onChange={(e) => handleContextChange('integration', e.target.value)}
                                   placeholder="tvly-..."
                                   className="font-mono flex-1"
+                                  style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                                   autoComplete="off"
                                   data-lpignore="true"
                                   data-1p-ignore
