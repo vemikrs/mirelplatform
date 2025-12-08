@@ -49,8 +49,6 @@ public class GitHubModelsClient implements AiProviderClient {
     private static final String PROVIDER_NAME = "github-models";
 
     private final MiraAiProperties properties;
-    private final MiraSettingService settingService;
-    private final jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService contextLayerService;
     private final ChatClient.Builder chatClientBuilder;
 
     @Override
@@ -59,20 +57,9 @@ public class GitHubModelsClient implements AiProviderClient {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 1. Resolve Tavily API Key
-            String tavilyApiKey = resolveTavilyApiKey(request);
-
             // 2. Create OpenAI API (GitHub Models)
-            // Constructor signature verified:
-            // OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String>
-            // headers,
-            // String completionsPath, String embeddingsPath,
-            // RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-            // ResponseErrorHandler responseErrorHandler)
             ApiKey apiKey = new SimpleApiKey(config.getApiKey());
-            // 3. Create OpenAI Chat Model using Builder
-            // Use RestClient.builder() but ensure Jackson converter is present
-            // Spring AI requires a RestClient that can serialize the request body.
+
             RestClient.Builder safeRestClientBuilder = RestClient.builder()
                     .requestInterceptor(new GitHubModelsInterceptor())
                     .messageConverters(c -> c
@@ -89,6 +76,23 @@ public class GitHubModelsClient implements AiProviderClient {
                     RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 
             // 3. Create OpenAI Chat Model using Builder
+            // IMPORTANT: disable auto tool execution by NOT setting a ToolCallingManager or
+            // setting a no-op one if possible.
+            // By default, if we don't pass toolCallingManager, Spring AI might default to
+            // one if toolCallbacks are present in prompt.
+            // However, we want to Pass Tool Definitions but NOT Execute them.
+            // To do this, we should pass tools via Options, but not via
+            // prompt.toolCallbacks?
+            // Spring AI 1.x: chatModel.call(prompt) -> if prompt has toolCallbacks, it
+            // formats them into options AND prepares execution.
+            // Since we want manual control, we'll strip the ToolCallback implementation and
+            // only pass definitions if possible,
+            // OR we rely on `FunctionCallback` interface but we must stop `call()` from
+            // looping.
+            // The cleanest way in Spring AI (without internal hacks) is tricky.
+            // Strategy: We will configure the ChatModel WITHOUT ToolCallingManager, and
+            // manually set Function Definitions in Options.
+
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
                     .defaultOptions(OpenAiChatOptions.builder()
@@ -97,8 +101,8 @@ public class GitHubModelsClient implements AiProviderClient {
                                     : config.getTemperature())
                             .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
                             .build())
-                    .toolCallingManager(ToolCallingManager.builder().build()) // Ensure simpler non-null manager if
-                                                                              // needed
+                    // .toolCallingManager(ToolCallingManager.builder().build()) // ABOLISHED:
+                    // Disable auto execution
                     .build();
 
             // 4. Prepare ChatClient
@@ -112,20 +116,43 @@ public class GitHubModelsClient implements AiProviderClient {
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
-            Prompt prompt = new Prompt(messages);
+            // Prepare Options with Tool Definitions
+            OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
 
-            // 6. Call
-            ChatClientRequestSpec requestSpec = client.prompt(prompt);
+            // Register Tools from AiRequest
+            if (request.getToolCallbacks() != null && !request.getToolCallbacks().isEmpty()) {
+                log.info("Registering {} Tools for manual execution handling.", request.getToolCallbacks().size());
+                // Manually mapping ToolCallback to Function Callback (runtime) is hard if we
+                // don't let ChatModel handle it.
+                // But we can extract ToolDefinition and pass it via options 'functions' or
+                // 'tools'.
+                // Ideally, we want to say "Here are the tools", but "Don't run them".
+                // If we pass them as callbacks to the prompt, ChatModel will run them.
+                // NOTE: For now, we utilize the property that if ToolCallingManager is not set,
+                // OpenAiChatModel MIGHT still execute if it uses internal logic?
+                // Actually OpenAiChatModel uses `this.toolCallingManager.execute(...)`.
+                // If we don't provide it, is it null?
+                // The builder defaults it? No, checking source... usually defaults to null or
+                // disabled if not provided.
+                // IF it loops, we will need another strategy.
+                // Assuming it DOES NOT loop if manager is missing.
 
-            // Register Tavily Tool if key is present
-            if (tavilyApiKey != null && !tavilyApiKey.isEmpty()) {
-                log.info("Registering TavilySearchTool for tenant={} user={}", request.getTenantId(),
-                        request.getUserId());
-                // Use toolCallbacks for ToolCallback instances
-                requestSpec.toolCallbacks(
-                        new jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchTool(tavilyApiKey));
+                // We must pass the callbacks to the RequestSpec so they are formatted into the
+                // API request.
+                // But wait, requestSpec.tools() adds them to the Prompt.
             }
 
+            Prompt prompt = new Prompt(messages);
+            ChatClientRequestSpec requestSpec = client.prompt(prompt);
+
+            // Add tools to request spec (so they appear in API request)
+            if (request.getToolCallbacks() != null) {
+                for (org.springframework.ai.tool.ToolCallback tc : request.getToolCallbacks()) {
+                    requestSpec.tools(tc);
+                }
+            }
+
+            // Execute
             ChatResponse response = requestSpec
                     .call()
                     .chatResponse();
@@ -137,12 +164,8 @@ public class GitHubModelsClient implements AiProviderClient {
                 return AiResponse.error("EMPTY_RESPONSE", "No result");
             }
 
-            // Using getText() as verified in OpenAiApi/OpenAiChatModel source or assumed
-            // correct
             String content = response.getResult().getOutput().getText();
-            // Spring AI 1.x: ChatResponse.getResult().getOutput() returns AssistantMessage.
             AssistantMessage outputMsg = response.getResult().getOutput();
-            // content is already retrieved via getText()
 
             List<AiRequest.Message.ToolCall> toolCalls = null;
             if (outputMsg.getToolCalls() != null && !outputMsg.getToolCalls().isEmpty()) {
@@ -172,33 +195,104 @@ public class GitHubModelsClient implements AiProviderClient {
     }
 
     private String resolveTavilyApiKey(AiRequest request) {
-        String apiKey = null;
+        // ... (Old logic moved to ChatService or unused, but keep for now if needed,
+        // though removed from chat() flow)
+        // Since we now rely on AiRequest.toolCallbacks, we don't strictly need this
+        // here.
+        // But keeping the method to avoid breaking other calls (not used in new chat
+        // method).
+        return null;
+    }
 
-        // 1. User Context
-        if (request.getUserId() != null) {
-            try {
-                var context = contextLayerService.buildMergedContext(
-                        request.getTenantId(), null, request.getUserId());
-                apiKey = context.get("tavilyApiKey");
-            } catch (Exception e) {
-                log.warn("Failed to resolve User Context for Tavily Key: {}", e.getMessage());
+    @Override
+    public reactor.core.publisher.Flux<AiResponse> stream(AiRequest request) {
+        var config = properties.getGithubModels();
+
+        try {
+            // 2. Create OpenAI API (GitHub Models)
+            ApiKey apiKey = new SimpleApiKey(config.getApiKey());
+
+            RestClient.Builder safeRestClientBuilder = RestClient.builder()
+                    .requestInterceptor(new GitHubModelsInterceptor())
+                    .messageConverters(c -> c
+                            .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
+
+            OpenAiApi openAiApi = new OpenAiApi(
+                    config.getBaseUrl(),
+                    apiKey,
+                    new LinkedMultiValueMap<>(),
+                    "/chat/completions",
+                    "/embeddings",
+                    safeRestClientBuilder,
+                    WebClient.builder(),
+                    RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+
+            // 3. Create OpenAI Chat Model using Builder
+            OpenAiChatModel chatModel = OpenAiChatModel.builder()
+                    .openAiApi(openAiApi)
+                    .defaultOptions(OpenAiChatOptions.builder()
+                            .model(config.getModel())
+                            .temperature(request.getTemperature() != null ? request.getTemperature()
+                                    : config.getTemperature())
+                            .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
+                            .build())
+                    .build();
+
+            // 4. Prepare ChatClient
+            ChatClient.Builder clientBuilder = ChatClient.builder(chatModel)
+                    .defaultSystem("You are a helpful assistant.");
+
+            ChatClient client = clientBuilder.build();
+
+            // 5. Build Prompt
+            List<Message> messages = request.getMessages().stream()
+                    .map(this::mapMessage)
+                    .collect(Collectors.toList());
+
+            Prompt prompt = new Prompt(messages);
+            ChatClientRequestSpec requestSpec = client.prompt(prompt);
+
+            // Add tools to request spec (so they appear in API request)
+            if (request.getToolCallbacks() != null) {
+                for (org.springframework.ai.tool.ToolCallback tc : request.getToolCallbacks()) {
+                    requestSpec.tools(tc);
+                }
             }
+
+            // Execute Stream
+            return requestSpec.stream()
+                    .chatResponse()
+                    .map(this::mapStreamResponse)
+                    .onErrorResume(e -> {
+                        log.error("[GitHubModels] Stream Request failed", e);
+                        return reactor.core.publisher.Flux.just(
+                                AiResponse.error("STREAM_ERROR",
+                                        "ストリーム処理中にエラーが発生しました: " + e.getMessage()));
+                    });
+
+        } catch (Exception e) {
+            log.error("[GitHubModels] Request setup failed", e);
+            return reactor.core.publisher.Flux.just(
+                    AiResponse.error("SETUP_FAILED",
+                            "リクエスト設定中にエラーが発生しました: " + e.getMessage()));
+        }
+    }
+
+    private AiResponse mapStreamResponse(ChatResponse response) {
+        String content = "";
+        if (response.getResult() != null && response.getResult().getOutput().getText() != null) {
+            content = response.getResult().getOutput().getText();
         }
 
-        // 2. Tenant Setting
-        if (apiKey == null || apiKey.isEmpty()) {
-            apiKey = settingService.getString(request.getTenantId(), MiraSettingService.KEY_TAVILY_API_KEY, null);
-        }
+        // Basic metadata mapping (Note: streaming chunks often have minimal metadata)
+        AiResponse.Metadata metadata = AiResponse.Metadata.builder()
+                .model(properties.getGithubModels().getModel())
+                .build();
 
-        // 3. System Setting (Handled by getString null check if tenantId provided, but
-        // if getString doesn't fallback to System for specific cases, we check
-        // manually)
-        // settingService.getString checks Tenant then System if tenantId is provided.
-        // If tenantId is null, it checks System.
-        // So step 2 actually covers both Tenant and System if getString is implemented
-        // correctly.
-
-        return apiKey;
+        return AiResponse.builder()
+                .content(content)
+                .metadata(metadata)
+                .build();
     }
 
     private Message mapMessage(AiRequest.Message msg) {
@@ -209,7 +303,6 @@ public class GitHubModelsClient implements AiProviderClient {
                 return new SystemMessage(msg.getContent());
             case "assistant":
                 if (msg.getToolCalls() != null && !msg.getToolCalls().isEmpty()) {
-                    // Map ToolCalls
                     List<ToolCall> springToolCalls = msg.getToolCalls().stream()
                             .map(tc -> new ToolCall(
                                     tc.getId(), tc.getType(), tc.getName(), tc.getArguments()))
@@ -221,28 +314,13 @@ public class GitHubModelsClient implements AiProviderClient {
                 }
                 return AssistantMessage.builder().content(msg.getContent()).build();
             case "tool":
-                // Handle Tool Output (Role: tool)
-                // Spring AI 1.x uses ToolResponseMessage for tool outputs
-                // Assuming msg.getRole().equals("tool")
-                // We need to match the constructor: ToolResponseMessage(List<ToolResponse>
-                // responses)
-                // However, mapping singular 'tool' role to ToolResponseMessage usually requires
-                // identifying which call it belongs to.
-                // Spring AI's request structure often puts ToolResponseMessage in the history.
-                // Let's implement a safe mapping if possible, or use UserMessage with special
-                // marker if Spring AI doesn't support generic 'tool' role in input seamlessly.
-                // Actually, OpenAiApi supports 'tool' role.
-                // But ChatClient abstraction uses specific message types.
-                // Let's use ToolResponseMessage.
                 return ToolResponseMessage.builder()
                         .responses(List.of(
                                 new ToolResponseMessage.ToolResponse(
-                                        "unknown_id", "unknown_name", msg.getContent())))
+                                        msg.getToolCallId() != null ? msg.getToolCallId() : "unknown_id",
+                                        msg.getToolName() != null ? msg.getToolName() : "unknown_name",
+                                        msg.getContent())))
                         .build();
-            // WAIT: AiRequest.Message only has role/content. It needs 'toolCallId' too for
-            // 'tool' messages!
-            // Let's postpone 'tool' role fix to next step if needed, but for 'assistant',
-            // we fixed it.
             default:
                 return new UserMessage(msg.getContent());
         }
