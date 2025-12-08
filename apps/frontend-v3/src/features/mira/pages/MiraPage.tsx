@@ -53,6 +53,9 @@ export function MiraPage() {
     resendEditedMessage,
     updateConversationTitle,
     isUpdatingTitle,
+    loadMoreConversations,
+    hasMore,
+    fetchConversations,
   } = useMira();
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
@@ -78,6 +81,11 @@ export function MiraPage() {
 
   // コンテキストエディタの表示状態
   const [isContextEditorOpen, setIsContextEditorOpen] = useState(false);
+  
+  // 初期ロード：会話履歴を取得
+  useEffect(() => {
+    fetchConversations(0);
+  }, [fetchConversations]);
   
   // URLクエリパラメータから会話IDを取得して開く、または新規チャットを開始する
   useEffect(() => {
@@ -288,6 +296,8 @@ export function MiraPage() {
             onNewConversation={handleNewConversation}
             onClose={() => setIsSidebarOpen(false)}
             searchInputRef={searchInputRef}
+            hasMore={hasMore}
+            onLoadMore={loadMoreConversations}
           />
         </div>
       )}

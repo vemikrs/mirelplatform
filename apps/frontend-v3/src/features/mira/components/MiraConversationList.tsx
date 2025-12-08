@@ -30,6 +30,8 @@ interface MiraConversationListProps {
   onNewConversation: () => void;
   onClose?: () => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 export function MiraConversationList({
@@ -40,6 +42,8 @@ export function MiraConversationList({
   onNewConversation,
   onClose,
   searchInputRef,
+  hasMore,
+  onLoadMore,
 }: MiraConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
@@ -110,27 +114,42 @@ export function MiraConversationList({
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
-            Object.entries(groupedConversations).map(([dateGroup, convs]) => (
-              <div key={dateGroup} className="mb-2">
-                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
-                  {dateGroup}
-                </p>
-                <div className="space-y-0.5">
-                  {convs.map((conv) => (
-                    <ConversationItem
-                      key={conv.id}
-                      conversation={conv}
-                      isActive={activeConversationId === conv.id}
-                      onSelect={() => onSelect(conv.id)}
-                      onDelete={() => {
-                        const title = getConversationTitle(conv);
-                        setDeleteTarget({ id: conv.id, title });
-                      }}
-                    />
-                  ))}
+            <>
+              {Object.entries(groupedConversations).map(([dateGroup, convs]) => (
+                <div key={dateGroup} className="mb-2">
+                  <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
+                    {dateGroup}
+                  </p>
+                  <div className="space-y-0.5">
+                    {convs.map((conv) => (
+                      <ConversationItem
+                        key={conv.id}
+                        conversation={conv}
+                        isActive={activeConversationId === conv.id}
+                        onSelect={() => onSelect(conv.id)}
+                        onDelete={() => {
+                          const title = getConversationTitle(conv);
+                          setDeleteTarget({ id: conv.id, title });
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {hasMore && (
+                <div className="px-2 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground"
+                    onClick={onLoadMore}
+                  >
+                    さらに読み込む
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>      

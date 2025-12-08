@@ -5,7 +5,13 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ChatResponse, MiraMode, ChatContext } from '@/lib/api/mira';
+import { 
+  getConversationList, 
+  getConversation,
+  type ChatResponse, 
+  type MiraMode, 
+  type ChatContext 
+} from '@/lib/api/mira';
 
 // ========================================
 // Types
@@ -38,6 +44,7 @@ export interface MiraConversation {
   context?: ChatContext;
   createdAt: Date;
   updatedAt: Date;
+  isLoaded?: boolean; // 詳細（メッセージ）が読み込まれているか
 }
 
 /**
@@ -52,6 +59,10 @@ interface MiraState {
   conversations: Record<string, MiraConversation>;
   error: string | null;
   
+  // ページング状態
+  hasMore: boolean;
+  currentPage: number;
+
   // メッセージ編集状態
   editingMessageId: string | null;
   editingMessageContent: string | null;
@@ -66,6 +77,8 @@ interface MiraState {
   setError: (error: string | null) => void;
   
   // 会話管理
+  fetchConversations: (page?: number, size?: number) => Promise<void>;
+  loadConversation: (conversationId: string) => Promise<void>;
   startConversation: (mode?: MiraMode, context?: ChatContext) => string;
   setActiveConversation: (conversationId: string | null) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
@@ -99,6 +112,8 @@ export const useMiraStore = create<MiraState>()(
       activeConversationId: null,
       conversations: {},
       error: null,
+      hasMore: false,
+      currentPage: 0,
       
       // メッセージ編集初期状態
       editingMessageId: null,
@@ -115,6 +130,97 @@ export const useMiraStore = create<MiraState>()(
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error }),
       
+      // 会話取得（リスト）
+      fetchConversations: async (page = 0, size = 20) => {
+        set({ isLoading: true });
+        try {
+          const response = await getConversationList({ page, size });
+          
+          set((state) => {
+            const newConversations = { ...state.conversations };
+            
+            response.conversations.forEach((c) => {
+              // 既存の会話があれば維持（詳細情報があるかもしれないので）
+              // ただし、タイトルなどは更新しても良い
+              const existing = newConversations[c.id];
+              
+              if (existing) {
+                newConversations[c.id] = {
+                  ...existing,
+                  title: c.title,
+                  updatedAt: new Date(c.lastActivityAt),
+                  mode: c.mode,
+                };
+              } else {
+                newConversations[c.id] = {
+                  id: c.id,
+                  mode: c.mode,
+                  title: c.title,
+                  messages: [],
+                  createdAt: new Date(c.createdAt),
+                  updatedAt: new Date(c.lastActivityAt),
+                  isLoaded: false, // 詳細未取得
+                };
+              }
+            });
+
+            return {
+              conversations: newConversations,
+              hasMore: page < response.totalPages - 1,
+              currentPage: page,
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : '会話履歴の取得に失敗しました',
+            isLoading: false 
+          });
+        }
+      },
+
+      // 会話詳細取得
+      loadConversation: async (conversationId) => {
+        // 既にロード済みならスキップするロジックを入れても良いが、最新化のため毎回呼ぶ
+        set({ isLoading: true });
+        try {
+          const response = await getConversation(conversationId);
+          
+          set((state) => {
+            const messages: MiraMessage[] = response.messages.map(m => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+              contentType: m.contentType as 'text' | 'markdown' | 'html',
+              timestamp: new Date(m.createdAt),
+            }));
+
+            const updatedConversation: MiraConversation = {
+              id: response.id,
+              mode: response.mode,
+              title: response.title,
+              messages,
+              createdAt: new Date(response.createdAt),
+              updatedAt: new Date(response.lastActivityAt),
+              isLoaded: true,
+            };
+
+            return {
+              conversations: {
+                ...state.conversations,
+                [response.id]: updatedConversation,
+              },
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+             error: error instanceof Error ? error.message : '会話詳細の取得に失敗しました',
+             isLoading: false
+          });
+        }
+      },
+
       // 会話管理
       startConversation: (mode = 'GENERAL_CHAT', context) => {
         const id = crypto.randomUUID();
@@ -127,6 +233,7 @@ export const useMiraStore = create<MiraState>()(
           context,
           createdAt: now,
           updatedAt: now,
+          isLoaded: true, // 新規作成なのでロード済み扱い
         };
         
         set((state) => ({
@@ -140,8 +247,18 @@ export const useMiraStore = create<MiraState>()(
         return id;
       },
       
-      setActiveConversation: (conversationId) => 
-        set({ activeConversationId: conversationId }),
+      setActiveConversation: (conversationId) => {
+        set({ activeConversationId: conversationId });
+        
+        // 未ロードならロードする
+        if (conversationId) {
+          const state = get();
+          const conversation = state.conversations[conversationId];
+          if (conversation && !conversation.isLoaded) {
+            state.loadConversation(conversationId);
+          }
+        }
+      },
       
       updateConversationTitle: (conversationId, title) => {
         set((state) => {

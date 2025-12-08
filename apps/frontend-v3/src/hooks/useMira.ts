@@ -3,6 +3,7 @@
  * 
  * TanStack Query + Zustand を組み合わせたカスタムフック
  */
+import { useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMiraStore } from '@/stores/miraStore';
 import {
@@ -200,6 +201,10 @@ export function useMiraConversation() {
     deleteConversation,
     getActiveConversation,
     getConversationMessages,
+    fetchConversations,
+    loadConversation,
+    hasMore,
+    currentPage,
   } = useMiraStore();
   
   const clearMutation = useMutation({
@@ -222,10 +227,23 @@ export function useMiraConversation() {
       deleteConversation(id);
     }
   };
+
+  // Initial fetch
+  // コンポーネントマウント時に一度だけ実行
+  /* useEffect(() => {
+    // 既にデータがあれば取得しない、等の制御も可能だが、
+    // 同期のために取得を推奨
+    fetchConversations(0);
+   }, []); */
+  // NOTE: useMiraConversationが複数箇所で呼ばれると多重リクエストになる可能性があるため、
+  // ここでの自動取得は避けるか、Store側で制御が必要。
+  // 一旦、明示的に呼び出すか、上位コンポーネント(MiraPage)で制御する方針とする。
   
   return {
     activeConversationId,
-    conversations: Object.values(conversations),
+    conversations: Object.values(conversations).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ),
     activeConversation: getActiveConversation(),
     messages: activeConversationId 
       ? getConversationMessages(activeConversationId) 
@@ -234,6 +252,10 @@ export function useMiraConversation() {
     clear,
     remove,
     isClearLoading: clearMutation.isPending,
+    fetchConversations,
+    loadConversation,
+    hasMore,
+    currentPage,
   };
 }
 
@@ -327,6 +349,12 @@ export function useMira() {
     resendEditedMessage,
   } = useMiraStore();
   
+  const loadMoreConversations = useCallback(async () => {
+    if (conversation.hasMore) {
+      await conversation.fetchConversations(conversation.currentPage + 1);
+    }
+  }, [conversation.hasMore, conversation.currentPage, conversation.fetchConversations]);
+
   return {
     // パネル
     isOpen: panel.isOpen,
@@ -363,5 +391,12 @@ export function useMira() {
     
     // コンテキスト
     saveContext: contextSnapshot.save,
+
+    // ページング・同期
+    fetchConversations: conversation.fetchConversations,
+    loadConversation: conversation.loadConversation,
+    hasMore: conversation.hasMore,
+    currentPage: conversation.currentPage,
+    loadMoreConversations,
   };
 }
