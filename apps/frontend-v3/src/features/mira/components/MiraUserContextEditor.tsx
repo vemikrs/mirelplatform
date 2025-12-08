@@ -317,17 +317,10 @@ export function MiraUserContextEditor({
                           </div>
                         ) : (
                           <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                             {/* Browser Autocomplete Prevention: Wrap in form with strict settings and dummy input */}
-                             <form 
-                               autoComplete="off" 
-                               noValidate 
-                               onSubmit={(e) => e.preventDefault()}
-                               className="flex gap-2"
-                             >
-                                <input type="password" style={{ display: 'none' }} />
+                             <div className="flex gap-2">
                                 <Input
                                   id="tavily-api-key"
-                                  name="tavily-api-key-field"
+                                  name="tavily-api-key-no-autofill"
                                   type="password"
                                   value={context.tavilyApiKey}
                                   onChange={(e) => handleContextChange('integration', e.target.value)}
@@ -336,8 +329,6 @@ export function MiraUserContextEditor({
                                   autoComplete="off"
                                   data-lpignore="true"
                                   data-1p-ignore
-                                  readOnly={true} 
-                                  onFocus={(e) => e.target.readOnly = false}
                                 />
                                 {isEditingIntegration && (
                                    <Button 
@@ -345,12 +336,11 @@ export function MiraUserContextEditor({
                                       size="sm"
                                       onClick={() => setIsEditingIntegration(false)}
                                       title="キャンセル"
-                                      type="button"
                                    >
                                       キャンセル
                                    </Button>
                                 )}
-                              </form>
+                              </div>
                               <p className="text-xs text-muted-foreground">
                                 Tavily Search API キーを設定すると、MiraがリアルタイムなWeb検索を行えるようになります。
                                 <br />
