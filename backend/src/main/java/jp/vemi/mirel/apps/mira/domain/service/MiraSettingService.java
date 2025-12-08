@@ -40,6 +40,7 @@ public class MiraSettingService {
     public static final String KEY_LIMIT_RPM = "limit.rpm"; // Requests Per Minute
     public static final String KEY_LIMIT_RPH = "limit.rph"; // Requests Per Hour
     public static final String KEY_LIMIT_DAILY_QUOTA = "limit.daily_quota";
+    public static final String KEY_TAVILY_API_KEY = "tavily.api_key";
 
     /**
      * 有効な設定値を取得します（String）.

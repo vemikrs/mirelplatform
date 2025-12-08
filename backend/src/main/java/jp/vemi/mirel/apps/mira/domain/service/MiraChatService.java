@@ -197,6 +197,8 @@ public class MiraChatService {
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
+        aiRequest.setTenantId(tenantId);
+        aiRequest.setUserId(userId);
 
         // 7. AI 呼び出し
         AiProviderClient client;
