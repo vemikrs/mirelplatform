@@ -30,44 +30,32 @@ public class AiProviderFactory {
     private final MiraAiProperties properties;
     private final MiraSettingService settingService;
 
-    // Providers
-    private final GitHubModelsClient gitHubModelsClient;
-    private final AzureOpenAiClient azureOpenAiClient;
-    private final MockAiClient mockAiClient;
-
     public AiProviderFactory(
             List<AiProviderClient> providerList,
             MiraAiProperties properties,
-            MiraSettingService settingService,
-            GitHubModelsClient gitHubModelsClient,
-            AzureOpenAiClient azureOpenAiClient,
-            MockAiClient mockAiClient) {
+            MiraSettingService settingService) {
 
         this.providers = providerList.stream()
                 .collect(Collectors.toMap(AiProviderClient::getProviderName, Function.identity()));
         this.properties = properties;
         this.settingService = settingService;
-        this.gitHubModelsClient = gitHubModelsClient;
-        this.azureOpenAiClient = azureOpenAiClient;
-        this.mockAiClient = mockAiClient;
 
         log.info("AiProviderFactory initialized with providers: {}", providers.keySet());
     }
 
     public AiProviderClient createClient(String tenantId) {
-        String provider = settingService.getAiProvider(tenantId);
+        String providerName = settingService.getAiProvider(tenantId);
 
-        switch (provider) {
-            case "github-models":
-                return gitHubModelsClient;
-            case "azure-openai":
-                return azureOpenAiClient;
-            case "mock":
-                return mockAiClient;
-            default:
-                // Fallback to default in properties if unknown, or default to github-models
-                return gitHubModelsClient;
-        }
+        return getProvider(providerName)
+                .orElseGet(() -> {
+                    log.warn("Requested provider '{}' for tenant '{}' is not available. Falling back to default.",
+                            providerName, tenantId);
+                    // Fallback to "github-models" or "mock" if available
+                    return getProvider("github-models")
+                            .orElseGet(() -> getProvider("mock")
+                                    .orElseThrow(() -> new IllegalStateException(
+                                            "No AI provider available. Requested: " + providerName)));
+                });
     }
 
     /**
