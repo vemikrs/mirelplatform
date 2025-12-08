@@ -44,6 +44,7 @@ export function useMiraShortcuts({
       const isInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
       
       const now = Date.now();
+      if (!e.key) return;
       const lowerKey = e.key.toLowerCase();
       
       // ⌘/Ctrl + Shift + H でサイドバーを切り替え (入力中でも有効)

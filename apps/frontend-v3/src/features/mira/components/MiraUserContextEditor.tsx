@@ -108,6 +108,7 @@ export function MiraUserContextEditor({
   const [originalContext, setOriginalContext] = useState<UserContext>(DEFAULT_CONTEXT);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditingIntegration, setIsEditingIntegration] = useState(false);
   const [activeTab, setActiveTab] = useState<ContextCategory>('terminology');
   
   // 外部制御または内部制御
@@ -134,7 +135,7 @@ export function MiraUserContextEditor({
       }
     } catch (error) {
       console.error('Failed to load user context:', error);
-      // エラー時はデフォルト値を使用
+      // エラー時はデフォルト値を維持
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +161,7 @@ export function MiraUserContextEditor({
       if (response.ok) {
         setOriginalContext(context);
         setIsOpen(false);
+        setIsEditingIntegration(false);
       } else {
         console.error('Failed to save context');
       }
@@ -173,6 +175,7 @@ export function MiraUserContextEditor({
   // リセット処理
   const handleReset = () => {
     setContext(originalContext);
+    setIsEditingIntegration(false);
   };
   
   // 変更があるか
@@ -198,7 +201,7 @@ export function MiraUserContextEditor({
   };
   
   const dialogContent = (
-    <DialogContent className="sm:max-w-4xl max-h-[85vh] h-[600px] flex flex-col p-0 overflow-hidden">
+    <DialogContent className="sm:max-w-5xl max-h-[85vh] h-[650px] flex flex-col p-0 overflow-hidden">
       <div className="p-6 border-b shrink-0 bg-muted/20">
         <DialogTitle className="flex items-center gap-2">
           <Settings2 className="w-5 h-5" />
@@ -226,7 +229,10 @@ export function MiraUserContextEditor({
               return (
                 <button
                   key={category}
-                  onClick={() => setActiveTab(category)}
+                  onClick={() => {
+                    setActiveTab(category);
+                    setIsEditingIntegration(false);
+                  }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all w-full text-left",
                     isActive 
@@ -267,32 +273,75 @@ export function MiraUserContextEditor({
 
                 {activeTab === 'integration' ? (
                   <div className="space-y-4 p-4 border rounded-lg bg-card">
-                    <div className="space-y-2">
-                      <Label htmlFor="tavily-api-key" className="text-sm font-medium">
-                        Tavily API Key
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="tavily-api-key"
-                          type="password"
-                          value={context.tavilyApiKey}
-                          onChange={(e) => handleContextChange('integration', e.target.value)}
-                          placeholder="tvly-..."
-                          className="font-mono flex-1"
-                        />
+                    <div className="space-y-4">
+                      
+                      {/* API Key Section */}
+                      <div className="space-y-2">
+                        <Label htmlFor="tavily-api-key" className="text-sm font-medium">
+                          Tavily API Key
+                        </Label>
+                        
+                        {!isEditingIntegration && context.tavilyApiKey ? (
+                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded border border-muted">
+                            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+                              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-xs">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                設定済み
+                              </span>
+                              <span className="text-muted-foreground text-xs font-normal ml-2">
+                                ************{context.tavilyApiKey.slice(-4)}
+                              </span>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setIsEditingIntegration(true)}
+                                className="h-8 text-xs"
+                            >
+                                変更する
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                             <div className="flex gap-2">
+                                <Input
+                                  id="tavily-api-key"
+                                  type="password"
+                                  value={context.tavilyApiKey}
+                                  onChange={(e) => handleContextChange('integration', e.target.value)}
+                                  placeholder="tvly-..."
+                                  className="font-mono flex-1"
+                                  autoComplete="new-password"
+                                />
+                                {isEditingIntegration && (
+                                   <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => setIsEditingIntegration(false)}
+                                      title="キャンセル"
+                                   >
+                                      キャンセル
+                                   </Button>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Tavily Search API キーを設定すると、MiraがリアルタイムなWeb検索を行えるようになります。
+                                <br />
+                                <a 
+                                  href="https://tavily.com/" 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                                >
+                                  公式サイトでキーを取得 <BookOpen className="w-3 h-3" />
+                                </a>
+                              </p>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Tavily Search API キーを設定すると、MiraがリアルタイムなWeb検索を行えるようになります。
-                        <br />
-                        <a 
-                          href="https://tavily.com/" 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                        >
-                          公式サイトでキーを取得 <BookOpen className="w-3 h-3" />
-                        </a>
-                      </p>
                     </div>
                   </div>
                 ) : (
@@ -314,9 +363,7 @@ export function MiraUserContextEditor({
               </div>
             </div>
             
-            {/* Footer in Main Content Area if preferred, or keep global footer. 
-                Original design had a global footer. Let's keep a global footer but outside the scroll areas.
-            */}
+            {/* Footer */}
           </div>
         </div>
       )}
