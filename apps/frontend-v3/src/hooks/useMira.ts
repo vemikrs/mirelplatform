@@ -205,6 +205,7 @@ export function useMiraConversation() {
     loadConversation,
     hasMore,
     currentPage,
+    regenerateTitle,
   } = useMiraStore();
   
   const clearMutation = useMutation({
@@ -256,6 +257,7 @@ export function useMiraConversation() {
     loadConversation,
     hasMore,
     currentPage,
+    regenerateTitle,
   };
 }
 
@@ -398,5 +400,6 @@ export function useMira() {
     hasMore: conversation.hasMore,
     currentPage: conversation.currentPage,
     loadMoreConversations,
+    regenerateTitle: conversation.regenerateTitle,
   };
 }

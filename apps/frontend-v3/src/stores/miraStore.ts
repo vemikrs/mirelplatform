@@ -8,6 +8,7 @@ import { persist } from 'zustand/middleware';
 import { 
   getConversationList, 
   getConversation,
+  regenerateConversationTitle,
   type ChatResponse, 
   type MiraMode, 
   type ChatContext 
@@ -82,6 +83,7 @@ interface MiraState {
   startConversation: (mode?: MiraMode, context?: ChatContext) => string;
   setActiveConversation: (conversationId: string | null) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
+  regenerateTitle: (conversationId: string) => Promise<void>;
   addUserMessage: (conversationId: string, content: string) => void;
   addAssistantMessage: (conversationId: string, response: ChatResponse) => void;
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
@@ -277,6 +279,36 @@ export const useMiraStore = create<MiraState>()(
           };
         });
       },
+      
+      regenerateTitle: async (conversationId) => {
+        set({ isLoading: true });
+        try {
+          const response = await regenerateConversationTitle(conversationId);
+          
+          set((state) => {
+            const conversation = state.conversations[conversationId];
+            if (!conversation) return state;
+            
+            return {
+              conversations: {
+                ...state.conversations,
+                [conversationId]: {
+                  ...conversation,
+                  title: response.title,
+                  updatedAt: new Date(),
+                },
+              },
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'タイトルの再生成に失敗しました',
+            isLoading: false
+          });
+        }
+      },
+      
       
       addUserMessage: (conversationId, content) => {
         const message: MiraMessage = {

@@ -499,3 +499,24 @@ export async function getConversation(
 
   return response.data.data;
 }
+
+/**
+ * 会話タイトル再生成
+ */
+export async function regenerateConversationTitle(
+  conversationId: string
+): Promise<GenerateTitleResponse> {
+  const response = await apiClient.post<MiraTitleApiResponse>(
+    `/apps/mira/api/conversation/${conversationId}/regenerate-title`
+  );
+
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+
+  if (!response.data.data) {
+    throw new Error('タイトルの再生成に失敗しました');
+  }
+
+  return response.data.data;
+}
