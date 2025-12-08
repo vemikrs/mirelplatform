@@ -26,7 +26,8 @@ import {
     Layers, 
     Save,   // Restored
     Plus,   // Restored 
-    Trash2  // Restored
+    Trash2, // Restored
+    Plug    // Added
 } from 'lucide-react';
 
 import {
@@ -81,7 +82,7 @@ export const MiraAdminPage = () => {
 
 const SettingsTab = () => {
     const { toast } = useToast();
-    const [activeCategory, setActiveCategory] = useState<'general' | 'parameters' | 'limits' | 'context'>('general');
+    const [activeCategory, setActiveCategory] = useState<'general' | 'parameters' | 'limits' | 'context' | 'integration'>('general');
     const [tenantId, setTenantId] = useState<string>(''); // Empty = System Default
     
     // Config States
@@ -151,6 +152,9 @@ const SettingsTab = () => {
             <Button variant={activeCategory === 'context' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('context')}>
                 <Layers className="mr-2 h-4 w-4" /> コンテキスト (Context)
             </Button>
+            <Button variant={activeCategory === 'integration' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('integration')}>
+                <Plug className="mr-2 h-4 w-4" /> 連携 (Integration)
+            </Button>
         </div>
     );
 
@@ -202,6 +206,7 @@ const SettingsTab = () => {
                             {activeCategory === 'parameters' && "AIパラメータ"}
                             {activeCategory === 'limits' && "制限設定"}
                             {activeCategory === 'context' && "コンテキスト管理"}
+                            {activeCategory === 'integration' && "外部連携設定"}
                         </CardTitle>
                         <CardDescription>
                             {activeCategory === 'context' 
@@ -324,6 +329,27 @@ const SettingsTab = () => {
 
                                 {activeCategory === 'context' && (
                                     <ContextManagementWrapper tenantId={tenantId} />
+                                )}
+
+                                {activeCategory === 'integration' && (
+                                    <div className="space-y-4">
+                                        <div className="grid gap-2">
+                                            <Label>Tavily Search API Key</Label>
+                                            <Input
+                                                type="password"
+                                                value={aiConfig.tavilyApiKey || ""}
+                                                onChange={(e) => setAiConfig({...aiConfig, tavilyApiKey: e.target.value})}
+                                                placeholder="tvly-..."
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Tavily Search API キーを設定します。ToolCalling機能でリアルタイム検索が可能になります。
+                                                {tenantId ? " (このテナント用に上書き)" : " (システムデフォルト)"}
+                                            </p>
+                                        </div>
+                                        <div className="pt-4">
+                                            <Button onClick={handleSaveAi} disabled={saving}><Save className="mr-2 h-4 w-4"/> 保存</Button>
+                                        </div>
+                                    </div>
                                 )}
                             </>
                         )}
