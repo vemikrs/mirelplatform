@@ -102,7 +102,7 @@ public class MiraAdminController {
                 "temperature", settingService.getAiTemperature(tenantId),
                 "maxTokens", settingService.getAiMaxTokens(tenantId),
                 "tavilyApiKey", settingService.getString(
-                        jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY, tenantId)));
+                        tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY, null)));
     }
 
     @PostMapping("/config/ai")
