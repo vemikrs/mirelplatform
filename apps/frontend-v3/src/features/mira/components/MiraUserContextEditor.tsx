@@ -184,7 +184,23 @@ export function MiraUserContextEditor({
   const hasChanges = JSON.stringify(context) !== JSON.stringify(originalContext);
   
   // 各カテゴリの文字数
-  const getCharCount = (category: ContextCategory) => context[category].length;
+  const getCharCount = (category: ContextCategory) => {
+      if (category === 'integration') return context.tavilyApiKey.length;
+      return (context[category as keyof UserContext] || '').length;
+  };
+
+  const getContextValue = (category: ContextCategory) => {
+      if (category === 'integration') return context.tavilyApiKey;
+      return context[category as keyof UserContext] || '';
+  };
+
+  const handleContextChange = (category: ContextCategory, val: string) => {
+      if (category === 'integration') {
+          setContext({ ...context, tavilyApiKey: val });
+      } else {
+          setContext({ ...context, [category]: val });
+      }
+  };
   
   const dialogContent = (
     <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
@@ -234,8 +250,8 @@ export function MiraUserContextEditor({
                   </Label>
                   <Textarea
                     id={`context-${category}`}
-                    value={context[category]}
-                    onChange={(e) => setContext({ ...context, [category]: e.target.value })}
+                    value={getContextValue(category)}
+                    onChange={(e) => handleContextChange(category, e.target.value)}
                     placeholder={config.placeholder}
                     className={cn(
                         "flex-1 min-h-[200px] font-mono text-sm resize-none",
