@@ -124,6 +124,7 @@ export interface AiConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  tavilyApiKey?: string;
 }
 
 export interface LimitsSettings {
