@@ -585,11 +585,11 @@ public class MiraChatService {
     // Private Methods
     // ========================================
 
-    private MiraMode resolveMode(ChatRequest request) {
+    public MiraMode resolveMode(ChatRequest request) {
         return modeResolver.resolve(request);
     }
 
-    private MiraConversation getOrCreateConversation(
+    public MiraConversation getOrCreateConversation(
             String conversationId, String tenantId, String userId, MiraMode mode) {
 
         if (conversationId != null && !conversationId.isEmpty()) {
@@ -628,7 +628,7 @@ public class MiraChatService {
         };
     }
 
-    private void saveUserMessage(MiraConversation conversation, String content) {
+    public void saveUserMessage(MiraConversation conversation, String content) {
         MiraMessage message = MiraMessage.builder()
                 .id(UUID.randomUUID().toString())
                 .conversationId(conversation.getId())
@@ -640,7 +640,7 @@ public class MiraChatService {
         messageRepository.save(message);
     }
 
-    private MiraMessage saveAssistantMessage(MiraConversation conversation, AiResponse aiResponse, String content) {
+    public MiraMessage saveAssistantMessage(MiraConversation conversation, AiResponse aiResponse, String content) {
         MiraMessage.ContentType contentType = MiraMessage.ContentType.MARKDOWN;
         String payload = content;
         String model = aiResponse.getModel();
@@ -675,7 +675,7 @@ public class MiraChatService {
         return messageRepository.save(message);
     }
 
-    private List<AiRequest.Message> loadConversationHistory(String conversationId, MessageConfig config) {
+    public List<AiRequest.Message> loadConversationHistory(String conversationId, MessageConfig config) {
         // historyScope チェック
         if (config != null) {
             String scope = config.getHistoryScope();
