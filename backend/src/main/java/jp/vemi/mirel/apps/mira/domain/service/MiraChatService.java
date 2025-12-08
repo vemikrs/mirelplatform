@@ -603,12 +603,18 @@ public class MiraChatService {
             }
         }
 
-        return createConversation(tenantId, userId, mode);
+        return createConversation(tenantId, userId, mode, conversationId);
     }
 
     private MiraConversation createConversation(String tenantId, String userId, MiraMode mode) {
+        return createConversation(tenantId, userId, mode, null);
+    }
+
+    private MiraConversation createConversation(String tenantId, String userId, MiraMode mode, String requestedId) {
+        String idToUse = (requestedId != null && !requestedId.isEmpty()) ? requestedId : UUID.randomUUID().toString();
+
         MiraConversation conversation = MiraConversation.builder()
-                .id(UUID.randomUUID().toString())
+                .id(idToUse)
                 .tenantId(tenantId)
                 .userId(userId)
                 .mode(toConversationMode(mode))
@@ -672,6 +678,8 @@ public class MiraChatService {
                 .tokenCount(tokens)
                 .build();
 
+        conversation.updateLastActivity();
+        conversationRepository.save(conversation);
         return messageRepository.save(message);
     }
 
@@ -775,7 +783,8 @@ public class MiraChatService {
                 .build();
     }
 
-    private void autoGenerateTitle(MiraConversation conversation, String tenantId) {
+    @Transactional
+    public void autoGenerateTitle(MiraConversation conversation, String tenantId) {
         // 会話履歴を取得
         List<MiraMessage> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
 
@@ -847,10 +856,10 @@ public class MiraChatService {
         log.info("Auto title generated: conversationId={}, title={}", conversation.getId(), title);
     }
 
-    private List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
+    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
         List<org.springframework.ai.tool.ToolCallback> tools = new ArrayList<>();
 
-        // Tavily Search (Check API Key)
+        // Tavily Search
         String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
         if (tavilyKey != null && !tavilyKey.isEmpty()) {
             tools.add(new TavilySearchTool(tavilyKey));
@@ -859,21 +868,18 @@ public class MiraChatService {
         return tools;
     }
 
-    private String executeTool(AiRequest.Message.ToolCall call, List<org.springframework.ai.tool.ToolCallback> tools) {
-        Optional<org.springframework.ai.tool.ToolCallback> tool = tools.stream()
-                .filter(t -> t.getToolDefinition().name().equals(call.getName()))
-                .findFirst();
-
-        if (tool.isEmpty()) {
-            return "Error: Tool not found: " + call.getName();
-        }
-
+    public String executeTool(AiRequest.Message.ToolCall call, List<org.springframework.ai.tool.ToolCallback> tools) {
         try {
-            log.info("Executing Tool: {} args={}", call.getName(), call.getArguments());
-            return tool.get().call(call.getArguments());
+            for (org.springframework.ai.tool.ToolCallback tool : tools) {
+                if (tool.getToolDefinition().name().equals(call.getName())) { // Match by Name
+                    log.info("Executing Tool: {} args={}", call.getName(), call.getArguments());
+                    return tool.call(call.getArguments());
+                }
+            }
+            return "Tool not found: " + call.getName();
         } catch (Exception e) {
-            log.error("Tool execution failed", e);
-            return "Error: Tool execution failed: " + e.getMessage();
+            log.error("Tool execution failed: {}", call.getName(), e);
+            return "Error executing tool: " + e.getMessage();
         }
     }
 
