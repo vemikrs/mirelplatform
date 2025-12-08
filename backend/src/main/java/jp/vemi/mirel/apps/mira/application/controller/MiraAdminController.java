@@ -96,13 +96,14 @@ public class MiraAdminController {
     @GetMapping("/config/ai")
     @Operation(summary = "AI設定取得")
     public ResponseEntity<Map<String, Object>> getAiConfig(@RequestParam(required = false) String tenantId) {
-        return ResponseEntity.ok(Map.of(
-                "provider", settingService.getAiProvider(tenantId),
-                "model", settingService.getAiModel(tenantId),
-                "temperature", settingService.getAiTemperature(tenantId),
-                "maxTokens", settingService.getAiMaxTokens(tenantId),
-                "tavilyApiKey", settingService.getString(
-                        tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY, null)));
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("provider", settingService.getAiProvider(tenantId));
+        config.put("model", settingService.getAiModel(tenantId));
+        config.put("temperature", settingService.getAiTemperature(tenantId));
+        config.put("maxTokens", settingService.getAiMaxTokens(tenantId));
+        config.put("tavilyApiKey", settingService.getString(
+                tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY, null));
+        return ResponseEntity.ok(config);
     }
 
     @PostMapping("/config/ai")
@@ -129,10 +130,11 @@ public class MiraAdminController {
     @GetMapping("/config/limits")
     @Operation(summary = "制限設定取得")
     public ResponseEntity<Map<String, Object>> getLimitsConfig(@RequestParam(required = false) String tenantId) {
-        return ResponseEntity.ok(Map.of(
-                "rpm", settingService.getRateLimitRpm(tenantId),
-                "rph", settingService.getRateLimitRph(tenantId),
-                "dailyQuota", settingService.getDailyTokenQuota(tenantId)));
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("rpm", settingService.getRateLimitRpm(tenantId));
+        config.put("rph", settingService.getRateLimitRph(tenantId));
+        config.put("dailyQuota", settingService.getDailyTokenQuota(tenantId));
+        return ResponseEntity.ok(config);
     }
 
     @PostMapping("/config/limits")
@@ -170,9 +172,10 @@ public class MiraAdminController {
     @GetMapping("/limits/legacy")
     @Operation(summary = "現在の制限設定取得(Legacy)")
     public ResponseEntity<Map<String, Object>> getLimits() {
-        return ResponseEntity.ok(Map.of(
-                "rateLimit", properties.getRateLimit(),
-                "quota", properties.getQuota()));
+        Map<String, Object> limits = new java.util.HashMap<>();
+        limits.put("rateLimit", properties.getRateLimit());
+        limits.put("quota", properties.getQuota());
+        return ResponseEntity.ok(limits);
     }
 
     @GetMapping("/token-usage/summary")
