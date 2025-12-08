@@ -303,28 +303,6 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
           // Collapsed mode UI - Simple vertical stack
           <div className="flex flex-col items-center gap-2">
             
-            {/* Mira AI Assistant (Pinned to bottom) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <NavLink
-                  to="/mira"
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
-                    )
-                  }
-                >
-                  <Bot className="size-4" />
-                </NavLink>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                Mira (mirel Assistant)
-              </TooltipContent>
-            </Tooltip>
-
             {/* User Menu - Collapsed (Popover) */}
             <SidebarUserMenu isExpanded={false} />
             
@@ -355,6 +333,33 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
 
             {/* Notification */}
             <NotificationPopover isCompact={true} />
+
+            {/* Mira AI Assistant (Pinned to bottom) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-foreground"
+                  asChild
+                >
+                  <NavLink
+                    to="/mira"
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center justify-center", // Button handles layout, but ensuring centering
+                        isActive && "bg-primary/10 text-primary"
+                      )
+                    }
+                  >
+                    <Bot className="size-4" />
+                  </NavLink>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Mira (mirel Assistant)
+              </TooltipContent>
+            </Tooltip>
 
             {/* Expand Button */}
             <Tooltip>
