@@ -26,16 +26,17 @@ import {
   TabsTrigger,
   Badge,
 } from '@mirel/ui';
-import { Settings2, Save, RotateCcw, Loader2, BookOpen, Palette, GitBranch } from 'lucide-react';
+import { Settings2, Save, RotateCcw, Loader2, BookOpen, Palette, GitBranch, Plug } from 'lucide-react';
 
 /** コンテキストカテゴリ */
-type ContextCategory = 'terminology' | 'style' | 'workflow';
+type ContextCategory = 'terminology' | 'style' | 'workflow' | 'integration';
 
 /** ユーザーコンテキスト */
 interface UserContext {
   terminology: string;
   style: string;
   workflow: string;
+  tavilyApiKey: string;
 }
 
 /** デフォルトのコンテキスト */
@@ -43,6 +44,7 @@ const DEFAULT_CONTEXT: UserContext = {
   terminology: '',
   style: '',
   workflow: '',
+  tavilyApiKey: '',
 };
 
 /** カテゴリ設定 */
@@ -81,6 +83,12 @@ const CATEGORY_CONFIG: Record<ContextCategory, {
 - コードレビュー時は1.セキュリティ 2.パフォーマンス 3.可読性の順でチェック
 - 新機能追加時はまずテストを書く(TDD)
 - エラー発生時は1.ログ確認 2.再現手順特定 3.原因調査`,
+  },
+  integration: {
+    label: '連携設定',
+    icon: Plug,
+    description: '外部サービスとの連携に必要なAPIキーなどを設定します。',
+    placeholder: 'Tavily API Key (tvly-...)',
   },
 };
 
@@ -123,6 +131,7 @@ export function MiraUserContextEditor({
             terminology: data.data.terminology || '',
             style: data.data.style || '',
             workflow: data.data.workflow || '',
+            tavilyApiKey: data.data.tavilyApiKey || '',
           };
           setContext(loaded);
           setOriginalContext(loaded);
@@ -228,11 +237,16 @@ export function MiraUserContextEditor({
                     value={context[category]}
                     onChange={(e) => setContext({ ...context, [category]: e.target.value })}
                     placeholder={config.placeholder}
-                    className="flex-1 min-h-[200px] font-mono text-sm resize-none"
+                    className={cn(
+                        "flex-1 min-h-[200px] font-mono text-sm resize-none",
+                        category === 'integration' && "h-[50px] min-h-[50px] flex-none"
+                    )}
                   />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {getCharCount(category)} 文字
-                  </p>
+                  {category !== 'integration' && (
+                    <p className="text-xs text-muted-foreground text-right">
+                        {getCharCount(category)} 文字
+                    </p>
+                  )}
                 </div>
               </TabsContent>
             );
