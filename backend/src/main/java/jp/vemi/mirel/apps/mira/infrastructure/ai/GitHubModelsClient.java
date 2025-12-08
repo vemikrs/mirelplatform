@@ -47,6 +47,7 @@ public class GitHubModelsClient implements AiProviderClient {
 
     private final MiraAiProperties properties;
     private final MiraSettingService settingService;
+    private final jp.vemi.mirel.apps.mira.domain.service.MiraContextLayerService contextLayerService;
     private final ChatClient.Builder chatClientBuilder;
 
     @Override
@@ -55,7 +56,10 @@ public class GitHubModelsClient implements AiProviderClient {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 1. Create OpenAI API (GitHub Models)
+            // 1. Resolve Tavily API Key
+            String tavilyApiKey = resolveTavilyApiKey(request);
+
+            // 2. Create OpenAI API (GitHub Models)
             // Constructor signature verified:
             // OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String>
             // headers,
@@ -73,7 +77,7 @@ public class GitHubModelsClient implements AiProviderClient {
                     WebClient.builder(),
                     RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 
-            // 2. Create OpenAI Chat Model using Builder
+            // 3. Create OpenAI Chat Model using Builder
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
                     .defaultOptions(OpenAiChatOptions.builder()
@@ -86,26 +90,35 @@ public class GitHubModelsClient implements AiProviderClient {
                                                                               // needed
                     .build();
 
-            // 3. Prepare ChatClient
-            ChatClient client = ChatClient.builder(chatModel)
-                    .defaultSystem("You are a helpful assistant.")
-                    .build();
+            // 4. Prepare ChatClient
+            ChatClient.Builder clientBuilder = ChatClient.builder(chatModel)
+                    .defaultSystem("You are a helpful assistant.");
 
-            // 4. Build Prompt
+            // Register Tavily Tool if key is present
+            if (tavilyApiKey != null && !tavilyApiKey.isEmpty()) {
+                log.info("Registering TavilySearchTool for tenant={} user={}", request.getTenantId(),
+                        request.getUserId());
+                clientBuilder.defaultTools(
+                        new jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchTool(tavilyApiKey));
+            }
+
+            ChatClient client = clientBuilder.build();
+
+            // 5. Build Prompt
             List<Message> messages = request.getMessages().stream()
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
             Prompt prompt = new Prompt(messages);
 
-            // 5. Call
+            // 6. Call
             ChatResponse response = client.prompt(prompt)
                     .call()
                     .chatResponse();
 
             long latency = System.currentTimeMillis() - startTime;
 
-            // 6. Map to AiResponse
+            // 7. Map to AiResponse
             if (response.getResult() == null) {
                 return AiResponse.error("EMPTY_RESPONSE", "No result");
             }
@@ -125,6 +138,36 @@ public class GitHubModelsClient implements AiProviderClient {
             log.error("[GitHubModels] Request failed: {}", e.getMessage(), e);
             return AiResponse.error("REQUEST_FAILED", e.getMessage());
         }
+    }
+
+    private String resolveTavilyApiKey(AiRequest request) {
+        String apiKey = null;
+
+        // 1. User Context
+        if (request.getUserId() != null) {
+            try {
+                var context = contextLayerService.buildMergedContext(
+                        request.getTenantId(), null, request.getUserId());
+                apiKey = context.get("tavilyApiKey");
+            } catch (Exception e) {
+                log.warn("Failed to resolve User Context for Tavily Key: {}", e.getMessage());
+            }
+        }
+
+        // 2. Tenant Setting
+        if (apiKey == null || apiKey.isEmpty()) {
+            apiKey = settingService.getString(request.getTenantId(), MiraSettingService.KEY_TAVILY_API_KEY, null);
+        }
+
+        // 3. System Setting (Handled by getString null check if tenantId provided, but
+        // if getString doesn't fallback to System for specific cases, we check
+        // manually)
+        // settingService.getString checks Tenant then System if tenantId is provided.
+        // If tenantId is null, it checks System.
+        // So step 2 actually covers both Tenant and System if getString is implemented
+        // correctly.
+
+        return apiKey;
     }
 
     private Message mapMessage(AiRequest.Message msg) {
