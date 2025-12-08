@@ -284,15 +284,25 @@ public class GitHubModelsClient implements AiProviderClient {
             content = response.getResult().getOutput().getText();
         }
 
+        List<AiRequest.Message.ToolCall> toolCalls = null;
+        if (response.getResult() != null && response.getResult().getOutput().getToolCalls() != null
+                && !response.getResult().getOutput().getToolCalls().isEmpty()) {
+            toolCalls = response.getResult().getOutput().getToolCalls().stream()
+                    .map(tc -> new AiRequest.Message.ToolCall(tc.id(), tc.type(), tc.name(), tc.arguments()))
+                    .collect(Collectors.toList());
+        }
+
         // Basic metadata mapping (Note: streaming chunks often have minimal metadata)
         AiResponse.Metadata metadata = AiResponse.Metadata.builder()
                 .model(properties.getGithubModels().getModel())
                 .build();
 
-        return AiResponse.builder()
+        AiResponse aiResponse = AiResponse.builder()
                 .content(content)
                 .metadata(metadata)
                 .build();
+        aiResponse.setToolCalls(toolCalls);
+        return aiResponse;
     }
 
     private Message mapMessage(AiRequest.Message msg) {
@@ -385,11 +395,18 @@ public class GitHubModelsClient implements AiProviderClient {
                 if (modified) {
                     log.debug("[GitHubModelsInterceptor] Injected 'content: null' into assistant tool call message(s)");
                     byte[] newBody = objectMapper.writeValueAsBytes(root);
+
+                    // Log the final modified body
+                    String bodyStr = new String(newBody, java.nio.charset.StandardCharsets.UTF_8);
+                    log.debug("[GitHubModels] Request Body (Modified): {}", bodyStr);
+
                     // Critical: Update Content-Length as body size changed
                     request.getHeaders().setContentLength(newBody.length);
                     return execution.execute(request, newBody);
                 } else {
-                    log.trace("[GitHubModelsInterceptor] No modifications needed");
+                    // Log the original body
+                    String bodyStr = new String(body, java.nio.charset.StandardCharsets.UTF_8);
+                    log.debug("[GitHubModels] Request Body: {}", bodyStr);
                 }
 
             } catch (Exception e) {
