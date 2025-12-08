@@ -31,6 +31,12 @@ public interface MiraConversationRepository extends JpaRepository<MiraConversati
             String tenantId, String userId, ConversationStatus status);
 
     /**
+     * テナント・ユーザ・ステータスでページング取得.
+     */
+    Page<MiraConversation> findByTenantIdAndUserIdAndStatusOrderByLastActivityAtDesc(
+            String tenantId, String userId, ConversationStatus status, Pageable pageable);
+
+    /**
      * テナント・ユーザでページング取得.
      */
     Page<MiraConversation> findByTenantIdAndUserIdOrderByLastActivityAtDesc(

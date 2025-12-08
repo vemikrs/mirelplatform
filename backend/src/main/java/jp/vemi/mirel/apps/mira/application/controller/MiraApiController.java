@@ -276,6 +276,73 @@ public class MiraApiController {
                 "active", active));
     }
 
+    @GetMapping("/conversations")
+    @Operation(summary = "会話一覧取得", description = "会話履歴のページネーション一覧を取得します。")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "成功", content = @Content(mediaType = "application/json", schema = @Schema(implementation = jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse.class))),
+            @ApiResponse(responseCode = "403", description = "権限エラー"),
+            @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse> listConversations(
+            @Parameter(description = "ページ番号 (0-indexed)") @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "1ページあたりの件数") @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int size) {
+
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                // 権限がない場合は空リストやエラーではなく、空のレスポンスを返すか、エラーにするか。
+                // 安全のためエラーとする
+                return ResponseEntity.status(403).build();
+            }
+
+            var response = chatService.listConversations(
+                    tenantId, userId,
+                    org.springframework.data.domain.PageRequest.of(page, size));
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("会話一覧取得エラー", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/conversations/{conversationId}")
+    @Operation(summary = "会話詳細取得", description = "会話の詳細（メッセージ履歴を含む）を取得します。")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "成功", content = @Content(mediaType = "application/json", schema = @Schema(implementation = jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.class))),
+            @ApiResponse(responseCode = "403", description = "権限エラー"),
+            @ApiResponse(responseCode = "404", description = "会話が見つからない"),
+            @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse> getConversation(
+            @Parameter(description = "会話ID") @PathVariable String conversationId) {
+
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                return ResponseEntity.status(403).build();
+            }
+
+            var response = chatService.getConversation(conversationId, tenantId, userId);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("会話詳細取得エラー", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // ========================================
     // Title Generation Endpoints
     // ========================================

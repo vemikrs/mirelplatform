@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { useMiraStore } from '@/stores/miraStore';
 import { useTheme } from '@/lib/hooks/useTheme';
 
 /**
@@ -15,6 +16,14 @@ export function LogoutPage() {
     // コンポーネントマウント時にログアウトを実行
     // 戻り先URL（returnUrl）は保持しない（完全なログアウト）
     logout();
+    
+    // Miraの会話履歴もクリア（セキュリティとUXのため）
+    useMiraStore.persist.clearStorage();
+    // メモリ上の状態もリセットするために、初期状態に戻す（必要に応じて）
+    useMiraStore.setState({ 
+      activeConversationId: null, 
+      conversations: {}, 
+    }); 
   }, [logout]);
 
   return (

@@ -65,6 +65,84 @@ public class MiraChatService {
     private final TokenCounter tokenCounter;
 
     /**
+     * 会話一覧取得.
+     *
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @param pageable
+     *            ページング情報
+     * @return 会話一覧レスポンス
+     */
+    @Transactional(readOnly = true)
+    public jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse listConversations(
+            String tenantId, String userId, org.springframework.data.domain.Pageable pageable) {
+
+        org.springframework.data.domain.Page<MiraConversation> page = conversationRepository
+                .findByTenantIdAndUserIdAndStatusOrderByLastActivityAtDesc(
+                        tenantId, userId, MiraConversation.ConversationStatus.ACTIVE, pageable);
+
+        List<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse.ConversationSummary> summaries = page
+                .getContent().stream()
+                .map(c -> new jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse.ConversationSummary(
+                        c.getId(),
+                        c.getTitle(),
+                        c.getMode(),
+                        c.getCreatedAt(),
+                        c.getLastActivityAt()))
+                .toList();
+
+        return new jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse(
+                summaries,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
+    }
+
+    /**
+     * 会話詳細取得.
+     *
+     * @param conversationId
+     *            会話ID
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @return 会話詳細レスポンス
+     */
+    @Transactional(readOnly = true)
+    public jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse getConversation(
+            String conversationId, String tenantId, String userId) {
+
+        MiraConversation conversation = conversationRepository.findById(conversationId)
+                .filter(c -> c.getTenantId().equals(tenantId))
+                .filter(c -> c.getUserId().equals(userId))
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found or access denied"));
+
+        List<MiraMessage> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+
+        List<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.MessageDetail> messageDetails = messages
+                .stream()
+                .map(m -> new jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.MessageDetail(
+                        m.getId(),
+                        m.getSenderType() == MiraMessage.SenderType.USER ? "user" : "assistant",
+                        m.getContent(),
+                        m.getContentType().name().toLowerCase(),
+                        m.getCreatedAt()))
+                .toList();
+
+        return new jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse(
+                conversation.getId(),
+                conversation.getTitle(),
+                conversation.getMode(),
+                conversation.getCreatedAt(),
+                conversation.getLastActivityAt(),
+                messageDetails);
+    }
+
+    /**
      * チャット実行
      */
     @Transactional
