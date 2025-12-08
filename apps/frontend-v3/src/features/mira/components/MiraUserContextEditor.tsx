@@ -281,7 +281,7 @@ export function MiraUserContextEditor({
                           Tavily API Key
                         </Label>
                         
-                        {!isEditingIntegration && context.tavilyApiKey ? (
+                        {!isEditingIntegration && originalContext.tavilyApiKey && context.tavilyApiKey ? (
                           <div className="flex items-center justify-between p-3 bg-muted/30 rounded border border-muted">
                             <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
                               <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-xs">
