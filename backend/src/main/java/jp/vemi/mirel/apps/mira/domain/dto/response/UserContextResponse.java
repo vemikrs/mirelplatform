@@ -10,10 +10,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "ユーザーコンテキストレスポンス")
 public record UserContextResponse(
-    @Schema(description = "専門用語コンテキスト")
-    String terminology,
-    @Schema(description = "回答スタイルコンテキスト")
-    String style,
-    @Schema(description = "ワークフローコンテキスト")
-    String workflow
-) {}
+        @Schema(description = "専門用語コンテキスト") String terminology,
+        @Schema(description = "回答スタイルコンテキスト") String style,
+        @Schema(description = "ワークフローコンテキスト") String workflow,
+        @Schema(description = "Tavily API Key (Integration)") String tavilyApiKey) {
+}

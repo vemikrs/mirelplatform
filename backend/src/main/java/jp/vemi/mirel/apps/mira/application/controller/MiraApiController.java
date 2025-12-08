@@ -490,7 +490,8 @@ public class MiraApiController {
             UserContextResponse response = new UserContextResponse(
                     contexts.getOrDefault("terminology", ""),
                     contexts.getOrDefault("style", ""),
-                    contexts.getOrDefault("workflow", ""));
+                    contexts.getOrDefault("workflow", ""),
+                    contexts.getOrDefault("tavilyApiKey", ""));
 
             return ResponseEntity.ok(MiraUserContextApiResponse.success(response));
 
@@ -515,6 +516,8 @@ public class MiraApiController {
             contextLayerService.saveOrUpdateUserContext(userId, "terminology", request.terminology());
             contextLayerService.saveOrUpdateUserContext(userId, "style", request.style());
             contextLayerService.saveOrUpdateUserContext(userId, "workflow", request.workflow());
+            contextLayerService.saveOrUpdateUserContext(userId, "tavilyApiKey", request.tavilyApiKey()); // Save Tavily
+                                                                                                         // Key
 
             // 監査ログ
             auditService.logContextUpdate(userId, "USER_CONTEXT_UPDATED");
@@ -523,7 +526,8 @@ public class MiraApiController {
                     new UserContextResponse(
                             request.terminology(),
                             request.style(),
-                            request.workflow())));
+                            request.workflow(),
+                            request.tavilyApiKey())));
 
         } catch (Exception e) {
             log.error("ユーザーコンテキスト更新エラー", e);
@@ -704,7 +708,8 @@ public class MiraApiController {
     public record UserContextRequest(
             @Schema(description = "専門用語コンテキスト") String terminology,
             @Schema(description = "回答スタイルコンテキスト") String style,
-            @Schema(description = "ワークフローコンテキスト") String workflow) {
+            @Schema(description = "ワークフローコンテキスト") String workflow,
+            @Schema(description = "Tavily API Key (Integration)") String tavilyApiKey) {
     }
 
     /**
