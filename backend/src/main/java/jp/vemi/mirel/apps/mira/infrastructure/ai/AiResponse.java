@@ -20,6 +20,9 @@ public class AiResponse {
     /** 応答内容 */
     private String content;
 
+    /** ツール呼び出しリスト */
+    private java.util.List<jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest.Message.ToolCall> toolCalls;
+
     /** メタデータ */
     @Builder.Default
     private Metadata metadata = new Metadata();

@@ -95,11 +95,26 @@ public class AiRequest {
          *            内容
          * @return Message
          */
+        /** アシスタントメッセージを生成. */
         public static Message assistant(String content) {
             return Message.builder()
                     .role("assistant")
                     .content(content)
                     .build();
+        }
+
+        /** ツール呼び出しリスト (Spring AI ToolCall serialization compatibility) */
+        private List<ToolCall> toolCalls;
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class ToolCall {
+            String id;
+            String type;
+            String name;
+            String arguments;
         }
     }
 }

@@ -182,14 +182,14 @@ public class MiraChatService {
         MiraConversation conversation = getOrCreateConversation(
                 request.getConversationId(), tenantId, userId, mode);
 
-        // 4. ユーザーメッセージ保存
-        saveUserMessage(conversation, request.getMessage().getContent());
-
         // 5. 会話履歴取得 (設定に応じてフィルタリング)
         MessageConfig msgConfig = request.getContext() != null ? request.getContext().getMessageConfig() : null;
 
         List<AiRequest.Message> history = loadConversationHistory(
                 conversation.getId(), msgConfig);
+
+        // 4. ユーザーメッセージ保存
+        saveUserMessage(conversation, request.getMessage().getContent());
 
         // 6. プロンプト構築（コンテキストレイヤーを反映）
         String finalContext = contextMergeService.buildFinalContextPrompt(
@@ -240,7 +240,8 @@ public class MiraChatService {
         String formattedContent = responseFormatter.formatAsMarkdown(filteredContent);
 
         // 10. アシスタントメッセージ保存
-        MiraMessage assistantMessage = saveAssistantMessage(conversation, formattedContent);
+        // 10. アシスタントメッセージ保存
+        MiraMessage assistantMessage = saveAssistantMessage(conversation, aiResponse, formattedContent);
 
         // 11. 監査ログ記録 (成功)
         int promptTokens = getTokensOrDefault(aiResponse.getPromptTokens());
@@ -338,7 +339,7 @@ public class MiraChatService {
         }
 
         String formattedContent = responseFormatter.formatAsMarkdown(aiResponse.getContent());
-        MiraMessage assistantMessage = saveAssistantMessage(conversation, formattedContent);
+        MiraMessage assistantMessage = saveAssistantMessage(conversation, aiResponse, formattedContent);
 
         return ChatResponse.builder()
                 .conversationId(conversation.getId())
@@ -586,13 +587,36 @@ public class MiraChatService {
         messageRepository.save(message);
     }
 
-    private MiraMessage saveAssistantMessage(MiraConversation conversation, String content) {
+    private MiraMessage saveAssistantMessage(MiraConversation conversation, AiResponse aiResponse, String content) {
+        MiraMessage.ContentType contentType = MiraMessage.ContentType.MARKDOWN;
+        String payload = content;
+        String model = aiResponse.getModel();
+        Integer tokens = getTokensOrDefault(aiResponse.getCompletionTokens());
+
+        // Tool Calls Handling
+        if (aiResponse.getToolCalls() != null && !aiResponse.getToolCalls().isEmpty()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                payload = mapper.writeValueAsString(aiResponse.getToolCalls());
+                contentType = MiraMessage.ContentType.STRUCTURED_JSON;
+            } catch (Exception e) {
+                log.warn("Failed to serialize tool calls for msg", e);
+                // Fallback to storing raw content if serialization fails, though usually
+                // content is null/empty for tool calls
+                // If content is null, store empty string to avoid errors
+                if (payload == null)
+                    payload = "";
+            }
+        }
+
         MiraMessage message = MiraMessage.builder()
                 .id(UUID.randomUUID().toString())
                 .conversationId(conversation.getId())
                 .senderType(MiraMessage.SenderType.ASSISTANT)
-                .content(content)
-                .contentType(MiraMessage.ContentType.MARKDOWN)
+                .content(payload)
+                .contentType(contentType)
+                .usedModel(model)
+                .tokenCount(tokens)
                 .build();
 
         return messageRepository.save(message);
@@ -618,10 +642,28 @@ public class MiraChatService {
                         .content(msg.getContent())
                         .build());
             } else if (MiraMessage.SenderType.ASSISTANT.equals(msg.getSenderType())) {
-                history.add(AiRequest.Message.builder()
-                        .role("assistant")
-                        .content(msg.getContent())
-                        .build());
+                AiRequest.Message.MessageBuilder builder = AiRequest.Message.builder()
+                        .role("assistant");
+
+                if (MiraMessage.ContentType.STRUCTURED_JSON.equals(msg.getContentType())) {
+                    // Deserialize ToolCalls
+                    try {
+                        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                        List<AiRequest.Message.ToolCall> toolCalls = mapper.readValue(
+                                msg.getContent(),
+                                new com.fasterxml.jackson.core.type.TypeReference<List<AiRequest.Message.ToolCall>>() {
+                                });
+                        builder.toolCalls(toolCalls);
+                        builder.content(null); // Content must be null? Or should we keep text if mixed?
+                        // GitHub Models wants content:null if tool calls are present.
+                    } catch (Exception e) {
+                        log.warn("Failed to deserialize tool calls for msg={}", msg.getId(), e);
+                        builder.content(msg.getContent()); // Fallback
+                    }
+                } else {
+                    builder.content(msg.getContent());
+                }
+                history.add(builder.build());
             }
         }
 
