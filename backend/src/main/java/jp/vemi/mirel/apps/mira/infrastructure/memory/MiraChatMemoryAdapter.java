@@ -14,6 +14,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,11 +35,13 @@ import lombok.extern.slf4j.Slf4j;
  * 既存の MiraConversation / MiraMessage エンティティと連携する。
  * </p>
  * 
- * <p><b>設計指針:</b></p>
+ * <p>
+ * <b>設計指針:</b>
+ * </p>
  * <ul>
- *   <li>既存テーブル (mir_mira_conversation, mir_mira_message) をそのまま使用</li>
- *   <li>Spring AI の MessageChatMemoryAdvisor と互換</li>
- *   <li>tokenCount, usedModel 等の独自メタデータを維持</li>
+ * <li>既存テーブル (mir_mira_conversation, mir_mira_message) をそのまま使用</li>
+ * <li>Spring AI の MessageChatMemoryAdvisor と互換</li>
+ * <li>tokenCount, usedModel 等の独自メタデータを維持</li>
  * </ul>
  */
 @Slf4j
@@ -52,8 +55,10 @@ public class MiraChatMemoryAdapter implements ChatMemory {
     /**
      * 会話にメッセージを追加.
      * 
-     * @param conversationId 会話ID（UUID文字列）
-     * @param messages 追加するメッセージリスト
+     * @param conversationId
+     *            会話ID（UUID文字列）
+     * @param messages
+     *            追加するメッセージリスト
      */
     @Override
     @Transactional
@@ -74,10 +79,10 @@ public class MiraChatMemoryAdapter implements ChatMemory {
         for (Message message : messages) {
             MiraMessage entity = toMiraMessage(conversationId, message);
             messageRepository.save(entity);
-            
+
             if (log.isTraceEnabled()) {
                 log.trace("[MiraChatMemoryAdapter] Saved message: id={}, type={}, length={}",
-                        entity.getId(), entity.getSenderType(), 
+                        entity.getId(), entity.getSenderType(),
                         entity.getContent() != null ? entity.getContent().length() : 0);
             }
         }
@@ -90,7 +95,8 @@ public class MiraChatMemoryAdapter implements ChatMemory {
     /**
      * 会話の全メッセージを取得.
      * 
-     * @param conversationId 会話ID
+     * @param conversationId
+     *            会話ID
      * @return メッセージリスト（古い順）
      */
     @Override
@@ -122,14 +128,16 @@ public class MiraChatMemoryAdapter implements ChatMemory {
     /**
      * 会話から直近N件のメッセージを取得.
      * 
-     * @param conversationId 会話ID
-     * @param lastN 取得件数
+     * @param conversationId
+     *            会話ID
+     * @param lastN
+     *            取得件数
      * @return メッセージリスト（古い順）
      */
     @Transactional(readOnly = true)
     public List<Message> get(String conversationId, int lastN) {
         if (log.isDebugEnabled()) {
-            log.debug("[MiraChatMemoryAdapter] get: conversationId={}, lastN={}", 
+            log.debug("[MiraChatMemoryAdapter] get: conversationId={}, lastN={}",
                     conversationId, lastN);
         }
 
@@ -151,7 +159,7 @@ public class MiraChatMemoryAdapter implements ChatMemory {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("[MiraChatMemoryAdapter] Retrieved {} messages (total: {})", 
+            log.debug("[MiraChatMemoryAdapter] Retrieved {} messages (total: {})",
                     result.size(), allMessages.size());
         }
 
@@ -161,7 +169,8 @@ public class MiraChatMemoryAdapter implements ChatMemory {
     /**
      * 会話のメッセージをクリア.
      * 
-     * @param conversationId 会話ID
+     * @param conversationId
+     *            会話ID
      */
     @Override
     @Transactional
@@ -173,7 +182,7 @@ public class MiraChatMemoryAdapter implements ChatMemory {
         long count = messageRepository.countByConversationId(conversationId);
         messageRepository.deleteByConversationId(conversationId);
 
-        log.info("[MiraChatMemoryAdapter] Cleared {} messages from conversation: {}", 
+        log.info("[MiraChatMemoryAdapter] Cleared {} messages from conversation: {}",
                 count, conversationId);
     }
 
@@ -202,6 +211,12 @@ public class MiraChatMemoryAdapter implements ChatMemory {
             case USER -> new UserMessage(entity.getContent());
             case ASSISTANT -> new AssistantMessage(entity.getContent());
             case SYSTEM -> new SystemMessage(entity.getContent());
+            case TOOL -> ToolResponseMessage.builder()
+                    .responses(List.of(new ToolResponseMessage.ToolResponse(
+                            entity.getToolCallId() != null ? entity.getToolCallId() : "unknown",
+                            entity.getUsedModel() != null ? entity.getUsedModel() : "unknown",
+                            entity.getContent())))
+                    .build();
         };
     }
 
@@ -213,6 +228,7 @@ public class MiraChatMemoryAdapter implements ChatMemory {
             case USER -> SenderType.USER;
             case ASSISTANT -> SenderType.ASSISTANT;
             case SYSTEM -> SenderType.SYSTEM;
+            case TOOL -> SenderType.TOOL;
             default -> {
                 log.warn("[MiraChatMemoryAdapter] Unknown message type: {}, defaulting to SYSTEM", type);
                 yield SenderType.SYSTEM;

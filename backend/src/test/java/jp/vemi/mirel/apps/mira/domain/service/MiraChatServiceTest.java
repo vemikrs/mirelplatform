@@ -90,6 +90,9 @@ class MiraChatServiceTest {
     @Mock
     private TokenCounter tokenCounter; // Mock TokenCounter
 
+    @Mock
+    private MiraSettingService settingService; // Mock SettingService
+
     @InjectMocks
     private MiraChatService miraChatService;
 
@@ -118,7 +121,8 @@ class MiraChatServiceTest {
                     rateLimitService,
                     metrics,
                     tokenQuotaService,
-                    tokenCounter); // Add tokenCounter
+                    tokenCounter,
+                    settingService); // Add settingService
 
             validRequest = ChatRequest.builder()
                     .message(ChatRequest.Message.builder()
