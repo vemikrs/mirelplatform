@@ -130,7 +130,20 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                 {message.metadata.latencyMs && (
                   <span>{message.metadata.latencyMs}ms</span>
                 )}
+                {/* Streaming Status */}
+                {message.metadata.status && (
+                    <span className="ml-2 text-primary animate-pulse">
+                        {message.metadata.status}
+                    </span>
+                )}
               </div>
+            )}
+            
+            {/* Provide visual feedback if content is empty but status exists (start of stream) */}
+            {compact && message.metadata?.status && !message.content && (
+                 <div className="text-xs text-primary animate-pulse">
+                    {message.metadata.status}
+                 </div>
             )}
           </div>
 

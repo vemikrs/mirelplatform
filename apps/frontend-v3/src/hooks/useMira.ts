@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMiraStore } from '@/stores/miraStore';
+import { useMiraChatStream } from './useMiraChatStream'; // Import streaming hook
 import {
   sendChatMessage,
   analyzeError,
@@ -40,7 +41,10 @@ export function useMiraChat() {
     addUserMessage,
     addAssistantMessage,
     updateConversationTitle,
+    useStream: storeUseStream, // Get store preference
   } = useMiraStore();
+
+  const { sendMessageStream, abortStream } = useMiraChatStream();
   
   const mutation = useMutation({
     mutationFn: sendChatMessage,
@@ -91,12 +95,20 @@ export function useMiraChat() {
       context?: ChatContext;
       messageConfig?: MessageConfig;
       forceProvider?: string;
+      useStream?: boolean; // Add useStream option
     }
   ) => {
     // 会話がなければ新規作成
     let conversationId = activeConversationId;
     if (!conversationId) {
       conversationId = startConversation(options?.mode, options?.context);
+    }
+
+    // Use stream if option provided OR store preference is true (and option not explicitly false)
+    const shouldStream = options?.useStream !== undefined ? options.useStream : storeUseStream;
+
+    if (shouldStream) {
+      return sendMessageStream(content, options);
     }
     
     // ユーザーメッセージを追加
@@ -122,6 +134,7 @@ export function useMiraChat() {
     isLoading: mutation.isPending || isLoading,
     error: mutation.error,
     reset: mutation.reset,
+    abort: abortStream,
   };
 }
 
@@ -369,6 +382,7 @@ export function useMira() {
     isLoading: chat.isLoading,
     error: panel.error,
     clearError: panel.clearError,
+    abort: chat.abort, // Expose abort
     
     // 会話
     messages: conversation.messages,

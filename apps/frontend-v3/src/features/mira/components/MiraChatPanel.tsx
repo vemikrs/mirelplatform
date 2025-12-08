@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
 } from '@mirel/ui';
 
 interface MiraChatPanelProps {
@@ -59,6 +60,9 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
   const { isOpen, close: closePanel } = useMiraPanel();
   const togglePanel = useMiraStore((state) => state.togglePanel);
   const activeConversationId = useMiraStore((state) => state.activeConversationId);
+  const useStream = useMiraStore((state) => state.useStream);
+  const setUseStream = useMiraStore((state) => state.setUseStream);
+
   
   // 最小化状態
   const [isMinimized, setIsMinimized] = useState(false);
@@ -222,8 +226,16 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
                    <DropdownMenuRadioItem value="">Auto (Default)</DropdownMenuRadioItem>
                    <DropdownMenuRadioItem value="azure-openai">Azure OpenAI</DropdownMenuRadioItem>
                    <DropdownMenuRadioItem value="openai">OpenAI (Original)</DropdownMenuRadioItem>
-                   <DropdownMenuRadioItem value="mock">Mock Provider</DropdownMenuRadioItem>
-                 </DropdownMenuRadioGroup>
+                    <DropdownMenuRadioItem value="mock">Mock Provider</DropdownMenuRadioItem>
+                   </DropdownMenuRadioGroup>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuLabel>Streaming</DropdownMenuLabel>
+                   <DropdownMenuCheckboxItem 
+                      checked={useStream}
+                      onCheckedChange={setUseStream}
+                   >
+                      Enable Streaming
+                   </DropdownMenuCheckboxItem>
                </DropdownMenuContent>
              </DropdownMenu>
           )}
