@@ -258,7 +258,7 @@ public class MiraChatService {
         metrics.recordTokenUsage(aiResponse.getModel(), tenantId, promptTokens, completionTokens);
 
         // 14. レスポンス構築
-        return ChatResponse.builder()
+        ChatResponse response = ChatResponse.builder()
                 .conversationId(conversation.getId())
                 .messageId(assistantMessage.getId())
                 .mode(mode.name())
@@ -274,6 +274,18 @@ public class MiraChatService {
                         .completionTokens(aiResponse.getCompletionTokens())
                         .build())
                 .build();
+
+        // 15. タイトル自動生成
+        if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
+                || "新しい会話".equals(conversation.getTitle())) {
+            try {
+                autoGenerateTitle(conversation, tenantId);
+            } catch (Exception e) {
+                log.warn("Auto title generation failed", e);
+            }
+        }
+
+        return response;
     }
 
     @Transactional
@@ -494,6 +506,25 @@ public class MiraChatService {
         }
     }
 
+    /**
+     * 会話タイトルを最新の履歴に基づいて再生成.
+     */
+    @Transactional
+    public GenerateTitleResponse regenerateTitle(String conversationId, String tenantId, String userId) {
+        MiraConversation conversation = conversationRepository.findById(conversationId)
+                .filter(c -> c.getTenantId().equals(tenantId))
+                .filter(c -> c.getUserId().equals(userId))
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found or access denied"));
+
+        try {
+            autoGenerateTitle(conversation, tenantId);
+            return GenerateTitleResponse.success(conversationId, conversation.getTitle());
+        } catch (Exception e) {
+            log.error("Title regeneration failed", e);
+            return GenerateTitleResponse.error(conversationId, "タイトルの再生成に失敗しました");
+        }
+    }
+
     // ========================================
     // Private Methods
     // ========================================
@@ -638,5 +669,77 @@ public class MiraChatService {
                         .contentType("text")
                         .build())
                 .build();
+    }
+
+    private void autoGenerateTitle(MiraConversation conversation, String tenantId) {
+        // 会話履歴を取得
+        List<MiraMessage> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+
+        // メッセージが少なすぎる場合はスキップ (User + Assistant の1往復以上を推奨)
+        if (messages.size() < 2) {
+            return;
+        }
+
+        // 会話履歴からプロンプト生成
+        StringBuilder conversationSummary = new StringBuilder();
+        for (MiraMessage msg : messages) {
+            String role = MiraMessage.SenderType.USER.equals(msg.getSenderType()) ? "ユーザー" : "アシスタント";
+            String content = msg.getContent();
+            // 長すぎるメッセージは切り詰め
+            if (content.length() > 200) {
+                content = content.substring(0, 200) + "...";
+            }
+            conversationSummary.append(role).append(": ").append(content).append("\n");
+        }
+
+        // タイトル生成用プロンプト
+        String prompt = """
+                以下の会話内容を要約し、会話のタイトルを生成してください。
+
+                要件:
+                - タイトルは15文字以内の簡潔な日本語
+                - 会話の主題や目的を端的に表現
+                - 絵文字や記号は使用しない
+                - タイトルのみを出力（説明や装飾は不要）
+
+                会話内容:
+                %s
+                """.formatted(conversationSummary.toString());
+
+        // AI 呼び出し
+        AiRequest aiRequest = AiRequest.builder()
+                .messages(List.of(
+                        AiRequest.Message.builder()
+                                .role("user")
+                                .content(prompt)
+                                .build()))
+                .maxTokens(50)
+                .temperature(0.3)
+                .build();
+
+        // プロバイダ取得 (デフォルト)
+        AiProviderClient client = aiProviderFactory.createClient(tenantId);
+        AiResponse aiResponse = client.chat(aiRequest);
+
+        if (!aiResponse.isSuccess()) {
+            log.warn("Auto title generation AI request failed: {}", aiResponse.getErrorMessage());
+            return;
+        }
+
+        // タイトル整形
+        String title = aiResponse.getContent()
+                .trim()
+                .replaceAll("[\r\n]+", "")
+                .replaceAll("^[「『]|[」』]$", "");
+
+        if (title.length() > 15) {
+            title = title.substring(0, 14) + "…";
+        }
+
+        // 更新保存
+        conversation.setTitle(title);
+        conversationRepository.save(conversation);
+
+        log.info("Auto title generated: conversationId={}, title={}", conversation.getId(), title);
     }
 }
