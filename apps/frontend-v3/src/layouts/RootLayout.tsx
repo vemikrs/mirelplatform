@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData } from 'react-router-dom';
-import { Button, Toaster, Dialog, DialogContent, DialogTrigger } from '@mirel/ui';
+import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,21 +61,22 @@ export function RootLayout() {
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
             {/* Mobile menu button */}
-            <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <DialogTrigger asChild>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="size-5" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="p-0 max-w-[288px] h-full top-0 left-0 translate-x-0 translate-y-0 data-[state=closed]:-translate-x-full">
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SideNavigation 
                   items={primaryLinks}
                   brand={initialNavigation.brand}
                   helpAction={helpAction}
-                  className="h-full border-0"
+                  className="h-full border-0 w-full"
                 />
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
             
             {/* Brand - show on mobile only in header */}
             <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
