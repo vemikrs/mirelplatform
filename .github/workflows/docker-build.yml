@@ -112,20 +112,26 @@ jobs:
       - name: Test image startup
         run: |
           echo "Testing image startup..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "echo 'Container started successfully' && java -version && node --version && pnpm --version"
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "
+            echo 'Container started successfully' && 
+            java -version
+          "
 
       - name: Verify installed components
         run: |
           echo "Verifying Java, Node.js, and pnpm..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "
+          docker run --rm --entrypoint bash ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -c "
+            export NVM_DIR='/home/vscode/.nvm' && 
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\" && 
+            export PATH=\"\$NVM_DIR/versions/node/v22.20.0/bin:\$PATH\" &&
             echo '=== Java Version ===' && 
             java -version && 
             echo '=== Node.js Version ===' && 
             node --version && 
             echo '=== pnpm Version ===' && 
             pnpm --version &&
-            echo '=== Gradle Version ===' &&
-            ./gradlew --version
+            echo '=== JAR Files ===' &&
+            find /workspace/backend/build/libs -name '*.jar' ! -name '*plain.jar'
           "
 
       - name: Create verification summary
@@ -138,5 +144,4 @@ jobs:
           echo "- ☕ Java 21 (Temurin)" >> $GITHUB_STEP_SUMMARY
           echo "- 🟢 Node.js 22" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 pnpm" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔨 Gradle" >> $GITHUB_STEP_SUMMARY
-          echo "- 🎭 Playwright browsers" >> $GITHUB_STEP_SUMMARY
+          echo "- � Backend (Spring Boot) + Frontend (Vite)" >> $GITHUB_STEP_SUMMARY
