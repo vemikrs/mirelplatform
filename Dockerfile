@@ -4,35 +4,42 @@
 # Stage 1: Base image with Java 21 and Node.js 22
 FROM mcr.microsoft.com/devcontainers/java:21 AS base
 
+# Set default shell to bash for nvm compatibility
+SHELL ["/bin/bash", "-c"]
+
 # Install Node.js 22 using nvm
 ARG NODE_VERSION=22
 ARG NVM_VERSION=0.39.7
 
-# Install git and git-lfs first
+# Install dependencies
 USER root
-RUN apt-get update && apt-get install -y git git-lfs curl && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git git-lfs curl ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install nvm and Node.js
+# Install nvm and Node.js as vscode user
 USER vscode
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
-    && . "$HOME/.nvm/nvm.sh" \
+ENV NVM_DIR=/home/vscode/.nvm
+RUN mkdir -p ${NVM_DIR} \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
+    && . "${NVM_DIR}/nvm.sh" \
     && nvm install ${NODE_VERSION} \
     && nvm use ${NODE_VERSION} \
     && nvm alias default ${NODE_VERSION}
 
-USER root
-RUN apt-get update && apt-get install -y git git-lfs curl && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Add Node.js to PATH
+ENV NODE_PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules
+ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
 # Stage 2: Dependencies and build
 FROM base AS builder
 
 # Set environment variables
 ENV GRADLE_USER_HOME=/home/vscode/.gradle \
+    NVM_DIR=/home/vscode/.nvm \
     TZ=Asia/Tokyo \
     SPRING_PROFILES_ACTIVE=dev \
     HOST=0.0.0.0 \
-    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright \
-    PATH=/home/vscode/.nvm/versions/node/v${NODE_VERSION}/bin:$PATH
+    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright
+ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
 # Set working directory
 WORKDIR /workspace
@@ -56,8 +63,7 @@ COPY --chown=vscode:vscode packages/ui/package.json packages/ui/
 COPY --chown=vscode:vscode packages/e2e/package.json packages/e2e/
 
 # Install pnpm and dependencies
-RUN export NVM_DIR="$HOME/.nvm" \
-    && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" \
+RUN . "${NVM_DIR}/nvm.sh" \
     && npm install -g pnpm@latest \
     && pnpm install --frozen-lockfile
 
@@ -68,8 +74,7 @@ COPY --chown=vscode:vscode . .
 RUN ./gradlew --no-daemon build -x test
 
 # Install Playwright browsers
-RUN export NVM_DIR="$HOME/.nvm" \
-    && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" \
+RUN . "${NVM_DIR}/nvm.sh" \
     && pnpm --filter e2e exec playwright install --with-deps
 
 # Stage 3: Runtime image
@@ -77,11 +82,12 @@ FROM base AS runtime
 
 # Set environment variables
 ENV GRADLE_USER_HOME=/home/vscode/.gradle \
+    NVM_DIR=/home/vscode/.nvm \
     TZ=Asia/Tokyo \
     SPRING_PROFILES_ACTIVE=dev \
     HOST=0.0.0.0 \
-    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright \
-    PATH=/home/vscode/.nvm/versions/node/v${NODE_VERSION}/bin:$PATH
+    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright
+ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
 # Set timezone
 USER root
