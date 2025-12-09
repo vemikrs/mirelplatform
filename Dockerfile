@@ -85,6 +85,10 @@ COPY --chown=vscode:vscode . .
 RUN --mount=type=cache,target=/home/vscode/.gradle,uid=1000,gid=1000 \
     ./gradlew --no-daemon build -x test
 
+# Build frontend for production
+RUN . "${NVM_DIR}/nvm.sh" \
+    && pnpm --filter frontend-v3 build
+
 # Stage 3: Runtime image
 FROM base AS runtime
 
@@ -113,6 +117,31 @@ WORKDIR /workspace
 COPY --from=builder --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm
 COPY --from=builder --chown=vscode:vscode /workspace /workspace
 
+# Create entrypoint script for starting both backend and frontend
+USER root
+RUN cat > /workspace/entrypoint.sh <<'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Starting mirelplatform..."
+
+# Start Backend in background
+echo "📦 Starting Backend (Spring Boot)..."
+cd /workspace
+java -jar backend/build/libs/mirelplatform-0.0.1-SNAPSHOT.jar \
+  --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-dev} &
+BACKEND_PID=$!
+echo "✅ Backend started (PID: $BACKEND_PID)"
+
+# Start Frontend in preview mode
+echo "🎨 Starting Frontend (Vite Preview)..."
+cd /workspace/apps/frontend-v3
+# Use exec to replace the shell process so signals are properly forwarded
+exec pnpm preview --host 0.0.0.0 --port 5173
+EOF
+
+RUN chmod +x /workspace/entrypoint.sh
+
 # Expose ports
 # 3000: Backend API
 # 5173: Frontend v3 (Vite)
@@ -122,8 +151,8 @@ EXPOSE 3000 5173
 USER vscode
 
 # Health check for backend
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000/mipla2/actuator/health || exit 1
 
-# Default command (can be overridden)
-CMD ["bash"]
+# Start both backend and frontend via entrypoint script
+CMD ["/workspace/entrypoint.sh"]
