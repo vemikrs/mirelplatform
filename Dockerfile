@@ -168,7 +168,9 @@ echo "🎨 Starting Frontend (Vite Preview)..."
 cd /workspace/apps/frontend-v3
 # Set backend URL for Vite proxy (defaults to localhost:3000 if not set)
 export VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
+export VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-}
 echo "Backend URL: $VITE_BACKEND_URL"
+echo "Allowed Hosts: $VITE_ALLOWED_HOSTS"
 # Use exec to replace the shell process so signals are properly forwarded
 exec pnpm preview --host 0.0.0.0 --port 5173
 EOF
