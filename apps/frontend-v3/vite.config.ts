@@ -23,8 +23,19 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: createProxyConfig(),
+    allowedHosts: getAllowedHosts(),
   },
 })
+
+// Get allowed hosts from environment variable
+// Example: VITE_ALLOWED_HOSTS=mirel.vemi.jp,example.com
+function getAllowedHosts(): string[] | undefined {
+  const allowedHosts = process.env.VITE_ALLOWED_HOSTS;
+  if (!allowedHosts) {
+    return undefined; // Allow all hosts by default
+  }
+  return allowedHosts.split(',').map(host => host.trim()).filter(Boolean);
+}
 
 // Environment-aware proxy configuration
 // Supports both local development and Docker container environments
