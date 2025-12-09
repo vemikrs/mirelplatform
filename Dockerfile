@@ -117,6 +117,9 @@ WORKDIR /workspace
 COPY --from=builder --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm
 COPY --from=builder --chown=vscode:vscode /workspace /workspace
 
+# Create logs directory for Spring Boot (Logback configuration)
+RUN mkdir -p /workspace/logs && chown -R vscode:vscode /workspace/logs
+
 # Create entrypoint script for starting both backend and frontend
 USER root
 RUN cat > /workspace/entrypoint.sh <<'EOF'
