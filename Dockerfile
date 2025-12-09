@@ -1,5 +1,12 @@
 # Multi-stage Dockerfile for mirelplatform
 # Based on .devcontainer/devcontainer.json configuration
+# 
+# BuildKit cache mounts are used to optimize build performance:
+# - Gradle: /home/vscode/.gradle
+# - npm/pnpm: /home/vscode/.npm, /home/vscode/.cache/pnpm
+# - Playwright: /home/vscode/.cache/ms-playwright
+#
+# Enable BuildKit: DOCKER_BUILDKIT=1 docker build ...
 
 # Stage 1: Base image with Java 21 and Node.js 22
 FROM mcr.microsoft.com/devcontainers/java:21 AS base
@@ -52,9 +59,10 @@ COPY --chown=vscode:vscode lombok.config ./
 # Copy backend build configuration
 COPY --chown=vscode:vscode backend/build.gradle backend/
 
-# Download dependencies
+# Download dependencies with cache mount
 USER vscode
-RUN ./gradlew --no-daemon dependencies
+RUN --mount=type=cache,target=/home/vscode/.gradle,uid=1000,gid=1000 \
+    ./gradlew --no-daemon dependencies
 
 # Copy package.json files for npm dependencies (for caching)
 COPY --chown=vscode:vscode package.json pnpm-workspace.yaml pnpm-lock.yaml ./
@@ -62,19 +70,24 @@ COPY --chown=vscode:vscode apps/frontend-v3/package.json apps/frontend-v3/
 COPY --chown=vscode:vscode packages/ui/package.json packages/ui/
 COPY --chown=vscode:vscode packages/e2e/package.json packages/e2e/
 
-# Install pnpm and dependencies
-RUN . "${NVM_DIR}/nvm.sh" \
+# Install pnpm and dependencies with cache mount
+RUN --mount=type=cache,target=/home/vscode/.npm,uid=1000,gid=1000 \
+    --mount=type=cache,target=/home/vscode/.cache/pnpm,uid=1000,gid=1000 \
+    . "${NVM_DIR}/nvm.sh" \
     && npm install -g pnpm@latest \
     && pnpm install --frozen-lockfile
 
 # Copy all source code
 COPY --chown=vscode:vscode . .
 
-# Build backend (skip tests for faster build)
-RUN ./gradlew --no-daemon build -x test
+# Build backend (skip tests for faster build) with cache mount
+RUN --mount=type=cache,target=/home/vscode/.gradle,uid=1000,gid=1000 \
+    ./gradlew --no-daemon build -x test
 
-# Install Playwright browsers
-RUN . "${NVM_DIR}/nvm.sh" \
+# Install Playwright browsers with cache mount
+RUN --mount=type=cache,target=/home/vscode/.cache/ms-playwright,uid=1000,gid=1000 \
+    --mount=type=cache,target=/home/vscode/.cache/pnpm,uid=1000,gid=1000 \
+    . "${NVM_DIR}/nvm.sh" \
     && pnpm --filter e2e exec playwright install --with-deps
 
 # Stage 3: Runtime image
