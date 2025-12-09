@@ -34,7 +34,15 @@ function getAllowedHosts(): string[] | undefined {
   if (!allowedHosts) {
     return undefined; // Allow all hosts by default
   }
-  return allowedHosts.split(',').map(host => host.trim()).filter(Boolean);
+  
+  // Parse comma-separated hosts
+  const hosts = allowedHosts.split(',').map(host => host.trim()).filter(Boolean);
+  
+  // Always include localhost variants for local development and Docker internal access
+  const localhostVariants = ['localhost', '127.0.0.1', '::1'];
+  
+  // Combine custom hosts with localhost, removing duplicates
+  return Array.from(new Set([...hosts, ...localhostVariants]));
 }
 
 // Environment-aware proxy configuration
