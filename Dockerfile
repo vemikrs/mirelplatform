@@ -39,6 +39,9 @@ ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 # Stage 2: Dependencies and build
 FROM base AS builder
 
+# Re-declare ARG for this stage
+ARG NODE_VERSION=22
+
 # Set environment variables
 ENV GRADLE_USER_HOME=/home/vscode/.gradle \
     NVM_DIR=/home/vscode/.nvm \
@@ -92,6 +95,9 @@ RUN --mount=type=cache,target=/home/vscode/.cache/ms-playwright,uid=1000,gid=100
 
 # Stage 3: Runtime image
 FROM base AS runtime
+
+# Re-declare ARG for this stage
+ARG NODE_VERSION=22
 
 # Set environment variables
 ENV GRADLE_USER_HOME=/home/vscode/.gradle \
