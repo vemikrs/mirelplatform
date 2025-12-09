@@ -108,7 +108,8 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
 WORKDIR /workspace
 
 # Copy built artifacts and dependencies from builder stage
-COPY --from=builder --chown=vscode:vscode /home/vscode/.gradle /home/vscode/.gradle
+# Note: Cache mounts (/home/vscode/.gradle, /home/vscode/.npm) are not persisted in the image
+# Only copy the workspace which contains the built artifacts
 COPY --from=builder --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm
 COPY --from=builder --chown=vscode:vscode /workspace /workspace
 
