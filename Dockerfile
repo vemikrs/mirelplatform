@@ -103,8 +103,13 @@ ENV GRADLE_USER_HOME=/home/vscode/.gradle \
     HOST=0.0.0.0
 ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
-# Set timezone
+# Install Nginx for serving frontend static files
 USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set timezone
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
     && echo 'Asia/Tokyo' > /etc/timezone
 
@@ -120,30 +125,62 @@ COPY --from=builder --chown=vscode:vscode /workspace /workspace
 # Create logs directory for Spring Boot (Logback configuration)
 RUN mkdir -p /workspace/logs && chown -R vscode:vscode /workspace/logs
 
-# Create entrypoint script for starting both backend and frontend
+# Create Nginx configuration for SPA and API proxy
+RUN cat > /etc/nginx/sites-available/mirelplatform <<'EOF'
+server {
+    listen 5173;
+    server_name _;
+
+    root /var/www/html;
+    index index.html;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+
+    # API proxy to Backend (Spring Boot on port 3000)
+    location /mapi/ {
+        proxy_pass http://localhost:3000/mipla2/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Static files with cache headers
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA fallback - serve index.html for all routes
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}
+EOF
+
+RUN ln -sf /etc/nginx/sites-available/mirelplatform /etc/nginx/sites-enabled/ \
+    && rm -f /etc/nginx/sites-enabled/default
+
+# Copy built frontend to Nginx document root
+RUN mkdir -p /var/www/html \
+    && cp -r /workspace/apps/frontend-v3/dist/* /var/www/html/ \
+    && chown -R www-data:www-data /var/www/html
+
+# Create entrypoint script for starting backend and nginx
 USER root
 RUN cat > /workspace/entrypoint.sh <<'EOF'
 #!/bin/bash
 set -e
 
 echo "🚀 Starting mirelplatform..."
-
-# Load NVM environment for Node.js
-export NVM_DIR="/home/vscode/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Ensure Node.js is in PATH (explicit version for Docker environment)
-export PATH="$NVM_DIR/versions/node/v22.20.0/bin:$PATH"
-
-# Verify Node.js is available
-if ! command -v node &> /dev/null; then
-  echo "❌ Error: node command not found"
-  echo "NVM_DIR: $NVM_DIR"
-  echo "PATH: $PATH"
-  exit 1
-fi
-echo "Node.js version: $(node --version)"
-echo "pnpm version: $(pnpm --version)"
 
 # Start Backend in background
 echo "📦 Starting Backend (Spring Boot)..."
@@ -156,38 +193,32 @@ if [ -z "$JAR_FILE" ]; then
 fi
 echo "Found JAR: $JAR_FILE"
 
-# Start Spring Boot on port 3000 (matching EXPOSE directive)
+# Start Spring Boot on port 3000
 java -jar "$JAR_FILE" \
   --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-dev} \
   --server.port=3000 &
 BACKEND_PID=$!
 echo "✅ Backend started (PID: $BACKEND_PID) on port 3000"
 
-# Start Frontend in preview mode
-echo "🎨 Starting Frontend (Vite Preview)..."
-cd /workspace/apps/frontend-v3
-# Set backend URL for Vite proxy (defaults to localhost:3000 if not set)
-export VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
-export VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-}
-echo "Backend URL: $VITE_BACKEND_URL"
-echo "Allowed Hosts: $VITE_ALLOWED_HOSTS"
+# Start Nginx in foreground
+echo "🌐 Starting Nginx (Frontend on port 5173)..."
 # Use exec to replace the shell process so signals are properly forwarded
-exec pnpm preview --host 0.0.0.0 --port 5173
+exec nginx -g 'daemon off;'
 EOF
 
 RUN chmod +x /workspace/entrypoint.sh
 
 # Expose ports
-# 3000: Backend API
-# 5173: Frontend v3 (Vite)
+# 3000: Backend API (internal, proxied through Nginx)
+# 5173: Frontend (Nginx)
 EXPOSE 3000 5173
 
-# Switch to vscode user
-USER vscode
+# Nginx requires root to bind to ports
+USER root
 
 # Health check for backend
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000/mipla2/actuator/health || exit 1
 
-# Start both backend and frontend via entrypoint script
+# Start both backend and nginx via entrypoint script
 CMD ["/workspace/entrypoint.sh"]
