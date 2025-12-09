@@ -125,6 +125,9 @@ COPY --from=builder --chown=vscode:vscode /workspace /workspace
 # Create logs directory for Spring Boot (Logback configuration)
 RUN mkdir -p /workspace/logs && chown -R vscode:vscode /workspace/logs
 
+# Create storage directory for file uploads and temporary files
+RUN mkdir -p /workspace/backend/data/storage && chown -R vscode:vscode /workspace/backend/data/storage
+
 # Create Nginx configuration for SPA and API proxy
 RUN cat > /etc/nginx/sites-available/mirelplatform <<'EOF'
 server {
