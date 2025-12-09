@@ -26,25 +26,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class SmtpEmailServiceImpl implements EmailService {
-    
+
     private final JavaMailSender mailSender;
     private final EmailTemplateService templateService;
-    
+
+    @org.springframework.beans.factory.annotation.Value("${email.smtp.from}")
+    private String fromAddress;
+
     @Override
     public void sendTemplateEmail(String to, String subject, String templateName, Map<String, Object> variables) {
         String htmlContent = templateService.processTemplate(templateName, variables);
         sendHtmlEmail(to, subject, htmlContent);
     }
-    
+
     @Override
     public void sendPlainTextEmail(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("noreply@mirelplatform.local");
+            message.setFrom(fromAddress);
             message.setTo(to);
             message.setSubject(subject);
             message.setText(body);
-            
+
             mailSender.send(message);
             log.info("プレーンテキストメール送信成功: to={}, subject={}", to, subject);
         } catch (Exception e) {
@@ -52,18 +55,18 @@ public class SmtpEmailServiceImpl implements EmailService {
             throw new RuntimeException("メール送信エラー", e);
         }
     }
-    
+
     @Override
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom("noreply@mirelplatform.local");
+
+            helper.setFrom(fromAddress);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
-            
+
             mailSender.send(message);
             log.info("HTMLメール送信成功: to={}, subject={}", to, subject);
         } catch (MessagingException e) {

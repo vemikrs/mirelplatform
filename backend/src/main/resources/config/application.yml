@@ -102,6 +102,7 @@ email:
     port: ${SMTP_PORT:1025}
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
+    from: ${SMTP_FROM_ADDRESS:noreply@mirelplatform.local}
 
 # Azure Communication Services
 azure:
