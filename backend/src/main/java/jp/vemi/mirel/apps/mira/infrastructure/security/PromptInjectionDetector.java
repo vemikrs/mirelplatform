@@ -34,7 +34,9 @@ public class PromptInjectionDetector {
     private static final List<InjectionPattern> INJECTION_PATTERNS = List.of(
             // 直接的なプロンプト改変
             new InjectionPattern(
-                    Pattern.compile("(?i)(ignore|disregard|forget).*(previous|above|prior).*(instructions?|prompt)", Pattern.DOTALL),
+                    Pattern.compile(
+                            "(?i)(?:ignore|disregard|forget).{0,200}(?:previous|above|prior).{0,200}(?:instructions?|prompt)",
+                            Pattern.DOTALL),
                     "direct_override", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)system\\s*prompt", Pattern.DOTALL),
@@ -59,7 +61,7 @@ public class PromptInjectionDetector {
 
             // プロンプト抽出の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)repeat\\s+(your|the).*(prompt|instructions)", Pattern.DOTALL),
+                    Pattern.compile("(?i)repeat\\s+(?:your|the).{0,200}(?:prompt|instructions)", Pattern.DOTALL),
                     "prompt_extraction_repeat", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)what\\s+(are|is)\\s+your\\s+(system\\s+)?prompt", Pattern.DOTALL),
@@ -68,17 +70,17 @@ public class PromptInjectionDetector {
                     Pattern.compile("(?i)show\\s+me\\s+(your|the)\\s+(system\\s+)?prompt", Pattern.DOTALL),
                     "prompt_extraction_show", 2),
             new InjectionPattern(
-                    Pattern.compile("(?i)print\\s+(your|the).*(prompt|instructions)", Pattern.DOTALL),
+                    Pattern.compile("(?i)print\\s+(?:your|the).{0,200}(?:prompt|instructions)", Pattern.DOTALL),
                     "prompt_extraction_print", 2),
 
             // コード実行の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)execute|eval|run\\s+this\\s+code", Pattern.DOTALL),
+                    Pattern.compile("(?i)(?:execute|eval|run)\\s+this\\s+code", Pattern.DOTALL),
                     "code_execution", 2),
 
             // 特殊トークンの挿入
             new InjectionPattern(
-                    Pattern.compile("<\\|.*?\\|>"),
+                    Pattern.compile("<\\|.{0,1000}?\\|>"),
                     "special_token_angle", 3),
             new InjectionPattern(
                     Pattern.compile("\\[INST\\]|\\[/INST\\]"),
@@ -89,17 +91,18 @@ public class PromptInjectionDetector {
 
             // 制限解除の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)bypass|override|disable.*(filter|restriction|safety)", Pattern.DOTALL),
+                    Pattern.compile("(?i)(?:bypass|override|disable).{0,200}(?:filter|restriction|safety)",
+                            Pattern.DOTALL),
                     "bypass_attempt", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)jailbreak|DAN|developer\\s*mode", Pattern.DOTALL),
-                    "jailbreak_attempt", 3)
-    );
+                    "jailbreak_attempt", 3));
 
     /**
      * 入力をチェックしてインジェクションの可能性を検出.
      *
-     * @param input ユーザー入力
+     * @param input
+     *            ユーザー入力
      * @return 検出結果
      */
     public InjectionCheckResult check(String input) {
@@ -122,7 +125,7 @@ public class PromptInjectionDetector {
             if (pattern.pattern().matcher(input).find()) {
                 totalScore += pattern.weight();
                 detectedPatterns.add(pattern.name());
-                
+
                 if (log.isDebugEnabled()) {
                     log.debug("[PromptInjectionDetector] Detected pattern: {} (weight={})",
                             pattern.name(), pattern.weight());
@@ -156,7 +159,8 @@ public class PromptInjectionDetector {
     /**
      * インジェクションパターン定義.
      */
-    private record InjectionPattern(Pattern pattern, String name, int weight) {}
+    private record InjectionPattern(Pattern pattern, String name, int weight) {
+    }
 
     /**
      * インジェクション検出結果.
