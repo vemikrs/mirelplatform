@@ -224,6 +224,51 @@ export interface MiraSuggestConfigApiResponse {
   errors: string[];
 }
 
+/**
+ * 会話一覧レスポンス
+ */
+export interface ConversationListResponse {
+  conversations: Array<{
+    id: string;
+    title: string;
+    mode: MiraMode;
+    createdAt: string;
+    lastActivityAt: string;
+  }>;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface MiraConversationListApiResponse {
+  data: ConversationListResponse | null;
+  errors: string[];
+}
+
+/**
+ * 会話詳細レスポンス
+ */
+export interface ConversationDetailResponse {
+  id: string;
+  title: string;
+  mode: MiraMode;
+  createdAt: string;
+  lastActivityAt: string;
+  messages: Array<{
+    id: string;
+    role: string;
+    content: string;
+    contentType: string;
+    createdAt: string;
+  }>;
+}
+
+export interface MiraConversationDetailApiResponse {
+  data: ConversationDetailResponse | null;
+  errors: string[];
+}
+
 // ========================================
 // API Functions
 // ========================================
@@ -407,5 +452,71 @@ export async function suggestConfig(
     throw new Error('推奨設定の取得に失敗しました');
   }
   
+  return response.data.data;
+}
+
+
+/**
+ * 会話一覧取得
+ */
+export async function getConversationList(params?: {
+  page?: number;
+  size?: number;
+}): Promise<ConversationListResponse> {
+  const response = await apiClient.get<MiraConversationListApiResponse>(
+    '/apps/mira/api/conversations',
+    { params }
+  );
+
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+
+  if (!response.data.data) {
+    throw new Error('会話一覧の取得に失敗しました');
+  }
+
+  return response.data.data;
+}
+
+/**
+ * 会話詳細取得
+ */
+export async function getConversation(
+  conversationId: string
+): Promise<ConversationDetailResponse> {
+  const response = await apiClient.get<MiraConversationDetailApiResponse>(
+    `/apps/mira/api/conversations/${conversationId}`
+  );
+
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+
+  if (!response.data.data) {
+    throw new Error('会話詳細の取得に失敗しました');
+  }
+
+  return response.data.data;
+}
+
+/**
+ * 会話タイトル再生成
+ */
+export async function regenerateConversationTitle(
+  conversationId: string
+): Promise<GenerateTitleResponse> {
+  const response = await apiClient.post<MiraTitleApiResponse>(
+    `/apps/mira/api/conversation/${conversationId}/regenerate-title`
+  );
+
+  if (response.data.errors?.length > 0) {
+    throw new Error(response.data.errors[0]);
+  }
+
+  if (!response.data.data) {
+    throw new Error('タイトルの再生成に失敗しました');
+  }
+
   return response.data.data;
 }

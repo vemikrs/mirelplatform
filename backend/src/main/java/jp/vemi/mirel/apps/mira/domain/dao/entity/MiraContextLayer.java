@@ -25,9 +25,12 @@ import lombok.Setter;
 /**
  * Mira コンテキストレイヤーエンティティ.
  * 
- * <p>階層コンテキスト（System/Tenant/Organization/User）を管理します。</p>
+ * <p>
+ * 階層コンテキスト（System/Tenant/Organization/User）を管理します。
+ * </p>
  * 
  * <h3>階層構造</h3>
+ * 
  * <pre>
  * System Context (グローバル共通)
  *     ↓
@@ -40,8 +43,8 @@ import lombok.Setter;
  */
 @Entity
 @Table(name = "mir_mira_context_layer", indexes = {
-    @Index(name = "idx_mir_mira_ctx_scope", columnList = "scope, scopeId"),
-    @Index(name = "idx_mir_mira_ctx_category", columnList = "category")
+        @Index(name = "idx_mir_mira_ctx_scope", columnList = "scope, scopeId"),
+        @Index(name = "idx_mir_mira_ctx_category", columnList = "category")
 })
 @Getter
 @Setter
@@ -105,6 +108,9 @@ public class MiraContextLayer {
 
     @PrePersist
     public void prePersist() {
+        if (this.id == null) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
         LocalDateTime now = LocalDateTime.now();
         if (this.createdAt == null) {
             this.createdAt = now;

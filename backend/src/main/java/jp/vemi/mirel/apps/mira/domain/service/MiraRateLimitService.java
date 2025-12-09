@@ -3,9 +3,11 @@
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
@@ -15,56 +17,69 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Mira レート制限サービス.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MiraRateLimitService {
 
-    private final StringRedisTemplate redisTemplate;
     private final MiraAiProperties properties;
+    private final MiraSettingService settingService;
 
-    private static final String KEY_PREFIX = "mira:ratelimit:";
+    private final Map<String, UserRateLimit> rpmLimits = new ConcurrentHashMap<>();
+    private final Map<String, UserRateLimit> rphLimits = new ConcurrentHashMap<>();
 
     /**
      * レート制限チェック.
      *
-     * @param tenantId
-     *            テナントID
      * @param userId
      *            ユーザーID
+     * @param tenantId
+     *            テナントID
      * @throws RuntimeException
      *             制限超過時
      */
-    public void checkRateLimit(String tenantId, String userId) {
+    public void checkRateLimit(String userId, String tenantId) {
         if (!properties.getRateLimit().isEnabled()) {
             return;
         }
 
-        // テナント単位の制限
-        // String tenantKey = KEY_PREFIX + "tenant:" + tenantId;
-        // checkLimit(tenantKey, properties.getRateLimit().getRequestsPerMinute());
+        int rpmLimit = settingService.getRateLimitRpm(tenantId);
+        int rphLimit = settingService.getRateLimitRph(tenantId);
 
-        // 現状はグローバルRPM設定のみなので、ユーザー単位も考慮して実装（プロパティにはRPMがあるがユーザーごとはないため単純化）
-        // ユーザーごとの簡易制限を入れることでDoS防止
-        String userKey = KEY_PREFIX + "user:" + userId;
-        int maxRpm = properties.getRateLimit().getRequestsPerMinute();
-
-        checkLimit(userKey, maxRpm);
-    }
-
-    private void checkLimit(String key, int limit) {
-        // 簡易実装: 現在の分(minute)をキーとするカウンタ
-        long currentMinute = System.currentTimeMillis() / 60000;
-        String timeKey = key + ":" + currentMinute;
-
-        Long count = redisTemplate.opsForValue().increment(timeKey);
-        if (count != null && count == 1) {
-            redisTemplate.expire(timeKey, 2, TimeUnit.MINUTES);
+        // RPM Check (1 minute)
+        UserRateLimit limitMin = rpmLimits.computeIfAbsent(userId, k -> new UserRateLimit());
+        limitMin.cleanUp(60);
+        if (limitMin.getCount() >= rpmLimit) {
+            throw new RuntimeException("Rate limit exceeded (RPM). Please try again later.");
         }
 
-        if (count != null && count > limit) {
-            log.warn("Rate limit exceeded for key: {}. Count: {}, Limit: {}", key, count, limit);
-            throw new RuntimeException("Rate limit exceeded. Please try again later.");
+        // RPH Check (1 hour = 3600 seconds)
+        UserRateLimit limitHour = rphLimits.computeIfAbsent(userId, k -> new UserRateLimit());
+        limitHour.cleanUp(3600);
+        if (limitHour.getCount() >= rphLimit) {
+            throw new RuntimeException("Rate limit exceeded (RPH). You have reached your hourly limit.");
+        }
+
+        // Add request to both counters
+        limitMin.addRequest();
+        limitHour.addRequest();
+    }
+
+    // Helper class for in-memory rate limiting
+    private static class UserRateLimit {
+        private final List<Long> timestamps = new CopyOnWriteArrayList<>();
+
+        public void addRequest() {
+            timestamps.add(System.currentTimeMillis());
+        }
+
+        public int getCount() {
+            return timestamps.size();
+        }
+
+        public void cleanUp(int seconds) {
+            long windowStart = System.currentTimeMillis() - (seconds * 1000L);
+            timestamps.removeIf(ts -> ts < windowStart);
         }
     }
 }

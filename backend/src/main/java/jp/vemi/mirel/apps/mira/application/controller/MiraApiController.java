@@ -276,6 +276,76 @@ public class MiraApiController {
                 "active", active));
     }
 
+    @GetMapping("/conversations")
+    @Operation(summary = "会話一覧取得", description = "会話履歴のページネーション一覧を取得します。")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "成功", content = @Content(mediaType = "application/json", schema = @Schema(implementation = jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse.class))),
+            @ApiResponse(responseCode = "403", description = "権限エラー"),
+            @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraConversationListApiResponse> listConversations(
+            @Parameter(description = "ページ番号 (0-indexed)") @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "1ページあたりの件数") @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int size) {
+
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                return ResponseEntity.status(403)
+                        .body(MiraConversationListApiResponse.error("Mira の利用権限がありません"));
+            }
+
+            var response = chatService.listConversations(
+                    tenantId, userId,
+                    org.springframework.data.domain.PageRequest.of(page, size));
+
+            return ResponseEntity.ok(MiraConversationListApiResponse.success(response));
+
+        } catch (Exception e) {
+            log.error("会話一覧取得エラー", e);
+            return ResponseEntity.internalServerError()
+                    .body(MiraConversationListApiResponse.error("会話一覧の取得中にエラーが発生しました"));
+        }
+    }
+
+    @GetMapping("/conversations/{conversationId}")
+    @Operation(summary = "会話詳細取得", description = "会話の詳細（メッセージ履歴を含む）を取得します。")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "成功", content = @Content(mediaType = "application/json", schema = @Schema(implementation = jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.class))),
+            @ApiResponse(responseCode = "403", description = "権限エラー"),
+            @ApiResponse(responseCode = "404", description = "会話が見つからない"),
+            @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraConversationDetailApiResponse> getConversation(
+            @Parameter(description = "会話ID") @PathVariable String conversationId) {
+
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                return ResponseEntity.status(403)
+                        .body(MiraConversationDetailApiResponse.error("Mira の利用権限がありません"));
+            }
+
+            var response = chatService.getConversation(conversationId, tenantId, userId);
+            return ResponseEntity.ok(MiraConversationDetailApiResponse.success(response));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404)
+                    .body(MiraConversationDetailApiResponse.error("会話が見つかりません"));
+        } catch (Exception e) {
+            log.error("会話詳細取得エラー", e);
+            return ResponseEntity.internalServerError()
+                    .body(MiraConversationDetailApiResponse.error("会話詳細の取得中にエラーが発生しました"));
+        }
+    }
+
     // ========================================
     // Title Generation Endpoints
     // ========================================
@@ -316,6 +386,46 @@ public class MiraApiController {
             log.error("タイトル生成処理エラー", e);
             return ResponseEntity.internalServerError()
                     .body(MiraTitleApiResponse.error("タイトル生成中にエラーが発生しました"));
+        }
+    }
+
+    @PostMapping("/conversation/{conversationId}/regenerate-title")
+    @Operation(summary = "会話タイトル再生成", description = "会話の履歴に基づいてタイトルを再生成します。")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "成功", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MiraTitleApiResponse.class))),
+            @ApiResponse(responseCode = "403", description = "権限エラー"),
+            @ApiResponse(responseCode = "404", description = "会話が見つからない"),
+            @ApiResponse(responseCode = "500", description = "サーバーエラー")
+    })
+    public ResponseEntity<MiraTitleApiResponse> regenerateTitle(
+            @Parameter(description = "会話ID") @PathVariable String conversationId) {
+
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String userId = tenantContextManager.getCurrentUserId();
+            String systemRole = tenantContextManager.getCurrentSystemRole();
+
+            // RBAC チェック
+            if (!rbacAdapter.canUseMira(systemRole, tenantId)) {
+                return ResponseEntity.status(403)
+                        .body(MiraTitleApiResponse.error("Mira の利用権限がありません"));
+            }
+
+            GenerateTitleResponse response = chatService.regenerateTitle(conversationId, tenantId, userId);
+
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(MiraTitleApiResponse.success(response));
+            } else {
+                return ResponseEntity.ok(MiraTitleApiResponse.error(response.getErrorMessage()));
+            }
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404)
+                    .body(MiraTitleApiResponse.error("会話が見つかりません"));
+        } catch (Exception e) {
+            log.error("タイトル再生成処理エラー", e);
+            return ResponseEntity.internalServerError()
+                    .body(MiraTitleApiResponse.error("タイトル再生成中にエラーが発生しました"));
         }
     }
 
@@ -380,7 +490,8 @@ public class MiraApiController {
             UserContextResponse response = new UserContextResponse(
                     contexts.getOrDefault("terminology", ""),
                     contexts.getOrDefault("style", ""),
-                    contexts.getOrDefault("workflow", ""));
+                    contexts.getOrDefault("workflow", ""),
+                    contexts.getOrDefault("tavilyApiKey", ""));
 
             return ResponseEntity.ok(MiraUserContextApiResponse.success(response));
 
@@ -405,6 +516,8 @@ public class MiraApiController {
             contextLayerService.saveOrUpdateUserContext(userId, "terminology", request.terminology());
             contextLayerService.saveOrUpdateUserContext(userId, "style", request.style());
             contextLayerService.saveOrUpdateUserContext(userId, "workflow", request.workflow());
+            contextLayerService.saveOrUpdateUserContext(userId, "tavilyApiKey", request.tavilyApiKey()); // Save Tavily
+                                                                                                         // Key
 
             // 監査ログ
             auditService.logContextUpdate(userId, "USER_CONTEXT_UPDATED");
@@ -413,7 +526,8 @@ public class MiraApiController {
                     new UserContextResponse(
                             request.terminology(),
                             request.style(),
-                            request.workflow())));
+                            request.workflow(),
+                            request.tavilyApiKey())));
 
         } catch (Exception e) {
             log.error("ユーザーコンテキスト更新エラー", e);
@@ -594,7 +708,8 @@ public class MiraApiController {
     public record UserContextRequest(
             @Schema(description = "専門用語コンテキスト") String terminology,
             @Schema(description = "回答スタイルコンテキスト") String style,
-            @Schema(description = "ワークフローコンテキスト") String workflow) {
+            @Schema(description = "ワークフローコンテキスト") String workflow,
+            @Schema(description = "Tavily API Key (Integration)") String tavilyApiKey) {
     }
 
     /**
@@ -626,6 +741,40 @@ public class MiraApiController {
 
         public static MiraSuggestConfigApiResponse error(String message) {
             return new MiraSuggestConfigApiResponse(null, java.util.List.of(message));
+        }
+    }
+
+    /**
+     * 会話一覧 API レスポンス.
+     */
+    @Schema(description = "Mira 会話一覧 API レスポンス")
+    public record MiraConversationListApiResponse(
+            @Schema(description = "レスポンスデータ") jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse data,
+            @Schema(description = "エラーメッセージリスト") java.util.List<String> errors) {
+        public static MiraConversationListApiResponse success(
+                jp.vemi.mirel.apps.mira.domain.dto.response.ConversationListResponse data) {
+            return new MiraConversationListApiResponse(data, java.util.List.of());
+        }
+
+        public static MiraConversationListApiResponse error(String message) {
+            return new MiraConversationListApiResponse(null, java.util.List.of(message));
+        }
+    }
+
+    /**
+     * 会話詳細 API レスポンス.
+     */
+    @Schema(description = "Mira 会話詳細 API レスポンス")
+    public record MiraConversationDetailApiResponse(
+            @Schema(description = "レスポンスデータ") jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse data,
+            @Schema(description = "エラーメッセージリスト") java.util.List<String> errors) {
+        public static MiraConversationDetailApiResponse success(
+                jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse data) {
+            return new MiraConversationDetailApiResponse(data, java.util.List.of());
+        }
+
+        public static MiraConversationDetailApiResponse error(String message) {
+            return new MiraConversationDetailApiResponse(null, java.util.List.of(message));
         }
     }
 }

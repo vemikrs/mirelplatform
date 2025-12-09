@@ -24,12 +24,14 @@ import lombok.Setter;
 /**
  * Mira メッセージエンティティ.
  * 
- * <p>会話内の個々のメッセージを管理します。</p>
+ * <p>
+ * 会話内の個々のメッセージを管理します。
+ * </p>
  */
 @Entity
 @Table(name = "mir_mira_message", indexes = {
-    @Index(name = "idx_mir_mira_msg_conversation", columnList = "conversationId"),
-    @Index(name = "idx_mir_mira_msg_created", columnList = "createdAt")
+        @Index(name = "idx_mir_mira_msg_conversation", columnList = "conversationId"),
+        @Index(name = "idx_mir_mira_msg_created", columnList = "createdAt")
 })
 @Getter
 @Setter
@@ -67,6 +69,10 @@ public class MiraMessage {
     @Column(length = 36)
     private String contextSnapshotId;
 
+    /** ツール呼び出しID（SenderType=TOOLの場合の紐付け元） */
+    @Column(length = 100)
+    private String toolCallId;
+
     /** 使用モデル名（アシスタント応答時のみ） */
     @Column(length = 100)
     private String usedModel;
@@ -86,7 +92,9 @@ public class MiraMessage {
         /** AI アシスタント */
         ASSISTANT,
         /** システム */
-        SYSTEM
+        SYSTEM,
+        /** ツール（Function Calling 結果） */
+        TOOL
     }
 
     /** コンテンツタイプ */

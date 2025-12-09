@@ -5,7 +5,14 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ChatResponse, MiraMode, ChatContext } from '@/lib/api/mira';
+import { 
+  getConversationList, 
+  getConversation,
+  regenerateConversationTitle,
+  type ChatResponse, 
+  type MiraMode, 
+  type ChatContext 
+} from '@/lib/api/mira';
 
 // ========================================
 // Types
@@ -24,6 +31,7 @@ export interface MiraMessage {
     provider?: string;
     model?: string;
     latencyMs?: number;
+    status?: string; // Streaming status
   };
 }
 
@@ -38,6 +46,7 @@ export interface MiraConversation {
   context?: ChatContext;
   createdAt: Date;
   updatedAt: Date;
+  isLoaded?: boolean; // 詳細（メッセージ）が読み込まれているか
 }
 
 /**
@@ -51,7 +60,13 @@ interface MiraState {
   activeConversationId: string | null;
   conversations: Record<string, MiraConversation>;
   error: string | null;
+  useStream: boolean; // Add useStream state
+
   
+  // ページング状態
+  hasMore: boolean;
+  currentPage: number;
+
   // メッセージ編集状態
   editingMessageId: string | null;
   editingMessageContent: string | null;
@@ -64,11 +79,16 @@ interface MiraState {
   setFullscreen: (fullscreen: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setUseStream: (useStream: boolean) => void;
+
   
   // 会話管理
+  fetchConversations: (page?: number, size?: number) => Promise<void>;
+  loadConversation: (conversationId: string) => Promise<void>;
   startConversation: (mode?: MiraMode, context?: ChatContext) => string;
   setActiveConversation: (conversationId: string | null) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
+  regenerateTitle: (conversationId: string) => Promise<void>;
   addUserMessage: (conversationId: string, content: string) => void;
   addAssistantMessage: (conversationId: string, response: ChatResponse) => void;
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
@@ -83,6 +103,13 @@ interface MiraState {
   // ヘルパー
   getActiveConversation: () => MiraConversation | null;
   getConversationMessages: (conversationId: string) => MiraMessage[];
+
+  // Streaming Actions
+  startStreamingMessage: (conversationId: string, messageId: string) => void;
+  appendStreamingChunk: (conversationId: string, messageId: string, chunk: string) => void;
+  updateStreamingStatus: (conversationId: string, messageId: string, status: string) => void;
+  completeStreamingMessage: (conversationId: string, messageId: string, finalContent?: string, metadata?: any) => void;
+  failStreamingMessage: (conversationId: string, messageId: string, error: string) => void;
 }
 
 // ========================================
@@ -99,6 +126,10 @@ export const useMiraStore = create<MiraState>()(
       activeConversationId: null,
       conversations: {},
       error: null,
+      useStream: true, // Default to true
+
+      hasMore: false,
+      currentPage: 0,
       
       // メッセージ編集初期状態
       editingMessageId: null,
@@ -114,7 +145,100 @@ export const useMiraStore = create<MiraState>()(
       // ローディング・エラー
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error }),
+      setUseStream: (useStream) => set({ useStream }),
+
       
+      // 会話取得（リスト）
+      fetchConversations: async (page = 0, size = 20) => {
+        set({ isLoading: true });
+        try {
+          const response = await getConversationList({ page, size });
+          
+          set((state) => {
+            const newConversations = { ...state.conversations };
+            
+            response.conversations.forEach((c) => {
+              // 既存の会話があれば維持（詳細情報があるかもしれないので）
+              // ただし、タイトルなどは更新しても良い
+              const existing = newConversations[c.id];
+              
+              if (existing) {
+                newConversations[c.id] = {
+                  ...existing,
+                  title: c.title,
+                  updatedAt: new Date(c.lastActivityAt),
+                  mode: c.mode,
+                };
+              } else {
+                newConversations[c.id] = {
+                  id: c.id,
+                  mode: c.mode,
+                  title: c.title,
+                  messages: [],
+                  createdAt: new Date(c.createdAt),
+                  updatedAt: new Date(c.lastActivityAt),
+                  isLoaded: false, // 詳細未取得
+                };
+              }
+            });
+
+            return {
+              conversations: newConversations,
+              hasMore: page < response.totalPages - 1,
+              currentPage: page,
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : '会話履歴の取得に失敗しました',
+            isLoading: false 
+          });
+        }
+      },
+
+      // 会話詳細取得
+      loadConversation: async (conversationId) => {
+        // 既にロード済みならスキップするロジックを入れても良いが、最新化のため毎回呼ぶ
+        set({ isLoading: true });
+        try {
+          const response = await getConversation(conversationId);
+          
+          set((state) => {
+            const messages: MiraMessage[] = response.messages.map(m => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+              contentType: m.contentType as 'text' | 'markdown' | 'html',
+              timestamp: new Date(m.createdAt),
+            }));
+
+            const updatedConversation: MiraConversation = {
+              id: response.id,
+              mode: response.mode,
+              title: response.title,
+              messages,
+              createdAt: new Date(response.createdAt),
+              updatedAt: new Date(response.lastActivityAt),
+              isLoaded: true,
+            };
+
+            return {
+              conversations: {
+                ...state.conversations,
+                [response.id]: updatedConversation,
+              },
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+             error: error instanceof Error ? error.message : '会話詳細の取得に失敗しました',
+             isLoading: false
+          });
+        }
+      },
+
       // 会話管理
       startConversation: (mode = 'GENERAL_CHAT', context) => {
         const id = crypto.randomUUID();
@@ -127,6 +251,7 @@ export const useMiraStore = create<MiraState>()(
           context,
           createdAt: now,
           updatedAt: now,
+          isLoaded: true, // 新規作成なのでロード済み扱い
         };
         
         set((state) => ({
@@ -140,8 +265,18 @@ export const useMiraStore = create<MiraState>()(
         return id;
       },
       
-      setActiveConversation: (conversationId) => 
-        set({ activeConversationId: conversationId }),
+      setActiveConversation: (conversationId) => {
+        set({ activeConversationId: conversationId });
+        
+        // 未ロードならロードする
+        if (conversationId) {
+          const state = get();
+          const conversation = state.conversations[conversationId];
+          if (conversation && !conversation.isLoaded) {
+            state.loadConversation(conversationId);
+          }
+        }
+      },
       
       updateConversationTitle: (conversationId, title) => {
         set((state) => {
@@ -160,6 +295,36 @@ export const useMiraStore = create<MiraState>()(
           };
         });
       },
+      
+      regenerateTitle: async (conversationId) => {
+        set({ isLoading: true });
+        try {
+          const response = await regenerateConversationTitle(conversationId);
+          
+          set((state) => {
+            const conversation = state.conversations[conversationId];
+            if (!conversation) return state;
+            
+            return {
+              conversations: {
+                ...state.conversations,
+                [conversationId]: {
+                  ...conversation,
+                  title: response.title,
+                  updatedAt: new Date(),
+                },
+              },
+              isLoading: false,
+            };
+          });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'タイトルの再生成に失敗しました',
+            isLoading: false
+          });
+        }
+      },
+      
       
       addUserMessage: (conversationId, content) => {
         const message: MiraMessage = {
@@ -333,14 +498,142 @@ export const useMiraStore = create<MiraState>()(
           editingMessageContent: null,
         }));
       },
-    }),
+      
+      // Streaming Actions Implementation
+      startStreamingMessage: (conversationId, messageId) => {
+        const message: MiraMessage = {
+          id: messageId,
+          role: 'assistant',
+          content: '', // Empty initially
+          contentType: 'markdown', // Default to markdown for streaming
+          timestamp: new Date(),
+          metadata: { provider: 'streaming' }
+        };
+
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+
+          return {
+            conversations: {
+              ...state.conversations,
+              [conversationId]: {
+                ...conversation,
+                messages: [...conversation.messages, message],
+                updatedAt: new Date(),
+              },
+            },
+            activeConversationId: conversationId,
+            isLoading: true, // Keep loading while streaming
+          };
+        });
+      },
+
+      appendStreamingChunk: (conversationId, messageId, chunk) => {
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+
+          const updatedMessages = conversation.messages.map(m => {
+            if (m.id === messageId) {
+              return { ...m, content: m.content + chunk };
+            }
+            return m;
+          });
+
+          return {
+            conversations: {
+              ...state.conversations,
+              [conversationId]: {
+                ...conversation,
+                messages: updatedMessages,
+                // Do not update updatedAt on every chunk to avoid excessive re-renders/db writes if persisted too often
+              },
+            },
+          };
+        });
+      },
+
+      updateStreamingStatus: (conversationId, messageId, status) => {
+         // Optionally store status in metadata or a separate transient state
+         // For now, maybe prepending or using a metadata field?
+         // Let's use metadata.status
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+
+          const updatedMessages = conversation.messages.map(m => {
+            if (m.id === messageId) {
+              return { 
+                  ...m, 
+                  metadata: { ...m.metadata, status } 
+              };
+            }
+            return m;
+          });
+
+          return {
+            conversations: {
+              ...state.conversations,
+              [conversationId]: {
+                ...conversation,
+                messages: updatedMessages,
+              },
+            },
+          };
+        });
+      },
+
+      completeStreamingMessage: (conversationId, messageId, finalContent, metadata) => {
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+
+          // If finalContent provided, use it (sometimes useful to sync), otherwise keep accumulated
+          // Actually, we usually rely on accumulation.
+          
+          const updatedMessages = conversation.messages.map(m => {
+            if (m.id === messageId) {
+              return { 
+                ...m, 
+                content: finalContent ?? m.content,
+                metadata: { ...m.metadata, ...metadata, status: undefined }, // Clear status
+                contentType: 'markdown' as const // Ensure check
+              };
+            }
+            return m;
+          });
+
+          return {
+            isLoading: false,
+            conversations: {
+              ...state.conversations,
+              [conversationId]: {
+                ...conversation,
+                messages: updatedMessages,
+                updatedAt: new Date(),
+              },
+            },
+          };
+        });
+      },
+
+      failStreamingMessage: (_conversationId, _messageId, error) => {
+         set({
+            isLoading: false,
+            error: error,
+         });
+      },
+    }), // Closing state object
     {
       name: 'mira-store',
+
       partialize: (state) => ({
         // パネル状態と会話のみ永続化（isFullscreenは永続化しない）
         isOpen: state.isOpen,
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,
+        useStream: state.useStream, // Persist useStream
       }),
     }
   )

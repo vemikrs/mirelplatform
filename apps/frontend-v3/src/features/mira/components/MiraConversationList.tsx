@@ -12,7 +12,6 @@ import {
   Trash2, 
   Search, 
 
-  X,
   HelpCircle,
   AlertTriangle,
   Paintbrush2,
@@ -28,8 +27,9 @@ interface MiraConversationListProps {
   onSelect: (conversationId: string) => void;
   onDelete: (conversationId: string) => void;
   onNewConversation: () => void;
-  onClose?: () => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 export function MiraConversationList({
@@ -38,8 +38,9 @@ export function MiraConversationList({
   onSelect,
   onDelete,
   onNewConversation,
-  onClose,
   searchInputRef,
+  hasMore,
+  onLoadMore,
 }: MiraConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
@@ -67,24 +68,15 @@ export function MiraConversationList({
           </div>
           <div className="flex items-center gap-1">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={onNewConversation}
-              className="gap-1.5"
+              className="w-8 h-8"
+              title="新しい会話"
             >
               <MessageSquarePlus className="w-4 h-4" />
-              新規
             </Button>
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="w-8 h-8"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
+
           </div>
         </div>
         
@@ -110,27 +102,42 @@ export function MiraConversationList({
               {searchQuery ? '該当する会話がありません' : '会話履歴がありません'}
             </div>
           ) : (
-            Object.entries(groupedConversations).map(([dateGroup, convs]) => (
-              <div key={dateGroup} className="mb-2">
-                <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
-                  {dateGroup}
-                </p>
-                <div className="space-y-0.5">
-                  {convs.map((conv) => (
-                    <ConversationItem
-                      key={conv.id}
-                      conversation={conv}
-                      isActive={activeConversationId === conv.id}
-                      onSelect={() => onSelect(conv.id)}
-                      onDelete={() => {
-                        const title = getConversationTitle(conv);
-                        setDeleteTarget({ id: conv.id, title });
-                      }}
-                    />
-                  ))}
+            <>
+              {Object.entries(groupedConversations).map(([dateGroup, convs]) => (
+                <div key={dateGroup} className="mb-2">
+                  <p className="text-xs font-medium text-muted-foreground px-2 py-1 mb-1">
+                    {dateGroup}
+                  </p>
+                  <div className="space-y-0.5">
+                    {convs.map((conv) => (
+                      <ConversationItem
+                        key={conv.id}
+                        conversation={conv}
+                        isActive={activeConversationId === conv.id}
+                        onSelect={() => onSelect(conv.id)}
+                        onDelete={() => {
+                          const title = getConversationTitle(conv);
+                          setDeleteTarget({ id: conv.id, title });
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {hasMore && (
+                <div className="px-2 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground"
+                    onClick={onLoadMore}
+                  >
+                    さらに読み込む
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>      
@@ -162,6 +169,7 @@ interface ConversationItemProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+
 }
 
 function ConversationItem({ conversation, isActive, onSelect, onDelete }: ConversationItemProps) {
@@ -198,18 +206,20 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }: Conver
           {title}
         </span>
         
-        {/* 削除ボタン */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0">
+          {/* 削除ボタン */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

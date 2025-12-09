@@ -16,6 +16,7 @@ import {
   Settings,
   Settings2,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 
 import { useOs } from '@/lib/hooks/useOs';
@@ -26,6 +27,7 @@ interface MiraMenuProps {
   onOpenShortcuts: () => void;
   onExport: () => void;
   onClearConversation: () => void;
+  onRegenerateTitle: () => void;
   isExporting: boolean;
   hasMessages: boolean;
   className?: string;
@@ -37,6 +39,7 @@ export function MiraMenu({
   onOpenShortcuts,
   onExport,
   onClearConversation,
+  onRegenerateTitle,
   isExporting,
   hasMessages,
   className,
@@ -71,6 +74,10 @@ export function MiraMenu({
             <Keyboard className="mr-2 h-4 w-4" />
             <span>ショートカット</span>
             <span className="ml-auto text-xs tracking-widest text-muted-foreground">?</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onRegenerateTitle}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            <span>タイトル再生成</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         

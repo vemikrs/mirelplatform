@@ -5,6 +5,8 @@ package jp.vemi.mirel.apps.auth.api;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jp.vemi.mirel.foundation.web.api.auth.dto.TokenDto;
 import jp.vemi.mirel.apps.auth.dto.MagicLinkVerifyDto;
 import jp.vemi.mirel.apps.auth.dto.OtpRequestDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResendDto;
@@ -196,6 +198,10 @@ public class OtpController {
                     log.info("OTPログイン成功: JWTトークン発行 - userId={}, email={}",
                             applicationUser.getUserId(), dto.getEmail());
 
+                    if (authResponse.getTokens() != null) {
+                        setTokenCookies(httpResponse, authResponse.getTokens());
+                    }
+
                     return ResponseEntity.ok(ApiResponse.<Object>builder()
                             .data(authResponse)
                             .messages(java.util.List.of("認証に成功しました"))
@@ -237,7 +243,8 @@ public class OtpController {
     @PostMapping("/magic-verify")
     public ResponseEntity<ApiResponse<Object>> magicVerify(
             @RequestBody ApiRequest<MagicLinkVerifyDto> request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         MagicLinkVerifyDto dto = request.getModel();
         if (dto == null) {
             return ResponseEntity.badRequest()
@@ -272,6 +279,10 @@ public class OtpController {
                 AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
 
                 log.info("マジックリンクログイン成功: JWTトークン発行 - userId={}", applicationUser.getUserId());
+
+                if (authResponse.getTokens() != null) {
+                    setTokenCookies(httpResponse, authResponse.getTokens());
+                }
 
                 java.util.Map<String, Object> responseData = new java.util.HashMap<>();
                 responseData.put("verified", true);
@@ -392,8 +403,26 @@ public class OtpController {
     }
 
     /**
-     * クライアントIPアドレスを取得
+     * Set JWT tokens as HttpOnly cookies
      */
+    private void setTokenCookies(HttpServletResponse response, TokenDto tokens) {
+        // Access token cookie (HttpOnly, Secure in production)
+        Cookie accessTokenCookie = new Cookie("accessToken", tokens.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false); // Set true in production with HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(60 * 60); // 1 hour
+        response.addCookie(accessTokenCookie);
+
+        // Refresh token cookie (HttpOnly, Secure in production)
+        Cookie refreshTokenCookie = new Cookie("refreshToken", tokens.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false); // Set true in production with HTTPS
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7 days
+        response.addCookie(refreshTokenCookie);
+    }
+
     private String getClientIpAddress(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {

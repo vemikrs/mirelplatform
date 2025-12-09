@@ -17,6 +17,7 @@ interface MiraHeaderProps {
   onExport: () => void;
   onClearConversation: () => void;
   onUpdateTitle: (conversationId: string, title: string) => Promise<void>;
+  onRegenerateTitle: () => Promise<void>;
   isExporting: boolean;
   isUpdatingTitle: boolean;
   hasMessages: boolean;
@@ -33,6 +34,7 @@ export function MiraHeader({
   onExport,
   onClearConversation,
   onUpdateTitle,
+  onRegenerateTitle,
   isExporting,
   isUpdatingTitle,
   hasMessages,
@@ -149,6 +151,7 @@ export function MiraHeader({
           onOpenShortcuts={onOpenShortcuts}
           onExport={onExport}
           onClearConversation={onClearConversation}
+          onRegenerateTitle={onRegenerateTitle}
           isExporting={isExporting}
           hasMessages={hasMessages}
         />

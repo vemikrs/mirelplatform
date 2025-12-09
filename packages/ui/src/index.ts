@@ -91,3 +91,16 @@ export { Spinner, type SpinnerProps } from './components/Spinner'
 export { cn } from './lib/utils'
 export * from './components/Table';
 export * from './components/DataTable';
+export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './components/Sheet'
+

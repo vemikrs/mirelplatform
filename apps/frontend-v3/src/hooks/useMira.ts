@@ -3,8 +3,10 @@
  * 
  * TanStack Query + Zustand を組み合わせたカスタムフック
  */
+import { useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMiraStore } from '@/stores/miraStore';
+import { useMiraChatStream } from './useMiraChatStream'; // Import streaming hook
 import {
   sendChatMessage,
   analyzeError,
@@ -39,7 +41,10 @@ export function useMiraChat() {
     addUserMessage,
     addAssistantMessage,
     updateConversationTitle,
+    useStream: storeUseStream, // Get store preference
   } = useMiraStore();
+
+  const { sendMessageStream, abortStream } = useMiraChatStream();
   
   const mutation = useMutation({
     mutationFn: sendChatMessage,
@@ -90,12 +95,20 @@ export function useMiraChat() {
       context?: ChatContext;
       messageConfig?: MessageConfig;
       forceProvider?: string;
+      useStream?: boolean; // Add useStream option
     }
   ) => {
     // 会話がなければ新規作成
     let conversationId = activeConversationId;
     if (!conversationId) {
       conversationId = startConversation(options?.mode, options?.context);
+    }
+
+    // Use stream if option provided OR store preference is true (and option not explicitly false)
+    const shouldStream = options?.useStream !== undefined ? options.useStream : storeUseStream;
+
+    if (shouldStream) {
+      return sendMessageStream(content, options);
     }
     
     // ユーザーメッセージを追加
@@ -121,6 +134,7 @@ export function useMiraChat() {
     isLoading: mutation.isPending || isLoading,
     error: mutation.error,
     reset: mutation.reset,
+    abort: abortStream,
   };
 }
 
@@ -200,6 +214,11 @@ export function useMiraConversation() {
     deleteConversation,
     getActiveConversation,
     getConversationMessages,
+    fetchConversations,
+    loadConversation,
+    hasMore,
+    currentPage,
+    regenerateTitle,
   } = useMiraStore();
   
   const clearMutation = useMutation({
@@ -222,10 +241,23 @@ export function useMiraConversation() {
       deleteConversation(id);
     }
   };
+
+  // Initial fetch
+  // コンポーネントマウント時に一度だけ実行
+  /* useEffect(() => {
+    // 既にデータがあれば取得しない、等の制御も可能だが、
+    // 同期のために取得を推奨
+    fetchConversations(0);
+   }, []); */
+  // NOTE: useMiraConversationが複数箇所で呼ばれると多重リクエストになる可能性があるため、
+  // ここでの自動取得は避けるか、Store側で制御が必要。
+  // 一旦、明示的に呼び出すか、上位コンポーネント(MiraPage)で制御する方針とする。
   
   return {
     activeConversationId,
-    conversations: Object.values(conversations),
+    conversations: Object.values(conversations).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ),
     activeConversation: getActiveConversation(),
     messages: activeConversationId 
       ? getConversationMessages(activeConversationId) 
@@ -234,6 +266,11 @@ export function useMiraConversation() {
     clear,
     remove,
     isClearLoading: clearMutation.isPending,
+    fetchConversations,
+    loadConversation,
+    hasMore,
+    currentPage,
+    regenerateTitle,
   };
 }
 
@@ -327,6 +364,12 @@ export function useMira() {
     resendEditedMessage,
   } = useMiraStore();
   
+  const loadMoreConversations = useCallback(async () => {
+    if (conversation.hasMore) {
+      await conversation.fetchConversations(conversation.currentPage + 1);
+    }
+  }, [conversation.hasMore, conversation.currentPage, conversation.fetchConversations]);
+
   return {
     // パネル
     isOpen: panel.isOpen,
@@ -339,6 +382,7 @@ export function useMira() {
     isLoading: chat.isLoading,
     error: panel.error,
     clearError: panel.clearError,
+    abort: chat.abort, // Expose abort
     
     // 会話
     messages: conversation.messages,
@@ -363,5 +407,13 @@ export function useMira() {
     
     // コンテキスト
     saveContext: contextSnapshot.save,
+
+    // ページング・同期
+    fetchConversations: conversation.fetchConversations,
+    loadConversation: conversation.loadConversation,
+    hasMore: conversation.hasMore,
+    currentPage: conversation.currentPage,
+    loadMoreConversations,
+    regenerateTitle: conversation.regenerateTitle,
   };
 }

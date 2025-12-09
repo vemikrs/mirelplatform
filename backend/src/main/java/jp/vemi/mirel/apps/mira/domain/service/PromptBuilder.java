@@ -121,8 +121,19 @@ public class PromptBuilder {
 
         // コンテキストを追加
         if (contextContent != null && !contextContent.isEmpty()) {
-            systemPrompt = systemPrompt + contextContent;
+            systemPrompt = systemPrompt + "\n" + contextContent;
         }
+
+        // Create date/time info
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Tokyo")); // Default to JST
+        String dateInfo = String.format("Current Date: %s\nCurrent Time: %s",
+                now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd (EEEE)")),
+                now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")));
+
+        // 最後の安全策（ツール使用時のスタイル汚染防止）
+        systemPrompt = systemPrompt
+                + "\n\nCRITICAL INSTRUCTION: If you decide to use a tool, you must NOT include any stylistic suffixes (like 'nyan', 'desu') or conversational filler in the SAME message as the tool call. The tool call must be the ONLY content of the message. Save the style for the message AFTER the tool result comes back."
+                + "\n\n" + dateInfo;
 
         List<AiRequest.Message> messages = new ArrayList<>();
         messages.add(AiRequest.Message.system(systemPrompt));

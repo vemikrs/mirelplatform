@@ -89,5 +89,46 @@ export const miraAdminApi = {
     const params = new URLSearchParams({ tenantId, startDate, endDate });
     const response = await apiClient.get<MiraTokenUsage[]>(`/apps/mira/api/admin/token-usage/trend?${params.toString()}`);
     return response.data;
+  },
+
+  // Dynamic Settings
+  getAiConfig: async (tenantId?: string): Promise<AiConfig> => {
+    const params = new URLSearchParams();
+    if (tenantId) params.append('tenantId', tenantId);
+    const response = await apiClient.get<AiConfig>(`/apps/mira/api/admin/config/ai?${params.toString()}`);
+    return response.data;
+  },
+
+  saveAiConfig: async (config: AiConfig, tenantId?: string): Promise<void> => {
+    const params = new URLSearchParams();
+    if (tenantId) params.append('tenantId', tenantId);
+    await apiClient.post(`/apps/mira/api/admin/config/ai?${params.toString()}`, config);
+  },
+
+  getLimitsConfig: async (tenantId?: string): Promise<LimitsSettings> => {
+    const params = new URLSearchParams();
+    if (tenantId) params.append('tenantId', tenantId);
+    const response = await apiClient.get<LimitsSettings>(`/apps/mira/api/admin/config/limits?${params.toString()}`);
+    return response.data;
+  },
+
+  saveLimitsConfig: async (config: LimitsSettings, tenantId?: string): Promise<void> => {
+    const params = new URLSearchParams();
+    if (tenantId) params.append('tenantId', tenantId);
+    await apiClient.post(`/apps/mira/api/admin/config/limits?${params.toString()}`, config);
   }
 };
+
+export interface AiConfig {
+  provider?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  tavilyApiKey?: string;
+}
+
+export interface LimitsSettings {
+  rpm?: number;
+  rph?: number;
+  dailyQuota?: number;
+}

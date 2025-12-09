@@ -14,28 +14,24 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
   Textarea,
   Label,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Input,
   Badge,
 } from '@mirel/ui';
-import { Settings2, Save, RotateCcw, Loader2, BookOpen, Palette, GitBranch } from 'lucide-react';
+import { Settings2, Save, RotateCcw, Loader2, BookOpen, Palette, GitBranch, Plug, Trash2 } from 'lucide-react';
 
 /** コンテキストカテゴリ */
-type ContextCategory = 'terminology' | 'style' | 'workflow';
+type ContextCategory = 'terminology' | 'style' | 'workflow' | 'integration';
 
 /** ユーザーコンテキスト */
 interface UserContext {
   terminology: string;
   style: string;
   workflow: string;
+  tavilyApiKey: string;
 }
 
 /** デフォルトのコンテキスト */
@@ -43,6 +39,7 @@ const DEFAULT_CONTEXT: UserContext = {
   terminology: '',
   style: '',
   workflow: '',
+  tavilyApiKey: '',
 };
 
 /** カテゴリ設定 */
@@ -82,6 +79,12 @@ const CATEGORY_CONFIG: Record<ContextCategory, {
 - 新機能追加時はまずテストを書く(TDD)
 - エラー発生時は1.ログ確認 2.再現手順特定 3.原因調査`,
   },
+  integration: {
+    label: '連携設定',
+    icon: Plug,
+    description: '外部サービスとの連携に必要なAPIキーなどを設定します。',
+    placeholder: 'Tavily API Key (tvly-...)',
+  },
 };
 
 interface MiraUserContextEditorProps {
@@ -105,6 +108,7 @@ export function MiraUserContextEditor({
   const [originalContext, setOriginalContext] = useState<UserContext>(DEFAULT_CONTEXT);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditingIntegration, setIsEditingIntegration] = useState(false);
   const [activeTab, setActiveTab] = useState<ContextCategory>('terminology');
   
   // 外部制御または内部制御
@@ -123,6 +127,7 @@ export function MiraUserContextEditor({
             terminology: data.data.terminology || '',
             style: data.data.style || '',
             workflow: data.data.workflow || '',
+            tavilyApiKey: data.data.tavilyApiKey || '',
           };
           setContext(loaded);
           setOriginalContext(loaded);
@@ -130,7 +135,7 @@ export function MiraUserContextEditor({
       }
     } catch (error) {
       console.error('Failed to load user context:', error);
-      // エラー時はデフォルト値を使用
+      // エラー時はデフォルト値を維持
     } finally {
       setIsLoading(false);
     }
@@ -156,6 +161,7 @@ export function MiraUserContextEditor({
       if (response.ok) {
         setOriginalContext(context);
         setIsOpen(false);
+        setIsEditingIntegration(false);
       } else {
         console.error('Failed to save context');
       }
@@ -169,87 +175,224 @@ export function MiraUserContextEditor({
   // リセット処理
   const handleReset = () => {
     setContext(originalContext);
+    setIsEditingIntegration(false);
   };
   
   // 変更があるか
   const hasChanges = JSON.stringify(context) !== JSON.stringify(originalContext);
   
   // 各カテゴリの文字数
-  const getCharCount = (category: ContextCategory) => context[category].length;
+  const getCharCount = (category: ContextCategory) => {
+      if (category === 'integration') return context.tavilyApiKey.length;
+      return (context[category as keyof UserContext] || '').length;
+  };
+
+  const getContextValue = (category: ContextCategory) => {
+      if (category === 'integration') return context.tavilyApiKey;
+      return context[category as keyof UserContext] || '';
+  };
+
+  const handleContextChange = (category: ContextCategory, val: string) => {
+      if (category === 'integration') {
+          setContext({ ...context, tavilyApiKey: val });
+      } else {
+          setContext({ ...context, [category]: val });
+      }
+  };
   
   const dialogContent = (
-    <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-      <DialogHeader>
+    <DialogContent className="sm:max-w-5xl max-h-[85vh] h-[650px] flex flex-col p-0 overflow-hidden">
+      <div className="p-6 border-b shrink-0 bg-muted/20">
         <DialogTitle className="flex items-center gap-2">
           <Settings2 className="w-5 h-5" />
           ユーザーコンテキスト設定
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="mt-1.5">
           AIアシスタントがあなたの状況をより良く理解するための情報を設定します。
-          これらの設定は全ての会話に適用されます。
         </DialogDescription>
-      </DialogHeader>
+      </div>
       
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center flex-1">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ContextCategory)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-3 w-full">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-64 border-r bg-muted/10 flex flex-col p-2 space-y-1 overflow-y-auto shrink-0">
             {(Object.keys(CATEGORY_CONFIG) as ContextCategory[]).map((category) => {
               const config = CATEGORY_CONFIG[category];
               const Icon = config.icon;
+              const isActive = activeTab === category;
               const charCount = getCharCount(category);
+              
               return (
-                <TabsTrigger key={category} value={category} className="flex items-center gap-1.5">
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{config.label}</span>
+                <button
+                  key={category}
+                  onClick={() => {
+                    setActiveTab(category);
+                    setIsEditingIntegration(false);
+                  }}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all w-full text-left",
+                    isActive 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 truncate">{config.label}</span>
                   {charCount > 0 && (
-                    <Badge variant="neutral" className="ml-1 text-xs px-1.5 py-0">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "ml-auto text-[10px] px-1 h-5 min-w-5 flex items-center justify-center border-none",
+                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                      )}
+                    >
                       {charCount}
                     </Badge>
                   )}
-                </TabsTrigger>
+                </button>
               );
             })}
-          </TabsList>
-          
-          {(Object.keys(CATEGORY_CONFIG) as ContextCategory[]).map((category) => {
-            const config = CATEGORY_CONFIG[category];
-            return (
-              <TabsContent key={category} value={category} className="flex-1 flex flex-col mt-4">
-                <div className="space-y-2 flex-1 flex flex-col">
-                  <Label htmlFor={`context-${category}`} className="text-sm text-muted-foreground">
-                    {config.description}
-                  </Label>
-                  <Textarea
-                    id={`context-${category}`}
-                    value={context[category]}
-                    onChange={(e) => setContext({ ...context, [category]: e.target.value })}
-                    placeholder={config.placeholder}
-                    className="flex-1 min-h-[200px] font-mono text-sm resize-none"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {getCharCount(category)} 文字
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
+                    {CATEGORY_CONFIG[activeTab].label}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {CATEGORY_CONFIG[activeTab].description}
                   </p>
                 </div>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+
+                {activeTab === 'integration' ? (
+                  <div className="space-y-4 p-4 border rounded-lg bg-card">
+                    <div className="space-y-4">
+                      
+                      {/* API Key Section */}
+                      <div className="space-y-2">
+                        <Label htmlFor="tavily-api-key" className="text-sm font-medium">
+                          Tavily API Key
+                        </Label>
+                        
+                        {!isEditingIntegration && originalContext.tavilyApiKey && context.tavilyApiKey ? (
+                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded border border-muted">
+                            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+                              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-xs">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                設定済み
+                              </span>
+                              <span className="text-muted-foreground text-xs font-normal ml-2">
+                                ************{context.tavilyApiKey.slice(-4)}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => handleContextChange('integration', '')}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    title="設定を削除"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setIsEditingIntegration(true)}
+                                    className="h-8 text-xs"
+                                >
+                                    変更する
+                                </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                             <div className="flex gap-2">
+                                <Input
+                                  id="tavily-api-key"
+                                  name="tavily-api-key-no-autofill"
+                                  type="text"
+                                  value={context.tavilyApiKey}
+                                  onChange={(e) => handleContextChange('integration', e.target.value)}
+                                  placeholder="tvly-..."
+                                  className="font-mono flex-1"
+                                  style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+                                  autoComplete="off"
+                                  data-lpignore="true"
+                                  data-1p-ignore
+                                />
+                                {isEditingIntegration && (
+                                   <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => setIsEditingIntegration(false)}
+                                      title="キャンセル"
+                                   >
+                                      キャンセル
+                                   </Button>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Tavily Search API キーを設定すると、MiraがリアルタイムなWeb検索を行えるようになります。
+                                <br />
+                                <a 
+                                  href="https://tavily.com/" 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                                >
+                                  公式サイトでキーを取得 <BookOpen className="w-3 h-3" />
+                                </a>
+                              </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 h-full flex flex-col">
+                    <Textarea
+                      id={`context-${activeTab}`}
+                      value={getContextValue(activeTab)}
+                      onChange={(e) => handleContextChange(activeTab, e.target.value)}
+                      placeholder={CATEGORY_CONFIG[activeTab].placeholder}
+                      className="flex-1 min-h-[300px] font-mono text-sm leading-relaxed p-4 resize-none focus-visible:ring-1"
+                    />
+                    <div className="flex justify-end">
+                      <span className="text-xs text-muted-foreground">
+                        {getCharCount(activeTab)} 文字
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Footer */}
+          </div>
+        </div>
       )}
       
-      <DialogFooter className="flex items-center justify-between sm:justify-between">
+      <div className="p-4 border-t bg-muted/20 flex items-center justify-between shrink-0">
         <Button
           variant="ghost"
           onClick={handleReset}
           disabled={!hasChanges || isSaving}
         >
           <RotateCcw className="w-4 h-4 mr-2" />
-          リセット
+          変更をリセット
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
             onClick={() => setIsOpen(false)}
@@ -260,21 +403,22 @@ export function MiraUserContextEditor({
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
+            className="min-w-[100px]"
           >
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                保存中...
+                保存中
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                保存
+                設定を保存
               </>
             )}
           </Button>
         </div>
-      </DialogFooter>
+      </div>
     </DialogContent>
   );
   

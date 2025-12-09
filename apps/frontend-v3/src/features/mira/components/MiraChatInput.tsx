@@ -469,7 +469,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               "text-muted-foreground hover:text-foreground"
             )}
             title="ファイルを添付"
-            disabled={isLoading || disabled}
+            disabled={disabled}
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -485,7 +485,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               Object.keys(messageConfig).length > 0 && "bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400"
             )}
             title="コンテキスト設定 (Ctrl+Shift+M)"
-            disabled={isLoading || disabled}
+            disabled={disabled}
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -519,7 +519,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
             }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            disabled={isLoading || disabled}
+            disabled={disabled}
             rows={1}
             className={cn(
               'flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2',

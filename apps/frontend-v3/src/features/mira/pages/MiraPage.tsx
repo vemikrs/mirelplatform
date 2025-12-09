@@ -53,6 +53,10 @@ export function MiraPage() {
     resendEditedMessage,
     updateConversationTitle,
     isUpdatingTitle,
+    loadMoreConversations,
+    hasMore,
+    fetchConversations,
+    regenerateTitle,
   } = useMira();
   
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
@@ -79,10 +83,21 @@ export function MiraPage() {
   // コンテキストエディタの表示状態
   const [isContextEditorOpen, setIsContextEditorOpen] = useState(false);
   
-  // URLクエリパラメータから会話IDを取得して開く
+  // 初期ロード：会話履歴を取得
+  useEffect(() => {
+    fetchConversations(0);
+  }, [fetchConversations]);
+  
+  // URLクエリパラメータから会話IDを取得して開く、または新規チャットを開始する
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    if (conversationId && storedConversations[conversationId]) {
+    const isNew = searchParams.get('new') === 'true';
+
+    if (isNew) {
+      // 明示的に新規チャットを開始
+      setActiveConversation(null);
+      setSearchParams({}, { replace: true });
+    } else if (conversationId && storedConversations[conversationId]) {
       setActiveConversation(conversationId);
       // URLパラメータをクリア（履歴を汚さないため）
       setSearchParams({}, { replace: true });
@@ -280,8 +295,10 @@ export function MiraPage() {
             onSelect={handleSelectConversation}
             onDelete={handleDeleteConversation}
             onNewConversation={handleNewConversation}
-            onClose={() => setIsSidebarOpen(false)}
+
             searchInputRef={searchInputRef}
+            hasMore={hasMore}
+            onLoadMore={loadMoreConversations}
           />
         </div>
       )}
@@ -302,6 +319,7 @@ export function MiraPage() {
           onExport={handleExport}
           onClearConversation={() => setShowClearConfirm(true)}
           onUpdateTitle={updateConversationTitle}
+          onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
           isExporting={isExporting}
           isUpdatingTitle={isUpdatingTitle}
           hasMessages={messages.length > 0}

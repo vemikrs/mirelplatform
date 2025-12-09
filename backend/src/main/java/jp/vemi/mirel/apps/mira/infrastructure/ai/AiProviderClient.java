@@ -6,14 +6,17 @@ package jp.vemi.mirel.apps.mira.infrastructure.ai;
 /**
  * AI プロバイダクライアントインタフェース.
  * 
- * <p>Azure OpenAI / OpenAI / Mock などのプロバイダを抽象化します。</p>
+ * <p>
+ * Azure OpenAI / OpenAI / Mock などのプロバイダを抽象化します。
+ * </p>
  */
 public interface AiProviderClient {
 
     /**
      * チャット応答を生成.
      * 
-     * @param request AI リクエスト
+     * @param request
+     *            AI リクエスト
      * @return AI 応答
      */
     AiResponse chat(AiRequest request);
@@ -30,5 +33,16 @@ public interface AiProviderClient {
      * 
      * @return プロバイダ名
      */
+    /**
+     * ストリームチャット応答を生成.
+     * 
+     * @param request
+     *            AI リクエスト
+     * @return AI 応答ストリーム
+     */
+    default reactor.core.publisher.Flux<AiResponse> stream(AiRequest request) {
+        throw new UnsupportedOperationException("Streaming is not supported by this provider");
+    }
+
     String getProviderName();
 }

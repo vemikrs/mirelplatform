@@ -43,8 +43,9 @@ public class MiraAdminController {
 
     private final MiraContextLayerService contextLayerService;
     private final MiraTokenUsageRepository tokenUsageRepository;
-    private final MiraDataExportService dataExportService; // Inject export service
+    private final MiraDataExportService dataExportService;
     private final MiraAiProperties properties;
+    private final jp.vemi.mirel.apps.mira.domain.service.MiraSettingService settingService; // Inject SettingService
 
     // ==========================================
     // Context Management
@@ -89,15 +90,92 @@ public class MiraAdminController {
     }
 
     // ==========================================
-    // Limits & Quotas
+    // Configuration (Settings)
     // ==========================================
 
-    @GetMapping("/limits")
-    @Operation(summary = "現在の制限設定取得")
+    @GetMapping("/config/ai")
+    @Operation(summary = "AI設定取得")
+    public ResponseEntity<Map<String, Object>> getAiConfig(@RequestParam(required = false) String tenantId) {
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("provider", settingService.getAiProvider(tenantId));
+        config.put("model", settingService.getAiModel(tenantId));
+        config.put("temperature", settingService.getAiTemperature(tenantId));
+        config.put("maxTokens", settingService.getAiMaxTokens(tenantId));
+        config.put("tavilyApiKey", settingService.getString(
+                tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY, null));
+        return ResponseEntity.ok(config);
+    }
+
+    @PostMapping("/config/ai")
+    @Operation(summary = "AI設定保存")
+    public ResponseEntity<Void> saveAiConfig(
+            @RequestParam(required = false) String tenantId,
+            @RequestBody Map<String, Object> config) {
+
+        // Helper to save
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_AI_PROVIDER,
+                config.get("provider"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_AI_MODEL,
+                config.get("model"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_AI_TEMPERATURE,
+                config.get("temperature"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_AI_MAX_TOKENS,
+                config.get("maxTokens"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_TAVILY_API_KEY,
+                config.get("tavilyApiKey"));
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/config/limits")
+    @Operation(summary = "制限設定取得")
+    public ResponseEntity<Map<String, Object>> getLimitsConfig(@RequestParam(required = false) String tenantId) {
+        Map<String, Object> config = new java.util.HashMap<>();
+        config.put("rpm", settingService.getRateLimitRpm(tenantId));
+        config.put("rph", settingService.getRateLimitRph(tenantId));
+        config.put("dailyQuota", settingService.getDailyTokenQuota(tenantId));
+        return ResponseEntity.ok(config);
+    }
+
+    @PostMapping("/config/limits")
+    @Operation(summary = "制限設定保存")
+    public ResponseEntity<Void> saveLimitsConfig(
+            @RequestParam(required = false) String tenantId,
+            @RequestBody Map<String, Object> config) {
+
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_LIMIT_RPM,
+                config.get("rpm"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_LIMIT_RPH,
+                config.get("rph"));
+        saveConfig(tenantId, jp.vemi.mirel.apps.mira.domain.service.MiraSettingService.KEY_LIMIT_DAILY_QUOTA,
+                config.get("dailyQuota"));
+
+        return ResponseEntity.ok().build();
+    }
+
+    private void saveConfig(String tenantId, String key, Object value) {
+        if (value == null)
+            return;
+        String valStr = String.valueOf(value);
+        if (tenantId != null && !tenantId.isEmpty()) {
+            settingService.saveTenantSetting(tenantId, key, valStr);
+        } else {
+            settingService.saveSystemSetting(key, valStr);
+        }
+    }
+
+    // ==========================================
+    // Limits & Quotas (Legacy / Read-only for Property based view if needed,
+    // keeping for compat)
+    // ==========================================
+
+    @GetMapping("/limits/legacy")
+    @Operation(summary = "現在の制限設定取得(Legacy)")
     public ResponseEntity<Map<String, Object>> getLimits() {
-        return ResponseEntity.ok(Map.of(
-                "rateLimit", properties.getRateLimit(),
-                "quota", properties.getQuota()));
+        Map<String, Object> limits = new java.util.HashMap<>();
+        limits.put("rateLimit", properties.getRateLimit());
+        limits.put("quota", properties.getQuota());
+        return ResponseEntity.ok(limits);
     }
 
     @GetMapping("/token-usage/summary")
@@ -106,7 +184,14 @@ public class MiraAdminController {
             @RequestParam String tenantId,
             @RequestParam(required = false) String date) {
 
-        LocalDate targetDate = date != null ? LocalDate.parse(date) : LocalDate.now();
+        // JST explicitly
+        LocalDate targetDate;
+        if (date != null) {
+            targetDate = LocalDate.parse(date);
+        } else {
+            targetDate = LocalDate.now(java.time.ZoneId.of("Asia/Tokyo"));
+        }
+
         Long totalTokens = tokenUsageRepository.sumTotalTokensByTenantAndDate(tenantId, targetDate);
 
         return ResponseEntity.ok(TokenUsageSummary.builder()
