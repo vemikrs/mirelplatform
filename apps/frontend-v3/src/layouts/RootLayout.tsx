@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData } from 'react-router-dom';
-import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle } from '@mirel/ui';
+import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -69,6 +69,7 @@ export function RootLayout() {
               </SheetTrigger>
               <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Main navigation menu for mobile devices</SheetDescription>
                 <SideNavigation 
                   items={primaryLinks}
                   brand={initialNavigation.brand}
