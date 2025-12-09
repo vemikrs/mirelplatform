@@ -7,17 +7,21 @@ FROM mcr.microsoft.com/devcontainers/java:21 AS base
 # Install Node.js 22 using nvm
 ARG NODE_VERSION=22
 ARG NVM_VERSION=0.39.7
+
+# Install git and git-lfs first
+USER root
+RUN apt-get update && apt-get install -y git git-lfs curl && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install nvm and Node.js
 USER vscode
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
-    && export NVM_DIR="$HOME/.nvm" \
-    && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" \
+    && . "$HOME/.nvm/nvm.sh" \
     && nvm install ${NODE_VERSION} \
     && nvm use ${NODE_VERSION} \
     && nvm alias default ${NODE_VERSION}
 
-# Install git and git-lfs
 USER root
-RUN apt-get update && apt-get install -y git git-lfs && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git git-lfs curl && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Dependencies and build
 FROM base AS builder
