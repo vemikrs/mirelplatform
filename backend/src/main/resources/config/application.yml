@@ -61,6 +61,10 @@ logging:
     jp.vemi.mirel: DEBUG
     jp.vemi.ste: DEBUG
 
+# CORS設定
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
 mipla2:
   security:
     api:

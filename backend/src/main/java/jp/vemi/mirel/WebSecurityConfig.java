@@ -4,6 +4,7 @@
 package jp.vemi.mirel;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
@@ -62,6 +63,9 @@ public class WebSecurityConfig {
     @Autowired
     private JwtAuthoritiesConverter jwtAuthoritiesConverter;
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
     /**
      * Spring Securityのセキュリティフィルタチェーンを構成します。
      * CSRF保護、認可設定、認証方式の設定を行います。
@@ -110,13 +114,22 @@ public class WebSecurityConfig {
 
     /**
      * CORS設定ソースを提供します。
+     * 許可するオリジンは環境変数 CORS_ALLOWED_ORIGINS から取得します。
+     * カンマ区切りで複数指定可能です。
      * 
      * @return CORS設定ソース
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        
+        // 環境変数からカンマ区切りで許可オリジンを取得
+        String[] origins = allowedOrigins.split(",");
+        for (int i = 0; i < origins.length; i++) {
+            origins[i] = origins[i].trim();
+        }
+        configuration.setAllowedOrigins(Arrays.asList(origins));
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
