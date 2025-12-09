@@ -1,10 +1,10 @@
 # Multi-stage Dockerfile for mirelplatform
+# IT Operations Environment - Backend + Frontend development
 # Based on .devcontainer/devcontainer.json configuration
 # 
 # BuildKit cache mounts are used to optimize build performance:
 # - Gradle: /home/vscode/.gradle
 # - npm/pnpm: /home/vscode/.npm, /home/vscode/.cache/pnpm
-# - Playwright: /home/vscode/.cache/ms-playwright
 #
 # Enable BuildKit: DOCKER_BUILDKIT=1 docker build ...
 
@@ -47,8 +47,7 @@ ENV GRADLE_USER_HOME=/home/vscode/.gradle \
     NVM_DIR=/home/vscode/.nvm \
     TZ=Asia/Tokyo \
     SPRING_PROFILES_ACTIVE=dev \
-    HOST=0.0.0.0 \
-    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright
+    HOST=0.0.0.0
 ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
 # Set working directory
@@ -71,7 +70,6 @@ RUN --mount=type=cache,target=/home/vscode/.gradle,uid=1000,gid=1000 \
 COPY --chown=vscode:vscode package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY --chown=vscode:vscode apps/frontend-v3/package.json apps/frontend-v3/
 COPY --chown=vscode:vscode packages/ui/package.json packages/ui/
-COPY --chown=vscode:vscode packages/e2e/package.json packages/e2e/
 
 # Install pnpm and dependencies with cache mount
 RUN --mount=type=cache,target=/home/vscode/.npm,uid=1000,gid=1000 \
@@ -87,12 +85,6 @@ COPY --chown=vscode:vscode . .
 RUN --mount=type=cache,target=/home/vscode/.gradle,uid=1000,gid=1000 \
     ./gradlew --no-daemon build -x test
 
-# Install Playwright browsers with cache mount
-RUN --mount=type=cache,target=/home/vscode/.cache/ms-playwright,uid=1000,gid=1000 \
-    --mount=type=cache,target=/home/vscode/.cache/pnpm,uid=1000,gid=1000 \
-    . "${NVM_DIR}/nvm.sh" \
-    && pnpm --filter e2e exec playwright install --with-deps
-
 # Stage 3: Runtime image
 FROM base AS runtime
 
@@ -104,8 +96,7 @@ ENV GRADLE_USER_HOME=/home/vscode/.gradle \
     NVM_DIR=/home/vscode/.nvm \
     TZ=Asia/Tokyo \
     SPRING_PROFILES_ACTIVE=dev \
-    HOST=0.0.0.0 \
-    PLAYWRIGHT_BROWSERS_PATH=/home/vscode/.cache/playwright
+    HOST=0.0.0.0
 ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
 
 # Set timezone
@@ -118,15 +109,13 @@ WORKDIR /workspace
 
 # Copy built artifacts and dependencies from builder stage
 COPY --from=builder --chown=vscode:vscode /home/vscode/.gradle /home/vscode/.gradle
-COPY --from=builder --chown=vscode:vscode /home/vscode/.cache/playwright /home/vscode/.cache/playwright
 COPY --from=builder --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm
 COPY --from=builder --chown=vscode:vscode /workspace /workspace
 
 # Expose ports
 # 3000: Backend API
 # 5173: Frontend v3 (Vite)
-# 9323: Playwright Report
-EXPOSE 3000 5173 9323
+EXPOSE 3000 5173
 
 # Switch to vscode user
 USER vscode
