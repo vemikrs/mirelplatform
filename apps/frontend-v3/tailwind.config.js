@@ -195,6 +195,22 @@ export default {
           '0%, 100%': { opacity: '0.5' },
           '50%': { opacity: '1' },
         },
+        'slide-in-left': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        'slide-out-left': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'fade-out': {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
       },
       animation: {
         'toast-in': 'toast-in 180ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -202,10 +218,12 @@ export default {
         'shimmer': 'shimmer 1.4s ease-in-out infinite',
         'liquid-float': 'liquid-float 3s ease-in-out infinite',
         'liquid-glow': 'liquid-glow 2s ease-in-out infinite',
+        'slide-in-left': 'slide-in-left 0.3s ease-out',
+        'slide-out-left': 'slide-out-left 0.3s ease-in',
+        'fade-in': 'fade-in 0.2s ease-out',
+        'fade-out': 'fade-out 0.2s ease-in',
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-  ],
+  plugins: [],
 }
