@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build outputs
+backend/build
+backend/bin
+apps/frontend-v3/dist
+apps/frontend-v3/.vite
+packages/*/dist
+packages/*/build
+node_modules/.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+backend/logs
+
+# Temporary files
+tmp
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.iml
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test results
+backend/test-results
+packages/e2e/test-results
+packages/e2e/playwright-report
+coverage
+
+# Docker
+docker-compose*.yml
+.devcontainer
+
+# CI/CD
+.github/workflows
+
+# Data
+backend/data/storage/*
+!backend/data/storage/.gitkeep
+
+# Documentation (except copilot instructions)
+docs/*
+!.github/copilot-instructions.md
+README.md
+*.md
+!README.md
+
+# Scripts (not needed in container)
+scripts/*.sh

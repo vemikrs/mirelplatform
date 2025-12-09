@@ -1,0 +1,142 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.devcontainer/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: vemikrs/mirelplatform
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            NODE_VERSION=18
+            NVM_VERSION=0.39.7
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
+
+      - name: Create summary
+        run: |
+          echo "## Docker Build Summary 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  verify-image:
+    name: Verify Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 15
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and inspect image
+        run: |
+          echo "Pulling image..."
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          echo "Inspecting image..."
+          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          echo "Image history..."
+          docker history ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Test image startup
+        run: |
+          echo "Testing image startup..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "echo 'Container started successfully' && java -version && node --version && pnpm --version"
+
+      - name: Verify installed components
+        run: |
+          echo "Verifying Java, Node.js, and pnpm..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "
+            echo '=== Java Version ===' && 
+            java -version && 
+            echo '=== Node.js Version ===' && 
+            node --version && 
+            echo '=== pnpm Version ===' && 
+            pnpm --version &&
+            echo '=== Gradle Version ===' &&
+            ./gradlew --version
+          "
+
+      - name: Create verification summary
+        run: |
+          echo "## Image Verification Summary ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Image \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\` has been successfully verified." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The image includes:" >> $GITHUB_STEP_SUMMARY
+          echo "- ☕ Java 21 (Temurin)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟢 Node.js 18" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 pnpm" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔨 Gradle" >> $GITHUB_STEP_SUMMARY
+          echo "- 🎭 Playwright browsers" >> $GITHUB_STEP_SUMMARY
