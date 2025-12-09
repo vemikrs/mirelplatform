@@ -129,6 +129,19 @@ echo "🚀 Starting mirelplatform..."
 export NVM_DIR="/home/vscode/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
+# Ensure Node.js is in PATH (explicit version for Docker environment)
+export PATH="$NVM_DIR/versions/node/v22.20.0/bin:$PATH"
+
+# Verify Node.js is available
+if ! command -v node &> /dev/null; then
+  echo "❌ Error: node command not found"
+  echo "NVM_DIR: $NVM_DIR"
+  echo "PATH: $PATH"
+  exit 1
+fi
+echo "Node.js version: $(node --version)"
+echo "pnpm version: $(pnpm --version)"
+
 # Start Backend in background
 echo "📦 Starting Backend (Spring Boot)..."
 cd /workspace

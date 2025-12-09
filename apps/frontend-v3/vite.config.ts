@@ -36,12 +36,12 @@ function createProxyConfig() {
     '/mapi': {
       target: `${backendUrl}/mipla2`,
       changeOrigin: true,
-      rewrite: (path) => path.replace(/^\/mapi/, ''),
+      rewrite: (path: string) => path.replace(/^^\/mapi/, ''),
       // Cookie のドメインとパスを書き換える
       cookieDomainRewrite: 'localhost',
       cookiePathRewrite: '/',
-      configure: (proxy) => {
-        proxy.on('proxyRes', (proxyRes) => {
+      configure: (proxy: any) => {
+        proxy.on('proxyRes', (proxyRes: any) => {
           // Log only that Set-Cookie header exists to avoid leaking sensitive values
           const setCookie = proxyRes.headers['set-cookie'];
           if (setCookie) {
