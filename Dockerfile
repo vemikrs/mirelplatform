@@ -125,13 +125,27 @@ set -e
 
 echo "🚀 Starting mirelplatform..."
 
+# Load NVM environment for Node.js
+export NVM_DIR="/home/vscode/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # Start Backend in background
 echo "📦 Starting Backend (Spring Boot)..."
 cd /workspace
-java -jar backend/build/libs/mirelplatform-0.0.1-SNAPSHOT.jar \
-  --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-dev} &
+# Find JAR file (exclude plain.jar which is not executable)
+JAR_FILE=$(find backend/build/libs -name "*.jar" ! -name "*plain.jar" | head -n 1)
+if [ -z "$JAR_FILE" ]; then
+  echo "❌ Error: No JAR file found in backend/build/libs/"
+  exit 1
+fi
+echo "Found JAR: $JAR_FILE"
+
+# Start Spring Boot on port 3000 (matching EXPOSE directive)
+java -jar "$JAR_FILE" \
+  --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-dev} \
+  --server.port=3000 &
 BACKEND_PID=$!
-echo "✅ Backend started (PID: $BACKEND_PID)"
+echo "✅ Backend started (PID: $BACKEND_PID) on port 3000"
 
 # Start Frontend in preview mode
 echo "🎨 Starting Frontend (Vite Preview)..."
