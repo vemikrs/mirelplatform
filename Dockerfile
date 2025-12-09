@@ -1,11 +1,11 @@
 # Multi-stage Dockerfile for mirelplatform
 # Based on .devcontainer/devcontainer.json configuration
 
-# Stage 1: Base image with Java 21 and Node.js 18
+# Stage 1: Base image with Java 21 and Node.js 22
 FROM mcr.microsoft.com/devcontainers/java:21 AS base
 
-# Install Node.js 18 using nvm
-ARG NODE_VERSION=18
+# Install Node.js 22 using nvm
+ARG NODE_VERSION=22
 ARG NVM_VERSION=0.39.7
 USER vscode
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \

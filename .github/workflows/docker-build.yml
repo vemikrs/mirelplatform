@@ -61,7 +61,7 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
           build-args: |
-            NODE_VERSION=18
+            NODE_VERSION=22
             NVM_VERSION=0.39.7
 
       - name: Image digest
@@ -136,7 +136,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The image includes:" >> $GITHUB_STEP_SUMMARY
           echo "- ☕ Java 21 (Temurin)" >> $GITHUB_STEP_SUMMARY
-          echo "- 🟢 Node.js 18" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟢 Node.js 22" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 pnpm" >> $GITHUB_STEP_SUMMARY
           echo "- 🔨 Gradle" >> $GITHUB_STEP_SUMMARY
           echo "- 🎭 Playwright browsers" >> $GITHUB_STEP_SUMMARY
