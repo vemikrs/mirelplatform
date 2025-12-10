@@ -24,6 +24,8 @@ export function UnifiedLoginPage() {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showResendButton, setShowResendButton] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   // Store & Hooks
   const setOtpState = useAuthStore((state) => state.setOtpState);
@@ -80,6 +82,8 @@ export function UnifiedLoginPage() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
+    setShowResendButton(false);
+    setUnverifiedEmail(null);
     setPasswordLoading(true);
 
     try {
@@ -89,8 +93,20 @@ export function UnifiedLoginPage() {
       const returnUrl = searchParams.get('returnUrl');
       const from = returnUrl || location.state?.from?.pathname || '/home';
       navigate(from, { replace: true });
-    } catch {
-      setPasswordError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');
+    } catch (error: any) {
+      console.error('Password login error:', error);
+      
+      // EMAIL_NOT_VERIFIED エラーの特別な処理
+      if (error.response?.data?.data?.errorCode === 'EMAIL_NOT_VERIFIED') {
+        const email = error.response.data.data.email;
+        setUnverifiedEmail(email);
+        setPasswordError(
+          'メールアドレスが未検証です。確認メールを再送信してアカウントを有効化してください。'
+        );
+        setShowResendButton(true);
+      } else {
+        setPasswordError('ログインに失敗しました。ユーザー名/メールアドレスとパスワードを確認してください。');
+      }
     } finally {
       setPasswordLoading(false);
     }
@@ -215,8 +231,19 @@ export function UnifiedLoginPage() {
                 </div>
 
                 {passwordError && (
-                  <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded text-sm">
-                    {passwordError}
+                  <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded text-sm space-y-2">
+                    <p>{passwordError}</p>
+                    {showResendButton && unverifiedEmail && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/auth/resend-verification?email=${encodeURIComponent(unverifiedEmail)}`)}
+                        className="w-full mt-2"
+                      >
+                        確認メールを再送信
+                      </Button>
+                    )}
                   </div>
                 )}
 
