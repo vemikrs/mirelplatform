@@ -32,8 +32,8 @@ public class AzureEmailServiceImpl implements EmailService {
     private final String senderAddress;
     
     public AzureEmailServiceImpl(
-        @Value("${azure.communication.connection-string}") String connectionString,
-        @Value("${email.from}") String senderAddress,
+        @Value("${email.azure.communication.connection-string}") String connectionString,
+        @Value("${email.azure.communication.email.from}") String senderAddress,
         EmailTemplateService templateService
     ) {
         this.emailClient = new EmailClientBuilder()
