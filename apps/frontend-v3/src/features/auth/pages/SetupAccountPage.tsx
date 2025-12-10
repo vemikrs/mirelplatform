@@ -6,8 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Card, Input } from '@mirel/ui';
-import { apiClient } from '@/lib/api/client';
-import { createApiRequest } from '@/lib/api/utils';
+import { apiClient, createApiRequest } from '@/lib/api/client';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useAuthStore } from '@/stores/authStore';
 import { getUserTenants, getUserLicenses } from '@/lib/api/userProfile';
