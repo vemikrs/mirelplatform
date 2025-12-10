@@ -7,6 +7,7 @@ import jp.vemi.mirel.foundation.abst.dao.entity.*;
 import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense.LicenseTier;
 import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense.SubjectType;
 import jp.vemi.mirel.foundation.abst.dao.repository.*;
+import jp.vemi.mirel.foundation.exception.EmailNotVerifiedException;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.security.jwt.JwtService;
 import org.slf4j.Logger;
@@ -105,6 +106,15 @@ public class AuthenticationServiceImpl {
 
             systemUserRepository.save(systemUser);
             throw new RuntimeException("Invalid username/email or password");
+        }
+
+        // メールアドレス検証チェック
+        if (systemUser.getEmailVerified() == null || !systemUser.getEmailVerified()) {
+            logger.warn("Login attempt with unverified email: {}", systemUser.getEmail());
+            throw new EmailNotVerifiedException(
+                "メールアドレスが未検証です。受信ボックスを確認してください。",
+                systemUser.getEmail()
+            );
         }
 
         // ログイン成功：失敗回数リセット
