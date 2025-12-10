@@ -54,12 +54,19 @@ spring:
           github:
             user-name-attribute: login
 
+# ログレベル設定（logger.xml の設定より優先されます）
 logging:
   level:
+    # Spring Framework
+    org.springframework: INFO
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
+    # アプリケーション
     jp.vemi.mirel: DEBUG
     jp.vemi.ste: DEBUG
+    # Mira AI
+    jp.vemi.mirel.apps.mira: DEBUG
+    jp.vemi.mirel.apps.mira.infrastructure.ai: TRACE
 
 # CORS設定
 cors:
