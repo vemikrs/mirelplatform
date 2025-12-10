@@ -19,6 +19,10 @@ public class LoginRequest {
     
     private String tenantId; // オプション: 初回テナント指定
     
+    // Controller から注入される（バリデーション不要）
+    private String ipAddress;
+    private String userAgent;
+    
     /**
      * toString()でパスワードをマスク
      */

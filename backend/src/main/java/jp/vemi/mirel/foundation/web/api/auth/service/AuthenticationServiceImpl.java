@@ -198,10 +198,41 @@ public class AuthenticationServiceImpl {
         // メールアドレス検証チェック
         if (systemUser.getEmailVerified() == null || !systemUser.getEmailVerified()) {
             logger.warn("Login attempt with unverified email: {}", systemUser.getEmail());
-            throw new EmailNotVerifiedException(
-                "メールアドレスが未検証です。受信ボックスを確認してください。",
-                systemUser.getEmail()
-            );
+            
+            // 管理者作成ユーザーの場合、自動的に検証メール送信
+            if (Boolean.TRUE.equals(systemUser.getCreatedByAdmin())) {
+                logger.info("Auto-sending verification email for admin-created user: {}", systemUser.getEmail());
+                try {
+                    String ipAddress = request.getIpAddress() != null ? request.getIpAddress() : "unknown";
+                    String userAgent = request.getUserAgent() != null ? request.getUserAgent() : "unknown";
+                    otpService.requestOtp(
+                        systemUser.getEmail(), 
+                        "EMAIL_VERIFICATION", 
+                        ipAddress,
+                        userAgent
+                    );
+                    throw new EmailNotVerifiedException(
+                        "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
+                        systemUser.getEmail()
+                    );
+                } catch (EmailNotVerifiedException e) {
+                    // EmailNotVerifiedException はそのまま再スロー
+                    throw e;
+                } catch (Exception e) {
+                    logger.error("Failed to send verification email: {}", systemUser.getEmail(), e);
+                    // メール送信失敗でもログイン拒否
+                    throw new EmailNotVerifiedException(
+                        "メールアドレスが未検証です。受信ボックスを確認してください。",
+                        systemUser.getEmail()
+                    );
+                }
+            } else {
+                // 通常のユーザーの場合は検証メール送信なし
+                throw new EmailNotVerifiedException(
+                    "メールアドレスが未検証です。受信ボックスを確認してください。",
+                    systemUser.getEmail()
+                );
+            }
         }
 
         // ログイン成功：失敗回数リセット

@@ -43,8 +43,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(
             @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // IP と UserAgent を注入
+            request.setIpAddress(getClientIp(httpRequest));
+            request.setUserAgent(httpRequest.getHeader("User-Agent"));
+            
             AuthenticationResponse response = authenticationService.login(request);
 
             // Set access token in HttpOnly cookie
