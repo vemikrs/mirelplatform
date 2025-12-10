@@ -271,6 +271,37 @@ public class AuthenticationController {
     }
 
     /**
+     * アカウントセットアップトークン検証
+     * 管理者が作成したユーザーのセットアップリンク検証
+     */
+    @GetMapping("/verify-setup-token")
+    public ResponseEntity<VerifySetupTokenResponse> verifySetupToken(@RequestParam String token) {
+        try {
+            VerifySetupTokenResponse response = authenticationService.verifyAccountSetupToken(token);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Setup token verification failed: {}", e.getMessage());
+            return ResponseEntity.status(400).build();
+        }
+    }
+
+    /**
+     * アカウントセットアップ（パスワード設定）
+     * 管理者が作成したユーザーが初回パスワードを設定
+     */
+    @PostMapping("/setup-account")
+    public ResponseEntity<String> setupAccount(@Valid @RequestBody SetupAccountRequest request) {
+        try {
+            authenticationService.setupAccount(request.getToken(), request.getNewPassword());
+            logger.info("Account setup completed successfully");
+            return ResponseEntity.ok("アカウントのセットアップが完了しました");
+        } catch (Exception e) {
+            logger.error("Account setup failed: {}", e.getMessage());
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+    /**
      * パスワードリセット要求
      * トークンを生成し、メール送信の準備をする
      */

@@ -57,6 +57,19 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, UUID> {
             LocalDateTime now);
 
     /**
+     * マジックリンクトークンと用途から未検証のOTPを検索
+     * 
+     * @param magicLinkToken
+     *            マジックリンクトークン
+     * @param purpose
+     *            用途
+     * @return OTPトークン
+     */
+    Optional<OtpToken> findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(
+            String magicLinkToken,
+            String purpose);
+
+    /**
      * ユーザー・用途別の全トークン取得
      * 
      * @param systemUserId

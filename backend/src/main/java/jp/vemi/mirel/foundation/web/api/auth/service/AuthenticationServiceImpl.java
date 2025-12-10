@@ -67,6 +67,93 @@ public class AuthenticationServiceImpl {
     @Autowired
     private jp.vemi.mirel.config.properties.AuthProperties authProperties;
 
+    @Autowired
+    private jp.vemi.mirel.foundation.service.OtpService otpService;
+
+    @Autowired
+    private jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository otpTokenRepository;
+
+    /**
+     * アカウントセットアップトークンを検証
+     * 
+     * @param token セットアップトークン
+     * @return ユーザー情報（email, username）
+     * @throws RuntimeException トークンが無効または期限切れの場合
+     */
+    @Transactional(readOnly = true)
+    public VerifySetupTokenResponse verifyAccountSetupToken(String token) {
+        logger.info("Verifying account setup token");
+
+        // トークン検証
+        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
+                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
+
+        // 有効期限チェック
+        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            logger.error("Setup token expired: {}", token);
+            throw new RuntimeException("セットアップリンクの有効期限が切れています");
+        }
+
+        // SystemUser取得
+        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        logger.info("Setup token verified for user: {}", systemUser.getEmail());
+
+        return VerifySetupTokenResponse.builder()
+                .email(systemUser.getEmail())
+                .username(systemUser.getUsername())
+                .build();
+    }
+
+    /**
+     * アカウントセットアップ（パスワード設定）
+     * 
+     * @param token セットアップトークン
+     * @param newPassword 新しいパスワード
+     * @throws RuntimeException トークンが無効、期限切れ、またはパスワード設定に失敗した場合
+     */
+    @Transactional
+    public void setupAccount(String token, String newPassword) {
+        logger.info("Setting up account with setup token");
+
+        // トークン検証
+        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
+                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
+
+        // 有効期限チェック
+        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            logger.error("Setup token expired: {}", token);
+            throw new RuntimeException("セットアップリンクの有効期限が切れています");
+        }
+
+        // SystemUser取得
+        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        // パスワードハッシュ化
+        String passwordHash = passwordEncoder.encode(newPassword);
+
+        // SystemUser更新（パスワード設定 + メール検証完了）
+        systemUser.setPasswordHash(passwordHash);
+        systemUser.setEmailVerified(true);
+        systemUserRepository.save(systemUser);
+
+        // User更新（メール検証完了）
+        userRepository.findBySystemUserId(systemUser.getId()).ifPresent(user -> {
+            user.setEmailVerified(true);
+            userRepository.save(user);
+            logger.info("User profile updated: email verified for userId={}", user.getUserId());
+        });
+
+        // トークン無効化
+        otpToken.setIsVerified(true);
+        otpToken.setVerifiedAt(java.time.LocalDateTime.now());
+        otpTokenRepository.save(otpToken);
+
+        logger.info("Account setup completed for user: {}", systemUser.getEmail());
+    }
+
     /**
      * ログイン処理
      */
