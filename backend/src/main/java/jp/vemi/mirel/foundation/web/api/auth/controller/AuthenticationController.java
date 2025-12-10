@@ -113,6 +113,11 @@ public class AuthenticationController {
      * OTPベースサインアップ
      * メールアドレス検証済みのユーザーを作成
      */
+    /**
+     * OTPベースサインアップ
+     * @deprecated Use /auth/otp/signup-verify instead for better security
+     */
+    @Deprecated
     @PostMapping("/signup/otp")
     public ResponseEntity<AuthenticationResponse> signupOtp(
             @Valid @RequestBody jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request,
@@ -126,8 +131,18 @@ public class AuthenticationController {
             }
 
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("OTP signup failed: {}", e.getMessage());
+            
+            // エラーメッセージに応じた適切なHTTPステータスコードを返す
+            String errorMessage = e.getMessage();
+            if (errorMessage != null) {
+                if (errorMessage.contains("Username already exists") || 
+                    errorMessage.contains("Email already exists")) {
+                    return ResponseEntity.status(409).build(); // Conflict
+                }
+            }
+            
             return ResponseEntity.badRequest().build();
         }
     }

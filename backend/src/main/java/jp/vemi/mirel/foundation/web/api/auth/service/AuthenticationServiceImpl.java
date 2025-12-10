@@ -34,6 +34,10 @@ import java.util.stream.Collectors;
 public class AuthenticationServiceImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
+    
+    // OTP/OAuth2ユーザー用の事前計算済みダミーパスワードハッシュ（bcrypt）
+    // パスワードレス認証のユーザーはこのハッシュを使用し、実際の認証では使用されない
+    private static final String DUMMY_PASSWORD_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     @Autowired
     private UserRepository userRepository;
@@ -222,46 +226,22 @@ public class AuthenticationServiceImpl {
         user.setRoles("USER");
         user = userRepository.save(user);
 
-        // デフォルトテナント作成または割り当て
-        Tenant defaultTenant = getOrCreateDefaultTenant();
-        user.setTenantId(defaultTenant.getTenantId());
-        userRepository.save(user);
+        // デフォルトテナント割り当て（共通ヘルパーメソッド使用）
+        assignDefaultTenantToUser(user);
 
-        // UserTenant作成
-        UserTenant userTenant = new UserTenant();
-        userTenant.setUserId(user.getUserId());
-        userTenant.setTenantId(defaultTenant.getTenantId());
-        userTenant.setRoleInTenant("MEMBER");
-        userTenant.setIsDefault(true);
-        userTenantRepository.save(userTenant);
+        // デフォルトライセンス付与（共通ヘルパーメソッド使用）
+        ApplicationLicense license = grantDefaultLicense(user);
 
-        // デフォルトライセンス付与（FREE tier）
-        ApplicationLicense license = new ApplicationLicense();
-        license.setSubjectType(SubjectType.USER);
-        license.setSubjectId(user.getUserId());
-        license.setApplicationId("promarker");
-        license.setTier(LicenseTier.FREE);
-        license.setGrantedBy("system");
-        licenseRepository.save(license);
+        // トークン生成（共通ヘルパーメソッド使用）
+        TokenDto tokens = generateAuthTokens(user);
 
-        // トークン生成
-        String accessToken;
-        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
-        if (isJwtEnabled && jwtService != null) {
-            accessToken = jwtService.generateToken(
-                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                            user.getUserId(), null, List.of()));
-        } else {
-            accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
-        }
-
-        RefreshToken refreshToken = createRefreshToken(user);
+        // テナント取得
+        Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
         logger.info("Signup successful for user: {}", user.getUserId());
 
-        return buildAuthenticationResponse(user, defaultTenant, accessToken,
-                refreshToken.getTokenHash(), List.of(license));
+        return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
+                tokens.getRefreshToken(), List.of(license));
     }
 
     /**
@@ -275,8 +255,7 @@ public class AuthenticationServiceImpl {
         SystemUser systemUser = systemUserRepository.findById(systemUserId)
                 .orElseThrow(() -> new RuntimeException("System user not found"));
 
-        // ユーザー名重複チェック (自分自身は除く...といってもUserはまだないはず)
-        // SystemUserのusernameとは別管理だが、一応チェック
+        // ユーザー名重複チェック
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
@@ -290,56 +269,28 @@ public class AuthenticationServiceImpl {
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        // パスワードは設定しない（OAuth2認証のみ）
-        // ただしDB制約がある場合はダミーを入れる必要があるが、Userエンティティの定義を確認するとnullableではない可能性がある
-        // User.javaを見ると password カラムはあるが nullable 制約は @Column に書いてない。DB定義次第。
-        // 安全のためダミーを入れる
-        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
-
+        user.setPasswordHash(DUMMY_PASSWORD_HASH); // 事前計算済みダミーハッシュを使用
         user.setIsActive(true);
         user.setEmailVerified(systemUser.getEmailVerified());
         user.setRoles("USER");
         user = userRepository.save(user);
 
-        // デフォルトテナント作成または割り当て
-        Tenant defaultTenant = getOrCreateDefaultTenant();
-        user.setTenantId(defaultTenant.getTenantId());
-        userRepository.save(user);
+        // デフォルトテナント割り当て（共通ヘルパーメソッド使用）
+        assignDefaultTenantToUser(user);
 
-        // UserTenant作成
-        UserTenant userTenant = new UserTenant();
-        userTenant.setUserId(user.getUserId());
-        userTenant.setTenantId(defaultTenant.getTenantId());
-        userTenant.setRoleInTenant("MEMBER");
-        userTenant.setIsDefault(true);
-        userTenantRepository.save(userTenant);
+        // デフォルトライセンス付与（共通ヘルパーメソッド使用）
+        ApplicationLicense license = grantDefaultLicense(user);
 
-        // デフォルトライセンス付与（FREE tier）
-        ApplicationLicense license = new ApplicationLicense();
-        license.setSubjectType(SubjectType.USER);
-        license.setSubjectId(user.getUserId());
-        license.setApplicationId("promarker");
-        license.setTier(LicenseTier.FREE);
-        license.setGrantedBy("system");
-        licenseRepository.save(license);
+        // トークン生成（共通ヘルパーメソッド使用）
+        TokenDto tokens = generateAuthTokens(user);
 
-        // トークン生成
-        String accessToken;
-        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
-        if (isJwtEnabled && jwtService != null) {
-            accessToken = jwtService.generateToken(
-                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                            user.getUserId(), null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
-        } else {
-            accessToken = "session-based-auth-token";
-        }
-
-        RefreshToken refreshToken = createRefreshToken(user);
+        // テナント取得
+        Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
         logger.info("OAuth2 signup successful for user: {}", user.getUserId());
 
-        return buildAuthenticationResponse(user, defaultTenant, accessToken,
-                refreshToken.getTokenHash(), List.of(license));
+        return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
+                tokens.getRefreshToken(), List.of(license));
     }
 
     /**
@@ -360,15 +311,12 @@ public class AuthenticationServiceImpl {
             throw new RuntimeException("Email already exists");
         }
 
-        // パスワードプレースホルダー（OTP認証のため実際には使用されない）
-        String dummyPassword = passwordEncoder.encode("OTP_AUTH_USER");
-
         // SystemUser作成（パスワードはプレースホルダー）
         SystemUser systemUser = new SystemUser();
         systemUser.setId(UUID.randomUUID());
         systemUser.setUsername(request.getUsername());
         systemUser.setEmail(request.getEmail());
-        systemUser.setPasswordHash(dummyPassword);
+        systemUser.setPasswordHash(DUMMY_PASSWORD_HASH); // 事前計算済みダミーハッシュを使用
         systemUser.setIsActive(true);
         systemUser.setEmailVerified(true); // OTP検証済み
         systemUser = systemUserRepository.save(systemUser);
@@ -382,55 +330,29 @@ public class AuthenticationServiceImpl {
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        // パスワードハッシュ（プレースホルダー）
-        user.setPasswordHash(dummyPassword);
+        user.setPasswordHash(DUMMY_PASSWORD_HASH); // 事前計算済みダミーハッシュを使用
         user.setIsActive(true);
         user.setEmailVerified(true); // OTP検証済み
         user.setRoles("USER");
-        // 最終ログイン時刻を設定（初回サインアップ時にも記録）
-        user.setLastLoginAt(Instant.now());
+        user.setLastLoginAt(Instant.now()); // 最終ログイン時刻を設定（初回サインアップ時にも記録）
         user = userRepository.save(user);
 
-        // デフォルトテナント作成または割り当て
-        Tenant defaultTenant = getOrCreateDefaultTenant();
-        user.setTenantId(defaultTenant.getTenantId());
-        userRepository.save(user);
+        // デフォルトテナント割り当て（共通ヘルパーメソッド使用）
+        assignDefaultTenantToUser(user);
 
-        // UserTenant作成
-        UserTenant userTenant = new UserTenant();
-        userTenant.setUserId(user.getUserId());
-        userTenant.setTenantId(defaultTenant.getTenantId());
-        userTenant.setRoleInTenant("MEMBER");
-        userTenant.setIsDefault(true);
-        userTenantRepository.save(userTenant);
+        // デフォルトライセンス付与（共通ヘルパーメソッド使用）
+        ApplicationLicense license = grantDefaultLicense(user);
 
-        // デフォルトライセンス付与（FREE tier）
-        ApplicationLicense license = new ApplicationLicense();
-        license.setSubjectType(SubjectType.USER);
-        license.setSubjectId(user.getUserId());
-        license.setApplicationId("promarker");
-        license.setTier(LicenseTier.FREE);
-        license.setGrantedBy("system");
-        licenseRepository.save(license);
+        // トークン生成（共通ヘルパーメソッド使用）
+        TokenDto tokens = generateAuthTokens(user);
 
-        // トークン生成
-        String accessToken;
-        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
-        if (isJwtEnabled && jwtService != null) {
-            accessToken = jwtService.generateToken(
-                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                            user.getUserId(), null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
-        } else {
-            accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
-        }
-
-        RefreshToken refreshToken = createRefreshToken(user);
+        // テナント取得
+        Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
         logger.info("OTP-based signup successful for user: {}", user.getUserId());
 
-        return buildAuthenticationResponse(user, defaultTenant, accessToken,
-                refreshToken.getTokenHash(), List.of(license));
+        return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
+                tokens.getRefreshToken(), List.of(license));
     }
 
     /**
@@ -681,5 +603,67 @@ public class AuthenticationServiceImpl {
                     return new SimpleGrantedAuthority(role.toUpperCase());
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * デフォルトテナントをユーザーに割り当て
+     * すべてのサインアップメソッドで共通の処理を統一
+     */
+    private void assignDefaultTenantToUser(User user) {
+        // デフォルトテナント作成または割り当て
+        Tenant defaultTenant = getOrCreateDefaultTenant();
+        user.setTenantId(defaultTenant.getTenantId());
+        userRepository.save(user);
+
+        // UserTenant作成
+        UserTenant userTenant = new UserTenant();
+        userTenant.setUserId(user.getUserId());
+        userTenant.setTenantId(defaultTenant.getTenantId());
+        userTenant.setRoleInTenant("MEMBER");
+        userTenant.setIsDefault(true);
+        userTenantRepository.save(userTenant);
+    }
+
+    /**
+     * デフォルトライセンスをユーザーに付与
+     */
+    private ApplicationLicense grantDefaultLicense(User user) {
+        ApplicationLicense license = new ApplicationLicense();
+        license.setSubjectType(SubjectType.USER);
+        license.setSubjectId(user.getUserId());
+        license.setApplicationId("promarker");
+        license.setTier(LicenseTier.FREE);
+        license.setGrantedBy("system");
+        licenseRepository.save(license);
+        return license;
+    }
+
+    /**
+     * JWTアクセストークンを生成
+     * すべてのサインアップメソッドで一貫したトークン生成を保証
+     */
+    private TokenDto generateAuthTokens(User user) {
+        String accessToken;
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        
+        if (isJwtEnabled && jwtService != null) {
+            // ユーザーの権限を取得して使用
+            List<SimpleGrantedAuthority> authorities = buildAuthoritiesFromUser(user);
+            accessToken = jwtService.generateToken(
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, authorities));
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
+
+        RefreshToken refreshToken = createRefreshToken(user);
+        
+        TokenDto tokens = new TokenDto();
+        tokens.setAccessToken(accessToken);
+        tokens.setRefreshToken(refreshToken.getTokenHash()); // 実際はtokenValue
+        tokens.setExpiresIn(3600L); // 1 hour (Long type)
+        
+        return tokens;
     }
 }

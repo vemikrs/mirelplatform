@@ -472,9 +472,26 @@ public class OtpController {
 
         } catch (RuntimeException e) {
             log.error("OTPサインアップ検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            
+            // エラーメッセージに応じた適切なエラーレスポンスを返す
+            String errorMessage = e.getMessage();
+            if (errorMessage != null) {
+                if (errorMessage.contains("Username already exists")) {
+                    return ResponseEntity.status(409) // Conflict
+                            .body(ApiResponse.<AuthenticationResponse>builder()
+                                    .errors(java.util.List.of("ユーザー名は既に使用されています"))
+                                    .build());
+                } else if (errorMessage.contains("Email already exists")) {
+                    return ResponseEntity.status(409) // Conflict
+                            .body(ApiResponse.<AuthenticationResponse>builder()
+                                    .errors(java.util.List.of("メールアドレスは既に使用されています"))
+                                    .build());
+                }
+            }
+            
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<AuthenticationResponse>builder()
-                            .errors(java.util.List.of(e.getMessage()))
+                            .errors(java.util.List.of(errorMessage != null ? errorMessage : "サインアップに失敗しました"))
                             .build());
         }
     }
