@@ -517,6 +517,35 @@ public class AuthenticationServiceImpl {
     }
 
     /**
+     * 検証メール再送
+     * 
+     * @param email メールアドレス
+     * @param ipAddress リクエスト元IPアドレス
+     * @param userAgent User-Agent
+     */
+    @Transactional
+    public void resendVerificationEmail(String email, String ipAddress, String userAgent) {
+        logger.info("Resend verification email request: email={}", email);
+        
+        // ユーザーが存在しなくてもエラーにしない（列挙攻撃対策）
+        SystemUser systemUser = systemUserRepository.findByEmail(email).orElse(null);
+        
+        if (systemUser != null && !Boolean.TRUE.equals(systemUser.getEmailVerified())) {
+            // 既存の OTP 基盤を活用
+            try {
+                otpService.requestOtp(email, "EMAIL_VERIFICATION", ipAddress, userAgent);
+                logger.info("Verification email sent: email={}", email);
+            } catch (Exception e) {
+                logger.error("Failed to send verification email: email={}", email, e);
+                // エラーを外部に公開しない（セキュリティ）
+            }
+        } else {
+            // ユーザーが存在しない、または既に検証済みの場合でもログのみ
+            logger.info("Verification email request ignored: email={} (not found or already verified)", email);
+        }
+    }
+
+    /**
      * テナント切替
      */
     @Transactional

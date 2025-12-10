@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * 認証APIコントローラ.
  */
@@ -299,6 +301,35 @@ public class AuthenticationController {
             logger.error("Account setup failed: {}", e.getMessage());
             return ResponseEntity.status(400).body(e.getMessage());
         }
+    }
+
+    /**
+     * 検証メール再送
+     * ユーザーが自分で検証メールを再送できるようにする
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request,
+            HttpServletRequest httpRequest) {
+        
+        String ipAddress = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        
+        try {
+            authenticationService.resendVerificationEmail(
+                request.getEmail(), 
+                ipAddress, 
+                userAgent
+            );
+        } catch (Exception e) {
+            logger.warn("Verification email resend error: {}", request.getEmail(), e);
+            // エラー詳細を返さない（セキュリティ）
+        }
+        
+        // セキュリティ: 成功/失敗に関わらず同じレスポンス
+        return ResponseEntity.ok(
+            Map.of("message", "検証メールを送信しました。受信ボックスを確認してください。")
+        );
     }
 
     /**
