@@ -64,7 +64,11 @@ export function OtpEmailVerificationPage() {
       if (signupData) {
         try {
           // ユーザー作成APIを呼び出し
-          const response = await apiClient.post<any>('/auth/signup/otp', {
+          const response = await apiClient.post<{
+            user: any;
+            tokens: any;
+            currentTenant: any;
+          }>('/auth/signup/otp', {
             ...signupData,
             emailVerified: true,
           });

@@ -360,13 +360,15 @@ public class AuthenticationServiceImpl {
             throw new RuntimeException("Email already exists");
         }
 
-        // SystemUser作成（パスワードは自動生成されたランダム値を使用）
+        // パスワードプレースホルダー（OTP認証のため実際には使用されない）
+        String dummyPassword = passwordEncoder.encode("OTP_AUTH_USER");
+
+        // SystemUser作成（パスワードはプレースホルダー）
         SystemUser systemUser = new SystemUser();
         systemUser.setId(UUID.randomUUID());
         systemUser.setUsername(request.getUsername());
         systemUser.setEmail(request.getEmail());
-        // OTP認証のため、ダミーパスワードを設定（使用されない）
-        systemUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        systemUser.setPasswordHash(dummyPassword);
         systemUser.setIsActive(true);
         systemUser.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
         systemUser = systemUserRepository.save(systemUser);
@@ -380,8 +382,8 @@ public class AuthenticationServiceImpl {
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        // パスワードハッシュ（ダミー値）
-        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        // パスワードハッシュ（プレースホルダー）
+        user.setPasswordHash(dummyPassword);
         user.setIsActive(true);
         user.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
         user.setRoles("USER");
