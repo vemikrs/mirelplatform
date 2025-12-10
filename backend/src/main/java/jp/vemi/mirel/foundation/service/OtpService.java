@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * OTPサービス.
@@ -524,4 +525,53 @@ public class OtpService {
         int deleted = otpAuditLogRepository.deleteByCreatedAtBefore(cutoffDate);
         log.info("古い監査ログ削除: {} 件", deleted);
     }
-}
+    /**
+     * アカウントセットアップ用のトークンを作成.
+     * 管理者作成ユーザーが初回パスワード設定を行うためのワンタイムトークン
+     * 
+     * @param systemUserId SystemUser ID
+     * @param email ユーザーのメールアドレス
+     * @return マジックリンクトークン
+     */
+    @Transactional
+    public String createAccountSetupToken(UUID systemUserId, String email) {
+        log.info("Creating account setup token: systemUserId={}, email={}", systemUserId, email);
+
+        // 既存の未検証ACCOUNT_SETUPトークンを無効化
+        otpTokenRepository.findBySystemUserIdAndPurposeAndIsVerifiedFalse(systemUserId, "ACCOUNT_SETUP")
+                .forEach(token -> {
+                    token.setIsVerified(true); // 無効化
+                    otpTokenRepository.save(token);
+                });
+
+        // 新しいトークン作成
+        String magicLinkToken = generateSecureToken(32);
+        String dummyOtpHash = hashOtp("ACCOUNT_SETUP_" + systemUserId.toString()); // ダミーハッシュ
+
+        OtpToken token = new OtpToken();
+        token.setId(UUID.randomUUID());
+        token.setSystemUserId(systemUserId);
+        token.setOtpHash(dummyOtpHash);
+        token.setMagicLinkToken(magicLinkToken);
+        token.setPurpose("ACCOUNT_SETUP");
+        token.setExpiresAt(LocalDateTime.now().plusHours(72)); // 72時間有効
+        token.setIsVerified(false);
+        token.setAttemptCount(0);
+        token.setMaxAttempts(1); // 1回のみ使用可能
+
+        otpTokenRepository.save(token);
+
+        log.info("Account setup token created: tokenId={}, expiresAt={}", 
+                token.getId(), token.getExpiresAt());
+
+        return magicLinkToken;
+    }
+
+    /**
+     * セキュアなランダムトークンを生成
+     */
+    private String generateSecureToken(int length) {
+        byte[] randomBytes = new byte[length];
+        secureRandom.nextBytes(randomBytes);
+        return HexFormat.of().formatHex(randomBytes);
+    }}

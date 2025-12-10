@@ -68,6 +68,19 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, UUID> {
     List<OtpToken> findBySystemUserIdAndPurpose(UUID systemUserId, String purpose);
 
     /**
+     * ユーザー・用途別の未検証トークン取得
+     * 
+     * @param systemUserId
+     *            SystemUser ID
+     * @param purpose
+     *            用途
+     * @param isVerified
+     *            検証済みフラグ
+     * @return OTPトークンリスト
+     */
+    List<OtpToken> findBySystemUserIdAndPurposeAndIsVerifiedFalse(UUID systemUserId, String purpose);
+
+    /**
      * 古い未検証トークンを無効化
      * 
      * @param systemUserId
