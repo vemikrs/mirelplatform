@@ -10,12 +10,14 @@ import {
   Label,
   Switch,
 } from '@mirel/ui';
+import { Trash2 } from 'lucide-react';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
 
 interface UserFormDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserRequest | UpdateUserRequest) => void;
+  onDelete?: (userId: string) => void;
   user?: AdminUser | null;
   isLoading?: boolean;
 }
@@ -24,9 +26,11 @@ export const UserFormDialog = ({
   open, 
   onClose, 
   onSubmit, 
+  onDelete,
   user,
   isLoading = false 
 }: UserFormDialogProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -117,6 +121,18 @@ export const UserFormDialog = ({
       };
       onSubmit(createData);
     }
+  };
+
+  const handleDelete = () => {
+    if (!user || !onDelete) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (!user || !onDelete) return;
+    onDelete(user.userId);
+    setShowDeleteConfirm(false);
+    onClose();
   };
 
   return (
@@ -239,6 +255,18 @@ export const UserFormDialog = ({
           </div>
 
           <DialogFooter>
+            {user && onDelete && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={handleDelete} 
+                disabled={isLoading}
+                className="mr-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                削除
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               キャンセル
             </Button>
@@ -248,6 +276,39 @@ export const UserFormDialog = ({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ユーザーの削除</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              ユーザー <strong className="text-foreground">{user?.displayName}</strong> を削除してもよろしいですか？
+            </p>
+            <p className="text-sm text-destructive mt-2">
+              この操作は取り消せません。
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              キャンセル
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={confirmDelete}
+            >
+              削除する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

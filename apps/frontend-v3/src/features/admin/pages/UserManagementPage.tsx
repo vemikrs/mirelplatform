@@ -1,7 +1,11 @@
-
 import {
   Badge,
   Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -30,6 +34,8 @@ export const UserManagementPage = () => {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   // Query for fetching users
   const { data: userResponse, isLoading } = useQuery({
     queryKey: ['admin-users', searchQuery, roleFilter],
@@ -110,9 +116,29 @@ export const UserManagementPage = () => {
     }
   });
 
-  const handleDelete = (userId: string) => {
-    if (confirm('このユーザーを削除してもよろしいですか？')) {
-      deleteMutation.mutate(userId);
+  const handleDelete = (user: AdminUser) => {
+    setUserToDelete(user);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteMutation.mutateAsync(userToDelete.userId);
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
+    } catch (error) {
+      // エラーはonErrorで処理済み
+    }
+  };
+
+  const handleDeleteFromDialog = async (userId: string) => {
+    try {
+      await deleteMutation.mutateAsync(userId);
+      setIsDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      // エラー時はダイアログを閉じず、toastで通知（onErrorで既に通知済み）
     }
   };
 
@@ -240,7 +266,7 @@ export const UserManagementPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                             className="text-red-600"
-                            onClick={() => handleDelete(user.userId)}
+                            onClick={() => handleDelete(user)}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
                             削除
@@ -259,9 +285,48 @@ export const UserManagementPage = () => {
         open={isDialogOpen}
         onClose={handleDialogClose}
         onSubmit={handleFormSubmit}
+        onDelete={handleDeleteFromDialog}
         user={selectedUser}
-        isLoading={createMutation.isPending || updateMutation.isPending}
+        isLoading={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}
       />
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ユーザーの削除</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              ユーザー <strong className="text-foreground">{userToDelete?.displayName}</strong> を削除してもよろしいですか？
+            </p>
+            <p className="text-sm text-destructive mt-2">
+              この操作は取り消せません。
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setUserToDelete(null);
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              キャンセル
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? '削除中...' : '削除する'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

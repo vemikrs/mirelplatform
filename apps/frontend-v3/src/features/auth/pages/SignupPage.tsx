@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { Button, Card, Input } from '@mirel/ui';
+import { useRequestOtp } from '@/lib/hooks/useOtp';
 import axios from 'axios';
 
 export function SignupPage() {
@@ -13,7 +14,7 @@ export function SignupPage() {
   useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const signup = useAuthStore((state) => state.signup);
+  const setOtpState = useAuthStore((state) => state.setOtpState);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [isOAuth2, setIsOAuth2] = useState(false);
@@ -22,8 +23,6 @@ export function SignupPage() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    password: '',
-    confirmPassword: '',
     displayName: '',
     firstName: '',
     lastName: '',
@@ -41,21 +40,38 @@ export function SignupPage() {
     }
   }, [location]);
 
+  // OTPリクエストフック
+  const { mutate: requestOtp, isPending: isRequestingOtp } = useRequestOtp({
+    onSuccess: (data) => {
+      // OTP状態をストアに保存
+      setOtpState(
+        formData.email,
+        'EMAIL_VERIFICATION',
+        data.requestId,
+        data.expirationMinutes,
+        data.resendCooldownSeconds
+      );
+      // OTP検証ページへ遷移
+      navigate('/auth/otp-email-verification', {
+        state: {
+          signupData: {
+            username: formData.username,
+            email: formData.email,
+            displayName: formData.displayName,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+          }
+        }
+      });
+    },
+    onError: (errors) => {
+      setError(errors[0] || 'OTP送信に失敗しました。');
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!isOAuth2) {
-      // 通常のバリデーション
-      if (formData.password !== formData.confirmPassword) {
-        setError('パスワードが一致しません。');
-        return;
-      }
-      if (formData.password.length < 8) {
-        setError('パスワードは8文字以上で入力してください。');
-        return;
-      }
-    }
 
     setLoading(true);
 
@@ -83,16 +99,11 @@ export function SignupPage() {
         navigate('/home');
 
       } else {
-        // 通常サインアップ
-        await signup({
-          username: formData.username,
+        // OTPサインアップ: メール認証コードを送信
+        requestOtp({
           email: formData.email,
-          password: formData.password,
-          displayName: formData.displayName,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          purpose: 'EMAIL_VERIFICATION',
         });
-        navigate('/');
       }
     } catch (err: any) {
       console.error('Signup failed:', err);
@@ -201,41 +212,6 @@ export function SignupPage() {
             </div>
           </div>
 
-          {!isOAuth2 && (
-            <>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-2 text-foreground">
-                  パスワード *
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  placeholder="••••••••"
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">8文字以上で入力してください</p>
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2 text-foreground">
-                  パスワード（確認） *
-                </label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                  placeholder="••••••••"
-                  className="w-full"
-                />
-              </div>
-            </>
-          )}
-
           {error && (
             <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-3 rounded text-sm">
               {error}
@@ -244,10 +220,10 @@ export function SignupPage() {
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || isRequestingOtp}
             className="w-full"
           >
-            {loading ? '処理中...' : (isOAuth2 ? '登録して開始' : 'アカウントを作成')}
+            {loading || isRequestingOtp ? '処理中...' : (isOAuth2 ? '登録して開始' : '認証コードを送信')}
           </Button>
         </form>
 

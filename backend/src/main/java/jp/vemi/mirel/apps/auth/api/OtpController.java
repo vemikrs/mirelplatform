@@ -11,6 +11,7 @@ import jp.vemi.mirel.apps.auth.dto.MagicLinkVerifyDto;
 import jp.vemi.mirel.apps.auth.dto.OtpRequestDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResendDto;
 import jp.vemi.mirel.apps.auth.dto.OtpResponseDto;
+import jp.vemi.mirel.apps.auth.dto.OtpSignupVerifyDto;
 import jp.vemi.mirel.apps.auth.dto.OtpVerifyDto;
 import jp.vemi.mirel.foundation.abst.dao.entity.OtpToken;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
@@ -398,6 +399,99 @@ public class OtpController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<OtpResponseDto>builder()
                             .errors(java.util.List.of(e.getMessage()))
+                            .build());
+        }
+    }
+
+    /**
+     * OTPサインアップ検証
+     * OTP検証とユーザー作成を同時に実行することで、検証状態の信頼性を保証
+     * 
+     * @param request
+     *            リクエスト
+     * @param httpRequest
+     *            HTTPリクエスト
+     * @param httpResponse
+     *            HTTPレスポンス
+     * @return 認証レスポンス
+     */
+    @PostMapping("/signup-verify")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> signupVerify(
+            @RequestBody ApiRequest<OtpSignupVerifyDto> request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        OtpSignupVerifyDto dto = request.getModel();
+        if (dto == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<AuthenticationResponse>builder()
+                            .errors(java.util.List.of("リクエストボディが無効です"))
+                            .build());
+        }
+
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        try {
+            // OTP検証
+            boolean verified = otpService.verifyOtp(
+                    dto.getEmail(),
+                    dto.getOtpCode(),
+                    "EMAIL_VERIFICATION",
+                    ipAddress,
+                    userAgent);
+
+            if (!verified) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.<AuthenticationResponse>builder()
+                                .errors(java.util.List.of("認証コードが正しくありません"))
+                                .build());
+            }
+
+            // OTP検証成功後、即座にユーザー作成
+            jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest signupRequest = 
+                new jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest();
+            signupRequest.setUsername(dto.getUsername());
+            signupRequest.setEmail(dto.getEmail());
+            signupRequest.setDisplayName(dto.getDisplayName());
+            signupRequest.setFirstName(dto.getFirstName());
+            signupRequest.setLastName(dto.getLastName());
+
+            AuthenticationResponse authResponse = authenticationService.signupWithOtp(signupRequest);
+
+            if (authResponse.getTokens() != null) {
+                setTokenCookies(httpResponse, authResponse.getTokens());
+            }
+
+            log.info("OTPサインアップ成功: userId={}, email={}", 
+                    authResponse.getUser().getUserId(), dto.getEmail());
+
+            return ResponseEntity.ok(ApiResponse.<AuthenticationResponse>builder()
+                    .data(authResponse)
+                    .messages(java.util.List.of("サインアップに成功しました"))
+                    .build());
+
+        } catch (RuntimeException e) {
+            log.error("OTPサインアップ検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            
+            // エラーメッセージに応じた適切なエラーレスポンスを返す
+            String errorMessage = e.getMessage();
+            if (errorMessage != null) {
+                if (errorMessage.contains("Username already exists")) {
+                    return ResponseEntity.status(409) // Conflict
+                            .body(ApiResponse.<AuthenticationResponse>builder()
+                                    .errors(java.util.List.of("ユーザー名は既に使用されています"))
+                                    .build());
+                } else if (errorMessage.contains("Email already exists")) {
+                    return ResponseEntity.status(409) // Conflict
+                            .body(ApiResponse.<AuthenticationResponse>builder()
+                                    .errors(java.util.List.of("メールアドレスは既に使用されています"))
+                                    .build());
+                }
+            }
+            
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.<AuthenticationResponse>builder()
+                            .errors(java.util.List.of(errorMessage != null ? errorMessage : "サインアップに失敗しました"))
                             .build());
         }
     }
