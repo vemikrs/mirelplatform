@@ -24,6 +24,7 @@ import { Edit2, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { getUsers, deleteUser, createUser, updateUser } from '../api';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
+import { getApiErrors } from '@/lib/api/client';
 import { UserFormDialog } from '../components/UserFormDialog';
 
 
@@ -63,9 +64,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to delete user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '削除失敗',
-        description: 'ユーザーの削除に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
@@ -85,9 +87,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to create user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '作成失敗',
-        description: 'ユーザーの作成に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
@@ -108,9 +111,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to update user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '更新失敗',
-        description: 'ユーザー情報の更新に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
