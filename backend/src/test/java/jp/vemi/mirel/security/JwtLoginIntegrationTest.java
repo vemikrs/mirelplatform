@@ -10,9 +10,13 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,17 +31,30 @@ import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.web.api.auth.dto.LoginRequest;
 
+import static org.mockito.Mockito.mock;
+
 @SpringBootTest(properties = {
     "spring.main.allow-bean-definition-overriding=true",
     "auth.method=jwt",
     "auth.jwt.enabled=true",
     "auth.jwt.secret=verylongsecretkeythatisatleast32byteslongforsecurityreasons",
     "auth.jwt.expiration=3600",
-    "mipla2.security.api.csrf-enabled=true"
+    "mipla2.security.api.csrf-enabled=true",
+    "mira.ai.provider=mock",
+    "mira.ai.mock.enabled=true"
 })
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("dev")
 public class JwtLoginIntegrationTest {
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        @Primary
+        ChatModel mockChatModel() {
+            return mock(ChatModel.class);
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
