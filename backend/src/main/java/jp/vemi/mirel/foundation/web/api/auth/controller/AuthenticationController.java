@@ -297,8 +297,12 @@ public class AuthenticationController {
      * 管理者が作成したユーザーが初回パスワードを設定
      */
     @PostMapping("/setup-account")
-    public ResponseEntity<String> setupAccount(@Valid @RequestBody SetupAccountRequest request) {
+    public ResponseEntity<String> setupAccount(@Valid @RequestBody ApiRequest<SetupAccountRequest> apiRequest) {
         try {
+            SetupAccountRequest request = apiRequest.getModel();
+            logger.info("Setup account request: token={}, passwordLength={}", 
+                request.getToken() != null ? request.getToken().substring(0, Math.min(10, request.getToken().length())) + "..." : "null",
+                request.getNewPassword() != null ? request.getNewPassword().length() : 0);
             authenticationService.setupAccount(request.getToken(), request.getNewPassword());
             logger.info("Account setup completed successfully");
             return ResponseEntity.ok("アカウントのセットアップが完了しました");
