@@ -5,17 +5,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
+import jp.vemi.mirel.foundation.abst.dao.entity.User;
+import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
+import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.web.api.auth.dto.LoginRequest;
 
 @SpringBootTest(properties = {
@@ -27,7 +36,7 @@ import jp.vemi.mirel.foundation.web.api.auth.dto.LoginRequest;
     "mipla2.security.api.csrf-enabled=true"
 })
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 public class JwtLoginIntegrationTest {
 
     @Autowired
@@ -36,11 +45,58 @@ public class JwtLoginIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private SystemUserRepository systemUserRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private String email = "user01@example.com";
+    private String userId = "user-regular-001";
+    private String password = "password123";
+
+    @BeforeEach
+    void setUp() {
+        // 既存のテストユーザーがあれば削除
+        userRepository.findById(userId).ifPresent(u -> userRepository.delete(u));
+        systemUserRepository.findByEmail(email).ifPresent(su -> systemUserRepository.delete(su));
+
+        // SystemUser 作成 (email_verified=true が重要)
+        SystemUser systemUser = new SystemUser();
+        systemUser.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
+        systemUser.setUsername("user01");
+        systemUser.setEmail(email);
+        systemUser.setPasswordHash(passwordEncoder.encode(password));
+        systemUser.setEmailVerified(true); // email_verified=true を明示的に設定
+        systemUser.setIsActive(true);
+        systemUser.setAccountLocked(false);
+        systemUserRepository.save(systemUser);
+
+        // Application User 作成
+        User appUser = new User();
+        appUser.setUserId(userId);
+        appUser.setSystemUserId(systemUser.getId());
+        appUser.setTenantId("default");
+        appUser.setUsername("user01");
+        appUser.setEmail(email);
+        appUser.setDisplayName("Regular User 01");
+        appUser.setFirstName("Test");
+        appUser.setLastName("User01");
+        appUser.setIsActive(true);
+        appUser.setEmailVerified(true);
+        appUser.setRoles("USER");
+        appUser.setLastLoginAt(Instant.now());
+        userRepository.save(appUser);
+    }
+
     @Test
     public void loginAndAccessProtectedResources() throws Exception {
         // 1. Login
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("user@example.com");
+        loginRequest.setUsernameOrEmail("user01@example.com");
         loginRequest.setPassword("password123");
 
         MvcResult loginResult = mockMvc.perform(post("/auth/login")
@@ -58,7 +114,7 @@ public class JwtLoginIntegrationTest {
                 .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value("user-regular-001"))
-                .andExpect(jsonPath("$.email").value("user@example.com"));
+                .andExpect(jsonPath("$.email").value("user01@example.com"));
 
         // 3. Access /users/me/tenants
         mockMvc.perform(get("/users/me/tenants")

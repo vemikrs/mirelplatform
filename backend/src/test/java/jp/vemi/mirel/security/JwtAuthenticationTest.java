@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
     "mipla2.security.api.csrf-enabled=true"
 })
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 public class JwtAuthenticationTest {
 
     @Autowired

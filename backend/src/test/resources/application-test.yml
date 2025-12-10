@@ -21,6 +21,9 @@ spring:
   sql:
     init:
       mode: never # Disable database initialization for tests
+  ai:
+    openai:
+      api-key: test-key # テスト用のダミーキー
 
 # Disable security for tests
 mirel:
