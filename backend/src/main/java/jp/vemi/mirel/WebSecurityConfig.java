@@ -202,6 +202,10 @@ public class WebSecurityConfig {
     /**
      * 認可設定を行います。
      * securityPropertiesの設定に応じてAPIエンドポイントの認可要否を制御します。
+     * 
+     * <p><b>重要:</b> 新しい認証不要エンドポイントを追加する場合は、必ずここに追加すること。
+     * permitAll()リストに含まれていないエンドポイントは、OAuth2のGitHub認証にリダイレクトされる。
+     * これにより、意図しないOAuth2フローが開始される問題が発生する（Issue #57で確認）。</p>
      *
      * @param http
      *            セキュリティ設定
@@ -211,10 +215,13 @@ public class WebSecurityConfig {
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
             // 認証不要なAPIエンドポイント
+            // NOTE: 新しい認証不要エンドポイントを追加する際は、必ずここに追加すること
             authz.requestMatchers(
                     "/auth/login",
                     "/auth/signup",
                     "/auth/otp/**",
+                    "/auth/verify-setup-token",  // アカウントセットアップトークン検証 (Issue #57)
+                    "/auth/setup-account",       // アカウントセットアップ（パスワード設定） (Issue #57)
                     "/auth/health",
                     "/auth/logout",
                     "/auth/check").permitAll()
