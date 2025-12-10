@@ -52,7 +52,7 @@ export function SignupPage() {
         data.resendCooldownSeconds
       );
       // OTP検証ページへ遷移
-      navigate('/auth/otp-email-verification', {
+      navigate('/auth/email-verification', {
         state: {
           signupData: {
             username: formData.username,
