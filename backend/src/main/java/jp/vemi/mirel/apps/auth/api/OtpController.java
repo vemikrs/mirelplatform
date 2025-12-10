@@ -85,31 +85,22 @@ public class OtpController {
         String ipAddress = getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        try {
-            String requestId = otpService.requestOtp(
-                    dto.getEmail(),
-                    dto.getPurpose(),
-                    ipAddress,
-                    userAgent);
+        String requestId = otpService.requestOtp(
+                dto.getEmail(),
+                dto.getPurpose(),
+                ipAddress,
+                userAgent);
 
-            OtpResponseDto response = OtpResponseDto.builder()
-                    .requestId(requestId)
-                    .message("認証コードをメールに送信しました")
-                    .expirationMinutes(otpProperties.getExpirationMinutes())
-                    .resendCooldownSeconds(otpProperties.getResendCooldownSeconds())
-                    .build();
+        OtpResponseDto response = OtpResponseDto.builder()
+                .requestId(requestId)
+                .message("認証コードをメールに送信しました")
+                .expirationMinutes(otpProperties.getExpirationMinutes())
+                .resendCooldownSeconds(otpProperties.getResendCooldownSeconds())
+                .build();
 
-            return ResponseEntity.ok(ApiResponse.<OtpResponseDto>builder()
-                    .data(response)
-                    .build());
-
-        } catch (RuntimeException e) {
-            log.error("OTPリクエスト失敗: email={}, error={}", dto.getEmail(), e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.<OtpResponseDto>builder()
-                            .errors(java.util.List.of(e.getMessage()))
-                            .build());
-        }
+        return ResponseEntity.ok(ApiResponse.<OtpResponseDto>builder()
+                .data(response)
+                .build());
     }
 
     /**
@@ -175,57 +166,47 @@ public class OtpController {
         String ipAddress = getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        try {
-            boolean verified = otpService.verifyOtp(
-                    dto.getEmail(),
-                    dto.getOtpCode(),
-                    dto.getPurpose(),
-                    ipAddress,
-                    userAgent);
+        boolean verified = otpService.verifyOtp(
+                dto.getEmail(),
+                dto.getOtpCode(),
+                dto.getPurpose(),
+                ipAddress,
+                userAgent);
 
-            if (verified) {
-                // OTP検証成功後、Spring Securityセッション認証を設定
-                if ("LOGIN".equals(dto.getPurpose())) {
-                    SystemUser systemUser = systemUserRepository.findByEmail(dto.getEmail())
-                            .orElseThrow(() -> new RuntimeException("User not found"));
+        if (verified) {
+            // OTP検証成功後、Spring Securityセッション認証を設定
+            if ("LOGIN".equals(dto.getPurpose())) {
+                SystemUser systemUser = systemUserRepository.findByEmail(dto.getEmail())
+                        .orElseThrow(() -> new RuntimeException("User not found"));
 
-                    User applicationUser = userRepository.findBySystemUserId(systemUser.getId())
-                            .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
+                User applicationUser = userRepository.findBySystemUserId(systemUser.getId())
+                        .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
 
-                    // JWT認証レスポンス生成
-                    AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
+                // JWT認証レスポンス生成
+                AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
 
-                    log.info("OTPログイン成功: JWTトークン発行 - userId={}, email={}",
-                            applicationUser.getUserId(), dto.getEmail());
+                log.info("OTPログイン成功: JWTトークン発行 - userId={}, email={}",
+                        applicationUser.getUserId(), dto.getEmail());
 
-                    if (authResponse.getTokens() != null) {
-                        setTokenCookies(httpResponse, authResponse.getTokens());
-                    }
-
-                    return ResponseEntity.ok(ApiResponse.<Object>builder()
-                            .data(authResponse)
-                            .messages(java.util.List.of("認証に成功しました"))
-                            .build());
+                if (authResponse.getTokens() != null) {
+                    setTokenCookies(httpResponse, authResponse.getTokens());
                 }
 
                 return ResponseEntity.ok(ApiResponse.<Object>builder()
-                        .data(true)
+                        .data(authResponse)
                         .messages(java.util.List.of("認証に成功しました"))
                         .build());
-            } else {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.<Object>builder()
-                                .data(false)
-                                .errors(java.util.List.of("認証コードが正しくありません"))
-                                .build());
             }
 
-        } catch (RuntimeException e) {
-            log.error("OTP検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            return ResponseEntity.ok(ApiResponse.<Object>builder()
+                    .data(true)
+                    .messages(java.util.List.of("認証に成功しました"))
+                    .build());
+        } else {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<Object>builder()
                             .data(false)
-                            .errors(java.util.List.of(e.getMessage()))
+                            .errors(java.util.List.of("認証コードが正しくありません"))
                             .build());
         }
     }
@@ -263,78 +244,68 @@ public class OtpController {
         String ipAddress = getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        try {
-            // トークン検証
-            OtpToken token = otpService.verifyMagicLink(
-                    dto.getToken(),
-                    ipAddress,
-                    userAgent);
+        // トークン検証
+        OtpToken token = otpService.verifyMagicLink(
+                dto.getToken(),
+                ipAddress,
+                userAgent);
 
-            // 検証成功後、用途に応じた処理
-            if ("LOGIN".equals(token.getPurpose())) {
-                // SystemUser -> User 解決
-                User applicationUser = userRepository.findBySystemUserId(token.getSystemUserId())
-                        .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
+        // 検証成功後、用途に応じた処理
+        if ("LOGIN".equals(token.getPurpose())) {
+            // SystemUser -> User 解決
+            User applicationUser = userRepository.findBySystemUserId(token.getSystemUserId())
+                    .orElseThrow(() -> new RuntimeException("アプリケーションユーザーが登録されていません"));
 
-                AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
+            AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
 
-                log.info("マジックリンクログイン成功: JWTトークン発行 - userId={}", applicationUser.getUserId());
+            log.info("マジックリンクログイン成功: JWTトークン発行 - userId={}", applicationUser.getUserId());
 
-                if (authResponse.getTokens() != null) {
-                    setTokenCookies(httpResponse, authResponse.getTokens());
-                }
-
-                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
-                responseData.put("verified", true);
-                responseData.put("purpose", "LOGIN");
-                // MagicLinkの場合 DTOにemailはない。token.systemUserIdから引く必要がある
-                // ここでは applicationUser.getEmail() がある。
-                responseData.put("email", applicationUser.getEmail());
-                responseData.put("auth", authResponse);
-
-                return ResponseEntity.ok(ApiResponse.<Object>builder()
-                        .data(responseData)
-                        .messages(java.util.List.of("認証に成功しました"))
-                        .build());
+            if (authResponse.getTokens() != null) {
+                setTokenCookies(httpResponse, authResponse.getTokens());
             }
 
-            // LOGIN以外 (PASSWORD_RESET, EMAIL_VERIFICATION)
-            // フロントエンドには検証成功の事実と、元のemail/code情報を返して
-            // 既存の画面フローに乗せることも可能だが、
-            // ここではシンプルに検証成功のみを返す。
-
-            // 汎用的なレスポンスデータを作成
             java.util.Map<String, Object> responseData = new java.util.HashMap<>();
             responseData.put("verified", true);
-            responseData.put("purpose", token.getPurpose());
-
-            // 必要に応じてユーザー情報を付加
-            systemUserRepository.findById(token.getSystemUserId()).ifPresent(sysUser -> {
-                responseData.put("email", sysUser.getEmail());
-            });
-
-            // EMAIL_VERIFICATIONの場合、ログインさせる
-            if ("EMAIL_VERIFICATION".equals(token.getPurpose())) {
-                // ユーザーがいればログイン
-                userRepository.findBySystemUserId(token.getSystemUserId()).ifPresent(appUser -> {
-                    AuthenticationResponse authResponse = authenticationService.loginWithUser(appUser);
-                    responseData.put("auth", authResponse);
-                });
-            }
+            responseData.put("purpose", "LOGIN");
+            // MagicLinkの場合 DTOにemailはない。token.systemUserIdから引く必要がある
+            // ここでは applicationUser.getEmail() がある。
+            responseData.put("email", applicationUser.getEmail());
+            responseData.put("auth", authResponse);
 
             return ResponseEntity.ok(ApiResponse.<Object>builder()
                     .data(responseData)
                     .messages(java.util.List.of("認証に成功しました"))
                     .build());
-
-        } catch (RuntimeException e) {
-            log.error("マジックリンク検証失敗: error={}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.<Object>builder()
-                            .data(false)
-                            .errors(java.util.List.of(e.getMessage()))
-                            .build());
         }
+
+        // LOGIN以外 (PASSWORD_RESET, EMAIL_VERIFICATION)
+        // フロントエンドには検証成功の事実と、元のemail/code情報を返して
+        // 既存の画面フローに乗せることも可能だが、
+        // ここではシンプルに検証成功のみを返す。
+
+        // 汎用的なレスポンスデータを作成
+        java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+        responseData.put("verified", true);
+        responseData.put("purpose", token.getPurpose());
+
+        // 必要に応じてユーザー情報を付加
+        systemUserRepository.findById(token.getSystemUserId()).ifPresent(sysUser -> {
+            responseData.put("email", sysUser.getEmail());
+        });
+
+        // EMAIL_VERIFICATIONの場合、ログインさせる
+        if ("EMAIL_VERIFICATION".equals(token.getPurpose())) {
+            // ユーザーがいればログイン
+            userRepository.findBySystemUserId(token.getSystemUserId()).ifPresent(appUser -> {
+                AuthenticationResponse authResponse = authenticationService.loginWithUser(appUser);
+                responseData.put("auth", authResponse);
+            });
+        }
+
+        return ResponseEntity.ok(ApiResponse.<Object>builder()
+                .data(responseData)
+                .messages(java.util.List.of("認証に成功しました"))
+                .build());
     }
 
     /**
@@ -376,30 +347,21 @@ public class OtpController {
         String ipAddress = getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        try {
-            String requestId = otpService.resendOtp(
-                    dto.getEmail(),
-                    dto.getPurpose(),
-                    ipAddress,
-                    userAgent);
+        String requestId = otpService.resendOtp(
+                dto.getEmail(),
+                dto.getPurpose(),
+                ipAddress,
+                userAgent);
 
-            OtpResponseDto response = OtpResponseDto.builder()
-                    .requestId(requestId)
-                    .message("認証コードを再送信しました")
-                    .expirationMinutes(otpProperties.getExpirationMinutes())
-                    .build();
+        OtpResponseDto response = OtpResponseDto.builder()
+                .requestId(requestId)
+                .message("認証コードを再送信しました")
+                .expirationMinutes(otpProperties.getExpirationMinutes())
+                .build();
 
-            return ResponseEntity.ok(ApiResponse.<OtpResponseDto>builder()
-                    .data(response)
-                    .build());
-
-        } catch (RuntimeException e) {
-            log.error("OTP再送信失敗: email={}, error={}", dto.getEmail(), e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.<OtpResponseDto>builder()
-                            .errors(java.util.List.of(e.getMessage()))
-                            .build());
-        }
+        return ResponseEntity.ok(ApiResponse.<OtpResponseDto>builder()
+                .data(response)
+                .build());
     }
 
     /**
