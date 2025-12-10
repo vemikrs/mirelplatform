@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <included>
-    <!-- Spring Framework のログレベル設定 -->
-    <logger name="org.springframework" level="INFO" />
-    <logger name="org.springframework.security" level="INFO" />
-
-    <!-- アプリケーションのログレベル設定 -->
-    <logger name="jp.vemi.mirel" level="INFO" />
-    <logger name="jp.vemi.ste" level="DEBUG" />
-    <!-- GitHub Models Debug -->
-    <logger name="jp.vemi.mirel.apps.mira.infrastructure.ai" level="TRACE" />
-    <!-- Mira App Debug -->
-    <logger name="jp.vemi.mirel.apps.mira" level="DEBUG" />
+    <!--
+        ログレベル設定は application.yml の logging.level で一元管理しています。
+        このファイルではカスタムアペンダーとログルーティングのみを定義します。
+        
+        Note: application.yml の logging.level 設定はこのファイルの設定を上書きします。
+        ログレベルを変更する場合は application.yml を編集してください。
+    -->
     
     <!-- リクエストログ設定 -->
     <logger name="request" level="DEBUG" additivity="false">
