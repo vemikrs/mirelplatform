@@ -53,9 +53,20 @@ export function SetupAccountPage() {
         setError(null);
       } catch (err: any) {
         console.error('Token verification failed:', err);
-        const errorMessage = 
-          err.response?.data?.message || 
-          'セットアップリンクが無効または期限切れです';
+        
+        // エラーメッセージの抽出
+        let errorMessage = 'セットアップリンクが無効または期限切れです';
+        
+        if (err.response?.data) {
+          if (typeof err.response.data === 'string') {
+            errorMessage = err.response.data;
+          } else if (err.response.data.message) {
+            errorMessage = err.response.data.message;
+          } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+            errorMessage = err.response.data.errors[0] || errorMessage;
+          }
+        }
+        
         setError(errorMessage);
       } finally {
         setIsVerifying(false);
@@ -125,9 +136,23 @@ export function SetupAccountPage() {
       }
     } catch (err: any) {
       console.error('Setup account failed:', err);
-      const errorMessage = 
-        err.response?.data?.message || 
-        'アカウントセットアップに失敗しました';
+      
+      // エラーメッセージの抽出
+      let errorMessage = 'アカウントセットアップに失敗しました';
+      
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          // バックエンドから文字列が返された場合
+          errorMessage = err.response.data;
+        } else if (err.response.data.message) {
+          // ApiResponse 形式の場合
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          // エラー配列の場合
+          errorMessage = err.response.data.errors[0] || errorMessage;
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
