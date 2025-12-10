@@ -11,6 +11,9 @@ import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserTenantRepository;
+import jp.vemi.mirel.foundation.config.AppProperties;
+import jp.vemi.mirel.foundation.service.EmailService;
+import jp.vemi.mirel.foundation.service.OtpService;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
@@ -29,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -55,6 +59,15 @@ public class AdminUserService {
     @Autowired
     @Lazy
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AppProperties appProperties;
 
     /**
      * ユーザー一覧取得（ページング対応）
@@ -244,7 +257,37 @@ public class AdminUserService {
         logger.info("User created and linked to SystemUser: userId={}, systemUserId={}", 
                 user.getUserId(), user.getSystemUserId());
 
+        // 3. アカウントセットアップトークン作成とメール送信
+        try {
+            String setupToken = otpService.createAccountSetupToken(systemUser.getId(), systemUser.getEmail());
+            sendAccountSetupEmail(user, setupToken);
+            logger.info("Account setup email sent: email={}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send account setup email: email={}", user.getEmail(), e);
+            // メール送信失敗してもユーザー作成は成功とする
+        }
+
         return convertToAdminUserDto(user);
+    }
+
+    /**
+     * アカウントセットアップメール送信
+     */
+    private void sendAccountSetupEmail(User user, String setupToken) {
+        String setupLink = String.format("%s/auth/setup-account?token=%s",
+                appProperties.getBaseUrl(), setupToken);
+
+        Map<String, Object> variables = Map.of(
+                "displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "setupLink", setupLink);
+
+        emailService.sendTemplateEmail(
+                user.getEmail(),
+                "アカウント作成完了 - パスワード設定のご案内",
+                "account-setup",
+                variables);
     }
 
     /**
