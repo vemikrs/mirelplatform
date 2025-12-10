@@ -3,6 +3,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -298,16 +299,15 @@ export const UserManagementPage = () => {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ユーザーの削除</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              ユーザー <strong className="text-foreground">{userToDelete?.displayName}</strong> を削除してもよろしいですか？
-            </p>
-            <p className="text-sm text-destructive mt-2">
+            <DialogTitle>ユーザーの削除</DialogTitle>            <DialogDescription>
+              ユーザー {userToDelete?.displayName} を削除してもよろしいですか? この操作は取り消せません。
+            </DialogDescription>          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-4">
+            ユーザー <strong className="text-foreground">{userToDelete?.displayName}</strong> を削除してもよろしいですか？
+            <span className="block text-sm text-destructive mt-2">
               この操作は取り消せません。
-            </p>
-          </div>
+            </span>
+          </p>
           <DialogFooter>
             <Button 
               type="button" 
