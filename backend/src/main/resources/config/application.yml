@@ -47,6 +47,16 @@ spring:
         provider:
           github:
             user-name-attribute: login
+  # Spring Boot Mail設定（JavaMailSender Bean生成用）
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 # ログレベル設定（logger.xml の設定より優先されます）
 logging:
