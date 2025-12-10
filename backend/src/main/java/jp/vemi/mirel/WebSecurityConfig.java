@@ -203,9 +203,9 @@ public class WebSecurityConfig {
      * 認可設定を行います。
      * securityPropertiesの設定に応じてAPIエンドポイントの認可要否を制御します。
      * 
-     * <p><b>重要:</b> 新しい認証不要エンドポイントを追加する場合は、必ずここに追加すること。
-     * permitAll()リストに含まれていないエンドポイントは、OAuth2のGitHub認証にリダイレクトされる。
-     * これにより、意図しないOAuth2フローが開始される問題が発生する（Issue #57で確認）。</p>
+     * <p><b>設計方針:</b> 未認証アクセスはデフォルトで401エラーを返す。
+     * OAuth2 (GitHub) は /oauth2/authorization/github への明示的アクセスのみ有効。
+     * 認証不要エンドポイントは明示的に permitAll() に追加する。</p>
      *
      * @param http
      *            セキュリティ設定
@@ -215,7 +215,6 @@ public class WebSecurityConfig {
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authz -> {
             // 認証不要なAPIエンドポイント
-            // NOTE: 新しい認証不要エンドポイントを追加する際は、必ずここに追加すること
             authz.requestMatchers(
                     "/auth/login",
                     "/auth/signup",
@@ -313,26 +312,19 @@ public class WebSecurityConfig {
         }
 
         // OAuth2ログイン設定（GitHub）
-        // SPA構成: デフォルトログインページを無効化し、未認証時は401を返す
+        // 重要: ユーザーが明示的に /oauth2/authorization/github にアクセスした場合のみOAuth2フローを開始
+        // その他の未認証アクセスは401を返す（OAuth2にリダイレクトしない）
         http.oauth2Login(oauth2 -> oauth2
-                .loginPage("/oauth2/authorization/github") // デフォルトページ生成を抑制
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
                 .failureHandler(oauth2FailureHandler));
 
-        // APIエンドポイントの未認証アクセス時のハンドリング
-        // 302リダイレクトではなく401を返すように設定
+        // 未認証アクセス時のハンドリング
+        // デフォルトで401を返す（OAuth2リダイレクトを防ぐ）
+        // OAuth2は /oauth2/authorization/github への明示的アクセスのみ有効
         http.exceptionHandling(handling -> handling
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/users/**"))
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/api/**"))
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/actuator/**")));
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
     }
 
     /**
