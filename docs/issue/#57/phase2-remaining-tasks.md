@@ -20,9 +20,26 @@ COMMENT ON COLUMN mir_system_user.created_by_admin IS '管理者により作成�
 ```
 
 ### 実行環境
-- **開発環境**: JPA `ddl-auto: update` で自動実行済み
+- **開発環境**: ✅ 手動実行済み (2025-12-11)
 - **テスト環境**: 上記SQLを手動実行
 - **本番環境**: 上記SQLを手動実行（デプロイ前）
+
+### 開発環境での実行手順（実施済み）
+
+```bash
+# Dockerコンテナ経由でPostgreSQLに接続
+docker compose -f docker-compose.dev.yml exec postgres psql -U mirel -d mirelplatform \
+  -c "ALTER TABLE mir_system_user ADD COLUMN IF NOT EXISTS created_by_admin BOOLEAN NOT NULL DEFAULT false;"
+
+# 結果確認
+docker compose -f docker-compose.dev.yml exec postgres psql -U mirel -d mirelplatform \
+  -c "\d mir_system_user"
+```
+
+**実行結果**:
+- ✅ カラム追加成功: `created_by_admin | boolean | not null | false`
+- ✅ バックエンド起動成功
+- ✅ SystemUserMigration 正常実行
 
 ## 統合テスト実装
 
