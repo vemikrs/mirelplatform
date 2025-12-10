@@ -12,13 +12,7 @@ spring:
     username: ${DATABASE_USER:}
     password: ${DATABASE_PASS:}
   session:
-    jdbc:
-      initialize-schema: always
-      schema: ${DATABASE_SESSION_SCHEMA:}
-      table-name: SPRING_SESSION
-    sql:
-      init:
-        mode: always
+    store-type: redis
   jpa:
     database-platform: ${DATABASE_PLATFORM:}
     hibernate:
