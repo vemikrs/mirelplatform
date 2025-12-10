@@ -55,7 +55,7 @@ function createProxyConfig() {
     '/mapi': {
       target: `${backendUrl}/mipla2`,
       changeOrigin: true,
-      rewrite: (path: string) => path.replace(/^^\/mapi/, ''),
+      rewrite: (path: string) => path.replace(/^\/mapi/, ''),
       // Cookie のドメインとパスを書き換える
       cookieDomainRewrite: 'localhost',
       cookiePathRewrite: '/',
