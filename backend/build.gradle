@@ -49,7 +49,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web:3.3.0'
     implementation 'org.springframework.security:spring-security-oauth2-resource-server:6.4.0-RC1'
     implementation 'org.springframework.security:spring-security-oauth2-jose:6.4.0-RC1'
-    implementation 'org.springframework.session:spring-session-jdbc'
+    implementation 'org.springframework.session:spring-session-data-redis'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
     implementation 'com.h2database:h2:2.1.214'
     runtimeOnly 'org.postgresql:postgresql:42.7.3'
