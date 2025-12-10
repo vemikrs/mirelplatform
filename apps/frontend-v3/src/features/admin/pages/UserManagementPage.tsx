@@ -3,6 +3,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -24,6 +25,7 @@ import { Edit2, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { getUsers, deleteUser, createUser, updateUser } from '../api';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
+import { getApiErrors } from '@/lib/api/client';
 import { UserFormDialog } from '../components/UserFormDialog';
 
 
@@ -63,9 +65,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to delete user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '削除失敗',
-        description: 'ユーザーの削除に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
@@ -85,9 +88,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to create user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '作成失敗',
-        description: 'ユーザーの作成に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
@@ -108,9 +112,10 @@ export const UserManagementPage = () => {
     },
     onError: (error) => {
       console.error("Failed to update user", error);
+      const errors = getApiErrors(error);
       toast({
         title: '更新失敗',
-        description: 'ユーザー情報の更新に失敗しました。',
+        description: errors.join('\n'),
         variant: 'destructive',
       });
     }
@@ -294,16 +299,15 @@ export const UserManagementPage = () => {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ユーザーの削除</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              ユーザー <strong className="text-foreground">{userToDelete?.displayName}</strong> を削除してもよろしいですか？
-            </p>
-            <p className="text-sm text-destructive mt-2">
+            <DialogTitle>ユーザーの削除</DialogTitle>            <DialogDescription>
+              ユーザー {userToDelete?.displayName} を削除してもよろしいですか? この操作は取り消せません。
+            </DialogDescription>          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-4">
+            ユーザー <strong className="text-foreground">{userToDelete?.displayName}</strong> を削除してもよろしいですか？
+            <span className="block text-sm text-destructive mt-2">
               この操作は取り消せません。
-            </p>
-          </div>
+            </span>
+          </p>
           <DialogFooter>
             <Button 
               type="button" 

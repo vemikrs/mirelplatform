@@ -6,12 +6,12 @@ import type { Organization, OrganizationUnit, UserOrganization } from './types';
 // ============================================================
 
 export async function getOrganizations(): Promise<Organization[]> {
-  const response = await apiClient.get<Organization[]>('/admin/organizations');
+  const response = await apiClient.get<Organization[]>('/api/admin/organizations');
   return response.data;
 }
 
 export async function createOrganization(data: Partial<Organization>): Promise<Organization> {
-  const response = await apiClient.post<Organization>('/admin/organizations', data);
+  const response = await apiClient.post<Organization>('/api/admin/organizations', data);
   return response.data;
 }
 
@@ -20,7 +20,7 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
 // ============================================================
 
 export async function getOrganizationTree(organizationId: string): Promise<OrganizationUnit[]> {
-  const response = await apiClient.get<OrganizationUnit[]>(`/admin/organizations/${organizationId}/tree`);
+  const response = await apiClient.get<OrganizationUnit[]>(`/api/admin/organizations/${organizationId}/tree`);
   return response.data;
 }
 
@@ -28,7 +28,7 @@ export async function createOrganizationUnit(
   organizationId: string, 
   data: Partial<OrganizationUnit>
 ): Promise<OrganizationUnit> {
-  const response = await apiClient.post<OrganizationUnit>(`/admin/organizations/${organizationId}/units`, data);
+  const response = await apiClient.post<OrganizationUnit>(`/api/admin/organizations/${organizationId}/units`, data);
   return response.data;
 }
 
@@ -37,7 +37,7 @@ export async function getOrganizationUnitAncestors(
   unitId: string
 ): Promise<OrganizationUnit[]> {
   const response = await apiClient.get<OrganizationUnit[]>(
-    `/admin/organizations/${organizationId}/units/${unitId}/ancestors`
+    `/api/admin/organizations/${organizationId}/units/${unitId}/ancestors`
   );
   return response.data;
 }
@@ -48,7 +48,7 @@ export async function getOrganizationUnitMembers(
   includeSubUnits: boolean = false
 ): Promise<UserOrganization[]> {
   const response = await apiClient.get<UserOrganization[]>(
-    `/admin/organizations/${organizationId}/units/${unitId}/members`,
+    `/api/admin/organizations/${organizationId}/units/${unitId}/members`,
     { params: { includeSubUnits } }
   );
   return response.data;

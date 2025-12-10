@@ -49,7 +49,8 @@ public class SmtpEmailServiceImpl implements EmailService {
             log.info("プレーンテキストメール送信成功: to={}, subject={}", to, subject);
         } catch (Exception e) {
             log.error("プレーンテキストメール送信失敗: to={}, error={}", to, e.getMessage(), e);
-            throw new RuntimeException("メール送信エラー", e);
+            // システムエラーの詳細は隠蔽し、一般的なメッセージのみスロー
+            throw new RuntimeException("メール送信に失敗しました");
         }
     }
     
@@ -68,7 +69,8 @@ public class SmtpEmailServiceImpl implements EmailService {
             log.info("HTMLメール送信成功: to={}, subject={}", to, subject);
         } catch (MessagingException e) {
             log.error("HTMLメール送信失敗: to={}, error={}", to, e.getMessage(), e);
-            throw new RuntimeException("メール送信エラー", e);
+            // システムエラーの詳細は隠蔽し、一般的なメッセージのみスロー
+            throw new RuntimeException("メール送信に失敗しました");
         }
     }
 }

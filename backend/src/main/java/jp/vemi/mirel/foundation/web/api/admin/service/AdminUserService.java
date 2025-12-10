@@ -15,10 +15,12 @@ import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,10 @@ public class AdminUserService {
 
     @Autowired
     private TenantRepository tenantRepository;
+
+    @Autowired
+    @Lazy
+    private PasswordEncoder passwordEncoder;
 
     /**
      * ユーザー一覧取得（ページング対応）
@@ -183,14 +189,17 @@ public class AdminUserService {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
+        
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
 
         User user = new User();
+        user.setUserId(java.util.UUID.randomUUID().toString()); // ID を手動生成
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        // TODO: Password should be hashed by PasswordEncoder. using plain text for now
-        // as placeholder or need to inject PasswordEncoder.
-        // Assuming PasswordEncoder is available or logic is in service.
-        user.setPassword(request.getPassword());
+        // パスワードをハッシュ化してpasswordHashに保存
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -198,6 +207,7 @@ public class AdminUserService {
             user.setRoles(String.join(",", request.getRoles()));
         }
         user.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        user.setEmailVerified(false); // デフォルトは未認証
 
         user = userRepository.save(user);
 
