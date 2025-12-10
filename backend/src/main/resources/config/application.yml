@@ -117,14 +117,12 @@ email:
     port: ${SMTP_PORT:1025}
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
-
-# Azure Communication Services
-azure:
-  communication:
-    connection-string: ${AZURE_COMMUNICATION_CONNECTION_STRING:}
-    email:
-      from: ${AZURE_COMMUNICATION_EMAIL_FROM:noreply_mirel@vemi.jp}
-      from-name: mirelplatform
+  azure:
+    communication:
+      connection-string: ${AZURE_COMMUNICATION_CONNECTION_STRING:}
+      email:
+        from: ${SMTP_FROM_ADDRESS:no-reply@localhost}
+        from-name: mirelplatform
 
 # アプリケーション設定
 app:
