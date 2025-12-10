@@ -3,12 +3,11 @@
  */
 package jp.vemi.mirel.foundation.web.api.admin.controller;
 
+import jakarta.validation.Valid;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,8 +20,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
-
-    private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
     @Autowired
     private AdminUserService adminUserService;
@@ -38,13 +35,8 @@ public class AdminUserController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Boolean active) {
 
-        try {
-            UserListResponse response = adminUserService.listUsers(page, size, q, role, active);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.error("Failed to list users", e);
-            return ResponseEntity.internalServerError().build();
-        }
+        UserListResponse response = adminUserService.listUsers(page, size, q, role, active);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -52,16 +44,8 @@ public class AdminUserController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<AdminUserDto> getUser(@PathVariable String id) {
-        try {
-            AdminUserDto user = adminUserService.getUserById(id);
-            return ResponseEntity.ok(user);
-        } catch (RuntimeException e) {
-            logger.error("Failed to get user: {}", id, e);
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            logger.error("Failed to get user: {}", id, e);
-            return ResponseEntity.internalServerError().build();
-        }
+        AdminUserDto user = adminUserService.getUserById(id);
+        return ResponseEntity.ok(user);
     }
 
     /**
@@ -71,16 +55,8 @@ public class AdminUserController {
     public ResponseEntity<AdminUserDto> updateUser(
             @PathVariable String id,
             @RequestBody UpdateUserRequest request) {
-        try {
-            AdminUserDto user = adminUserService.updateUser(id, request);
-            return ResponseEntity.ok(user);
-        } catch (RuntimeException e) {
-            logger.error("Failed to update user: {}", id, e);
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            logger.error("Failed to update user: {}", id, e);
-            return ResponseEntity.internalServerError().build();
-        }
+        AdminUserDto user = adminUserService.updateUser(id, request);
+        return ResponseEntity.ok(user);
     }
 
     /**
@@ -88,17 +64,9 @@ public class AdminUserController {
      */
     @PostMapping
     public ResponseEntity<AdminUserDto> createUser(
-            @RequestBody jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
-        try {
-            AdminUserDto user = adminUserService.createUser(request);
-            return ResponseEntity.ok(user);
-        } catch (RuntimeException e) {
-            logger.error("Failed to create user", e);
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            logger.error("Failed to create user", e);
-            return ResponseEntity.internalServerError().build();
-        }
+            @Valid @RequestBody jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
+        AdminUserDto user = adminUserService.createUser(request);
+        return ResponseEntity.ok(user);
     }
 
     /**
@@ -106,15 +74,7 @@ public class AdminUserController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        try {
-            adminUserService.deleteUser(id);
-            return ResponseEntity.ok().build();
-        } catch (RuntimeException e) {
-            logger.error("Failed to delete user: {}", id, e);
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            logger.error("Failed to delete user: {}", id, e);
-            return ResponseEntity.internalServerError().build();
-        }
+        adminUserService.deleteUser(id);
+        return ResponseEntity.ok().build();
     }
 }
