@@ -16,9 +16,6 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: mirel
     password: mirel
-  session:
-    jdbc:
-      schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
