@@ -343,6 +343,95 @@ public class AuthenticationServiceImpl {
     }
 
     /**
+     * OTPベースサインアップ処理
+     * メールアドレス検証済みのユーザーを作成し、ログイン状態にする
+     */
+    @Transactional
+    public AuthenticationResponse signupWithOtp(jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request) {
+        logger.info("OTP-based signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+
+        // ユーザー名重複チェック
+        if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        // メール重複チェック
+        if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // SystemUser作成（パスワードは自動生成されたランダム値を使用）
+        SystemUser systemUser = new SystemUser();
+        systemUser.setId(UUID.randomUUID());
+        systemUser.setUsername(request.getUsername());
+        systemUser.setEmail(request.getEmail());
+        // OTP認証のため、ダミーパスワードを設定（使用されない）
+        systemUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        systemUser.setIsActive(true);
+        systemUser.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
+        systemUser = systemUserRepository.save(systemUser);
+
+        // User作成（Applicationレベル）
+        User user = new User();
+        user.setUserId(UUID.randomUUID().toString());
+        user.setSystemUserId(systemUser.getId());
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setDisplayName(request.getDisplayName());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        // パスワードハッシュ（ダミー値）
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setIsActive(true);
+        user.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
+        user.setRoles("USER");
+        // 最終ログイン時刻を設定（初回サインアップ時にも記録）
+        user.setLastLoginAt(Instant.now());
+        user = userRepository.save(user);
+
+        // デフォルトテナント作成または割り当て
+        Tenant defaultTenant = getOrCreateDefaultTenant();
+        user.setTenantId(defaultTenant.getTenantId());
+        userRepository.save(user);
+
+        // UserTenant作成
+        UserTenant userTenant = new UserTenant();
+        userTenant.setUserId(user.getUserId());
+        userTenant.setTenantId(defaultTenant.getTenantId());
+        userTenant.setRoleInTenant("MEMBER");
+        userTenant.setIsDefault(true);
+        userTenantRepository.save(userTenant);
+
+        // デフォルトライセンス付与（FREE tier）
+        ApplicationLicense license = new ApplicationLicense();
+        license.setSubjectType(SubjectType.USER);
+        license.setSubjectId(user.getUserId());
+        license.setApplicationId("promarker");
+        license.setTier(LicenseTier.FREE);
+        license.setGrantedBy("system");
+        licenseRepository.save(license);
+
+        // トークン生成
+        String accessToken;
+        boolean isJwtEnabled = authProperties.getJwt().isEnabled();
+        if (isJwtEnabled && jwtService != null) {
+            accessToken = jwtService.generateToken(
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            user.getUserId(), null, List.of()));
+        } else {
+            accessToken = "session-based-auth-token";
+            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+        }
+
+        RefreshToken refreshToken = createRefreshToken(user);
+
+        logger.info("OTP-based signup successful for user: {}", user.getUserId());
+
+        return buildAuthenticationResponse(user, defaultTenant, accessToken,
+                refreshToken.getTokenHash(), List.of(license));
+    }
+
+    /**
      * トークンリフレッシュ
      */
     @Transactional

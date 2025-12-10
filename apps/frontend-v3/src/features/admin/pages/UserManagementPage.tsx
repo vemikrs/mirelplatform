@@ -111,9 +111,13 @@ export const UserManagementPage = () => {
   });
 
   const handleDelete = (userId: string) => {
-    if (confirm('このユーザーを削除してもよろしいですか？')) {
-      deleteMutation.mutate(userId);
-    }
+    deleteMutation.mutate(userId);
+  };
+
+  const handleDeleteFromDialog = (userId: string) => {
+    deleteMutation.mutate(userId);
+    setIsDialogOpen(false);
+    setSelectedUser(null);
   };
 
   const handleCreateUser = () => {
@@ -240,7 +244,11 @@ export const UserManagementPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                             className="text-red-600"
-                            onClick={() => handleDelete(user.userId)}
+                            onClick={() => {
+                              if (confirm('このユーザーを削除してもよろしいですか？')) {
+                                handleDelete(user.userId);
+                              }
+                            }}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
                             削除
@@ -259,6 +267,7 @@ export const UserManagementPage = () => {
         open={isDialogOpen}
         onClose={handleDialogClose}
         onSubmit={handleFormSubmit}
+        onDelete={handleDeleteFromDialog}
         user={selectedUser}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />

@@ -9,13 +9,16 @@ import {
   Input,
   Label,
   Switch,
+  toast,
 } from '@mirel/ui';
+import { Trash2 } from 'lucide-react';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
 
 interface UserFormDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserRequest | UpdateUserRequest) => void;
+  onDelete?: (userId: string) => void;
   user?: AdminUser | null;
   isLoading?: boolean;
 }
@@ -24,6 +27,7 @@ export const UserFormDialog = ({
   open, 
   onClose, 
   onSubmit, 
+  onDelete,
   user,
   isLoading = false 
 }: UserFormDialogProps) => {
@@ -116,6 +120,15 @@ export const UserFormDialog = ({
         isActive: formData.isActive,
       };
       onSubmit(createData);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!user || !onDelete) return;
+    
+    if (confirm(`ユーザー「${user.displayName}」を削除してもよろしいですか？\n\nこの操作は取り消せません。`)) {
+      onDelete(user.userId);
+      onClose();
     }
   };
 
@@ -239,6 +252,18 @@ export const UserFormDialog = ({
           </div>
 
           <DialogFooter>
+            {user && onDelete && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={handleDelete} 
+                disabled={isLoading}
+                className="mr-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                削除
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               キャンセル
             </Button>

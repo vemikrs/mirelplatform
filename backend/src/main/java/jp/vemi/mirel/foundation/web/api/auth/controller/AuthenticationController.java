@@ -110,6 +110,29 @@ public class AuthenticationController {
     }
 
     /**
+     * OTPベースサインアップ
+     * メールアドレス検証済みのユーザーを作成
+     */
+    @PostMapping("/signup/otp")
+    public ResponseEntity<AuthenticationResponse> signupOtp(
+            @Valid @RequestBody jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request,
+            HttpServletResponse httpResponse) {
+        try {
+            AuthenticationResponse response = authenticationService.signupWithOtp(request);
+
+            // Set access token in HttpOnly cookie
+            if (response.getTokens() != null) {
+                setTokenCookies(httpResponse, response.getTokens());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("OTP signup failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * トークンリフレッシュ
      */
     @PostMapping("/refresh")
