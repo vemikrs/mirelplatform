@@ -65,7 +65,8 @@ public class AzureEmailServiceImpl implements EmailService {
             log.info("Azure プレーンテキストメール送信成功: to={}, messageId={}", to, result.getId());
         } catch (Exception e) {
             log.error("Azure プレーンテキストメール送信失敗: to={}, error={}", to, e.getMessage(), e);
-            throw new RuntimeException("Azure メール送信エラー", e);
+            // システムエラーの詳細は隠蔽し、一般的なメッセージのみスロー
+            throw new RuntimeException("メール送信に失敗しました");
         }
     }
     
@@ -84,7 +85,8 @@ public class AzureEmailServiceImpl implements EmailService {
             log.info("Azure HTMLメール送信成功: to={}, messageId={}", to, result.getId());
         } catch (Exception e) {
             log.error("Azure HTMLメール送信失敗: to={}, error={}", to, e.getMessage(), e);
-            throw new RuntimeException("Azure メール送信エラー", e);
+            // システムエラーの詳細は隠蔽し、一般的なメッセージのみスロー
+            throw new RuntimeException("メール送信に失敗しました");
         }
     }
 }
