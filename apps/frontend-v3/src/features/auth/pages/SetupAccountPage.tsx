@@ -112,7 +112,7 @@ export function SetupAccountPage() {
       const loginResponse = await apiClient.post(
         '/auth/login',
         createApiRequest({
-          username: userInfo?.email || '',
+          usernameOrEmail: userInfo?.email || '',
           password,
         })
       );
