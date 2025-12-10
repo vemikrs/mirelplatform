@@ -132,9 +132,9 @@ class OtpServiceTest {
         Map<String, Object> variables = variablesCaptor.getValue();
         assertThat(variables).containsEntry("domain", "localhost");
         assertThat(variables).containsKey("magicLink");
-        assertThat(variables.get("magicLink").toString()).contains("http://localhost:5173/auth/otp-verify");
-        assertThat(variables.get("magicLink").toString()).contains("email=" + testEmail);
-        assertThat(variables.get("magicLink").toString()).contains("purpose=LOGIN");
+        assertThat(variables.get("magicLink").toString()).contains("http://localhost:5173/auth/magic-verify?token=");
+        assertThat(variables.get("magicLink").toString()).doesNotContain("email=");
+        assertThat(variables.get("magicLink").toString()).doesNotContain("purpose=");
 
         // Then: クールダウン設定
         verify(rateLimitService).setCooldown(eq("otp:cooldown:" + testEmail), eq(60));
