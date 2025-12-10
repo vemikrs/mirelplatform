@@ -195,6 +195,7 @@ public class AdminUserService {
         }
 
         User user = new User();
+        user.setUserId(java.util.UUID.randomUUID().toString()); // ID を手動生成
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         // パスワードをハッシュ化してpasswordHashに保存
