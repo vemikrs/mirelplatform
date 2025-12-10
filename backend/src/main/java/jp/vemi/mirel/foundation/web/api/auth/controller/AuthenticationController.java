@@ -11,6 +11,7 @@ import jp.vemi.mirel.foundation.context.ExecutionContext;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.foundation.web.api.auth.service.AuthenticationServiceImpl;
 import jp.vemi.mirel.foundation.web.api.auth.service.PasswordResetService;
+import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
