@@ -27,5 +27,4 @@ public class OtpSignupRequest {
     
     private String firstName;
     private String lastName;
-    private Boolean emailVerified; // OTP検証済みフラグ
 }

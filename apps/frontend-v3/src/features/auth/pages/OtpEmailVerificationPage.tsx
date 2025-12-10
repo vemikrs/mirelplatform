@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { apiClient } from '@/lib/api/client';
 import { getUserTenants, getUserLicenses } from '@/lib/api/userProfile';
+import type { ApiResponse } from '@/lib/api/types';
 
 interface SignupData {
   username: string;
@@ -26,6 +27,7 @@ export function OtpEmailVerificationPage() {
   const [error, setError] = useState<string | null>(null);
   const [canResend, setCanResend] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -59,48 +61,11 @@ export function OtpEmailVerificationPage() {
   }, [countdown]);
 
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp({
-    onSuccess: async (data) => {
-      // OTP検証成功後、サインアップデータがある場合はユーザー作成
-      if (signupData) {
-        try {
-          // ユーザー作成APIを呼び出し
-          const response = await apiClient.post<{
-            user: any;
-            tokens: any;
-            currentTenant: any;
-          }>('/auth/signup/otp', {
-            ...signupData,
-            emailVerified: true,
-          });
-
-          // ログイン処理
-          if (response.data && response.data.user && response.data.tokens) {
-            // トークンをストアにセット
-            setAuth(response.data.user, response.data.currentTenant, response.data.tokens);
-
-            // tenants と licenses も取得してストアに保存
-            const [tenants, licenses] = await Promise.all([
-              getUserTenants(),
-              getUserLicenses(),
-            ]);
-
-            useAuthStore.setState({ tenants, licenses });
-
-            clearOtpState();
-            navigate('/home', { replace: true });
-          } else {
-            throw new Error('Invalid response from signup API');
-          }
-        } catch (err: any) {
-          console.error('Signup after OTP verification failed:', err);
-          setError(err.response?.data?.message || 'ユーザー作成に失敗しました');
-        }
-      } else {
-        // メールアドレス検証のみの場合
-        clearOtpState();
-        alert('メールアドレスを検証しました');
-        navigate('/login');
-      }
+    onSuccess: () => {
+      // メールアドレス検証のみの場合（サインアップ以外）
+      clearOtpState();
+      alert('メールアドレスを検証しました');
+      navigate('/login');
     },
     onError: (errors) => {
       setError(errors[0] || '検証に失敗しました');
@@ -119,7 +84,7 @@ export function OtpEmailVerificationPage() {
     },
   });
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -139,11 +104,57 @@ export function OtpEmailVerificationPage() {
       return;
     }
 
-    verifyOtp({
-      email,
-      otpCode,
-      purpose: 'EMAIL_VERIFICATION',
-    });
+    // サインアップデータがある場合は、OTP検証とユーザー作成を同時に実行
+    if (signupData) {
+      setIsSigningUp(true);
+      try {
+        const response = await apiClient.post<ApiResponse<{
+          user: any;
+          tokens: any;
+          currentTenant: any;
+        }>>('/auth/otp/signup-verify', {
+          model: {
+            email: signupData.email,
+            otpCode: otpCode,
+            username: signupData.username,
+            displayName: signupData.displayName,
+            firstName: signupData.firstName,
+            lastName: signupData.lastName,
+          }
+        });
+
+        // ログイン処理
+        if (response.data.data && response.data.data.user && response.data.data.tokens) {
+          setAuth(response.data.data.user, response.data.data.currentTenant, response.data.data.tokens);
+
+          // tenants と licenses も取得してストアに保存
+          const [tenants, licenses] = await Promise.all([
+            getUserTenants(),
+            getUserLicenses(),
+          ]);
+
+          useAuthStore.setState({ tenants, licenses });
+
+          clearOtpState();
+          navigate('/home', { replace: true });
+        } else {
+          throw new Error('Invalid response from signup API');
+        }
+      } catch (err: any) {
+        console.error('Signup after OTP verification failed:', err);
+        setError(err.response?.data?.errors?.[0] || 'ユーザー作成に失敗しました');
+        setOtpCode('');
+      } finally {
+        setIsSigningUp(false);
+      }
+    } else {
+      // メールアドレス検証のみの場合
+      verifyOtp({
+        email,
+        otpCode,
+        purpose: 'EMAIL_VERIFICATION',
+      });
+    }
   };
 
   const handleResend = () => {
@@ -207,9 +218,9 @@ export function OtpEmailVerificationPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={isVerifying || otpCode.length !== 6}
+            disabled={isVerifying || isSigningUp || otpCode.length !== 6}
           >
-            {isVerifying ? '検証中...' : (signupData ? 'アカウントを作成' : 'メールアドレスを検証')}
+            {(isVerifying || isSigningUp) ? '検証中...' : (signupData ? 'アカウントを作成' : 'メールアドレスを検証')}
           </Button>
 
           <Button

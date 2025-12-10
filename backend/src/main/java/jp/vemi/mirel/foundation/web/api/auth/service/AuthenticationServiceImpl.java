@@ -370,7 +370,7 @@ public class AuthenticationServiceImpl {
         systemUser.setEmail(request.getEmail());
         systemUser.setPasswordHash(dummyPassword);
         systemUser.setIsActive(true);
-        systemUser.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
+        systemUser.setEmailVerified(true); // OTP検証済み
         systemUser = systemUserRepository.save(systemUser);
 
         // User作成（Applicationレベル）
@@ -385,7 +385,7 @@ public class AuthenticationServiceImpl {
         // パスワードハッシュ（プレースホルダー）
         user.setPasswordHash(dummyPassword);
         user.setIsActive(true);
-        user.setEmailVerified(request.getEmailVerified() != null ? request.getEmailVerified() : true);
+        user.setEmailVerified(true); // OTP検証済み
         user.setRoles("USER");
         // 最終ログイン時刻を設定（初回サインアップ時にも記録）
         user.setLastLoginAt(Instant.now());
@@ -419,7 +419,7 @@ public class AuthenticationServiceImpl {
         if (isJwtEnabled && jwtService != null) {
             accessToken = jwtService.generateToken(
                     new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                            user.getUserId(), null, List.of()));
+                            user.getUserId(), null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         } else {
             accessToken = "session-based-auth-token";
             logger.warn("JWT is disabled. Using session-based authentication placeholder.");

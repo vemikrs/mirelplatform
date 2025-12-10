@@ -9,7 +9,6 @@ import {
   Input,
   Label,
   Switch,
-  toast,
 } from '@mirel/ui';
 import { Trash2 } from 'lucide-react';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
@@ -31,6 +30,7 @@ export const UserFormDialog = ({
   user,
   isLoading = false 
 }: UserFormDialogProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -125,11 +125,14 @@ export const UserFormDialog = ({
 
   const handleDelete = () => {
     if (!user || !onDelete) return;
-    
-    if (confirm(`ユーザー「${user.displayName}」を削除してもよろしいですか？\n\nこの操作は取り消せません。`)) {
-      onDelete(user.userId);
-      onClose();
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (!user || !onDelete) return;
+    onDelete(user.userId);
+    setShowDeleteConfirm(false);
+    onClose();
   };
 
   return (
@@ -273,6 +276,39 @@ export const UserFormDialog = ({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ユーザーの削除</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              ユーザー <strong className="text-foreground">{user?.displayName}</strong> を削除してもよろしいですか？
+            </p>
+            <p className="text-sm text-destructive mt-2">
+              この操作は取り消せません。
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              キャンセル
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={confirmDelete}
+            >
+              削除する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
