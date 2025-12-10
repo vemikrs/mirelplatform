@@ -1,4 +1,0 @@
-group_id,code,group_text,text,sort,tenant_id,version,created_at,created_by,updated_at,updated_by
-SAMPLE_SUPPLIERS,SUP001,仕入先グループ,株式会社A商事,1,default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-SAMPLE_SUPPLIERS,SUP002,仕入先グループ,B物産,2,default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-SAMPLE_SUPPLIERS,SUP003,仕入先グループ,C工業,3,default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin

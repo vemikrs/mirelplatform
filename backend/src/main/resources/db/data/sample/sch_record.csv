@@ -1,7 +1,0 @@
-id,schema,text,record_data,tenant_id,version,created_at,created_by,updated_at,updated_by
-sample_rec_sup_1,sample_supplier_master,株式会社A商事,"{\"supplier_code\":\"SUP001\",\"supplier_name\":\"株式会社A商事\",\"address\":\"東京都千代田区1-1-1\",\"phone\":\"03-1234-5678\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-sample_rec_sup_2,sample_supplier_master,B物産,"{\"supplier_code\":\"SUP002\",\"supplier_name\":\"B物産\",\"address\":\"大阪府大阪市北区2-2-2\",\"phone\":\"06-8765-4321\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-sample_rec_sup_3,sample_supplier_master,C工業,"{\"supplier_code\":\"SUP003\",\"supplier_name\":\"C工業\",\"address\":\"愛知県名古屋市中区3-3-3\",\"phone\":\"052-111-2222\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-sample_rec_ord_1,sample_order_mgmt,ORD001,"{\"order_id\":\"ORD001\",\"order_date\":\"2023-12-01\",\"supplier_code\":\"SUP001\",\"item_name\":\"ノートPC\",\"quantity\":\"10\",\"amount\":\"1500000\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-sample_rec_ord_2,sample_order_mgmt,ORD002,"{\"order_id\":\"ORD002\",\"order_date\":\"2023-12-02\",\"supplier_code\":\"SUP002\",\"item_name\":\"ワイヤレスマウス\",\"quantity\":\"50\",\"amount\":\"150000\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
-sample_rec_ord_3,sample_order_mgmt,ORD003,"{\"order_id\":\"ORD003\",\"order_date\":\"2023-12-03\",\"supplier_code\":\"SUP001\",\"item_name\":\"モニター 27インチ\",\"quantity\":\"5\",\"amount\":\"200000\"}",default,1,2023-01-01T00:00:00,admin,2023-01-01T00:00:00,admin
