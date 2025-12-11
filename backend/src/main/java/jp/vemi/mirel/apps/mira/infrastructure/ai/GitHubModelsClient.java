@@ -105,7 +105,8 @@ public class GitHubModelsClient implements AiProviderClient {
             OpenAiChatOptions.Builder defaultOptionsBuilder = OpenAiChatOptions.builder()
                     .model(modelName)
                     .temperature(request.getTemperature() != null ? request.getTemperature()
-                            : config.getTemperature());
+                            : config.getTemperature())
+                    .extraBody(null);  // GitHub Models API doesn't support extra_body parameter
             
             if (isGpt5Model) {
                 log.debug("Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
@@ -256,7 +257,8 @@ public class GitHubModelsClient implements AiProviderClient {
             OpenAiChatOptions.Builder streamOptionsBuilder = OpenAiChatOptions.builder()
                     .model(modelName)
                     .temperature(request.getTemperature() != null ? request.getTemperature()
-                            : config.getTemperature());
+                            : config.getTemperature())
+                    .extraBody(null);  // GitHub Models API doesn't support extra_body parameter
             
             if (isGpt5Model) {
                 log.debug("[Stream] Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
