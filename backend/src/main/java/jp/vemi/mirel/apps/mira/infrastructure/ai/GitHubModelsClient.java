@@ -301,15 +301,36 @@ public class GitHubModelsClient implements AiProviderClient {
                             org.springframework.web.reactive.function.client.WebClientResponseException webEx = 
                                     (org.springframework.web.reactive.function.client.WebClientResponseException) e;
                             String errorBody = webEx.getResponseBodyAsString();
-                            log.error("[GitHubModels] Stream API Error: {} Body: {}", webEx.getStatusCode(), errorBody, e);
+                            log.error("[GitHubModels] Stream API Error: {} Body: {}", webEx.getStatusCode(), errorBody);
+                            
+                            // ユーザーフレンドリーなエラーメッセージに変換
+                            String userMessage = "申し訳ございません。AIサービスで一時的なエラーが発生しました。しばらく待ってから再度お試しください。";
+                            
+                            // エラーの種類に応じてメッセージをカスタマイズ
+                            if (errorBody.contains("extra_body")) {
+                                userMessage = "AIモデルの設定に問題があります。システム管理者に連絡してください。";
+                                log.error("[GitHubModels] extra_body parameter not supported. This may be a Spring AI compatibility issue.");
+                            } else if (errorBody.contains("max_completion_tokens") || errorBody.contains("max_tokens")) {
+                                userMessage = "AIモデルのトークン設定に問題があります。システム管理者に連絡してください。";
+                            }
+                            
+                            // エラーをログには出力するが、ユーザーには分かりやすいメッセージを返す
                             return reactor.core.publisher.Flux.just(
-                                    AiResponse.error("STREAM_API_ERROR",
-                                            "API エラー (" + webEx.getStatusCode() + "): " + errorBody));
+                                    AiResponse.builder()
+                                            .content(userMessage)
+                                            .metadata(AiResponse.Metadata.builder()
+                                                    .model(config.getModel())
+                                                    .build())
+                                            .build());
                         }
                         log.error("[GitHubModels] Stream Request failed", e);
                         return reactor.core.publisher.Flux.just(
-                                AiResponse.error("STREAM_ERROR",
-                                        "ストリーム処理中にエラーが発生しました: " + e.getMessage()));
+                                AiResponse.builder()
+                                        .content("申し訳ございません。予期しないエラーが発生しました。")
+                                        .metadata(AiResponse.Metadata.builder()
+                                                .model(config.getModel())
+                                                .build())
+                                        .build());
                     });
 
         } catch (Exception e) {
