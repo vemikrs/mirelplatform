@@ -412,10 +412,9 @@ public class GitHubModelsClient implements AiProviderClient {
     /**
      * GitHub Models 向けの特別対応インターセプター.
      * <p>
-     * Llama 3.3 など一部のモデルは、tool_calls を含む assistant message において
-     * content フィールドが null であっても明示的に存在すること("content": null)を要求します。
-     * Spring AI (Jackson) のデフォルト設定では null フィールドは除外されるため、
-     * ここでリクエストボディを傍受して強制的に content: null を注入します。
+     * GitHub Models API との互換性を確保するため、以下の修正を行います：
+     * 1. Spring AI が送信する 'extra_body' パラメータを削除（GitHub Models API 非対応）
+     * 2. Llama 3.3 など一部のモデル向けに、tool_calls を含む assistant message に "content": null を注入
      * </p>
      */
     @Slf4j
@@ -435,9 +434,19 @@ public class GitHubModelsClient implements AiProviderClient {
             try {
                 // 1. JSON Parse
                 com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+                com.fasterxml.jackson.databind.node.ObjectNode rootObj = (com.fasterxml.jackson.databind.node.ObjectNode) root;
 
                 // 2. Modify
                 boolean modified = false;
+                
+                // 2-1. Remove 'extra_body' parameter (not supported by GitHub Models API)
+                if (rootObj.has("extra_body")) {
+                    log.debug("[GitHubModelsInterceptor] Removing 'extra_body' parameter");
+                    rootObj.remove("extra_body");
+                    modified = true;
+                }
+                
+                // 2-2. Inject 'content: null' for assistant messages with tool_calls
                 if (root.has("messages") && root.get("messages").isArray()) {
                     com.fasterxml.jackson.databind.node.ArrayNode messages = (com.fasterxml.jackson.databind.node.ArrayNode) root
                             .get("messages");
