@@ -64,7 +64,7 @@ function RootLayoutInner() {
   const noMargin = (currentRoute?.handle as { noMargin?: boolean })?.noMargin ?? false;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface text-foreground">
+    <div className="flex min-h-dvh flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
@@ -111,7 +111,7 @@ function RootLayoutInner() {
           className="hidden md:flex shrink-0" 
         />
         
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-dvh">
           <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
             {noMargin ? (
               <Outlet />

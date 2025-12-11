@@ -385,7 +385,7 @@ export function MiraPage() {
   ]);
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-3rem)] flex relative overflow-hidden">
+    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh-3rem)] flex relative overflow-hidden">
       {/* 左サイドバー: 会話履歴（デスクトップ） */}
       {isSidebarOpen && (
         <div className="hidden md:block h-full shrink-0">
