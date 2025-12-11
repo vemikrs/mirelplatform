@@ -34,6 +34,12 @@ public class OtpToken {
     private UUID systemUserId;
 
     /**
+     * メールアドレス (サインアップ時のOTP検証用)
+     */
+    @Column(name = "email", length = 255)
+    private String email;
+
+    /**
      * OTPコードのSHA-256ハッシュ
      */
     @Column(name = "otp_hash", nullable = false, length = 64)

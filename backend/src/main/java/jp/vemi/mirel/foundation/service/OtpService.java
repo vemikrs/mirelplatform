@@ -147,6 +147,7 @@ public class OtpService {
             // 新規ユーザーの場合は仮ID（メール検証後に実SystemUserIdに更新）
             token.setSystemUserId(java.util.UUID.randomUUID());
         }
+        token.setEmail(email); // サインアップ時のOTP検証用にemailを保存
 
         // マジックリンクトークン生成
         String magicLinkToken = generateMagicLinkToken();
@@ -207,23 +208,39 @@ public class OtpService {
             throw new RuntimeException("検証試行制限に達しました。しばらく待ってから再度お試しください。");
         }
 
-        // SystemUser取得
-        SystemUser systemUser = systemUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+        // サインアップの場合はemailベースでOTPトークンを検索（SystemUserはまだ存在しない）
+        OtpToken token;
+        SystemUser systemUser = null;
+        
+        if ("EMAIL_VERIFICATION".equals(purpose)) {
+            log.info("OTP検証開始 (サインアップ): email={}, purpose={}", email, purpose);
+            
+            // emailベースでOTPトークン取得（サインアップ用）
+            token = otpTokenRepository
+                    .findByEmailAndPurposeAndIsVerifiedAndExpiresAtAfter(
+                            email, purpose, false, LocalDateTime.now())
+                    .orElse(null);
+        } else {
+            // 既存ユーザーの場合はSystemUserを取得してからOTPトークン取得
+            systemUser = systemUserRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+            
+            log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
+            
+            // SystemUser IDベースでOTPトークン取得
+            token = otpTokenRepository
+                    .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
+                            systemUser.getId(), purpose, false, LocalDateTime.now())
+                    .orElse(null);
+        }
 
-        log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
-
-        // 有効なOTPトークン取得
-        OtpToken token = otpTokenRepository
-                .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
-                        systemUser.getId(), purpose, false, LocalDateTime.now())
-                .orElse(null);
-
+        UUID systemUserId = systemUser != null ? systemUser.getId() : null;
+        
         if (token == null) {
             otpVerifyFailedCounter.increment();
             log.warn("OTP検証失敗: トークンが見つからないか期限切れ - email={}, purpose={}, systemUserId={}",
-                    email, purpose, systemUser.getId());
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+                    email, purpose, systemUserId);
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "トークンが見つからないか期限切れ", ipAddress, userAgent, null);
             return false;
         }
@@ -234,7 +251,7 @@ public class OtpService {
         // 試行回数チェック
         if (token.getAttemptCount() >= token.getMaxAttempts()) {
             otpVerifyFailedCounter.increment();
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "最大試行回数超過", ipAddress, userAgent, null);
             return false;
         }
@@ -250,7 +267,7 @@ public class OtpService {
             otpTokenRepository.save(token);
             otpVerifyFailedCounter.increment();
             log.warn("OTP検証失敗: コード不一致 - email={}, attemptCount={}", email, token.getAttemptCount());
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "OTPコード不一致", ipAddress, userAgent, null);
             return false;
         }
@@ -265,7 +282,7 @@ public class OtpService {
         rateLimitService.clearRateLimit("otp:request:" + email);
         rateLimitService.clearRateLimit("otp:cooldown:" + email);
 
-        logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", true,
+        logAudit(requestId, systemUserId, email, purpose, "VERIFY", true,
                 null, ipAddress, userAgent, null);
 
         // メトリクス: 検証成功
