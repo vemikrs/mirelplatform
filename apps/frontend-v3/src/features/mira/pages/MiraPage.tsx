@@ -404,7 +404,16 @@ export function MiraPage() {
       )}
       
       {/* 左サイドバー: 会話履歴（モバイル - オーバーレイ） */}
-      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+      <Sheet 
+        open={isSidebarOpen} 
+        onOpenChange={(open) => {
+          setIsSidebarOpen(open);
+          // Sheetを閉じる際にフォーカスをクリア（aria-hidden警告回避）
+          if (!open && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }}
+      >
         <SheetContent side="left" className="p-0 w-[85vw] max-w-[360px] md:hidden">
           <SheetTitle className="sr-only">会話履歴</SheetTitle>
           <SheetDescription className="sr-only">過去の会話履歴を表示</SheetDescription>

@@ -8,7 +8,10 @@ import { router } from './router.config.tsx';
 export function AppRouter() {
   return (
     <RouterProvider 
-      router={router} 
+      router={router}
+      future={{
+        v7_startTransition: true,
+      }}
     />
   );
 }
