@@ -501,7 +501,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
                   >
                     <Settings className="w-4 h-4" />
-                    コンテキスト設定
+                    会話設定
                     {Object.keys(messageConfig).length > 0 && (
                       <span className="ml-auto w-2 h-2 rounded-full bg-purple-500" />
                     )}
@@ -560,7 +560,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                   "text-muted-foreground hover:text-foreground",
                   Object.keys(messageConfig).length > 0 && "bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400"
                 )}
-                title="コンテキスト設定 (Ctrl+Shift+M)"
+                title="会話設定 (Ctrl+Shift+M)"
                 disabled={disabled}
               >
                 <Settings className="w-4 h-4" />

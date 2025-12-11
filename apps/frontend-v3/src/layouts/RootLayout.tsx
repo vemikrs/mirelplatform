@@ -122,7 +122,7 @@ function RootLayoutInner() {
             )}
           </main>
 
-          <footer className="border-t border-outline/40 bg-surface-subtle/60">
+          <footer className="hidden md:block border-t border-outline/40 bg-surface-subtle/60">
             <div className="flex flex-col gap-1 px-2 py-1 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-3">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.

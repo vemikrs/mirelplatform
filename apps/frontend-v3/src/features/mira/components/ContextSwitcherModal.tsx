@@ -55,9 +55,9 @@ export function ContextSwitcherModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Context & Settings</DialogTitle>
+          <DialogTitle>会話設定</DialogTitle>
           <AiPresetSuggestion 
             messageContent={messageContent} 
             onApply={handleApplySuggestion} 
@@ -65,7 +65,7 @@ export function ContextSwitcherModal({
           />
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto max-h-[60vh] p-1 space-y-6">
+        <div className="flex-1 overflow-y-auto max-h-[60vh] p-3 sm:p-1 space-y-4 sm:space-y-6">
           {/* Section: Feature Flags / Preferences */}
           <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
              <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export function ContextSwitcherModal({
              </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Left Column: Context Controls */}
             <div className="space-y-6">
                {/* Section: History Scope */}
