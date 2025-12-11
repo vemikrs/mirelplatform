@@ -128,7 +128,8 @@ mira:
       base-url: https://models.github.ai/inference
       # モデルID形式: {publisher}/{model_name} (すべて小文字)
       # 利用可能モデル: https://models.github.ai/catalog/models
-      model: ${GITHUB_MODELS_MODEL:meta/llama-3.3-70b-instruct}
+      # NOTE: Llama 3.3 は tool_calls 時に content:null 必須で 500 エラーになるため OpenAI モデルを使用
+      model: ${GITHUB_MODELS_MODEL:openai/gpt-5-mini}
       temperature: 0.7
       max-tokens: 4096
       timeout-seconds: 60
