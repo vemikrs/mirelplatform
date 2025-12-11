@@ -211,21 +211,14 @@ public class AuthenticationServiceImpl {
                         ipAddress,
                         userAgent
                     );
-                    throw new EmailNotVerifiedException(
-                        "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
-                        systemUser.getEmail()
-                    );
-                } catch (EmailNotVerifiedException e) {
-                    // EmailNotVerifiedException はそのまま再スロー
-                    throw e;
                 } catch (Exception e) {
                     logger.error("Failed to send verification email: {}", systemUser.getEmail(), e);
-                    // メール送信失敗でもログイン拒否
-                    throw new EmailNotVerifiedException(
-                        "メールアドレスが未検証です。受信ボックスを確認してください。",
-                        systemUser.getEmail()
-                    );
+                    // メール送信失敗でもログイン拒否（エラー詳細は記録するがユーザーには公開しない）
                 }
+                throw new EmailNotVerifiedException(
+                    "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
+                    systemUser.getEmail()
+                );
             } else {
                 // 通常のユーザーの場合は検証メール送信なし
                 throw new EmailNotVerifiedException(

@@ -574,4 +574,5 @@ public class OtpService {
         byte[] randomBytes = new byte[length];
         secureRandom.nextBytes(randomBytes);
         return HexFormat.of().formatHex(randomBytes);
-    }}
+    }
+}

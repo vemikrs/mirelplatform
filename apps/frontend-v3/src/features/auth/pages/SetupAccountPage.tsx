@@ -21,6 +21,24 @@ interface SetupAccountRequest {
   newPassword: string;
 }
 
+/**
+ * APIエラーレスポンスからエラーメッセージを抽出する共通関数
+ */
+function extractErrorMessage(err: any, defaultMessage: string): string {
+  if (err.response?.data) {
+    if (typeof err.response.data === 'string') {
+      return err.response.data;
+    }
+    if (err.response.data.message) {
+      return err.response.data.message;
+    }
+    if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+      return err.response.data.errors[0] || defaultMessage;
+    }
+  }
+  return defaultMessage;
+}
+
 export function SetupAccountPage() {
   useTheme();
   const [searchParams] = useSearchParams();
@@ -53,21 +71,7 @@ export function SetupAccountPage() {
         setError(null);
       } catch (err: any) {
         console.error('Token verification failed:', err);
-        
-        // エラーメッセージの抽出
-        let errorMessage = 'セットアップリンクが無効または期限切れです';
-        
-        if (err.response?.data) {
-          if (typeof err.response.data === 'string') {
-            errorMessage = err.response.data;
-          } else if (err.response.data.message) {
-            errorMessage = err.response.data.message;
-          } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
-            errorMessage = err.response.data.errors[0] || errorMessage;
-          }
-        }
-        
-        setError(errorMessage);
+        setError(extractErrorMessage(err, 'セットアップリンクが無効または期限切れです'));
       } finally {
         setIsVerifying(false);
       }
@@ -138,24 +142,7 @@ export function SetupAccountPage() {
       }
     } catch (err: any) {
       console.error('Setup account failed:', err);
-      
-      // エラーメッセージの抽出
-      let errorMessage = 'アカウントセットアップに失敗しました';
-      
-      if (err.response?.data) {
-        if (typeof err.response.data === 'string') {
-          // バックエンドから文字列が返された場合
-          errorMessage = err.response.data;
-        } else if (err.response.data.message) {
-          // ApiResponse 形式の場合
-          errorMessage = err.response.data.message;
-        } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
-          // エラー配列の場合
-          errorMessage = err.response.data.errors[0] || errorMessage;
-        }
-      }
-      
-      setError(errorMessage);
+      setError(extractErrorMessage(err, 'アカウントセットアップに失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
