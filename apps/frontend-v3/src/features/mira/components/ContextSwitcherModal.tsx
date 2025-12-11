@@ -65,9 +65,9 @@ export function ContextSwitcherModal({
           />
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto max-h-[60vh] p-3 sm:p-1 space-y-4 sm:space-y-6">
+        <div className="flex-1 overflow-y-auto max-h-[60vh] px-3 py-2 space-y-3 sm:space-y-4">
           {/* Section: Feature Flags / Preferences */}
-          <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
+          <div className="space-y-2 p-3 border rounded-lg bg-muted/20">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                    <Sparkles className="w-4 h-4 text-primary" />
@@ -83,17 +83,17 @@ export function ContextSwitcherModal({
              </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {/* Left Column: Context Controls */}
-            <div className="space-y-6">
+            <div className="space-y-4">
                {/* Section: History Scope */}
-               <div className="space-y-3">
+               <div className="space-y-2">
                   <div className="flex items-center gap-2 pb-1 border-b">
                      <History className="w-4 h-4" />
                      <h3 className="text-sm font-semibold">History Scope</h3>
                   </div>
                   
-                   <div className="space-y-3">
+                   <div className="space-y-2">
                      <div className="flex flex-col gap-2">
                         <Label>Conversation Scope</Label>
                          <Select 
@@ -127,12 +127,12 @@ export function ContextSwitcherModal({
                </div>
 
                {/* Section: Temporary Context */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 pb-1 border-b">
                      <Terminal className="w-4 h-4" />
                      <h3 className="text-sm font-semibold">Temporary Context</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Textarea 
                       placeholder="Add temporary instructions for this message..."
                       className="min-h-[120px]"
@@ -147,14 +147,14 @@ export function ContextSwitcherModal({
             </div>
 
             {/* Right Column: Context Layers */}
-            <div className="space-y-6">
-               <div className="space-y-3">
+            <div className="space-y-4">
+               <div className="space-y-2">
                   <div className="flex items-center gap-2 pb-1 border-b">
                      <Layers className="w-4 h-4" />
                      <h3 className="text-sm font-semibold">Context Layers</h3>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
                       Enable/Disable specific context injections.
                     </p>
