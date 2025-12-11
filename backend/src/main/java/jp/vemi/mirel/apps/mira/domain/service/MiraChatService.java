@@ -32,6 +32,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
+import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
@@ -68,6 +69,7 @@ public class MiraChatService {
     private final TokenCounter tokenCounter;
     private final MiraSettingService settingService;
     private final TavilySearchProvider tavilySearchProvider;
+    private final ModelCapabilityValidator modelCapabilityValidator;
 
     /**
      * 会話一覧取得.
@@ -159,6 +161,15 @@ public class MiraChatService {
         // Token Counting (G-2): Use JTokkit for accurate counting
         int estimatedInputTokens = tokenCounter.count(request.getMessage().getContent(), "gpt-4o");
         tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
+
+        // 0.5. モデル機能バリデーション (Web検索・マルチモーダル等)
+        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validate(request);
+        if (!capabilityValidation.isValid()) {
+            auditService.logChatResponse(tenantId, userId, request.getConversationId(),
+                    "UNKNOWN", null, (int) (System.currentTimeMillis() - startTime), 0, 0,
+                    MiraAuditLog.AuditStatus.ERROR);
+            return buildErrorResponse(request.getConversationId(), capabilityValidation.getErrorMessage());
+        }
 
         // 1. ポリシー検証
         PolicyEnforcer.ValidationResult validation = policyEnforcer.validateRequest(request);
