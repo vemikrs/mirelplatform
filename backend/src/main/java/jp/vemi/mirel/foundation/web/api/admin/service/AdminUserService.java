@@ -228,7 +228,9 @@ public class AdminUserService {
         systemUser.setId(UUID.randomUUID());
         systemUser.setUsername(request.getUsername());
         systemUser.setEmail(request.getEmail());
-        systemUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        // 管理者作成ユーザーは初回パスワードをセットアップリンク経由で設定するため、
+        // ここではダミーハッシュを設定（セットアップ完了時に上書きされる）
+        systemUser.setPasswordHash(passwordEncoder.encode("TEMP_PASSWORD_" + UUID.randomUUID()));
         systemUser.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
         systemUser.setEmailVerified(false); // 管理者作成ユーザーは未認証
         systemUser.setCreatedByAdmin(true); // 管理者作成フラグをセット
@@ -242,7 +244,7 @@ public class AdminUserService {
         user.setSystemUserId(systemUser.getId()); // SystemUserと紐付け
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(systemUser.getPasswordHash()); // SystemUserと同じパスワードハッシュ
+        user.setPasswordHash(systemUser.getPasswordHash()); // SystemUserと同じダミーハッシュ
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());

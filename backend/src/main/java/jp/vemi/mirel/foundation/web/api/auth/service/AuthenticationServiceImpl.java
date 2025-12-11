@@ -13,6 +13,7 @@ import jp.vemi.mirel.security.jwt.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -74,6 +75,30 @@ public class AuthenticationServiceImpl {
     private jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository otpTokenRepository;
 
     /**
+     * セットアップトークン検証の共通ロジック
+     * 
+     * @param token セットアップトークン
+     * @return 検証済みトークンとSystemUserのペア
+     * @throws RuntimeException トークンが無効または期限切れの場合
+     */
+    private Pair<OtpToken, SystemUser> validateSetupToken(String token) {
+        // トークン検証
+        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
+                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
+
+        // 有効期限チェック
+        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("セットアップリンクの有効期限が切れています");
+        }
+
+        // SystemUser取得
+        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        return Pair.of(otpToken, systemUser);
+    }
+
+    /**
      * アカウントセットアップトークンを検証
      * 
      * @param token セットアップトークン
@@ -84,19 +109,8 @@ public class AuthenticationServiceImpl {
     public VerifySetupTokenResponse verifyAccountSetupToken(String token) {
         logger.info("Verifying account setup token");
 
-        // トークン検証
-        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
-                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
-
-        // 有効期限チェック
-        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
-            logger.error("Setup token expired: {}", token);
-            throw new RuntimeException("セットアップリンクの有効期限が切れています");
-        }
-
-        // SystemUser取得
-        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+        Pair<OtpToken, SystemUser> validated = validateSetupToken(token);
+        SystemUser systemUser = validated.getSecond();
 
         logger.info("Setup token verified for user: {}", systemUser.getEmail());
 
@@ -117,19 +131,10 @@ public class AuthenticationServiceImpl {
     public void setupAccount(String token, String newPassword) {
         logger.info("Setting up account with setup token");
 
-        // トークン検証
-        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
-                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
-
-        // 有効期限チェック
-        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
-            logger.error("Setup token expired: {}", token);
-            throw new RuntimeException("セットアップリンクの有効期限が切れています");
-        }
-
-        // SystemUser取得
-        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+        // トークン検証（共通ロジック使用）
+        Pair<OtpToken, SystemUser> validated = validateSetupToken(token);
+        OtpToken otpToken = validated.getFirst();
+        SystemUser systemUser = validated.getSecond();
 
         // パスワードハッシュ化
         String passwordHash = passwordEncoder.encode(newPassword);

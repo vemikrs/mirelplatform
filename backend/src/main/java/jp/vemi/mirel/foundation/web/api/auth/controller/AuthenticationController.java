@@ -307,8 +307,7 @@ public class AuthenticationController {
     public ResponseEntity<?> setupAccount(@Valid @RequestBody ApiRequest<SetupAccountRequest> apiRequest) {
         try {
             SetupAccountRequest request = apiRequest.getModel();
-            logger.info("Setup account request: token={}, passwordLength={}", 
-                request.getToken() != null ? request.getToken().substring(0, Math.min(10, request.getToken().length())) + "..." : "null",
+            logger.info("Setup account request: passwordLength={}", 
                 request.getNewPassword() != null ? request.getNewPassword().length() : 0);
             authenticationService.setupAccount(request.getToken(), request.getNewPassword());
             logger.info("Account setup completed successfully");
