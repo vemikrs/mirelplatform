@@ -25,7 +25,7 @@ import {
   Download,
   Maximize2,
   Settings,
-  MoreVertical,
+  Menu,
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig } from '@/lib/api/mira';
@@ -474,7 +474,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                 title="メニュー"
                 disabled={disabled}
               >
-                <MoreVertical className="w-4 h-4" />
+                <Menu className="w-4 h-4" />
               </button>
               
               {/* 統合メニュー */}
@@ -516,18 +516,18 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       <button
                         key={mode.mode}
                         onClick={() => {
-                          setCurrentMode(mode.mode);
+                          handleModeSelect(mode.mode);
                           setShowModeMenu(false);
                         }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2',
                           'hover:bg-muted transition-colors',
-                          currentMode === mode.mode && 'bg-muted font-medium'
+                          selectedMode === mode.mode && 'bg-muted font-medium'
                         )}
                       >
                         <Icon className={cn('w-4 h-4', mode.color)} />
                         <span>{mode.label}</span>
-                        {currentMode === mode.mode && (
+                        {selectedMode === mode.mode && (
                           <span className="ml-auto text-xs text-primary">✓</span>
                         )}
                       </button>
