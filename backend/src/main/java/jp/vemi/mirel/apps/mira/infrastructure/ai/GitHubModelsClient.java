@@ -474,7 +474,13 @@ public class GitHubModelsClient implements AiProviderClient {
             // ストリーミングの場合は、内部的に RestClient が使われる可能性もある。
             // もしストリーミングでエラーが発生する場合は、別途対応が必要。
             
-            return next.exchange(request);
+            return next.exchange(request)
+                .onErrorResume(org.springframework.web.reactive.function.client.WebClientResponseException.class, error -> {
+                    // エラーレスポンスの本文を取得してログに出力
+                    String errorBody = error.getResponseBodyAsString();
+                    log.error("[GitHubModelsWebClientFilter] API Error: {} {}", error.getStatusCode(), errorBody);
+                    return reactor.core.publisher.Mono.error(error);
+                });
         }
     }
 }

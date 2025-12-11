@@ -51,6 +51,8 @@ logging:
     jp.vemi.framework: DEBUG
     jp.vemi.ste: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
 
 mirel:
   storage-dir: ./data/storage
