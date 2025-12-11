@@ -14,6 +14,7 @@ import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraAuditLog;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraConversation;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig;
+import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
@@ -43,6 +44,7 @@ public class MiraStreamService {
     private final MiraRateLimitService rateLimitService;
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
+    private final ModelCapabilityValidator modelCapabilityValidator;
 
     /**
      * ストリームチャット実行.
@@ -59,6 +61,12 @@ public class MiraStreamService {
             tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
         } catch (Exception e) {
             return Flux.just(MiraStreamResponse.error("PREFLIGHT_ERROR", e.getMessage()));
+        }
+
+        // 0.5. モデル機能バリデーション (Web検索・マルチモーダル等)
+        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validate(request);
+        if (!capabilityValidation.isValid()) {
+            return Flux.just(MiraStreamResponse.error("CAPABILITY_ERROR", capabilityValidation.getErrorMessage()));
         }
 
         // 1. Policy & Mode
