@@ -182,6 +182,15 @@ public class AdminUserService {
             }
         }
 
+        // SystemUserからavatarUrlを取得
+        String avatarUrl = null;
+        if (user.getSystemUserId() != null) {
+            SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId()).orElse(null);
+            if (systemUser != null) {
+                avatarUrl = systemUser.getAvatarUrl();
+            }
+        }
+
         return AdminUserDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -192,6 +201,7 @@ public class AdminUserService {
                 .isActive(user.getIsActive())
                 .emailVerified(user.getEmailVerified())
                 .roles(user.getRoles())
+                .avatarUrl(avatarUrl)
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreateDate() != null ? Instant.ofEpochMilli(user.getCreateDate().getTime()) : null)
                 .tenants(tenantInfos)

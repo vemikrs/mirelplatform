@@ -28,6 +28,7 @@ public class AdminUserDto {
     private Boolean isActive;
     private Boolean emailVerified;
     private String roles;
+    private String avatarUrl;
     private Instant lastLoginAt;
     private Instant createdAt;
     private List<UserTenantInfo> tenants;
