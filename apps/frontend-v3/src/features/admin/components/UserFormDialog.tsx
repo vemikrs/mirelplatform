@@ -36,7 +36,6 @@ export const UserFormDialog = ({
     displayName: '',
     firstName: '',
     lastName: '',
-    password: '',
     roles: [] as string[],
     isActive: true,
   });
@@ -58,7 +57,6 @@ export const UserFormDialog = ({
         displayName: user.displayName,
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        password: '',
         roles: userRoles,
         isActive: user.isActive,
       });
@@ -74,7 +72,6 @@ export const UserFormDialog = ({
         displayName: '',
         firstName: '',
         lastName: '',
-        password: '',
         roles: ['USER'],
         isActive: true,
       });
@@ -116,7 +113,6 @@ export const UserFormDialog = ({
         displayName: formData.displayName,
         firstName: formData.firstName || undefined,
         lastName: formData.lastName || undefined,
-        password: formData.password || undefined,
         roles: formData.roles,
         isActive: formData.isActive,
       };
@@ -131,7 +127,7 @@ export const UserFormDialog = ({
           <DialogHeader>
             <DialogTitle>{user ? 'ユーザー編集' : '新規ユーザー作成'}</DialogTitle>
             <DialogDescription>
-              {user ? 'ユーザー情報を編集します。' : '新しいユーザーを作成します。'}
+              {user ? 'ユーザー情報を編集します。' : '新しいユーザーを作成します。作成後、セットアップリンクがメールで送信され、ユーザー自身がパスワードを設定します。'}
             </DialogDescription>
           </DialogHeader>
           
@@ -158,19 +154,6 @@ export const UserFormDialog = ({
                 />
               </div>
             </div>
-
-            {!user && (
-              <div className="space-y-2">
-                <Label htmlFor="password">パスワード</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="空欄の場合は自動生成されます"
-                />
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="displayName">表示名 *</Label>

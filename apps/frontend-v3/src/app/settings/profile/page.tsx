@@ -61,7 +61,7 @@ interface ApiError {
 }
 
 export default function ProfilePage() {
-  const { user, tokens, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
