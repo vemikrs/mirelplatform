@@ -17,9 +17,16 @@ import {
   CardHeader,
   CardTitle,
   Separator,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@mirel/ui';
 import { User as UserIcon, Mail, Shield, Building2, Calendar } from 'lucide-react';
-import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import type { AdminUser, CreateUserRequest, UpdateUserRequest, TenantAssignment, UserTenantAssignmentRequest } from '../api';
+import { getTenants, updateUserTenants } from '../api';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -54,7 +61,22 @@ export const UserFormDialog = ({
     TENANT_ADMIN: false,
   });
 
+  const [tenantAssignments, setTenantAssignments] = useState<Map<string, { roleInTenant: string; isDefault: boolean }>>(
+    new Map()
+  );
+  const [isSavingTenants, setIsSavingTenants] = useState(false);
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // 全テナントリストを取得
+  const { data: tenantsResponse } = useQuery({
+    queryKey: ['admin-tenants'],
+    queryFn: async () => {
+      const res = await getTenants();
+      return res.data;
+    },
+  });
+  const allTenants = tenantsResponse || [];
 
   useEffect(() => {
     if (!open) return;
@@ -75,6 +97,13 @@ export const UserFormDialog = ({
         USER: userRoles.includes('USER'),
         TENANT_ADMIN: userRoles.includes('TENANT_ADMIN'),
       });
+      
+      // テナント割り当てを初期化
+      const tenantMap = new Map<string, { roleInTenant: string; isDefault: boolean }>();
+      user.tenants?.forEach(t => {
+        tenantMap.set(t.tenantId, { roleInTenant: t.roleInTenant, isDefault: t.isDefault });
+      });
+      setTenantAssignments(tenantMap);
     } else {
       setFormData({
         username: '',
@@ -90,6 +119,7 @@ export const UserFormDialog = ({
         USER: true,
         TENANT_ADMIN: false,
       });
+      setTenantAssignments(new Map());
     }
   }, [user, open]);
 
@@ -102,6 +132,76 @@ export const UserFormDialog = ({
       setFormData(prev => ({ ...prev, roles: selectedRoles }));
       return updated;
     });
+  };
+
+  const handleTenantToggle = (tenantId: string) => {
+    setTenantAssignments(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(tenantId)) {
+        newMap.delete(tenantId);
+      } else {
+        // 新規追加時はUSERロールをデフォルトとし、他にデフォルトがなければデフォルトに設定
+        const hasDefault = Array.from(newMap.values()).some(v => v.isDefault);
+        newMap.set(tenantId, { roleInTenant: 'USER', isDefault: !hasDefault });
+      }
+      return newMap;
+    });
+  };
+
+  const handleTenantRoleChange = (tenantId: string, role: string) => {
+    setTenantAssignments(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(tenantId);
+      if (current) {
+        newMap.set(tenantId, { ...current, roleInTenant: role });
+      }
+      return newMap;
+    });
+  };
+
+  const handleTenantDefaultChange = (tenantId: string) => {
+    setTenantAssignments(prev => {
+      const newMap = new Map(prev);
+      // すべてのデフォルトを解除してから、選択されたテナントをデフォルトに
+      newMap.forEach((value, key) => {
+        newMap.set(key, { ...value, isDefault: key === tenantId });
+      });
+      return newMap;
+    });
+  };
+
+  const handleSaveTenants = async () => {
+    if (!user) return;
+    
+    const tenants: TenantAssignment[] = Array.from(tenantAssignments.entries()).map(([tenantId, data]) => ({
+      tenantId,
+      roleInTenant: data.roleInTenant,
+      isDefault: data.isDefault,
+    }));
+
+    if (tenants.length === 0) {
+      alert('少なくとも1つのテナントを選択してください');
+      return;
+    }
+
+    const hasDefault = tenants.some(t => t.isDefault);
+    if (!hasDefault) {
+      alert('デフォルトテナントを1つ選択してください');
+      return;
+    }
+
+    try {
+      setIsSavingTenants(true);
+      const request: UserTenantAssignmentRequest = { tenants };
+      await updateUserTenants(user.userId, request);
+      // 成功後、親コンポーネントに通知してリストを再取得
+      onClose();
+    } catch (error) {
+      console.error('Failed to update tenants', error);
+      alert('テナント割り当ての更新に失敗しました');
+    } finally {
+      setIsSavingTenants(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -294,41 +394,95 @@ export const UserFormDialog = ({
                         <Building2 className="h-4 w-4" />
                         所属テナント
                       </CardTitle>
-                      {user && user.tenants && user.tenants.length > 0 && (
+                      {tenantAssignments.size > 0 && (
                         <Badge variant="outline" size="sm">
-                          {user.tenants.length}件
+                          {tenantAssignments.size}件
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      テナント割り当ての編集機能は今後実装予定です
-                    </p>
+                    {user && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        チェックボックスでテナントを選択し、ロールとデフォルトを設定してください
+                      </p>
+                    )}
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    {user && user.tenants && user.tenants.length > 0 ? (
-                      user.tenants.map((tenant) => (
-                        <div key={tenant.tenantId} className="flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-surface-raised">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">{tenant.tenantName}</p>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" size="sm">
-                                {tenant.roleInTenant}
-                              </Badge>
-                              {tenant.isDefault && (
-                                <Badge variant="success" size="sm">
-                                  デフォルト
-                                </Badge>
+                  <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                    {user ? (
+                      allTenants.length > 0 ? (
+                        allTenants.map((tenant) => {
+                          const isAssigned = tenantAssignments.has(tenant.tenantId);
+                          const assignment = tenantAssignments.get(tenant.tenantId);
+                          return (
+                            <div
+                              key={tenant.tenantId}
+                              className={`flex flex-col gap-2 p-2 sm:p-3 rounded-lg border transition-all ${
+                                isAssigned ? 'border-primary bg-primary/5' : 'hover:bg-surface-raised'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <label htmlFor={`tenant-${tenant.tenantId}`} className="flex items-center gap-2 cursor-pointer flex-1">
+                                  <input
+                                    id={`tenant-${tenant.tenantId}`}
+                                    type="checkbox"
+                                    checked={isAssigned}
+                                    onChange={() => handleTenantToggle(tenant.tenantId)}
+                                    className="h-4 w-4"
+                                  />
+                                  <span className="text-sm font-medium">{tenant.tenantName}</span>
+                                </label>
+                              </div>
+                              {isAssigned && assignment && (
+                                <div className="flex items-center gap-2 ml-6">
+                                  <Select value={assignment.roleInTenant} onValueChange={(v) => handleTenantRoleChange(tenant.tenantId, v)}>
+                                    <SelectTrigger className="w-32 h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="USER">USER</SelectItem>
+                                      <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                      <SelectItem value="MEMBER">MEMBER</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <label className="flex items-center gap-1 cursor-pointer text-xs">
+                                    <input
+                                      type="radio"
+                                      name="defaultTenant"
+                                      checked={assignment.isDefault}
+                                      onChange={() => handleTenantDefaultChange(tenant.tenantId)}
+                                      className="h-3 w-3"
+                                    />
+                                    <span>デフォルト</span>
+                                  </label>
+                                </div>
                               )}
                             </div>
-                          </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-sm text-muted-foreground text-center py-4">
+                          利用可能なテナントがありません
                         </div>
-                      ))
+                      )
                     ) : (
                       <div className="text-sm text-muted-foreground text-center py-4">
-                        所属テナントがありません
+                        ユーザー作成後にテナントを割り当てられます
                       </div>
                     )}
                   </CardContent>
+                  {user && tenantAssignments.size > 0 && (
+                    <div className="px-4 pb-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveTenants}
+                        disabled={isSavingTenants}
+                        className="w-full"
+                      >
+                        {isSavingTenants ? 'テナント割り当てを保存中...' : 'テナント割り当てを保存'}
+                      </Button>
+                    </div>
+                  )}
                 </Card>
 
                 {user && (

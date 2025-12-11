@@ -17,6 +17,7 @@ import jp.vemi.mirel.foundation.service.OtpService;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
+import jp.vemi.mirel.foundation.web.api.admin.dto.UserTenantAssignmentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -314,5 +315,49 @@ public class AdminUserService {
         }
 
         userRepository.deleteById(userId);
+    }
+
+    /**
+     * ユーザーのテナント割り当てを更新
+     */
+    @Transactional
+    public AdminUserDto updateUserTenants(String userId, UserTenantAssignmentRequest request) {
+        logger.info("Update user tenants: userId={}, tenants={}", userId, request.getTenants().size());
+
+        // ユーザーの存在確認
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 既存のテナント割り当てを削除
+        List<UserTenant> existingAssignments = userTenantRepository.findByUserId(userId);
+        if (!existingAssignments.isEmpty()) {
+            userTenantRepository.deleteAll(existingAssignments);
+        }
+
+        // デフォルトテナントの数をチェック
+        long defaultCount = request.getTenants().stream()
+                .filter(UserTenantAssignmentRequest.TenantAssignment::getIsDefault)
+                .count();
+        if (defaultCount != 1) {
+            throw new RuntimeException("Exactly one default tenant is required");
+        }
+
+        // 新しいテナント割り当てを作成
+        for (UserTenantAssignmentRequest.TenantAssignment assignment : request.getTenants()) {
+            // テナントの存在確認
+            if (!tenantRepository.existsById(assignment.getTenantId())) {
+                throw new RuntimeException("Tenant not found: " + assignment.getTenantId());
+            }
+
+            UserTenant userTenant = new UserTenant();
+            userTenant.setUserId(userId);
+            userTenant.setTenantId(assignment.getTenantId());
+            userTenant.setRoleInTenant(assignment.getRoleInTenant());
+            userTenant.setIsDefault(assignment.getIsDefault());
+            userTenantRepository.save(userTenant);
+        }
+
+        // 更新後のユーザー情報を返す
+        return convertToAdminUserDto(user);
     }
 }

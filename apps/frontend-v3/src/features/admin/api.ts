@@ -118,6 +118,20 @@ export const deleteUser = async (userId: string) => {
   return apiClient.delete(`/admin/users/${userId}`);
 };
 
+export interface TenantAssignment {
+  tenantId: string;
+  roleInTenant: string;
+  isDefault: boolean;
+}
+
+export interface UserTenantAssignmentRequest {
+  tenants: TenantAssignment[];
+}
+
+export const updateUserTenants = async (userId: string, data: UserTenantAssignmentRequest) => {
+  return apiClient.put<AdminUser>(`/admin/users/${userId}/tenants`, data);
+};
+
 // --- Tenants ---
 export const getTenants = async (q?: string) => {
   return apiClient.get<Tenant[]>('/api/admin/tenants', { params: { query: q } }); // Assuming search param is query based on backend service
