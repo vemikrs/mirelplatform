@@ -108,11 +108,11 @@ export function RootLayout() {
           </main>
 
           <footer className="border-t border-outline/40 bg-surface-subtle/60">
-            <div className="flex flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-6">
+            <div className="flex flex-col gap-1 px-2 py-1 text-[8px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-3">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {initialNavigation.secondary.map((link: NavigationLink) => (
                   <Link
                     key={link.id}
