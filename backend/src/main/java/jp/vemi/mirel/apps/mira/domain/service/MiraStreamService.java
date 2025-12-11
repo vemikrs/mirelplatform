@@ -198,7 +198,7 @@ public class MiraStreamService {
                                 String name = null;
                                 String args = "{}";
 
-                                // Case 1: Standard/Flat OpenAI-like format
+                                // Case 1: Standard/Flat OpenAI-like format {"name": "...", "parameters": {...}}
                                 if (root.has("name") && root.has("parameters")) {
                                     name = root.get("name").asText();
                                     if (root.get("parameters").isObject()) {
@@ -209,12 +209,48 @@ public class MiraStreamService {
                                         args = root.get("parameters").toString();
                                     }
                                 }
-                                // Case 2: Observed "tool" key format (e.g. {"tool": "websearch", "query":
-                                // "..."})
+                                // Case 2: Observed "tool" key format {"tool": "websearch", "query": "..."}
                                 else if (root.has("tool")) {
                                     name = root.get("tool").asText();
-                                    args = root.toString(); // Use the whole object as args (Tavily tool should pick up
-                                                            // "query")
+                                    args = root.toString();
+                                }
+                                // Case 3: Llama/Mistral format {"type": "function", "name": "...", "parameters": {...}}
+                                else if (root.has("type") && "function".equals(root.path("type").asText()) && root.has("name")) {
+                                    name = root.get("name").asText();
+                                    // Try "arguments" first, then "parameters"
+                                    if (root.has("arguments")) {
+                                        args = root.get("arguments").isTextual() 
+                                            ? root.get("arguments").asText() 
+                                            : root.get("arguments").toString();
+                                    } else if (root.has("parameters")) {
+                                        args = root.get("parameters").isTextual()
+                                            ? root.get("parameters").asText()
+                                            : root.get("parameters").toString();
+                                    }
+                                }
+                                // Case 4: webSearch-specific format mapping
+                                if (name != null) {
+                                    // Map tool names to our webSearch tool
+                                    if (name.contains("tavily") || name.contains("web") || name.contains("search")) {
+                                        name = "webSearch"; // Match our @Tool method name
+                                        // Extract query from various formats
+                                        try {
+                                            com.fasterxml.jackson.databind.JsonNode argsNode = mapper.readTree(args);
+                                            String query = null;
+                                            if (argsNode.has("query")) {
+                                                query = argsNode.get("query").asText();
+                                            } else if (argsNode.has("latitude") && argsNode.has("longitude")) {
+                                                // Weather request detected - convert to query
+                                                query = "weather at latitude " + argsNode.get("latitude").asText() 
+                                                    + " longitude " + argsNode.get("longitude").asText();
+                                            }
+                                            if (query != null) {
+                                                args = mapper.writeValueAsString(java.util.Map.of("query", query));
+                                            }
+                                        } catch (Exception e) {
+                                            log.debug("Args reformat failed, using original", e);
+                                        }
+                                    }
                                 }
 
                                 if (name != null) {
