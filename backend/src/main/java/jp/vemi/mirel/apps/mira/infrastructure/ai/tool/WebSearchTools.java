@@ -3,48 +3,97 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.ai.tool;
 
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.DefaultToolMetadata;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Web検索ツール (Spring AI 1.1 @Tool方式).
+ * Web検索ツール (Spring AI 1.1 ToolCallback実装).
  * <p>
- * Spring AI 1.1のベストプラクティスに従い、{@code @Tool}アノテーションを使用。
+ * Spring AI 1.1のToolCallbackインターフェースを直接実装。
  * WebSearchProviderを注入し、疎結合で検索プロバイダを切り替え可能。
- * </p>
- * 
- * <p>
- * 使用例:
- * <pre>
- * WebSearchTools tools = new WebSearchTools(tavilyProvider);
- * // Spring AIがツールとして自動認識
- * </pre>
  * </p>
  * 
  * @see <a href="https://docs.spring.io/spring-ai/reference/api/tools.html">Spring AI Tool Calling</a>
  */
 @Slf4j
-@RequiredArgsConstructor
-public class WebSearchTools {
+public class WebSearchTools implements ToolCallback {
+
+    public static final String TOOL_NAME = "webSearch";
+    public static final String TOOL_DESCRIPTION = "Search the web for current information, news, facts, or real-time data. " +
+            "Use this when you need up-to-date information that may not be in your training data.";
+    public static final String INPUT_SCHEMA = """
+            {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query to find information on the web"
+                    }
+                },
+                "required": ["query"]
+            }
+            """;
 
     private final WebSearchProvider searchProvider;
+    private final ObjectMapper objectMapper;
+    private final ToolDefinition toolDefinition;
+    private final ToolMetadata toolMetadata;
+
+    public WebSearchTools(WebSearchProvider searchProvider) {
+        this.searchProvider = searchProvider;
+        this.objectMapper = new ObjectMapper();
+        this.toolDefinition = DefaultToolDefinition.builder()
+                .name(TOOL_NAME)
+                .description(TOOL_DESCRIPTION)
+                .inputSchema(INPUT_SCHEMA)
+                .build();
+        this.toolMetadata = DefaultToolMetadata.builder()
+                .returnDirect(false)
+                .build();
+    }
+
+    @Override
+    public ToolDefinition getToolDefinition() {
+        return toolDefinition;
+    }
+
+    @Override
+    public ToolMetadata getToolMetadata() {
+        return toolMetadata;
+    }
+
+    @Override
+    public String call(String toolInput) {
+        return call(toolInput, null);
+    }
+
+    @Override
+    public String call(String toolInput, org.springframework.ai.chat.model.ToolContext toolContext) {
+        try {
+            // Parse input JSON
+            JsonNode inputNode = objectMapper.readTree(toolInput);
+            String query = inputNode.has("query") ? inputNode.get("query").asText() : toolInput;
+            
+            return executeWebSearch(query);
+        } catch (Exception e) {
+            log.error("Failed to parse tool input: {}", toolInput, e);
+            // Fallback: treat the entire input as query
+            return executeWebSearch(toolInput);
+        }
+    }
 
     /**
      * Web検索を実行.
-     * <p>
-     * 最新のニュース、天気、事実確認など、リアルタイム情報が必要な場合に使用。
-     * </p>
-     * 
-     * @param query 検索クエリ
-     * @return 検索結果のテキスト形式
      */
-    @Tool(description = "Search the web for current information, news, facts, or real-time data. Use this when you need up-to-date information that may not be in your training data.")
-    public String webSearch(
-            @ToolParam(description = "The search query to find information on the web") String query) {
-        
+    private String executeWebSearch(String query) {
         log.info("WebSearchTools.webSearch called: query={}, provider={}", query, searchProvider.getName());
         
         if (!searchProvider.isAvailable()) {

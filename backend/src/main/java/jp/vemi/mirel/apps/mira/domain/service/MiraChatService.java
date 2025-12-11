@@ -871,9 +871,9 @@ public class MiraChatService {
                 // TavilySearchProviderにAPIキーを設定
                 tavilySearchProvider.setApiKey(tavilyKey);
                 
-                // WebSearchToolsから@Tool付きメソッドをToolCallbackに変換
+                // WebSearchToolsはToolCallbackを直接実装しているので、そのまま追加
                 WebSearchTools webSearchTools = new WebSearchTools(tavilySearchProvider);
-                tools.addAll(org.springframework.ai.tool.ToolCallbacks.from(webSearchTools));
+                tools.add(webSearchTools);
                 
                 log.info("Web search tool enabled for tenant={}, user={}", tenantId, userId);
             } else {
