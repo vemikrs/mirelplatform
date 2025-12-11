@@ -44,6 +44,7 @@ import { useMiraShortcuts } from '../hooks/useMiraShortcuts';
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { setMobileHeaderContent, setMobileHeaderActions } = useMobileHeader();
+  const [isMobile, setIsMobile] = useState(false);
   const {
     sendMessage,
     isLoading,
@@ -98,6 +99,17 @@ export function MiraPage() {
 
   // コンテキストエディタの表示状態
   const [isContextEditorOpen, setIsContextEditorOpen] = useState(false);
+  
+  // モバイル判定（リサイズにも対応）
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // 初期ロード：会話履歴を取得
   useEffect(() => {
@@ -405,7 +417,7 @@ export function MiraPage() {
       
       {/* 左サイドバー: 会話履歴（モバイル - オーバーレイ） */}
       <Sheet 
-        open={isSidebarOpen} 
+        open={isMobile && isSidebarOpen}
         onOpenChange={(open) => {
           setIsSidebarOpen(open);
           // Sheetを閉じる際にフォーカスをクリア（aria-hidden警告回避）
@@ -413,8 +425,9 @@ export function MiraPage() {
             document.activeElement.blur();
           }
         }}
+        modal={true}
       >
-        <SheetContent side="left" className="p-0 w-[85vw] max-w-[360px] md:hidden">
+        <SheetContent side="left" className="p-0 w-[85vw] max-w-[360px] md:hidden z-50">
           <SheetTitle className="sr-only">会話履歴</SheetTitle>
           <SheetDescription className="sr-only">過去の会話履歴を表示</SheetDescription>
           <MiraConversationList
