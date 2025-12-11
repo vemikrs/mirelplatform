@@ -4,6 +4,8 @@ import jp.vemi.mirel.foundation.abst.dao.entity.PasswordResetToken;
 import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.repository.PasswordResetTokenRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
+import jp.vemi.mirel.foundation.config.AppProperties;
+import jp.vemi.mirel.foundation.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Map;
 
 /**
  * Password Reset Service
@@ -30,7 +33,11 @@ public class PasswordResetService {
     private final SystemUserRepository systemUserRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final AppProperties appProperties;
+    
     private static final SecureRandom secureRandom = new SecureRandom();
+    private static final int TOKEN_EXPIRATION_HOURS = 1;
     
     /**
      * Request password reset - generates token and prepares for email sending
@@ -76,13 +83,16 @@ public class PasswordResetService {
         PasswordResetToken resetToken = new PasswordResetToken();
         resetToken.setSystemUserId(systemUser.getId());
         resetToken.setTokenHash(tokenHash);
-        resetToken.setExpiresAt(LocalDateTime.now().plusHours(1)); // 1 hour expiration
+        resetToken.setExpiresAt(LocalDateTime.now().plusHours(TOKEN_EXPIRATION_HOURS));
         resetToken.setRequestIp(requestIp);
         resetToken.setUserAgent(userAgent);
         
         passwordResetTokenRepository.save(resetToken);
         
         log.info("Password reset requested for user: {} (SystemUser ID: {})", email, systemUser.getId());
+        
+        // Send password reset email
+        sendPasswordResetEmail(email, plainToken);
         
         // Return plain token (to be sent via email)
         return plainToken;
@@ -187,5 +197,35 @@ public class PasswordResetService {
     public void cleanupExpiredTokens() {
         int deletedCount = passwordResetTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
         log.info("Cleaned up {} expired password reset tokens", deletedCount);
+    }
+    
+    /**
+     * Send password reset email with link
+     * 
+     * @param email Recipient email address
+     * @param token Plain reset token
+     */
+    private void sendPasswordResetEmail(String email, String token) {
+        try {
+            // Build reset link: /auth/password-reset?token={token}
+            String resetLink = String.format("%s/auth/password-reset?token=%s",
+                    appProperties.getBaseUrl(), token);
+            
+            Map<String, Object> variables = Map.of(
+                    "resetLink", resetLink,
+                    "expirationHours", TOKEN_EXPIRATION_HOURS);
+            
+            emailService.sendTemplateEmail(
+                    email,
+                    "パスワードリセットのリクエスト - mirelplatform",
+                    "password-reset-link",
+                    variables);
+            
+            log.info("Password reset email sent to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", email, e);
+            // メール送信失敗はトークン生成を無効化しない
+            // ユーザーはトークンを直接利用できる可能性がある
+        }
     }
 }

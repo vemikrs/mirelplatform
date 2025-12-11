@@ -365,16 +365,14 @@ public class AuthenticationController {
             String clientIp = getClientIp(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
 
-            String token = passwordResetService.requestPasswordReset(
+            passwordResetService.requestPasswordReset(
                     request.getEmail(),
                     clientIp,
                     userAgent);
 
-            // TODO: Send email with reset link containing token
-            // For now, return token in response (development only)
             logger.info("Password reset requested for email: {}", request.getEmail());
 
-            // In production, don't return the token, just success message
+            // セキュリティ: 成功/失敗に関わらず同じレスポンス（ユーザー列挙攻撃対策）
             return ResponseEntity.ok("Password reset email sent");
 
         } catch (IllegalArgumentException e) {
