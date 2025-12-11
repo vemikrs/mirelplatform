@@ -234,15 +234,15 @@ export function MiraPage() {
   }, [messages]);
   
   // メッセージ送信ハンドラ
-  const handleSend = useCallback((message: string, mode?: MiraMode, config?: MessageConfig) => {
+  const handleSend = useCallback((message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean) => {
     if (editingMessageId && activeConversation?.id) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversation.id, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode, messageConfig: config });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled });
     } else {
       // 通常の送信
-      sendMessage(message, { mode, messageConfig: config });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled });
     }
   }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
   

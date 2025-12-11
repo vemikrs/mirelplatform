@@ -32,6 +32,7 @@ export function useMiraChatStream() {
         mode?: any; // MiraMode
         context?: any;
         messageConfig?: any;
+        webSearchEnabled?: boolean;
     }
   ) => {
     // 1. Setup Conversation
@@ -60,6 +61,7 @@ export function useMiraChatStream() {
         messageConfig: options?.messageConfig,
       },
       message: { content },
+      webSearchEnabled: options?.webSearchEnabled,
     };
 
     if (import.meta.env.DEV) {
