@@ -34,7 +34,7 @@ export interface UserListResponse {
 export interface CreateUserRequest {
   username: string;
   email: string;
-  password?: string;
+  // 管理者作成ユーザーはセットアップリンク経由でパスワード設定するため不要
   displayName: string;
   firstName?: string;
   lastName?: string;

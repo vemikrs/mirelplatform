@@ -5,6 +5,7 @@ package jp.vemi.mirel.foundation.web.exception;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jp.vemi.mirel.foundation.exception.EmailNotVerifiedException;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -80,6 +82,28 @@ public class GlobalExceptionHandler {
         
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("アクセスが拒否されました"))
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    /**
+     * メールアドレス未検証エラー
+     */
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleEmailNotVerified(
+            EmailNotVerifiedException ex, WebRequest request) {
+        
+        log.warn("Email not verified on {}: {}", request.getDescription(false), ex.getMessage());
+        
+        Map<String, Object> data = Map.of(
+                "email", ex.getEmail(),
+                "errorCode", "EMAIL_NOT_VERIFIED"
+        );
+        
+        ApiResponse<Map<String, Object>> response = ApiResponse.<Map<String, Object>>builder()
+                .data(data)
+                .errors(List.of(ex.getMessage()))
                 .build();
         
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);

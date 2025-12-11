@@ -7,14 +7,13 @@ import jp.vemi.mirel.foundation.abst.dao.entity.*;
 import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense.LicenseTier;
 import jp.vemi.mirel.foundation.abst.dao.entity.ApplicationLicense.SubjectType;
 import jp.vemi.mirel.foundation.abst.dao.repository.*;
+import jp.vemi.mirel.foundation.exception.EmailNotVerifiedException;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.security.jwt.JwtService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
@@ -30,11 +29,10 @@ import java.util.stream.Collectors;
 /**
  * 認証サービス実装.
  */
-@Service
+@org.springframework.stereotype.Service
+@lombok.extern.slf4j.Slf4j
 public class AuthenticationServiceImpl {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-    
     // OTP/OAuth2ユーザー用の事前計算済みダミーパスワードハッシュ（bcrypt）
     // パスワードレス認証のユーザーはこのハッシュを使用し、実際の認証では使用されない
     private static final String DUMMY_PASSWORD_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
@@ -66,12 +64,103 @@ public class AuthenticationServiceImpl {
     @Autowired
     private jp.vemi.mirel.config.properties.AuthProperties authProperties;
 
+    @Autowired
+    private jp.vemi.mirel.foundation.service.OtpService otpService;
+
+    @Autowired
+    private jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository otpTokenRepository;
+
+    /**
+     * セットアップトークン検証の共通ロジック
+     * 
+     * @param token セットアップトークン
+     * @return 検証済みトークンとSystemUserのペア
+     * @throws RuntimeException トークンが無効または期限切れの場合
+     */
+    private Pair<OtpToken, SystemUser> validateSetupToken(String token) {
+        // トークン検証
+        OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
+                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
+
+        // 有効期限チェック
+        if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("セットアップリンクの有効期限が切れています");
+        }
+
+        // SystemUser取得
+        SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        return Pair.of(otpToken, systemUser);
+    }
+
+    /**
+     * アカウントセットアップトークンを検証
+     * 
+     * @param token セットアップトークン
+     * @return ユーザー情報（email, username）
+     * @throws RuntimeException トークンが無効または期限切れの場合
+     */
+    @Transactional(readOnly = true)
+    public VerifySetupTokenResponse verifyAccountSetupToken(String token) {
+        log.info("Verifying account setup token");
+
+        Pair<OtpToken, SystemUser> validated = validateSetupToken(token);
+        SystemUser systemUser = validated.getSecond();
+
+        log.info("Setup token verified for user: {}", systemUser.getEmail());
+
+        return VerifySetupTokenResponse.builder()
+                .email(systemUser.getEmail())
+                .username(systemUser.getUsername())
+                .build();
+    }
+
+    /**
+     * アカウントセットアップ（パスワード設定）
+     * 
+     * @param token セットアップトークン
+     * @param newPassword 新しいパスワード
+     * @throws RuntimeException トークンが無効、期限切れ、またはパスワード設定に失敗した場合
+     */
+    @Transactional
+    public void setupAccount(String token, String newPassword) {
+        log.info("Setting up account with setup token");
+
+        // トークン検証（共通ロジック使用）
+        Pair<OtpToken, SystemUser> validated = validateSetupToken(token);
+        OtpToken otpToken = validated.getFirst();
+        SystemUser systemUser = validated.getSecond();
+
+        // パスワードハッシュ化
+        String passwordHash = passwordEncoder.encode(newPassword);
+
+        // SystemUser更新（パスワード設定 + メール検証完了）
+        systemUser.setPasswordHash(passwordHash);
+        systemUser.setEmailVerified(true);
+        systemUserRepository.save(systemUser);
+
+        // User更新（メール検証完了）
+        userRepository.findBySystemUserId(systemUser.getId()).ifPresent(user -> {
+            user.setEmailVerified(true);
+            userRepository.save(user);
+            log.info("User profile updated: email verified for userId={}", user.getUserId());
+        });
+
+        // トークン無効化
+        otpToken.setIsVerified(true);
+        otpToken.setVerifiedAt(java.time.LocalDateTime.now());
+        otpTokenRepository.save(otpToken);
+
+        log.info("Account setup completed for user: {}", systemUser.getEmail());
+    }
+
     /**
      * ログイン処理
      */
     @Transactional
     public AuthenticationResponse login(LoginRequest request) {
-        logger.info("Login attempt for username or email: {}", request.getUsernameOrEmail());
+        log.info("Login attempt for username or email: {}", request.getUsernameOrEmail());
 
         // SystemUserでusernameまたはemailを検索
         SystemUser systemUser = systemUserRepository.findByUsername(request.getUsernameOrEmail())
@@ -90,7 +179,7 @@ public class AuthenticationServiceImpl {
 
         // パスワード検証
         if (!passwordEncoder.matches(request.getPassword(), systemUser.getPasswordHash())) {
-            logger.warn("Invalid password for user: {}", request.getUsernameOrEmail());
+            log.warn("Invalid password for user: {}", request.getUsernameOrEmail());
 
             // ログイン失敗回数をインクリメント
             Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0
@@ -100,11 +189,44 @@ public class AuthenticationServiceImpl {
             // 5回失敗でアカウントロック
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
-                logger.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
+                log.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
             }
 
             systemUserRepository.save(systemUser);
             throw new RuntimeException("Invalid username/email or password");
+        }
+
+        // メールアドレス検証チェック
+        if (systemUser.getEmailVerified() == null || !systemUser.getEmailVerified()) {
+            log.warn("Login attempt with unverified email: {}", systemUser.getEmail());
+            
+            // 管理者作成ユーザーの場合、自動的に検証メール送信
+            if (Boolean.TRUE.equals(systemUser.getCreatedByAdmin())) {
+                log.info("Auto-sending verification email for admin-created user: {}", systemUser.getEmail());
+                try {
+                    String ipAddress = request.getIpAddress() != null ? request.getIpAddress() : "unknown";
+                    String userAgent = request.getUserAgent() != null ? request.getUserAgent() : "unknown";
+                    otpService.requestOtp(
+                        systemUser.getEmail(), 
+                        "EMAIL_VERIFICATION", 
+                        ipAddress,
+                        userAgent
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to send verification email: {}", systemUser.getEmail(), e);
+                    // メール送信失敗でもログイン拒否（エラー詳細は記録するがユーザーには公開しない）
+                }
+                throw new EmailNotVerifiedException(
+                    "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
+                    systemUser.getEmail()
+                );
+            } else {
+                // 通常のユーザーの場合は検証メール送信なし
+                throw new EmailNotVerifiedException(
+                    "メールアドレスが未検証です。受信ボックスを確認してください。",
+                    systemUser.getEmail()
+                );
+            }
         }
 
         // ログイン成功：失敗回数リセット
@@ -131,7 +253,7 @@ public class AuthenticationServiceImpl {
                             user.getUserId(), null, buildAuthoritiesFromUser(user)));
         } else {
             accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+            log.warn("JWT is disabled. Using session-based authentication placeholder.");
         }
 
         // RefreshToken作成
@@ -141,7 +263,7 @@ public class AuthenticationServiceImpl {
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
                 user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
-        logger.info("Login successful for user: {}", user.getUserId());
+        log.info("Login successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, accessToken, refreshToken.getTokenHash(), licenses);
     }
@@ -151,7 +273,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse loginWithUser(User user) {
-        logger.info("Login with user object: {}", user.getUserId());
+        log.info("Login with user object: {}", user.getUserId());
 
         // 最終ログイン時刻更新
         user.setLastLoginAt(Instant.now());
@@ -169,7 +291,7 @@ public class AuthenticationServiceImpl {
                             user.getUserId(), null, buildAuthoritiesFromUser(user)));
         } else {
             accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+            log.warn("JWT is disabled. Using session-based authentication placeholder.");
         }
 
         // RefreshToken作成
@@ -179,7 +301,7 @@ public class AuthenticationServiceImpl {
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
                 user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
-        logger.info("Login successful for user: {}", user.getUserId());
+        log.info("Login successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, accessToken, refreshToken.getTokenHash(), licenses);
     }
@@ -189,7 +311,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signup(SignupRequest request) {
-        logger.info("Signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+        log.info("Signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
 
         // ユーザー名重複チェック
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -238,7 +360,7 @@ public class AuthenticationServiceImpl {
         // テナント取得
         Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
-        logger.info("Signup successful for user: {}", user.getUserId());
+        log.info("Signup successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
                 tokens.getRefreshToken(), List.of(license));
@@ -249,7 +371,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signupWithOAuth2(OAuth2SignupRequest request, String systemUserIdStr) {
-        logger.info("OAuth2 signup attempt for username: {}, systemUserId: {}", request.getUsername(), systemUserIdStr);
+        log.info("OAuth2 signup attempt for username: {}, systemUserId: {}", request.getUsername(), systemUserIdStr);
 
         UUID systemUserId = UUID.fromString(systemUserIdStr);
         SystemUser systemUser = systemUserRepository.findById(systemUserId)
@@ -287,7 +409,7 @@ public class AuthenticationServiceImpl {
         // テナント取得
         Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
-        logger.info("OAuth2 signup successful for user: {}", user.getUserId());
+        log.info("OAuth2 signup successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
                 tokens.getRefreshToken(), List.of(license));
@@ -299,7 +421,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signupWithOtp(jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request) {
-        logger.info("OTP-based signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+        log.info("OTP-based signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
 
         // ユーザー名重複チェック
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -349,7 +471,7 @@ public class AuthenticationServiceImpl {
         // テナント取得
         Tenant tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
 
-        logger.info("OTP-based signup successful for user: {}", user.getUserId());
+        log.info("OTP-based signup successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, tokens.getAccessToken(),
                 tokens.getRefreshToken(), List.of(license));
@@ -364,7 +486,7 @@ public class AuthenticationServiceImpl {
         if (!isJwtEnabled || jwtService == null) {
             throw new IllegalStateException("JWT is disabled. Refresh token not supported.");
         }
-        logger.info("Token refresh attempt");
+        log.info("Token refresh attempt");
 
         // RefreshToken検証
         String tokenHash = hashToken(request.getRefreshToken());
@@ -390,14 +512,14 @@ public class AuthenticationServiceImpl {
                             user.getUserId(), null, List.of()));
         } else {
             accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+            log.warn("JWT is disabled. Using session-based authentication placeholder.");
         }
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
                 user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
-        logger.info("Token refresh successful for user: {}", user.getUserId());
+        log.info("Token refresh successful for user: {}", user.getUserId());
 
         return buildAuthenticationResponse(user, tenant, accessToken, request.getRefreshToken(), licenses);
     }
@@ -407,15 +529,44 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public void logout(String refreshToken) {
-        logger.info("Logout attempt");
+        log.info("Logout attempt");
 
         if (refreshToken != null && !refreshToken.isEmpty()) {
             String tokenHash = hashToken(refreshToken);
             refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
                 token.setRevokedAt(Instant.now());
                 refreshTokenRepository.save(token);
-                logger.info("Refresh token revoked for user: {}", token.getUserId());
+                log.info("Refresh token revoked for user: {}", token.getUserId());
             });
+        }
+    }
+
+    /**
+     * 検証メール再送
+     * 
+     * @param email メールアドレス
+     * @param ipAddress リクエスト元IPアドレス
+     * @param userAgent User-Agent
+     */
+    @Transactional
+    public void resendVerificationEmail(String email, String ipAddress, String userAgent) {
+        log.info("Resend verification email request: email={}", email);
+        
+        // ユーザーが存在しなくてもエラーにしない（列挙攻撃対策）
+        SystemUser systemUser = systemUserRepository.findByEmail(email).orElse(null);
+        
+        if (systemUser != null && !Boolean.TRUE.equals(systemUser.getEmailVerified())) {
+            // 既存の OTP 基盤を活用
+            try {
+                otpService.requestOtp(email, "EMAIL_VERIFICATION", ipAddress, userAgent);
+                log.info("Verification email sent: email={}", email);
+            } catch (Exception e) {
+                log.error("Failed to send verification email: email={}", email, e);
+                // エラーを外部に公開しない（セキュリティ）
+            }
+        } else {
+            // ユーザーが存在しない、または既に検証済みの場合でもログのみ
+            log.info("Verification email request ignored: email={} (not found or already verified)", email);
         }
     }
 
@@ -424,7 +575,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public UserContextDto switchTenant(String userId, String tenantId) {
-        logger.info("Tenant switch attempt: user={}, tenant={}", userId, tenantId);
+        log.info("Tenant switch attempt: user={}, tenant={}", userId, tenantId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -452,7 +603,7 @@ public class AuthenticationServiceImpl {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new RuntimeException("Tenant not found"));
 
-        logger.info("Tenant switch successful: user={}, new tenant={}", userId, tenantId);
+        log.info("Tenant switch successful: user={}, new tenant={}", userId, tenantId);
 
         return UserContextDto.builder()
                 .user(UserDto.builder()
@@ -654,7 +805,7 @@ public class AuthenticationServiceImpl {
                             user.getUserId(), null, authorities));
         } else {
             accessToken = "session-based-auth-token";
-            logger.warn("JWT is disabled. Using session-based authentication placeholder.");
+            log.warn("JWT is disabled. Using session-based authentication placeholder.");
         }
 
         RefreshToken refreshToken = createRefreshToken(user);

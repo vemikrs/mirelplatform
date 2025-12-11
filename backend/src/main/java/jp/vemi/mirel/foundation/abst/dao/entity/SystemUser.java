@@ -116,6 +116,13 @@ public class SystemUser {
     @Column(name = "oauth2_provider_id", length = 255)
     private String oauth2ProviderId;
     
+    /**
+     * Created by admin flag - indicates if this user was created by an administrator
+     * rather than through self-registration
+     */
+    @Column(name = "created_by_admin", nullable = false)
+    private Boolean createdByAdmin = false;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -140,6 +147,9 @@ public class SystemUser {
         }
         if (failedLoginAttempts == null) {
             failedLoginAttempts = 0;
+        }
+        if (createdByAdmin == null) {
+            createdByAdmin = false;
         }
     }
 }

@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * OTPサービス.
@@ -146,6 +147,7 @@ public class OtpService {
             // 新規ユーザーの場合は仮ID（メール検証後に実SystemUserIdに更新）
             token.setSystemUserId(java.util.UUID.randomUUID());
         }
+        token.setEmail(email); // サインアップ時のOTP検証用にemailを保存
 
         // マジックリンクトークン生成
         String magicLinkToken = generateMagicLinkToken();
@@ -206,23 +208,39 @@ public class OtpService {
             throw new RuntimeException("検証試行制限に達しました。しばらく待ってから再度お試しください。");
         }
 
-        // SystemUser取得
-        SystemUser systemUser = systemUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+        // サインアップの場合はemailベースでOTPトークンを検索（SystemUserはまだ存在しない）
+        OtpToken token;
+        SystemUser systemUser = null;
+        
+        if ("EMAIL_VERIFICATION".equals(purpose)) {
+            log.info("OTP検証開始 (サインアップ): email={}, purpose={}", email, purpose);
+            
+            // emailベースでOTPトークン取得（サインアップ用）
+            token = otpTokenRepository
+                    .findByEmailAndPurposeAndIsVerifiedAndExpiresAtAfter(
+                            email, purpose, false, LocalDateTime.now())
+                    .orElse(null);
+        } else {
+            // 既存ユーザーの場合はSystemUserを取得してからOTPトークン取得
+            systemUser = systemUserRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+            
+            log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
+            
+            // SystemUser IDベースでOTPトークン取得
+            token = otpTokenRepository
+                    .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
+                            systemUser.getId(), purpose, false, LocalDateTime.now())
+                    .orElse(null);
+        }
 
-        log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
-
-        // 有効なOTPトークン取得
-        OtpToken token = otpTokenRepository
-                .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
-                        systemUser.getId(), purpose, false, LocalDateTime.now())
-                .orElse(null);
-
+        UUID systemUserId = systemUser != null ? systemUser.getId() : null;
+        
         if (token == null) {
             otpVerifyFailedCounter.increment();
             log.warn("OTP検証失敗: トークンが見つからないか期限切れ - email={}, purpose={}, systemUserId={}",
-                    email, purpose, systemUser.getId());
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+                    email, purpose, systemUserId);
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "トークンが見つからないか期限切れ", ipAddress, userAgent, null);
             return false;
         }
@@ -233,7 +251,7 @@ public class OtpService {
         // 試行回数チェック
         if (token.getAttemptCount() >= token.getMaxAttempts()) {
             otpVerifyFailedCounter.increment();
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "最大試行回数超過", ipAddress, userAgent, null);
             return false;
         }
@@ -249,7 +267,7 @@ public class OtpService {
             otpTokenRepository.save(token);
             otpVerifyFailedCounter.increment();
             log.warn("OTP検証失敗: コード不一致 - email={}, attemptCount={}", email, token.getAttemptCount());
-            logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", false,
+            logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "OTPコード不一致", ipAddress, userAgent, null);
             return false;
         }
@@ -264,7 +282,7 @@ public class OtpService {
         rateLimitService.clearRateLimit("otp:request:" + email);
         rateLimitService.clearRateLimit("otp:cooldown:" + email);
 
-        logAudit(requestId, systemUser.getId(), email, purpose, "VERIFY", true,
+        logAudit(requestId, systemUserId, email, purpose, "VERIFY", true,
                 null, ipAddress, userAgent, null);
 
         // メトリクス: 検証成功
@@ -523,5 +541,55 @@ public class OtpService {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(90);
         int deleted = otpAuditLogRepository.deleteByCreatedAtBefore(cutoffDate);
         log.info("古い監査ログ削除: {} 件", deleted);
+    }
+    /**
+     * アカウントセットアップ用のトークンを作成.
+     * 管理者作成ユーザーが初回パスワード設定を行うためのワンタイムトークン
+     * 
+     * @param systemUserId SystemUser ID
+     * @param email ユーザーのメールアドレス
+     * @return マジックリンクトークン
+     */
+    @Transactional
+    public String createAccountSetupToken(UUID systemUserId, String email) {
+        log.info("Creating account setup token: systemUserId={}, email={}", systemUserId, email);
+
+        // 既存の未検証ACCOUNT_SETUPトークンを無効化
+        otpTokenRepository.findBySystemUserIdAndPurposeAndIsVerifiedFalse(systemUserId, "ACCOUNT_SETUP")
+                .forEach(token -> {
+                    token.setIsVerified(true); // 無効化
+                    otpTokenRepository.save(token);
+                });
+
+        // 新しいトークン作成
+        String magicLinkToken = generateSecureToken(32);
+        String dummyOtpHash = hashOtp("ACCOUNT_SETUP_" + systemUserId.toString()); // ダミーハッシュ
+
+        OtpToken token = new OtpToken();
+        token.setId(UUID.randomUUID());
+        token.setSystemUserId(systemUserId);
+        token.setOtpHash(dummyOtpHash);
+        token.setMagicLinkToken(magicLinkToken);
+        token.setPurpose("ACCOUNT_SETUP");
+        token.setExpiresAt(LocalDateTime.now().plusHours(72)); // 72時間有効
+        token.setIsVerified(false);
+        token.setAttemptCount(0);
+        token.setMaxAttempts(1); // 1回のみ使用可能
+
+        otpTokenRepository.save(token);
+
+        log.info("Account setup token created: tokenId={}, expiresAt={}", 
+                token.getId(), token.getExpiresAt());
+
+        return magicLinkToken;
+    }
+
+    /**
+     * セキュアなランダムトークンを生成
+     */
+    private String generateSecureToken(int length) {
+        byte[] randomBytes = new byte[length];
+        secureRandom.nextBytes(randomBytes);
+        return HexFormat.of().formatHex(randomBytes);
     }
 }

@@ -52,7 +52,7 @@ export function SignupPage() {
         data.resendCooldownSeconds
       );
       // OTP検証ページへ遷移
-      navigate('/auth/otp-email-verification', {
+      navigate('/auth/email-verification', {
         state: {
           signupData: {
             username: formData.username,
@@ -133,24 +133,6 @@ export function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-2 text-foreground">
-              ユーザー名 *
-            </label>
-            <Input
-              id="username"
-              type="text"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
-              placeholder="username"
-              className="w-full"
-              minLength={3}
-              maxLength={50}
-            />
-            <p className="text-xs text-gray-500 mt-1">3〜50文字で入力してください</p>
-          </div>
-
           {!isOAuth2 && (
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2 text-foreground">
@@ -169,6 +151,37 @@ export function SignupPage() {
           )}
 
           <div>
+            <label htmlFor="username" className="block text-sm font-medium mb-2 text-foreground">
+              ユーザー名 *
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                @
+              </span>
+              <Input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={(e) => {
+                  const newUsername = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    username: newUsername,
+                    // 表示名が空欄の場合はユーザー名をコピー
+                    displayName: prev.displayName === '' ? newUsername : prev.displayName
+                  }));
+                }}
+                required
+                placeholder="username"
+                className="w-full pl-8"
+                minLength={3}
+                maxLength={50}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">3〜50文字で入力してください</p>
+          </div>
+
+          <div>
             <label htmlFor="displayName" className="block text-sm font-medium mb-2 text-foreground">
               表示名 *
             </label>
@@ -185,19 +198,6 @@ export function SignupPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium mb-2 text-foreground">
-                名
-              </label>
-              <Input
-                id="firstName"
-                type="text"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="太郎"
-                className="w-full"
-              />
-            </div>
-            <div>
               <label htmlFor="lastName" className="block text-sm font-medium mb-2 text-foreground">
                 姓
               </label>
@@ -207,6 +207,19 @@ export function SignupPage() {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 placeholder="山田"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium mb-2 text-foreground">
+                名
+              </label>
+              <Input
+                id="firstName"
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                placeholder="太郎"
                 className="w-full"
               />
             </div>

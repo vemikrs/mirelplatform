@@ -41,6 +41,25 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, UUID> {
             LocalDateTime now);
 
     /**
+     * メールアドレスから有効なOTPトークンを検索（サインアップ用）
+     * 
+     * @param email
+     *            メールアドレス
+     * @param purpose
+     *            用途
+     * @param isVerified
+     *            検証済みフラグ
+     * @param now
+     *            現在日時
+     * @return OTPトークン
+     */
+    Optional<OtpToken> findByEmailAndPurposeAndIsVerifiedAndExpiresAtAfter(
+            String email,
+            String purpose,
+            Boolean isVerified,
+            LocalDateTime now);
+
+    /**
      * マジックリンクトークンから有効なOTPを検索
      * 
      * @param magicLinkToken
@@ -57,6 +76,19 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, UUID> {
             LocalDateTime now);
 
     /**
+     * マジックリンクトークンと用途から未検証のOTPを検索
+     * 
+     * @param magicLinkToken
+     *            マジックリンクトークン
+     * @param purpose
+     *            用途
+     * @return OTPトークン
+     */
+    Optional<OtpToken> findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(
+            String magicLinkToken,
+            String purpose);
+
+    /**
      * ユーザー・用途別の全トークン取得
      * 
      * @param systemUserId
@@ -66,6 +98,17 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, UUID> {
      * @return OTPトークンリスト
      */
     List<OtpToken> findBySystemUserIdAndPurpose(UUID systemUserId, String purpose);
+
+    /**
+     * ユーザー・用途別の未検証トークン取得
+     * 
+     * @param systemUserId
+     *            SystemUser ID
+     * @param purpose
+     *            用途
+     * @return OTPトークンリスト
+     */
+    List<OtpToken> findBySystemUserIdAndPurposeAndIsVerifiedFalse(UUID systemUserId, String purpose);
 
     /**
      * 古い未検証トークンを無効化

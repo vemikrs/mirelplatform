@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link, Outlet, useLoaderData } from 'react-router-dom';
+import { Link, Outlet, useLoaderData, useMatches } from 'react-router-dom';
 import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
@@ -11,16 +11,19 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { MiraFab } from '@/features/mira/components/MiraFab';
 import { MiraChatPanel } from '@/features/mira/components/MiraChatPanel';
+import { MobileHeaderProvider, useMobileHeader } from '@/contexts/MobileHeaderContext';
 
 
 /**
  * Root layout component
  * Provides common layout structure for all pages
+ * @version 2.0 - Added mobile header injection support with React Context
  */
-export function RootLayout() {
+function RootLayoutInner() {
   const initialNavigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
+  const { mobileHeaderContent, mobileHeaderActions } = useMobileHeader();
 
   // Fetch dynamic menu from backend
   const { data: dynamicMenu } = useQuery({
@@ -55,6 +58,11 @@ export function RootLayout() {
 
   const helpAction = initialNavigation.globalActions.find(a => a.type === 'help');
 
+  // ルート設定から余白制御オプションを取得
+  const matches = useMatches();
+  const currentRoute = matches[matches.length - 1];
+  const noMargin = (currentRoute?.handle as { noMargin?: boolean })?.noMargin ?? false;
+
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
@@ -79,15 +87,18 @@ export function RootLayout() {
               </SheetContent>
             </Sheet>
             
-            {/* Brand - show on mobile only in header */}
-            <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
-              <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-                {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
-              </div>
-            </Link>
+            {/* Brand or injected content - show on mobile only in header */}
+            {mobileHeaderContent || (
+              <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
+                <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                  {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
+                </div>
+              </Link>
+            )}
           </div>
-          <div className="hidden items-center gap-2 md:flex">
-            {/* Desktop Global Actions moved to sidebar */}
+          <div className="flex items-center gap-2">
+            {/* Injected mobile header actions */}
+            {mobileHeaderActions}
           </div>
         </div>
       </header>
@@ -101,18 +112,22 @@ export function RootLayout() {
         />
         
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          <main className="flex-1 bg-background py-6">
-            <div className="px-4 md:px-8">
+          <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
+            {noMargin ? (
               <Outlet />
-            </div>
+            ) : (
+              <div className="px-4 md:px-8">
+                <Outlet />
+              </div>
+            )}
           </main>
 
           <footer className="border-t border-outline/40 bg-surface-subtle/60">
-            <div className="flex flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-6">
+            <div className="flex flex-col gap-1 px-2 py-1 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-3">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {initialNavigation.secondary.map((link: NavigationLink) => (
                   <Link
                     key={link.id}
@@ -135,5 +150,17 @@ export function RootLayout() {
       <MiraFab />
       <MiraChatPanel />
     </div>
+  );
+}
+
+/**
+ * RootLayout with MobileHeaderProvider wrapper
+ * This ensures the mobile header context is available to all child routes
+ */
+export function RootLayout() {
+  return (
+    <MobileHeaderProvider>
+      <RootLayoutInner />
+    </MobileHeaderProvider>
   );
 }

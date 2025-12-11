@@ -22,8 +22,8 @@ public class CreateUserRequest {
     @Email(message = "有効なメールアドレスを入力してください")
     private String email;
     
-    @NotBlank(message = "パスワードは必須です")
-    @Size(min = 8, message = "パスワードは8文字以上で入力してください")
+    // 管理者作成ユーザーはセットアップリンク経由でパスワード設定するため、パスワードは不要
+    // AdminUserService.createUser でダミーハッシュを自動生成
     private String password;
     
     private String displayName;

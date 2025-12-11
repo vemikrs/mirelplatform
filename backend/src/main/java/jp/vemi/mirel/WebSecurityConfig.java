@@ -6,13 +6,9 @@ package jp.vemi.mirel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,7 +20,6 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.Arrays;
 
 import jp.vemi.mirel.config.properties.AuthProperties;
 import jp.vemi.mirel.config.properties.Mipla2SecurityProperties;
@@ -36,14 +31,12 @@ import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jp.vemi.mirel.security.oauth2.OAuth2AuthenticationFailureHandler;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.http.HttpStatus;
 
-@Configuration
-@EnableWebSecurity
+@lombok.extern.slf4j.Slf4j
+@org.springframework.context.annotation.Configuration
+@org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 public class WebSecurityConfig {
-
-    private static final Logger log = LoggerFactory.getLogger(WebSecurityConfig.class);
 
     @Autowired
     private AuthProperties authProperties;
@@ -128,10 +121,10 @@ public class WebSecurityConfig {
         for (int i = 0; i < origins.length; i++) {
             origins[i] = origins[i].trim();
         }
-        configuration.setAllowedOrigins(Arrays.asList(origins));
-        
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedOrigins(java.util.Arrays.asList(origins));
+
+        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -202,6 +195,10 @@ public class WebSecurityConfig {
     /**
      * 認可設定を行います。
      * securityPropertiesの設定に応じてAPIエンドポイントの認可要否を制御します。
+     * 
+     * <p><b>設計方針:</b> 未認証アクセスはデフォルトで401エラーを返す。
+     * OAuth2 (GitHub) は /oauth2/authorization/github への明示的アクセスのみ有効。
+     * 認証不要エンドポイントは明示的に permitAll() に追加する。</p>
      *
      * @param http
      *            セキュリティ設定
@@ -215,6 +212,8 @@ public class WebSecurityConfig {
                     "/auth/login",
                     "/auth/signup",
                     "/auth/otp/**",
+                    "/auth/verify-setup-token",  // アカウントセットアップトークン検証 (Issue #57)
+                    "/auth/setup-account",       // アカウントセットアップ（パスワード設定） (Issue #57)
                     "/auth/health",
                     "/auth/logout",
                     "/auth/check").permitAll()
@@ -232,7 +231,6 @@ public class WebSecurityConfig {
                             "/oauth2/**" // OAuth2認証フロー
             ).permitAll()
 
-                    .requestMatchers("/framework/db/**").permitAll() // Debug DB access endpoint
                     .requestMatchers("/actuator/**").permitAll() // Actuator endpoints for health checks
                     .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                     .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
@@ -306,26 +304,19 @@ public class WebSecurityConfig {
         }
 
         // OAuth2ログイン設定（GitHub）
-        // SPA構成: デフォルトログインページを無効化し、未認証時は401を返す
+        // 重要: ユーザーが明示的に /oauth2/authorization/github にアクセスした場合のみOAuth2フローを開始
+        // その他の未認証アクセスは401を返す（OAuth2にリダイレクトしない）
         http.oauth2Login(oauth2 -> oauth2
-                .loginPage("/oauth2/authorization/github") // デフォルトページ生成を抑制
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService))
                 .successHandler(oauth2SuccessHandler)
                 .failureHandler(oauth2FailureHandler));
 
-        // APIエンドポイントの未認証アクセス時のハンドリング
-        // 302リダイレクトではなく401を返すように設定
+        // 未認証アクセス時のハンドリング
+        // デフォルトで401を返す（OAuth2リダイレクトを防ぐ）
+        // OAuth2は /oauth2/authorization/github への明示的アクセスのみ有効
         http.exceptionHandling(handling -> handling
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/users/**"))
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/api/**"))
-                .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/actuator/**")));
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
     }
 
     /**

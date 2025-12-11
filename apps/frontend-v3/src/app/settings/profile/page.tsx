@@ -61,7 +61,7 @@ interface ApiError {
 }
 
 export default function ProfilePage() {
-  const { user, tokens, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,10 +142,7 @@ export default function ProfilePage() {
   const hasPassword = extendedUser?.hasPassword !== false;
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: UpdateProfileRequest) => {
-      if (!tokens?.accessToken) throw new Error('Not authenticated');
-      return updateProfile(data);
-    },
+    mutationFn: updateProfile,
     onSuccess: (response) => {
       setMessage({ type: 'success', text: 'プロフィールを更新しました' });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
@@ -298,10 +295,7 @@ export default function ProfilePage() {
 
   // Security Handlers
   const updatePasswordMutation = useMutation({
-    mutationFn: async (data: UpdatePasswordRequest) => {
-      if (!tokens?.accessToken) throw new Error('Not authenticated');
-      return updatePassword(data);
-    },
+    mutationFn: updatePassword,
     onSuccess: () => {
       setPasswordMessage({ type: 'success', text: 'パスワードを更新しました' });
       setPasswordFormData({ currentPassword: '', newPassword: '' });

@@ -3,12 +3,17 @@
  */
 package jp.vemi.mirel.foundation.web.api.admin.service;
 
+import jp.vemi.mirel.foundation.abst.dao.entity.SystemUser;
 import jp.vemi.mirel.foundation.abst.dao.entity.Tenant;
 import jp.vemi.mirel.foundation.abst.dao.entity.User;
 import jp.vemi.mirel.foundation.abst.dao.entity.UserTenant;
+import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserTenantRepository;
+import jp.vemi.mirel.foundation.config.AppProperties;
+import jp.vemi.mirel.foundation.service.EmailService;
+import jp.vemi.mirel.foundation.service.OtpService;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
@@ -27,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +48,9 @@ public class AdminUserService {
     private UserRepository userRepository;
 
     @Autowired
+    private SystemUserRepository systemUserRepository;
+
+    @Autowired
     private UserTenantRepository userTenantRepository;
 
     @Autowired
@@ -49,6 +59,15 @@ public class AdminUserService {
     @Autowired
     @Lazy
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AppProperties appProperties;
 
     /**
      * ユーザー一覧取得（ページング対応）
@@ -186,6 +205,7 @@ public class AdminUserService {
     public AdminUserDto createUser(jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
         logger.info("Create user: {}", request.getUsername());
 
+        // 既存ユーザーチェック（User）
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
@@ -193,25 +213,83 @@ public class AdminUserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
+        
+        // 既存ユーザーチェック（SystemUser）
+        if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists in SystemUser");
+        }
+        
+        if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists in SystemUser");
+        }
 
+        // 1. SystemUser作成
+        SystemUser systemUser = new SystemUser();
+        systemUser.setId(UUID.randomUUID());
+        systemUser.setUsername(request.getUsername());
+        systemUser.setEmail(request.getEmail());
+        // 管理者作成ユーザーは初回パスワードをセットアップリンク経由で設定するため、
+        // ここではダミーハッシュを設定（セットアップ完了時に上書きされる）
+        systemUser.setPasswordHash(passwordEncoder.encode("TEMP_PASSWORD_" + UUID.randomUUID()));
+        systemUser.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        systemUser.setEmailVerified(false); // 管理者作成ユーザーは未認証
+        systemUser.setCreatedByAdmin(true); // 管理者作成フラグをセット
+        systemUser = systemUserRepository.save(systemUser);
+        
+        logger.info("SystemUser created: id={}, username={}", systemUser.getId(), systemUser.getUsername());
+
+        // 2. User作成（SystemUserと紐付け）
         User user = new User();
-        user.setUserId(java.util.UUID.randomUUID().toString()); // ID を手動生成
+        user.setUserId(UUID.randomUUID().toString());
+        user.setSystemUserId(systemUser.getId()); // SystemUserと紐付け
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        // パスワードをハッシュ化してpasswordHashに保存
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(systemUser.getPasswordHash()); // SystemUserと同じダミーハッシュ
         user.setDisplayName(request.getDisplayName());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         if (request.getRoles() != null) {
             user.setRoles(String.join(",", request.getRoles()));
         }
-        user.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
-        user.setEmailVerified(false); // デフォルトは未認証
+        user.setIsActive(systemUser.getIsActive());
+        user.setEmailVerified(false); // SystemUserと同期
 
         user = userRepository.save(user);
+        
+        logger.info("User created and linked to SystemUser: userId={}, systemUserId={}", 
+                user.getUserId(), user.getSystemUserId());
+
+        // 3. アカウントセットアップトークン作成とメール送信
+        try {
+            String setupToken = otpService.createAccountSetupToken(systemUser.getId(), systemUser.getEmail());
+            sendAccountSetupEmail(user, setupToken);
+            logger.info("Account setup email sent: email={}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send account setup email: email={}", user.getEmail(), e);
+            // メール送信失敗してもユーザー作成は成功とする
+        }
 
         return convertToAdminUserDto(user);
+    }
+
+    /**
+     * アカウントセットアップメール送信
+     */
+    private void sendAccountSetupEmail(User user, String setupToken) {
+        String setupLink = String.format("%s/auth/setup-account?token=%s",
+                appProperties.getBaseUrl(), setupToken);
+
+        Map<String, Object> variables = Map.of(
+                "displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "setupLink", setupLink);
+
+        emailService.sendTemplateEmail(
+                user.getEmail(),
+                "アカウント作成完了 - パスワード設定のご案内",
+                "account-setup",
+                variables);
     }
 
     /**

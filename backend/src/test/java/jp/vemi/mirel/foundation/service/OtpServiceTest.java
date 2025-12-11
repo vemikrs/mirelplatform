@@ -132,9 +132,9 @@ class OtpServiceTest {
         Map<String, Object> variables = variablesCaptor.getValue();
         assertThat(variables).containsEntry("domain", "localhost");
         assertThat(variables).containsKey("magicLink");
-        assertThat(variables.get("magicLink").toString()).contains("http://localhost:5173/auth/otp-verify");
-        assertThat(variables.get("magicLink").toString()).contains("email=" + testEmail);
-        assertThat(variables.get("magicLink").toString()).contains("purpose=LOGIN");
+        assertThat(variables.get("magicLink").toString()).contains("http://localhost:5173/auth/magic-verify?token=");
+        assertThat(variables.get("magicLink").toString()).doesNotContain("email=");
+        assertThat(variables.get("magicLink").toString()).doesNotContain("purpose=");
 
         // Then: クールダウン設定
         verify(rateLimitService).setCooldown(eq("otp:cooldown:" + testEmail), eq(60));
@@ -334,6 +334,57 @@ class OtpServiceTest {
 
         // Then: 削除処理が呼ばれる
         verify(otpAuditLogRepository).deleteByCreatedAtBefore(any(LocalDateTime.class));
+    }
+
+    @Test
+    @DisplayName("アカウントセットアップトークン生成成功")
+    void testCreateAccountSetupToken_Success() {
+        // Given
+        UUID systemUserId = UUID.randomUUID();
+        String email = "newuser@example.com";
+        
+        when(otpTokenRepository.findBySystemUserIdAndPurposeAndIsVerifiedFalse(systemUserId, "ACCOUNT_SETUP"))
+            .thenReturn(java.util.Collections.emptyList());
+        
+        // When
+        String token = otpService.createAccountSetupToken(systemUserId, email);
+        
+        // Then
+        assertThat(token).isNotNull();
+        assertThat(token).hasSize(64); // 32バイトのhex = 64文字
+        
+        // トークン保存の確認
+        ArgumentCaptor<OtpToken> tokenCaptor = ArgumentCaptor.forClass(OtpToken.class);
+        verify(otpTokenRepository).save(tokenCaptor.capture());
+        
+        OtpToken savedToken = tokenCaptor.getValue();
+        assertThat(savedToken.getSystemUserId()).isEqualTo(systemUserId);
+        assertThat(savedToken.getPurpose()).isEqualTo("ACCOUNT_SETUP");
+        assertThat(savedToken.getMagicLinkToken()).isEqualTo(token);
+        assertThat(savedToken.getIsVerified()).isFalse();
+        assertThat(savedToken.getExpiresAt()).isAfter(LocalDateTime.now().plusHours(71));
+    }
+
+    @Test
+    @DisplayName("アカウントセットアップトークン生成時に既存トークン無効化")
+    void testCreateAccountSetupToken_InvalidatesPreviousTokens() {
+        // Given
+        UUID systemUserId = UUID.randomUUID();
+        String email = "newuser@example.com";
+        
+        OtpToken existingToken = new OtpToken();
+        existingToken.setId(UUID.randomUUID());
+        existingToken.setIsVerified(false);
+        
+        when(otpTokenRepository.findBySystemUserIdAndPurposeAndIsVerifiedFalse(systemUserId, "ACCOUNT_SETUP"))
+            .thenReturn(java.util.Collections.singletonList(existingToken));
+        
+        // When
+        otpService.createAccountSetupToken(systemUserId, email);
+        
+        // Then: 既存トークンが無効化される（isVerified=trueに設定）
+        assertThat(existingToken.getIsVerified()).isTrue();
+        verify(otpTokenRepository, times(2)).save(any(OtpToken.class)); // 既存トークン無効化 + 新規トークン作成
     }
 
     /**

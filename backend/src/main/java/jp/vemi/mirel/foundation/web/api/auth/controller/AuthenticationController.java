@@ -11,11 +11,15 @@ import jp.vemi.mirel.foundation.context.ExecutionContext;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.foundation.web.api.auth.service.AuthenticationServiceImpl;
 import jp.vemi.mirel.foundation.web.api.auth.service.PasswordResetService;
+import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 認証APIコントローラ.
@@ -41,8 +45,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(
             @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // IP と UserAgent を注入
+            request.setIpAddress(getClientIp(httpRequest));
+            request.setUserAgent(httpRequest.getHeader("User-Agent"));
+            
             AuthenticationResponse response = authenticationService.login(request);
 
             // Set access token in HttpOnly cookie
@@ -271,6 +280,79 @@ public class AuthenticationController {
     }
 
     /**
+     * アカウントセットアップトークン検証
+     * 管理者が作成したユーザーのセットアップリンク検証
+     */
+    @GetMapping("/verify-setup-token")
+    public ResponseEntity<?> verifySetupToken(@RequestParam String token) {
+        try {
+            VerifySetupTokenResponse response = authenticationService.verifyAccountSetupToken(token);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid setup token: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "INVALID_TOKEN", "message", "無効なセットアップトークンです"));
+        } catch (RuntimeException e) {
+            logger.error("Setup token verification failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "VERIFICATION_FAILED", "message", "トークンの検証に失敗しました"));
+        }
+    }
+
+    /**
+     * アカウントセットアップ（パスワード設定）
+     * 管理者が作成したユーザーが初回パスワードを設定
+     */
+    @PostMapping("/setup-account")
+    public ResponseEntity<?> setupAccount(@Valid @RequestBody ApiRequest<SetupAccountRequest> apiRequest) {
+        try {
+            SetupAccountRequest request = apiRequest.getModel();
+            logger.info("Setup account request: passwordLength={}", 
+                request.getNewPassword() != null ? request.getNewPassword().length() : 0);
+            authenticationService.setupAccount(request.getToken(), request.getNewPassword());
+            logger.info("Account setup completed successfully");
+            return ResponseEntity.ok(Map.of("message", "アカウントのセットアップが完了しました"));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid setup request: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "INVALID_REQUEST", "message", "リクエストが無効です"));
+        } catch (RuntimeException e) {
+            logger.error("Account setup failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "SETUP_FAILED", "message", "アカウントのセットアップに失敗しました"));
+        }
+    }
+
+    /**
+     * 検証メール再送
+     * ユーザーが自分で検証メールを再送できるようにする
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request,
+            HttpServletRequest httpRequest) {
+        
+        String ipAddress = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        
+        try {
+            authenticationService.resendVerificationEmail(
+                request.getEmail(), 
+                ipAddress, 
+                userAgent
+            );
+        } catch (Exception e) {
+            logger.warn("Verification email resend error: {}", request.getEmail(), e);
+            // エラー詳細を返さない（セキュリティ）
+        }
+        
+        // セキュリティ: 成功/失敗に関わらず同じレスポンス
+        return ResponseEntity.ok(
+            Map.of("message", "検証メールを送信しました。受信ボックスを確認してください。")
+        );
+    }
+
+    /**
      * パスワードリセット要求
      * トークンを生成し、メール送信の準備をする
      */
@@ -282,16 +364,14 @@ public class AuthenticationController {
             String clientIp = getClientIp(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
 
-            String token = passwordResetService.requestPasswordReset(
+            passwordResetService.requestPasswordReset(
                     request.getEmail(),
                     clientIp,
                     userAgent);
 
-            // TODO: Send email with reset link containing token
-            // For now, return token in response (development only)
             logger.info("Password reset requested for email: {}", request.getEmail());
 
-            // In production, don't return the token, just success message
+            // セキュリティ: 成功/失敗に関わらず同じレスポンス（ユーザー列挙攻撃対策）
             return ResponseEntity.ok("Password reset email sent");
 
         } catch (IllegalArgumentException e) {

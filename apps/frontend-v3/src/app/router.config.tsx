@@ -12,6 +12,7 @@ import {
   SignupPage, 
   PasswordResetRequestPage, 
   PasswordResetConfirmPage,
+  SetupAccountPage,
 } from '@/features/auth';
 import { UnifiedLoginPage } from '@/features/auth/pages/UnifiedLoginPage';
 import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
@@ -167,6 +168,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/email-verification',
     element: <OtpEmailVerificationPage />,
+  },
+  {
+    path: '/auth/setup-account',
+    element: <SetupAccountPage />,
   },
   // OAuth2 Callback Route
   {
@@ -358,7 +363,7 @@ export const router = createBrowserRouter([
           {
             path: 'mira',
             element: <MiraPage />,
-            handle: { title: 'Mira - AI Assistant' },
+            handle: { title: 'Mira - AI Assistant', noMargin: true },
           },
         ],
       },

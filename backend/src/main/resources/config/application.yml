@@ -48,15 +48,26 @@ spring:
           github:
             user-name-attribute: login
   # Spring Boot Mail設定（JavaMailSender Bean生成用）
+  # email.provider=smtp の場合のみ有効化するため、環境変数で制御
+  # Azure Communication Services 使用時は spring.mail.host を未設定にすることで Bean 生成を抑制
+  # 
+  # 【重要】開発環境でのデフォルト設定について:
+  # - SPRING_MAIL_HOST が未設定の場合、host は空文字列になります
+  # - 空のhostでJavaMailSender Beanの作成に失敗する可能性があります
+  # - email.provider=azure の場合は JavaMailSender は使用されません
+  # - email.provider=smtp の場合は必ず SPRING_MAIL_HOST を設定してください
+  #   例: SPRING_MAIL_HOST=localhost (MailHog等のSMTPサーバー)
   mail:
-    host: localhost
-    port: 1025
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: false
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
           starttls:
-            enable: false
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
 
 # ログレベル設定（logger.xml の設定より優先されます）
 logging:
