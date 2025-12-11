@@ -91,8 +91,8 @@ public class MiraStreamService {
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
 
-        // 2a. Resolve Tools
-        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId);
+        // 2a. Resolve Tools (webSearchEnabledを参照)
+        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId, request.getWebSearchEnabled());
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING

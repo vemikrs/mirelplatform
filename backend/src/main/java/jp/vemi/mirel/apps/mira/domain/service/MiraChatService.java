@@ -34,7 +34,9 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchTool; // Import Tool
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchProvider;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,7 +66,8 @@ public class MiraChatService {
     private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
-    private final MiraSettingService settingService; // Add SettingService
+    private final MiraSettingService settingService;
+    private final TavilySearchProvider tavilySearchProvider;
 
     /**
      * 会話一覧取得.
@@ -202,8 +205,8 @@ public class MiraChatService {
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
 
-        // 7. ツール解決 & セット
-        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId);
+        // 7. ツール解決 & セット (webSearchEnabledを参照)
+        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId, request.getWebSearchEnabled());
         aiRequest.setToolCallbacks(tools);
 
         // 8. AI 呼び出し Loop
@@ -856,16 +859,36 @@ public class MiraChatService {
         log.info("Auto title generated: conversationId={}, title={}", conversation.getId(), title);
     }
 
-    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
+    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId, Boolean webSearchEnabled) {
         List<org.springframework.ai.tool.ToolCallback> tools = new ArrayList<>();
 
-        // Tavily Search
-        String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
-        if (tavilyKey != null && !tavilyKey.isEmpty()) {
-            tools.add(new TavilySearchTool(tavilyKey));
+        // Web Search Tool (明示的に有効化された場合、またはAPIキーが設定されている場合)
+        boolean shouldEnableWebSearch = Boolean.TRUE.equals(webSearchEnabled);
+        
+        if (shouldEnableWebSearch) {
+            String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
+            if (tavilyKey != null && !tavilyKey.isEmpty()) {
+                // TavilySearchProviderにAPIキーを設定
+                tavilySearchProvider.setApiKey(tavilyKey);
+                
+                // WebSearchToolsから@Tool付きメソッドをToolCallbackに変換
+                WebSearchTools webSearchTools = new WebSearchTools(tavilySearchProvider);
+                tools.addAll(org.springframework.ai.tool.ToolCallbacks.from(webSearchTools));
+                
+                log.info("Web search tool enabled for tenant={}, user={}", tenantId, userId);
+            } else {
+                log.warn("Web search requested but Tavily API key is not configured for tenant={}", tenantId);
+            }
         }
 
         return tools;
+    }
+
+    /**
+     * 後方互換性のためのオーバーロード.
+     */
+    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
+        return resolveTools(tenantId, userId, false);
     }
 
     public String executeTool(AiRequest.Message.ToolCall call, List<org.springframework.ai.tool.ToolCallback> tools) {
