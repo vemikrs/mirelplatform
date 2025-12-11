@@ -109,16 +109,18 @@ export function SetupAccountPage() {
       );
 
       // パスワード設定成功後、自動ログイン
+      // Note: /auth/login は ApiRequest ラップ不要（直接 LoginRequest を受け取る）
       const loginResponse = await apiClient.post(
         '/auth/login',
-        createApiRequest({
+        {
           usernameOrEmail: userInfo?.email || '',
           password,
-        })
+        }
       );
 
-      if (loginResponse.data?.model) {
-        const authData = loginResponse.data.model;
+      // /auth/login は AuthenticationResponse を直接返す（model ラップなし）
+      if (loginResponse.data) {
+        const authData = loginResponse.data;
         
         // トークンをストアにセット
         setAuth(authData.user, authData.currentTenant, authData.tokens);
