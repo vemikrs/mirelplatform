@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>mirelplatform</title>
+    <script>
+      // iOS Safari専用: 入力フォームの自動ズーム防止（iOS 26対応）
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        document.querySelector("meta[name=viewport]")?.setAttribute(
+          "content",
+          "width=device-width, initial-scale=1, maximum-scale=1"
+        );
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

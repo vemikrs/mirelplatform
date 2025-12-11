@@ -201,11 +201,11 @@ export function MiraUserContextEditor({
   };
   
   const dialogContent = (
-    <DialogContent className="sm:max-w-5xl max-h-[85vh] h-[650px] flex flex-col p-0 overflow-hidden">
-      <div className="p-6 border-b shrink-0 bg-muted/20">
-        <DialogTitle className="flex items-center gap-2">
-          <Settings2 className="w-5 h-5" />
-          ユーザーコンテキスト設定
+    <DialogContent className="max-w-full sm:max-w-5xl max-h-[90vh] h-auto sm:h-[650px] flex flex-col p-0 overflow-hidden">
+      <div className="p-4 sm:p-6 border-b shrink-0 bg-muted/20">
+        <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <Settings2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          ユーザー設定
         </DialogTitle>
         <DialogDescription className="mt-1.5">
           AIアシスタントがあなたの状況をより良く理解するための情報を設定します。
@@ -217,9 +217,9 @@ export function MiraUserContextEditor({
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <div className="w-64 border-r bg-muted/10 flex flex-col p-2 space-y-1 overflow-y-auto shrink-0">
+        <div className="flex flex-1 overflow-hidden flex-col sm:flex-row">
+          {/* Sidebar - モバイルでは水平スクロール */}
+          <div className="w-full sm:w-64 border-b sm:border-r sm:border-b-0 bg-muted/10 flex sm:flex-col p-2 space-x-1 sm:space-x-0 sm:space-y-1 overflow-x-auto sm:overflow-y-auto shrink-0">
             {(Object.keys(CATEGORY_CONFIG) as ContextCategory[]).map((category) => {
               const config = CATEGORY_CONFIG[category];
               const Icon = config.icon;
@@ -234,7 +234,7 @@ export function MiraUserContextEditor({
                     setIsEditingIntegration(false);
                   }}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all w-full text-left",
+                    "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-md transition-all whitespace-nowrap sm:w-full text-left",
                     isActive 
                       ? "bg-primary text-primary-foreground shadow-sm" 
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -260,13 +260,13 @@ export function MiraUserContextEditor({
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="max-w-2xl mx-auto space-y-6">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
+              <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
+                  <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 mb-1">
                     {CATEGORY_CONFIG[activeTab].label}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     {CATEGORY_CONFIG[activeTab].description}
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export function MiraUserContextEditor({
                       value={getContextValue(activeTab)}
                       onChange={(e) => handleContextChange(activeTab, e.target.value)}
                       placeholder={CATEGORY_CONFIG[activeTab].placeholder}
-                      className="flex-1 min-h-[300px] font-mono text-sm leading-relaxed p-4 resize-none focus-visible:ring-1"
+                      className="flex-1 min-h-[200px] sm:min-h-[300px] font-mono text-xs sm:text-sm leading-relaxed p-3 sm:p-4 resize-none focus-visible:ring-1"
                     />
                     <div className="flex justify-end">
                       <span className="text-xs text-muted-foreground">
@@ -383,27 +383,29 @@ export function MiraUserContextEditor({
         </div>
       )}
       
-      <div className="p-4 border-t bg-muted/20 flex items-center justify-between shrink-0">
+      <div className="p-3 sm:p-4 border-t bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 sm:justify-between shrink-0">
         <Button
           variant="ghost"
           onClick={handleReset}
           disabled={!hasChanges || isSaving}
+          className="w-full sm:w-auto"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           変更をリセット
         </Button>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={() => setIsOpen(false)}
             disabled={isSaving}
+            className="flex-1 sm:flex-initial"
           >
             キャンセル
           </Button>
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
-            className="min-w-[100px]"
+            className="flex-1 sm:flex-initial min-w-[100px]"
           >
             {isSaving ? (
               <>
@@ -433,7 +435,7 @@ export function MiraUserContextEditor({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className={cn(className)} title="ユーザーコンテキスト設定">
+        <Button variant="ghost" size="icon" className={cn(className)} title="ユーザー設定">
           <Settings2 className="w-4 h-4" />
         </Button>
       </DialogTrigger>

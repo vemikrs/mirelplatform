@@ -64,7 +64,7 @@ function RootLayoutInner() {
   const noMargin = (currentRoute?.handle as { noMargin?: boolean })?.noMargin ?? false;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface text-foreground">
+    <div className="flex min-h-dvh flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
@@ -111,7 +111,7 @@ function RootLayoutInner() {
           className="hidden md:flex shrink-0" 
         />
         
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-dvh">
           <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
             {noMargin ? (
               <Outlet />
@@ -122,7 +122,7 @@ function RootLayoutInner() {
             )}
           </main>
 
-          <footer className="border-t border-outline/40 bg-surface-subtle/60">
+          <footer className="hidden md:block border-t border-outline/40 bg-surface-subtle/60">
             <div className="flex flex-col gap-1 px-2 py-1 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-3">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.
