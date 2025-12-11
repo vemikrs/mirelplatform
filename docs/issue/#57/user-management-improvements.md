@@ -112,12 +112,59 @@ if (user.getSystemUserId() != null) {
    - `/admin/users` が avatarUrl を含めて返却するか
    - SystemUser から正しくアバターURLを取得できるか
 
+### 4. テナント割り当て編集機能の実装 (2025-12-12 追加)
+
+#### 4.1 バックエンド実装
+
+**新規DTO追加**:
+- **ファイル**: `backend/src/main/java/jp/vemi/mirel/foundation/web/api/admin/dto/UserTenantAssignmentRequest.java`
+- **内容**: テナント割り当てリクエスト用DTO。`List<TenantAssignment>` を持ち、各テナントのID、ロール、デフォルト設定を含む。
+
+**AdminUserService拡張**:
+- **ファイル**: `backend/src/main/java/jp/vemi/mirel/foundation/web/api/admin/service/AdminUserService.java`
+- **メソッド**: `updateUserTenants(String userId, UserTenantAssignmentRequest request)`
+  - 既存のテナント割り当てを削除
+  - デフォルトテナントが必ず1つだけ存在することを検証
+  - テナントの存在確認
+  - 新しいテナント割り当てを作成・保存
+  - 更新後のユーザー情報を返却
+
+**AdminUserController拡張**:
+- **ファイル**: `backend/src/main/java/jp/vemi/mirel/foundation/web/api/admin/controller/AdminUserController.java`
+- **エンドポイント**: `PUT /admin/users/{id}/tenants`
+- AdminRole 必須、リクエストボディで `UserTenantAssignmentRequest` を受け取る
+
+#### 4.2 フロントエンド実装
+
+**APIクライアント拡張**:
+- **ファイル**: `apps/frontend-v3/src/features/admin/api.ts`
+- **追加型**: `TenantAssignment`, `UserTenantAssignmentRequest`
+- **追加関数**: `updateUserTenants(userId, data)` - PUT リクエストで `/admin/users/{id}/tenants` を呼び出し
+
+**UserFormDialog UI拡張**:
+- **ファイル**: `apps/frontend-v3/src/features/admin/components/UserFormDialog.tsx`
+- **主な変更**:
+  - 全テナントリストを `getTenants()` で取得（useQuery）
+  - `tenantAssignments` state で選択状態（Map形式）を管理
+  - チェックボックスでテナントを選択/解除
+  - Select でテナント内ロール（USER/ADMIN/MEMBER）を選択
+  - ラジオボタンでデフォルトテナントを設定（1つのみ）
+  - 「テナント割り当てを保存」ボタンで `updateUserTenants` API を即座に呼び出し
+  - バリデーション: 少なくとも1テナント、デフォルト1つ必須
+  - 保存成功後、ダイアログを閉じてリスト再取得
+
+**実装の特徴**:
+- ユーザー編集時のみ表示（新規作成時は「ユーザー作成後に割り当て可能」と表示）
+- チェックボックスON時、デフォルトロールは「USER」で、他にデフォルトがなければ自動的にデフォルト設定
+- 複数テナントを一括設定可能
+- UIはスクロール可能で多数のテナントにも対応（max-h-64 overflow-y-auto）
+
 ## 残課題・今後の改善案
 
 - ユーザー編集ダイアログからアバターをアップロードする機能の追加
-- テナント割り当ての編集機能
 - ロール変更の詳細な権限チェック
 - ユーザー一覧のページネーション改善
+- テナント割り当て保存後の成功トーストメッセージ追加
 
 ## 関連ファイル
 
