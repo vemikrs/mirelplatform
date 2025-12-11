@@ -248,14 +248,26 @@ public class GitHubModelsClient implements AiProviderClient {
                     RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 
             // 3. Create OpenAI Chat Model using Builder
+            // GPT-5系モデルは max_completion_tokens を使用する必要がある
+            String modelName = config.getModel();
+            Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
+            boolean isGpt5Model = modelName != null && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
+            
+            OpenAiChatOptions.Builder streamOptionsBuilder = OpenAiChatOptions.builder()
+                    .model(modelName)
+                    .temperature(request.getTemperature() != null ? request.getTemperature()
+                            : config.getTemperature());
+            
+            if (isGpt5Model) {
+                log.debug("[Stream] Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
+                streamOptionsBuilder.maxCompletionTokens(tokenLimit);
+            } else {
+                streamOptionsBuilder.maxTokens(tokenLimit);
+            }
+            
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
-                    .defaultOptions(OpenAiChatOptions.builder()
-                            .model(config.getModel())
-                            .temperature(request.getTemperature() != null ? request.getTemperature()
-                                    : config.getTemperature())
-                            .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
-                            .build())
+                    .defaultOptions(streamOptionsBuilder.build())
                     .build();
 
             // 4. Prepare ChatClient
@@ -284,6 +296,16 @@ public class GitHubModelsClient implements AiProviderClient {
                     .chatResponse()
                     .map(this::mapStreamResponse)
                     .onErrorResume(e -> {
+                        // WebClientResponseException の場合、レスポンスボディを取得
+                        if (e instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+                            org.springframework.web.reactive.function.client.WebClientResponseException webEx = 
+                                    (org.springframework.web.reactive.function.client.WebClientResponseException) e;
+                            String errorBody = webEx.getResponseBodyAsString();
+                            log.error("[GitHubModels] Stream API Error: {} Body: {}", webEx.getStatusCode(), errorBody, e);
+                            return reactor.core.publisher.Flux.just(
+                                    AiResponse.error("STREAM_API_ERROR",
+                                            "API エラー (" + webEx.getStatusCode() + "): " + errorBody));
+                        }
                         log.error("[GitHubModels] Stream Request failed", e);
                         return reactor.core.publisher.Flux.just(
                                 AiResponse.error("STREAM_ERROR",
