@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useMobileHeader } from '@/contexts/MobileHeaderContext';
 import {
   Button,
   ScrollArea,
@@ -21,6 +22,7 @@ import {
 } from '@mirel/ui';
 import { 
   Sparkles,
+  PanelLeft,
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
@@ -32,10 +34,12 @@ import { MiraConversationList } from '../components/MiraConversationList';
 import { MiraKeyboardShortcuts } from '../components/MiraKeyboardShortcuts';
 import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
 import { MiraDeleteConfirmDialog } from '../components/MiraDeleteConfirmDialog';
+import { MiraMenu } from '../components/MiraMenu';
 import { useMiraShortcuts } from '../hooks/useMiraShortcuts';
 
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setMobileHeaderContent, setMobileHeaderActions } = useMobileHeader();
   const {
     sendMessage,
     isLoading,
@@ -251,6 +255,35 @@ export function MiraPage() {
     deleteConversation(conversationId);
   }, [deleteConversation]);
   
+  // 会話の要約を取得（デスクトップヘッダー用）
+  const getConversationSummary = useCallback(() => {
+    if (!activeConversation) return 'Mira';
+    if (activeConversation.title) {
+      return activeConversation.title.length > 40
+        ? activeConversation.title.substring(0, 40) + '...'
+        : activeConversation.title;
+    }
+    const firstUserMessage = activeConversation.messages.find((m) => m.role === 'user');
+    if (firstUserMessage) {
+      return firstUserMessage.content.length > 40
+        ? firstUserMessage.content.substring(0, 40) + '...'
+        : firstUserMessage.content;
+    }
+    return '新しい会話';
+  }, [activeConversation]);
+  
+  // モード表示用のバッジラベル（デスクトップヘッダー用）
+  const getModeLabel = useCallback((mode?: string) => {
+    const labels: Record<string, string> = {
+      GENERAL_CHAT: 'General',
+      CONTEXT_HELP: 'Help',
+      ERROR_ANALYZE: 'Error',
+      STUDIO_AGENT: 'Studio',
+      WORKFLOW_AGENT: 'Workflow',
+    };
+    return mode ? labels[mode] || mode : null;
+  }, []);
+  
   // 会話切り替え時にフォーカス
   useEffect(() => {
     if (activeConversation?.id) {
@@ -261,39 +294,94 @@ export function MiraPage() {
     }
   }, [activeConversation?.id]); // IDが変わったときのみ発火
   
-  // 会話の要約を取得（タイトル優先、なければ最初のメッセージ）
-  const getConversationSummary = useCallback(() => {
-    if (!activeConversation) return 'Mira';
-    // タイトルがあればそれを使用
-    if (activeConversation.title) {
-      return activeConversation.title.length > 40
-        ? activeConversation.title.substring(0, 40) + '...'
-        : activeConversation.title;
-    }
-    // なければ最初のユーザーメッセージ
-    const firstUserMessage = activeConversation.messages.find((m) => m.role === 'user');
-    if (firstUserMessage) {
-      return firstUserMessage.content.length > 40
-        ? firstUserMessage.content.substring(0, 40) + '...'
-        : firstUserMessage.content;
-    }
-    return '新しい会話';
-  }, [activeConversation]);
-  
-  // モード表示用のバッジラベル
-  const getModeLabel = (mode?: string) => {
-    const labels: Record<string, string> = {
-      GENERAL_CHAT: 'General',
-      CONTEXT_HELP: 'Help',
-      ERROR_ANALYZE: 'Error',
-      STUDIO_AGENT: 'Studio',
-      WORKFLOW_AGENT: 'Workflow',
+  // モバイルヘッダーへコンテンツを注入
+  useEffect(() => {
+    // タイトルを計算（useCallbackの代わりにここで直接計算）
+    const conversationTitle = (() => {
+      if (!activeConversation) return 'Mira';
+      if (activeConversation.title) {
+        return activeConversation.title.length > 40
+          ? activeConversation.title.substring(0, 40) + '...'
+          : activeConversation.title;
+      }
+      const firstUserMessage = activeConversation.messages.find((m) => m.role === 'user');
+      if (firstUserMessage) {
+        return firstUserMessage.content.length > 40
+          ? firstUserMessage.content.substring(0, 40) + '...'
+          : firstUserMessage.content;
+      }
+      return '新しい会話';
+    })();
+
+    // モードラベルを計算
+    const getModeLabel = (mode?: string) => {
+      const labels: Record<string, string> = {
+        GENERAL_CHAT: 'General',
+        CONTEXT_HELP: 'Help',
+        ERROR_ANALYZE: 'Error',
+        STUDIO_AGENT: 'Studio',
+        WORKFLOW_AGENT: 'Workflow',
+      };
+      return mode ? labels[mode] || mode : null;
     };
-    return mode ? labels[mode] || mode : null;
-  };
+
+    // タイトル部分を注入（サイドバートグル + タイトル）
+    setMobileHeaderContent(
+      <div className="flex items-center gap-2 flex-1 min-w-0 md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          title="会話履歴を切替"
+          className="shrink-0 h-8 w-8"
+        >
+          <PanelLeft className="w-4 h-4" />
+        </Button>
+        <Sparkles className="w-4 h-4 text-primary shrink-0" />
+        <h2 className="font-medium text-sm truncate">
+          {conversationTitle}
+        </h2>
+        {activeConversation?.mode && activeConversation.mode !== 'GENERAL_CHAT' && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+            {getModeLabel(activeConversation.mode)}
+          </span>
+        )}
+      </div>
+    );
+    
+    // アクションボタンを注入
+    setMobileHeaderActions(
+      <div className="md:hidden">
+        <MiraMenu 
+          onNewConversation={handleNewConversation}
+          onOpenContextEditor={() => setIsContextEditorOpen(true)}
+          onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
+          onExport={handleExport}
+          onClearConversation={() => setShowClearConfirm(true)}
+          onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
+          isExporting={isExporting}
+          hasMessages={messages.length > 0}
+        />
+      </div>
+    );
+    
+    // クリーンアップ: ページを離れる際にヘッダーをリセット
+    return () => {
+      setMobileHeaderContent(null);
+      setMobileHeaderActions(null);
+    };
+    // 依存配列: プリミティブ値とID、必要な状態のみ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeConversation?.id,
+    activeConversation?.title,
+    activeConversation?.mode,
+    messages.length,
+    isExporting,
+  ]);
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex relative overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-3rem)] flex relative overflow-hidden">
       {/* 左サイドバー: 会話履歴 */}
       {isSidebarOpen && (
         <div className="h-full shrink-0">
@@ -314,24 +402,26 @@ export function MiraPage() {
       {/* メインエリア: チャット（1カラム中央配置） */}
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* チャットヘッダー */}
-        <MiraHeader
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          activeConversation={activeConversation}
-          getConversationSummary={getConversationSummary}
-          getModeLabel={getModeLabel}
-          onNewConversation={handleNewConversation}
-          onOpenContextEditor={() => setIsContextEditorOpen(true)}
-          onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
-          onExport={handleExport}
-          onClearConversation={() => setShowClearConfirm(true)}
-          onUpdateTitle={updateConversationTitle}
-          onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
-          isExporting={isExporting}
-          isUpdatingTitle={isUpdatingTitle}
-          hasMessages={messages.length > 0}
-        />
+        {/* チャットヘッダー（デスクトップのみ表示、モバイルはRootLayoutに統合） */}
+        <div className="hidden md:block">
+          <MiraHeader
+            isSidebarOpen={isSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+            activeConversation={activeConversation}
+            getConversationSummary={getConversationSummary}
+            getModeLabel={getModeLabel}
+            onNewConversation={handleNewConversation}
+            onOpenContextEditor={() => setIsContextEditorOpen(true)}
+            onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
+            onExport={handleExport}
+            onClearConversation={() => setShowClearConfirm(true)}
+            onUpdateTitle={updateConversationTitle}
+            onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
+            isExporting={isExporting}
+            isUpdatingTitle={isUpdatingTitle}
+            hasMessages={messages.length > 0}
+          />
+        </div>
         
         {/* エラー表示 */}
         {error && (
