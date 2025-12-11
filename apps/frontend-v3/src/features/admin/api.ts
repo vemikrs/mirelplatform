@@ -11,6 +11,7 @@ export interface AdminUser {
   isActive: boolean;
   emailVerified: boolean;
   roles: string; // CSV
+  avatarUrl?: string;
   lastLoginAt: string;
   createdAt: string;
   tenants: UserTenantInfo[];

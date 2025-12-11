@@ -132,7 +132,7 @@ export const UserManagementPage = () => {
       await deleteMutation.mutateAsync(userToDelete.userId);
       setShowDeleteConfirm(false);
       setUserToDelete(null);
-    } catch (error) {
+    } catch {
       // エラーはonErrorで処理済み
     }
   };
@@ -142,7 +142,7 @@ export const UserManagementPage = () => {
       await deleteMutation.mutateAsync(userId);
       setIsDialogOpen(false);
       setSelectedUser(null);
-    } catch (error) {
+    } catch {
       // エラー時はダイアログを閉じず、toastで通知（onErrorで既に通知済み）
     }
   };
@@ -174,7 +174,7 @@ export const UserManagementPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">ユーザー・ロール管理</h1>
         <Button onClick={handleCreateUser}>
@@ -183,7 +183,7 @@ export const UserManagementPage = () => {
         </Button>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -206,17 +206,18 @@ export const UserManagementPage = () => {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* デスクトップ: テーブル表示 */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">ID</TableHead>
+              <TableHead className="w-[120px]">ユーザー名</TableHead>
               <TableHead>名前</TableHead>
               <TableHead>メールアドレス</TableHead>
               <TableHead>ロール</TableHead>
               <TableHead>ステータス</TableHead>
-              <TableHead>最終ログイン</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="min-w-[150px]">最終ログイン</TableHead>
+              <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -239,7 +240,7 @@ export const UserManagementPage = () => {
                     <TableCell>{user.displayName}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
                         {user.roles.split(/[|,]/).map((role: string) => (
                         <Badge
                             key={role}
@@ -255,7 +256,7 @@ export const UserManagementPage = () => {
                         {user.isActive ? '有効' : '無効'}
                     </Badge>
                     </TableCell>
-                    <TableCell>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '-'}</TableCell>
+                    <TableCell className="whitespace-nowrap">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('ja-JP') : '-'}</TableCell>
                     <TableCell>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -284,6 +285,78 @@ export const UserManagementPage = () => {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* モバイル: カード表示 */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+            読み込み中...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+            ユーザーが見つかりません
+          </div>
+        ) : (
+          users.map((user: AdminUser) => (
+            <div key={user.userId} className="rounded-lg border bg-card p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold truncate">{user.displayName}</h3>
+                    <Badge variant={user.isActive ? 'success' : 'outline'} size="sm">
+                      {user.isActive ? '有効' : '無効'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0 shrink-0">
+                      <span className="sr-only">メニューを開く</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                      <Edit2 className="mr-2 h-4 w-4" />
+                      編集
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-red-600"
+                      onClick={() => handleDelete(user)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      削除
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <div className="flex flex-wrap gap-1">
+                {user.roles.split(/[|,]/).map((role: string) => (
+                  <Badge
+                    key={role}
+                    variant={role === 'ADMIN' ? 'destructive' : 'neutral'}
+                    size="sm"
+                  >
+                    {role}
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="text-xs text-muted-foreground pt-2 border-t">
+                最終ログイン: {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('ja-JP', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                }) : '未ログイン'}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <UserFormDialog
