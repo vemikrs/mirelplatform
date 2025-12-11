@@ -11,16 +11,19 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { MiraFab } from '@/features/mira/components/MiraFab';
 import { MiraChatPanel } from '@/features/mira/components/MiraChatPanel';
+import { MobileHeaderProvider, useMobileHeader } from '@/contexts/MobileHeaderContext';
 
 
 /**
  * Root layout component
  * Provides common layout structure for all pages
+ * @version 2.0 - Added mobile header injection support with React Context
  */
-export function RootLayout() {
+function RootLayoutInner() {
   const initialNavigation = useLoaderData() as NavigationConfig;
   const { isAuthenticated } = useAuth();
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
+  const { mobileHeaderContent, mobileHeaderActions } = useMobileHeader();
 
   // Fetch dynamic menu from backend
   const { data: dynamicMenu } = useQuery({
@@ -84,15 +87,18 @@ export function RootLayout() {
               </SheetContent>
             </Sheet>
             
-            {/* Brand - show on mobile only in header */}
-            <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
-              <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-                {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
-              </div>
-            </Link>
+            {/* Brand or injected content - show on mobile only in header */}
+            {mobileHeaderContent || (
+              <Link to="/home" className="group flex items-center gap-3 text-left md:hidden">
+                <div className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                  {initialNavigation.brand.shortName ?? initialNavigation.brand.name}
+                </div>
+              </Link>
+            )}
           </div>
-          <div className="hidden items-center gap-2 md:flex">
-            {/* Desktop Global Actions moved to sidebar */}
+          <div className="flex items-center gap-2">
+            {/* Injected mobile header actions */}
+            {mobileHeaderActions}
           </div>
         </div>
       </header>
@@ -144,5 +150,17 @@ export function RootLayout() {
       <MiraFab />
       <MiraChatPanel />
     </div>
+  );
+}
+
+/**
+ * RootLayout with MobileHeaderProvider wrapper
+ * This ensures the mobile header context is available to all child routes
+ */
+export function RootLayout() {
+  return (
+    <MobileHeaderProvider>
+      <RootLayoutInner />
+    </MobileHeaderProvider>
   );
 }
