@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link, Outlet, useLoaderData } from 'react-router-dom';
+import { Link, Outlet, useLoaderData, useMatches } from 'react-router-dom';
 import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
@@ -55,6 +55,11 @@ export function RootLayout() {
 
   const helpAction = initialNavigation.globalActions.find(a => a.type === 'help');
 
+  // ルート設定から余白制御オプションを取得
+  const matches = useMatches();
+  const currentRoute = matches[matches.length - 1];
+  const noMargin = (currentRoute?.handle as { noMargin?: boolean })?.noMargin ?? false;
+
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground">
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
@@ -101,8 +106,14 @@ export function RootLayout() {
         />
         
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          <main className="flex-1 bg-background">
-            <Outlet />
+          <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
+            {noMargin ? (
+              <Outlet />
+            ) : (
+              <div className="px-4 md:px-8">
+                <Outlet />
+              </div>
+            )}
           </main>
 
           <footer className="border-t border-outline/40 bg-surface-subtle/60">

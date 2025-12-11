@@ -363,7 +363,7 @@ export const router = createBrowserRouter([
           {
             path: 'mira',
             element: <MiraPage />,
-            handle: { title: 'Mira - AI Assistant' },
+            handle: { title: 'Mira - AI Assistant', noMargin: true },
           },
         ],
       },
