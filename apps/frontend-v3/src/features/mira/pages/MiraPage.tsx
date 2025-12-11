@@ -63,8 +63,16 @@ export function MiraPage() {
   const deleteConversation = useMiraStore((state) => state.deleteConversation);
   const storedConversations = useMiraStore((state) => state.conversations);
   
-  // サイドバーの表示状態
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // サイドバーの表示状態（localStorageから復元、デフォルトは非表示）
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('mira-sidebar-open');
+    return saved !== null ? saved === 'true' : false;
+  });
+
+  // サイドバー状態の変更をlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('mira-sidebar-open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
   
   // キーボードショートカットオーバーレイの状態
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
