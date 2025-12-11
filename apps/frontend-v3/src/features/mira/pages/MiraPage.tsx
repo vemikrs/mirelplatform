@@ -18,6 +18,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
   toast,
 } from '@mirel/ui';
 import { 
@@ -382,9 +386,9 @@ export function MiraPage() {
 
   return (
     <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-3rem)] flex relative overflow-hidden">
-      {/* 左サイドバー: 会話履歴 */}
+      {/* 左サイドバー: 会話履歴（デスクトップ） */}
       {isSidebarOpen && (
-        <div className="h-full shrink-0">
+        <div className="hidden md:block h-full shrink-0">
           <MiraConversationList
             conversations={conversations}
             activeConversationId={activeConversation?.id ?? null}
@@ -398,6 +402,31 @@ export function MiraPage() {
           />
         </div>
       )}
+      
+      {/* 左サイドバー: 会話履歴（モバイル - オーバーレイ） */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="left" className="p-0 w-[85vw] max-w-[360px] md:hidden">
+          <SheetTitle className="sr-only">会話履歴</SheetTitle>
+          <SheetDescription className="sr-only">過去の会話履歴を表示</SheetDescription>
+          <MiraConversationList
+            conversations={conversations}
+            activeConversationId={activeConversation?.id ?? null}
+            onSelect={(id) => {
+              handleSelectConversation(id);
+              setIsSidebarOpen(false); // モバイルでは選択後に閉じる
+            }}
+            onDelete={handleDeleteConversation}
+            onNewConversation={() => {
+              handleNewConversation();
+              setIsSidebarOpen(false); // モバイルでは新規作成後に閉じる
+            }}
+
+            searchInputRef={searchInputRef}
+            hasMore={hasMore}
+            onLoadMore={loadMoreConversations}
+          />
+        </SheetContent>
+      </Sheet>
       
       {/* メインエリア: チャット（1カラム中央配置） */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -467,6 +496,7 @@ export function MiraPage() {
               placeholder="メッセージを入力... (Enter で送信)"
               className="mira-chat-input"
               autoFocus
+              compact
               editingMessageId={editingMessageId || undefined}
               editingMessageContent={editingMessageContent || undefined}
               onCancelEdit={cancelEditMessage}

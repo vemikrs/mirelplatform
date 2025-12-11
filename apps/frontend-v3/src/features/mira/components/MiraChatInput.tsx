@@ -24,7 +24,8 @@ import {
   Eye,
   Download,
   Maximize2,
-  Settings, // Add Settings icon
+  Settings,
+  MoreVertical,
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig } from '@/lib/api/mira';
@@ -421,8 +422,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       
       {/* メッセージ入力エリア */}
       <div className="relative px-3 py-2">
-        {/* モード選択メニュー */}
-        {showModeMenu && (
+        {/* モード選択メニュー（通常モードのみ） */}
+        {!compact && showModeMenu && (
           <div 
             ref={menuRef}
             className="absolute bottom-full left-3 mb-2 w-56 py-1 bg-popover border rounded-lg shadow-lg z-10"
@@ -460,50 +461,126 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         )}
         
         <div className="flex items-end gap-2">
-          {/* 添付ボタン */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "p-1.5 rounded-md border",
-              "hover:bg-muted transition-colors shrink-0",
-              "text-muted-foreground hover:text-foreground"
-            )}
-            title="ファイルを添付"
-            disabled={disabled}
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
+          {/* コンパクトモード: 統合メニューボタン */}
+          {compact ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowModeMenu(!showModeMenu)}
+                className={cn(
+                  "p-1.5 rounded-md border",
+                  "hover:bg-muted transition-colors shrink-0",
+                  "text-muted-foreground hover:text-foreground"
+                )}
+                title="メニュー"
+                disabled={disabled}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              
+              {/* 統合メニュー */}
+              {showModeMenu && (
+                <div 
+                  ref={menuRef}
+                  className="absolute bottom-full left-0 mb-2 w-48 py-1 bg-popover border rounded-lg shadow-lg z-10"
+                >
+                  <button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setShowModeMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    ファイルを添付
+                  </button>
+                  <button
+                    onClick={() => {
+                      setContextModalOpen(true);
+                      setShowModeMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    コンテキスト設定
+                    {Object.keys(messageConfig).length > 0 && (
+                      <span className="ml-auto w-2 h-2 rounded-full bg-purple-500" />
+                    )}
+                  </button>
+                  <div className="border-t my-1" />
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                    モード選択
+                  </p>
+                  {MODES.map((mode) => {
+                    const Icon = mode.icon;
+                    return (
+                      <button
+                        key={mode.mode}
+                        onClick={() => {
+                          setCurrentMode(mode.mode);
+                          setShowModeMenu(false);
+                        }}
+                        className={cn(
+                          'w-full px-3 py-2 text-left text-sm flex items-center gap-2',
+                          'hover:bg-muted transition-colors',
+                          currentMode === mode.mode && 'bg-muted font-medium'
+                        )}
+                      >
+                        <Icon className={cn('w-4 h-4', mode.color)} />
+                        <span>{mode.label}</span>
+                        {currentMode === mode.mode && (
+                          <span className="ml-auto text-xs text-primary">✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* 通常モード: 個別ボタン */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "p-1.5 rounded-md border",
+                  "hover:bg-muted transition-colors shrink-0",
+                  "text-muted-foreground hover:text-foreground"
+                )}
+                title="ファイルを添付"
+                disabled={disabled}
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
 
-          {/* コンテキスト設定ボタン */}
-          <button
-            onClick={() => setContextModalOpen(true)}
-            className={cn(
-              "p-1.5 rounded-md border",
-              "hover:bg-muted transition-colors shrink-0",
-              "text-muted-foreground hover:text-foreground",
-              // 設定がある場合は色を変える
-              Object.keys(messageConfig).length > 0 && "bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400"
-            )}
-            title="コンテキスト設定 (Ctrl+Shift+M)"
-            disabled={disabled}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-          
-          {/* モード選択ボタン */}
-          <button
-            onClick={handleModeButtonClick}
-            className={cn(
-              "flex items-center gap-1 px-2 py-1.5 text-xs rounded-md border",
-              "hover:bg-muted transition-colors shrink-0",
-              currentModeConfig.color
-            )}
-            title="モードを変更 (@)"
-          >
-            <CurrentIcon className="w-3.5 h-3.5" />
-            <span>{currentModeConfig.shortLabel}</span>
-            <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", showModeMenu && "rotate-180")} />
-          </button>
+              <button
+                onClick={() => setContextModalOpen(true)}
+                className={cn(
+                  "p-1.5 rounded-md border",
+                  "hover:bg-muted transition-colors shrink-0",
+                  "text-muted-foreground hover:text-foreground",
+                  Object.keys(messageConfig).length > 0 && "bg-purple-100 dark:bg-purple-900 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400"
+                )}
+                title="コンテキスト設定 (Ctrl+Shift+M)"
+                disabled={disabled}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={handleModeButtonClick}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1.5 text-xs rounded-md border",
+                  "hover:bg-muted transition-colors shrink-0",
+                  currentModeConfig.color
+                )}
+                title="モードを変更 (@)"
+              >
+                <CurrentIcon className="w-3.5 h-3.5" />
+                <span>{currentModeConfig.shortLabel}</span>
+                <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", showModeMenu && "rotate-180")} />
+              </button>
+            </>
+          )}
           
           {/* テキストエリア */}
           <textarea
