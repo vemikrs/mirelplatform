@@ -44,7 +44,6 @@ import { useMiraShortcuts } from '../hooks/useMiraShortcuts';
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { setMobileHeaderContent, setMobileHeaderActions } = useMobileHeader();
-  const [isMobile, setIsMobile] = useState(false);
   const {
     sendMessage,
     isLoading,
