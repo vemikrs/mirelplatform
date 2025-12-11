@@ -97,14 +97,26 @@ public class GitHubModelsClient implements AiProviderClient {
             // Strategy: We will configure the ChatModel WITHOUT ToolCallingManager, and
             // manually set Function Definitions in Options.
 
+            // GPT-5系モデルは max_completion_tokens を使用する必要がある
+            String modelName = config.getModel();
+            Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
+            boolean isGpt5Model = modelName != null && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
+            
+            OpenAiChatOptions.Builder defaultOptionsBuilder = OpenAiChatOptions.builder()
+                    .model(modelName)
+                    .temperature(request.getTemperature() != null ? request.getTemperature()
+                            : config.getTemperature());
+            
+            if (isGpt5Model) {
+                log.debug("Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
+                defaultOptionsBuilder.maxCompletionTokens(tokenLimit);
+            } else {
+                defaultOptionsBuilder.maxTokens(tokenLimit);
+            }
+            
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
-                    .defaultOptions(OpenAiChatOptions.builder()
-                            .model(config.getModel())
-                            .temperature(request.getTemperature() != null ? request.getTemperature()
-                                    : config.getTemperature())
-                            .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
-                            .build())
+                    .defaultOptions(defaultOptionsBuilder.build())
                     // .toolCallingManager(ToolCallingManager.builder().build()) // ABOLISHED:
                     // Disable auto execution
                     .build();
