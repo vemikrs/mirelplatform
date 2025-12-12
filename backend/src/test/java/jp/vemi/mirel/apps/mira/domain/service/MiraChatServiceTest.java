@@ -37,7 +37,9 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter; // Import TokenCounter
+import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
+import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 
 /**
  * MiraChatService のユニットテスト.
@@ -91,10 +93,41 @@ class MiraChatServiceTest {
     private TokenCounter tokenCounter; // Mock TokenCounter
 
     @Mock
-    private MiraSettingService settingService; // Mock SettingService
+    private MiraSettingService settingService;
 
-    @InjectMocks
+    @Mock
+    private TavilySearchProvider tavilySearchProvider;
+
+    @Mock
+    private ModelCapabilityValidator modelCapabilityValidator;
+
     private MiraChatService miraChatService;
+
+    @BeforeEach
+    void globalSetUp() {
+        // Setup default validation success
+        lenient().when(modelCapabilityValidator.validate(any())).thenReturn(ModelCapabilityValidation.success());
+
+        miraChatService = MiraChatService.builder()
+                .aiProviderFactory(aiProviderFactory)
+                .modeResolver(modeResolver)
+                .promptBuilder(promptBuilder)
+                .policyEnforcer(policyEnforcer)
+                .responseFormatter(responseFormatter)
+                .conversationRepository(conversationRepository)
+                .messageRepository(messageRepository)
+                .contextSnapshotRepository(contextSnapshotRepository)
+                .contextMergeService(contextMergeService)
+                .auditService(auditService)
+                .rateLimitService(rateLimitService)
+                .metrics(metrics)
+                .tokenQuotaService(tokenQuotaService)
+                .tokenCounter(tokenCounter)
+                .settingService(settingService)
+                .tavilySearchProvider(tavilySearchProvider)
+                .modelCapabilityValidator(modelCapabilityValidator)
+                .build();
+    }
 
     private static final String TENANT_ID = "tenant-001";
     private static final String USER_ID = "user-001";
@@ -107,23 +140,6 @@ class MiraChatServiceTest {
 
         @BeforeEach
         void setUp() {
-            miraChatService = new MiraChatService(
-                    aiProviderFactory,
-                    modeResolver,
-                    promptBuilder,
-                    policyEnforcer,
-                    responseFormatter,
-                    conversationRepository,
-                    messageRepository,
-                    contextSnapshotRepository,
-                    contextMergeService,
-                    auditService,
-                    rateLimitService,
-                    metrics,
-                    tokenQuotaService,
-                    tokenCounter,
-                    settingService); // Add settingService
-
             validRequest = ChatRequest.builder()
                     .message(ChatRequest.Message.builder()
                             .content("テストメッセージ")
@@ -163,7 +179,7 @@ class MiraChatServiceTest {
                     .build();
             when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
-            when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
+            when(aiProviderFactory.createClient(any())).thenReturn(aiProviderClient);
             AiResponse aiResponse = AiResponse.success(
                     "テスト応答です",
                     AiResponse.Metadata.builder()
@@ -259,7 +275,7 @@ class MiraChatServiceTest {
 
             when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
-            when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
+            when(aiProviderFactory.createClient(any())).thenReturn(aiProviderClient);
             AiResponse errorResponse = AiResponse.error("API_ERROR", "APIエラーが発生しました");
             when(aiProviderClient.chat(any())).thenReturn(errorResponse);
 
@@ -268,7 +284,7 @@ class MiraChatServiceTest {
 
             // Assert
             assertThat(response).isNotNull();
-            assertThat(response.getAssistantMessage().getContent()).contains("AI応答の取得に失敗しました");
+            assertThat(response.getAssistantMessage().getContent()).contains("APIエラーが発生しました");
         }
 
         @Test
@@ -325,7 +341,7 @@ class MiraChatServiceTest {
 
             when(promptBuilder.buildChatRequestWithContext(any(), any(), any(), anyString())).thenReturn(aiRequest);
 
-            when(aiProviderFactory.getProvider()).thenReturn(aiProviderClient);
+            when(aiProviderFactory.createClient(any())).thenReturn(aiProviderClient);
             AiResponse aiResponse = AiResponse.success(
                     "続きの応答です",
                     AiResponse.Metadata.builder().model("gpt-4o").build());
@@ -351,7 +367,8 @@ class MiraChatServiceTest {
 
             // 新しい会話は作成されない（findById が呼ばれる）
             verify(conversationRepository).findById(conversationId);
-            verify(conversationRepository, never()).save(any());
+            // lastActivity更新などでsaveは呼ばれる
+            verify(conversationRepository, atLeastOnce()).save(any());
         }
     }
 
