@@ -10,6 +10,9 @@ interface StreamEvent {
   error?: string;
 }
 
+// Timeout for stream inactivity (120 seconds for o1/reasoning models)
+const READ_TIMEOUT_MS = 120000;
+
 export function useMiraChatStream() {
   const {
     activeConversationId,
@@ -98,12 +101,34 @@ export function useMiraChatStream() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        
+        // Watchdog timer for inactivity
+        let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+        
+        const resetWatchdog = () => {
+            if (watchdogTimer) clearTimeout(watchdogTimer);
+            watchdogTimer = setTimeout(() => {
+                console.warn(`[Stream] Timeout after ${READ_TIMEOUT_MS}ms inactivity`);
+                if (abortControllerRef.current) {
+                   abortControllerRef.current.abort();
+                }
+                // We can't easily throw into the reader loop, but aborting will cause the reader to throw or return done.
+                // Actually reader.read() will likely throw AbortError if aborted.
+            }, READ_TIMEOUT_MS);
+        };
+
+        resetWatchdog();
 
         while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+
+                const { done, value } = await reader.read();
+                
+                // Clear watchdog on every read completion (chunk received)
+                resetWatchdog();
+
+                if (done) break;
             
-            buffer += decoder.decode(value, { stream: true });
+                buffer += decoder.decode(value, { stream: true });
             
             // Process lines (SSE format: data: {...}\n\n)
             const lines = buffer.split('\n');
@@ -147,12 +172,25 @@ export function useMiraChatStream() {
     } catch (error: any) {
         if (error.name === 'AbortError') {
              console.log('Stream aborted');
+             // Consider if it was our watchdog that aborted it?
+             // Not easy to distinguish without extra state, but generally if aborted by user we know.
+             // If we want to show specific error for Timeout, we could set a flag in the timeout callback.
         } else {
             console.error('Stream error:', error);
-            failStreamingMessage(conversationId, messageId, error.message);
-            setError(error.message);
+            
+            // User-friendly error message for timeouts
+            let userMessage = error.message;
+            if (error.name === 'TimeoutError' || (error.message && error.message.includes('Timeout'))) {
+                userMessage = 'AIの応答がタイムアウトしました。思考時間の長いモデルを使用している可能性があります。';
+            }
+            
+            failStreamingMessage(conversationId, messageId, userMessage);
+            setError(userMessage);
         }
     } finally {
+        if (abortControllerRef.current === abortController) {
+             abortControllerRef.current = null;
+        }
         setLoading(false);
     }
 

@@ -28,6 +28,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+import java.time.Duration;
 
 import jp.vemi.mirel.apps.mira.domain.service.MiraSettingService;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
@@ -100,21 +102,22 @@ public class GitHubModelsClient implements AiProviderClient {
             // GPT-5系モデルは max_completion_tokens を使用する必要がある
             String modelName = config.getModel();
             Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
-            boolean isGpt5Model = modelName != null && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
-            
+            boolean isGpt5Model = modelName != null
+                    && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
+
             OpenAiChatOptions.Builder defaultOptionsBuilder = OpenAiChatOptions.builder()
                     .model(modelName)
                     .temperature(request.getTemperature() != null ? request.getTemperature()
                             : config.getTemperature())
-                    .extraBody(null);  // GitHub Models API doesn't support extra_body parameter
-            
+                    .extraBody(null); // GitHub Models API doesn't support extra_body parameter
+
             if (isGpt5Model) {
                 log.debug("Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
                 defaultOptionsBuilder.maxCompletionTokens(tokenLimit);
             } else {
                 defaultOptionsBuilder.maxTokens(tokenLimit);
             }
-            
+
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
                     .defaultOptions(defaultOptionsBuilder.build())
@@ -235,7 +238,13 @@ public class GitHubModelsClient implements AiProviderClient {
                             .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
 
             // WebClient にも content:null 注入フィルターを適用 (ストリーミング用)
+            // タイムアウトを5分に設定 (gpt-5-mini / o1 モデルの思考時間対策)
+            HttpClient httpClient = HttpClient.create()
+                    .responseTimeout(Duration.ofMinutes(5));
+
             WebClient.Builder webClientBuilder = WebClient.builder()
+                    .clientConnector(
+                            new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                     .filter(new GitHubModelsWebClientFilter());
 
             OpenAiApi openAiApi = new OpenAiApi(
@@ -252,21 +261,22 @@ public class GitHubModelsClient implements AiProviderClient {
             // GPT-5系モデルは max_completion_tokens を使用する必要がある
             String modelName = config.getModel();
             Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
-            boolean isGpt5Model = modelName != null && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
-            
+            boolean isGpt5Model = modelName != null
+                    && (modelName.contains("gpt-5") || modelName.contains("o1") || modelName.contains("o3"));
+
             OpenAiChatOptions.Builder streamOptionsBuilder = OpenAiChatOptions.builder()
                     .model(modelName)
                     .temperature(request.getTemperature() != null ? request.getTemperature()
                             : config.getTemperature())
-                    .extraBody(null);  // GitHub Models API doesn't support extra_body parameter
-            
+                    .extraBody(null); // GitHub Models API doesn't support extra_body parameter
+
             if (isGpt5Model) {
                 log.debug("[Stream] Using maxCompletionTokens for GPT-5/o1/o3 model: {}", modelName);
                 streamOptionsBuilder.maxCompletionTokens(tokenLimit);
             } else {
                 streamOptionsBuilder.maxTokens(tokenLimit);
             }
-            
+
             OpenAiChatModel chatModel = OpenAiChatModel.builder()
                     .openAiApi(openAiApi)
                     .defaultOptions(streamOptionsBuilder.build())
@@ -296,26 +306,28 @@ public class GitHubModelsClient implements AiProviderClient {
             // Execute Stream
             return requestSpec.stream()
                     .chatResponse()
+                    .timeout(Duration.ofMinutes(5)) // Fluxレベルでもタイムアウト設定
                     .map(this::mapStreamResponse)
                     .onErrorResume(e -> {
                         // WebClientResponseException の場合、レスポンスボディを取得
                         if (e instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
-                            org.springframework.web.reactive.function.client.WebClientResponseException webEx = 
-                                    (org.springframework.web.reactive.function.client.WebClientResponseException) e;
+                            org.springframework.web.reactive.function.client.WebClientResponseException webEx = (org.springframework.web.reactive.function.client.WebClientResponseException) e;
                             String errorBody = webEx.getResponseBodyAsString();
                             log.error("[GitHubModels] Stream API Error: {} Body: {}", webEx.getStatusCode(), errorBody);
-                            
+
                             // ユーザーフレンドリーなエラーメッセージに変換
                             String userMessage = "申し訳ございません。AIサービスで一時的なエラーが発生しました。しばらく待ってから再度お試しください。";
-                            
+
                             // エラーの種類に応じてメッセージをカスタマイズ
                             if (errorBody.contains("extra_body")) {
                                 userMessage = "AIモデルの設定に問題があります。システム管理者に連絡してください。";
-                                log.error("[GitHubModels] extra_body parameter not supported. This may be a Spring AI compatibility issue.");
-                            } else if (errorBody.contains("max_completion_tokens") || errorBody.contains("max_tokens")) {
+                                log.error(
+                                        "[GitHubModels] extra_body parameter not supported. This may be a Spring AI compatibility issue.");
+                            } else if (errorBody.contains("max_completion_tokens")
+                                    || errorBody.contains("max_tokens")) {
                                 userMessage = "AIモデルのトークン設定に問題があります。システム管理者に連絡してください。";
                             }
-                            
+
                             // エラーをログには出力するが、ユーザーには分かりやすいメッセージを返す
                             return reactor.core.publisher.Flux.just(
                                     AiResponse.builder()
@@ -416,7 +428,8 @@ public class GitHubModelsClient implements AiProviderClient {
      * <p>
      * GitHub Models API との互換性を確保するため、以下の修正を行います：
      * 1. Spring AI が送信する 'extra_body' パラメータを削除（GitHub Models API 非対応）
-     * 2. Llama 3.3 など一部のモデル向けに、tool_calls を含む assistant message に "content": null を注入
+     * 2. Llama 3.3 など一部のモデル向けに、tool_calls を含む assistant message に "content": null
+     * を注入
      * </p>
      */
     @Slf4j
@@ -440,14 +453,14 @@ public class GitHubModelsClient implements AiProviderClient {
 
                 // 2. Modify
                 boolean modified = false;
-                
+
                 // 2-1. Remove 'extra_body' parameter (not supported by GitHub Models API)
                 if (rootObj.has("extra_body")) {
                     log.debug("[GitHubModelsInterceptor] Removing 'extra_body' parameter");
                     rootObj.remove("extra_body");
                     modified = true;
                 }
-                
+
                 // 2-2. Inject 'content: null' for assistant messages with tool_calls
                 if (root.has("messages") && root.get("messages").isArray()) {
                     com.fasterxml.jackson.databind.node.ArrayNode messages = (com.fasterxml.jackson.databind.node.ArrayNode) root
@@ -503,7 +516,8 @@ public class GitHubModelsClient implements AiProviderClient {
      * </p>
      */
     @Slf4j
-    static class GitHubModelsWebClientFilter implements org.springframework.web.reactive.function.client.ExchangeFilterFunction {
+    static class GitHubModelsWebClientFilter
+            implements org.springframework.web.reactive.function.client.ExchangeFilterFunction {
 
         private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -511,7 +525,7 @@ public class GitHubModelsClient implements AiProviderClient {
         public reactor.core.publisher.Mono<org.springframework.web.reactive.function.client.ClientResponse> filter(
                 org.springframework.web.reactive.function.client.ClientRequest request,
                 org.springframework.web.reactive.function.client.ExchangeFunction next) {
-            
+
             // POST リクエストのみを対象
             if (!"POST".equals(request.method().name())) {
                 return next.exchange(request);
@@ -520,21 +534,23 @@ public class GitHubModelsClient implements AiProviderClient {
             // リクエストボディを変換してから再送信
             // WebClient ではリクエストボディを直接変換するのが難しいため、
             // ここでは DataBufferUtils を使った方法を試みる
-            
+
             log.debug("[GitHubModelsWebClientFilter] Processing POST request to: {}", request.url());
-            
+
             // 注意: WebClient の ExchangeFilterFunction では request body を直接変更できないため、
             // ここでは警告のみ。実際の修正は RestClient インターセプターで行う。
             // ストリーミングの場合は、内部的に RestClient が使われる可能性もある。
             // もしストリーミングでエラーが発生する場合は、別途対応が必要。
-            
+
             return next.exchange(request)
-                .onErrorResume(org.springframework.web.reactive.function.client.WebClientResponseException.class, error -> {
-                    // エラーレスポンスの本文を取得してログに出力
-                    String errorBody = error.getResponseBodyAsString();
-                    log.error("[GitHubModelsWebClientFilter] API Error: {} {}", error.getStatusCode(), errorBody);
-                    return reactor.core.publisher.Mono.error(error);
-                });
+                    .onErrorResume(org.springframework.web.reactive.function.client.WebClientResponseException.class,
+                            error -> {
+                                // エラーレスポンスの本文を取得してログに出力
+                                String errorBody = error.getResponseBodyAsString();
+                                log.error("[GitHubModelsWebClientFilter] API Error: {} {}", error.getStatusCode(),
+                                        errorBody);
+                                return reactor.core.publisher.Mono.error(error);
+                            });
         }
     }
 }
