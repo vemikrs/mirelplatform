@@ -13,6 +13,12 @@ spring:
     password: ${DATABASE_PASS:}
   session:
     store-type: redis
+  # Spring AI 自動構成の無効化（Vertex AI Gemini は手動で Bean を登録するため）
+  ai:
+    vertex:
+      ai:
+        gemini:
+          enabled: false
   jpa:
     database-platform: ${DATABASE_PLATFORM:}
     hibernate:
@@ -50,7 +56,7 @@ spring:
   # Spring Boot Mail設定（JavaMailSender Bean生成用）
   # email.provider=smtp の場合のみ有効化するため、環境変数で制御
   # Azure Communication Services 使用時は spring.mail.host を未設定にすることで Bean 生成を抑制
-  # 
+  #
   # 【重要】開発環境でのデフォルト設定について:
   # - SPRING_MAIL_HOST が未設定の場合、host は空文字列になります
   # - 空のhostでJavaMailSender Beanの作成に失敗する可能性があります
