@@ -11,6 +11,14 @@ spring:
       audio:
         speech: none
         transcription: none
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GEMINI_PROJECT_ID}
+          location: ${GEMINI_LOCATION}
+          chat:
+            options:
+              model: ${GEMINI_MODEL}
   datasource:
     url: jdbc:postgresql://localhost:5432/mirelplatform
     driver-class-name: org.postgresql.Driver
@@ -112,11 +120,11 @@ email:
 # このアプリ独自の設定で AI 機能を制御
 mira:
   ai:
-    enabled: true                    # Mira AI 機能を有効化
-    provider: github-models          # GitHub Models REST API（Llama 3.3）を使用
+    enabled: true # Mira AI 機能を有効化
+    provider: github-models # GitHub Models REST API（Llama 3.3）を使用
     mock:
-      enabled: false                 # GitHub Models を直接使用（true にするとモック）
-      response-delay-ms: 300         # 応答遅延シミュレーション
+      enabled: false # GitHub Models を直接使用（true にするとモック）
+      response-delay-ms: 300 # 応答遅延シミュレーション
       default-response: "ご質問ありがとうございます。現在開発環境のためモックで応答しています。"
     # GitHub Models 設定（開発環境でローカルテスト用）
     # 参考: https://docs.github.com/en/rest/models/inference
