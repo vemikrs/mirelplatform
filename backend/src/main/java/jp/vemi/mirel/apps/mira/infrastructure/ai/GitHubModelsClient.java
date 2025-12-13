@@ -73,9 +73,10 @@ public class GitHubModelsClient implements AiProviderClient {
                         .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
 
         // Use custom WebClient builder with filter and timeout
-        // タイムアウトを5分に設定 (gpt-5-mini / o1 モデルの思考時間対策)
+        // タイムアウトを設定値から取得（gpt-5-mini / o1 モデルの思考時間対策。環境ごとに調整可能）
+        int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : 300; // デフォルト5分
         HttpClient httpClient = HttpClient.create()
-                .responseTimeout(Duration.ofMinutes(5));
+                .responseTimeout(Duration.ofSeconds(timeoutSeconds));
 
         WebClient.Builder webClientBuilder = WebClient.builder()
                 .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))

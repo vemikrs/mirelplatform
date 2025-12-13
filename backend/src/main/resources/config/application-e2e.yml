@@ -14,7 +14,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop  # E2E環境では毎回再作成
+      ddl-auto: create-drop # E2E環境では毎回再作成
     properties:
       hibernate:
         format_sql: false
@@ -51,11 +51,12 @@ spring:
   # Spring AI 自動設定を無効化（E2E環境ではモック使用）
   ai:
     openai:
-      api-key: disabled-for-e2e  # ダミー値で自動設定を抑制
+      api-key: disabled-for-e2e # ダミー値で自動設定を抑制
   autoconfigure:
     exclude:
       - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
       - org.springframework.ai.autoconfigure.openai.OpenAiChatClientAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
 
 # E2E環境ではActuatorエンドポイントを露出（ヘルスチェック用）
 management:
@@ -68,9 +69,9 @@ management:
       show-details: always
   health:
     redis:
-      enabled: false  # E2E環境ではRedisヘルスチェックを無効化（失敗しても起動できるように）
+      enabled: false # E2E環境ではRedisヘルスチェックを無効化（失敗しても起動できるように）
     mail:
-      enabled: false  # E2E環境ではメールヘルスチェックを無効化
+      enabled: false # E2E環境ではメールヘルスチェックを無効化
 
 logging:
   level:
@@ -87,9 +88,9 @@ mirel:
       user: ${mirel.storage-dir}/apps/promarker/stencil/user
       standard: ${mirel.storage-dir}/apps/promarker/stencil/standard
       samples: classpath:/promarker/stencil/samples
-    auto-deploy-samples: true  # E2E環境ではサンプルを自動デプロイ
+    auto-deploy-samples: true # E2E環境ではサンプルを自動デプロイ
   database:
-    initialize: true  # E2E環境ではデータベース初期化を有効化（テストユーザー作成）
+    initialize: true # E2E環境ではデータベース初期化を有効化（テストユーザー作成）
   apps:
     mste:
       # E2E環境: 起動時に必ずステンシルマスタをリロード
@@ -101,7 +102,7 @@ mipla2:
   security:
     api:
       enabled: true
-      csrf-enabled: false  # E2Eテスト考慮でCSRF無効
+      csrf-enabled: false # E2Eテスト考慮でCSRF無効
 
 # JWT authentication method
 auth:
@@ -122,7 +123,7 @@ rate-limit:
     request-per-minute: 10
     verify-per-minute: 30
   redis:
-    fallback-to-memory: true  # Redisなしでメモリフォールバック
+    fallback-to-memory: true # Redisなしでメモリフォールバック
 
 # E2E環境用メール設定（docker-compose.e2e.yml MailHog）
 email:
