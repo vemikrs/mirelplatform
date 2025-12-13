@@ -203,6 +203,16 @@ export function SetupAccountPage() {
 
         {/* フォーム */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* パスワードマネージャー用の隠しユーザー名フィールド */}
+          <input
+            type="text"
+            name="username"
+            value={userInfo?.email || ''}
+            autoComplete="username"
+            className="hidden"
+            readOnly
+          />
+
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-2 text-foreground">
               パスワード
@@ -217,6 +227,7 @@ export function SetupAccountPage() {
               placeholder="8文字以上"
               disabled={isSubmitting}
               autoFocus
+              autoComplete="new-password"
             />
           </div>
 
@@ -233,6 +244,7 @@ export function SetupAccountPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="パスワードを再入力"
               disabled={isSubmitting}
+              autoComplete="new-password"
             />
           </div>
 
