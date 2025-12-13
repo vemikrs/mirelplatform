@@ -178,10 +178,23 @@ export function useMiraChatStream() {
         } else {
             console.error('Stream error:', error);
             
-            // User-friendly error message for timeouts
+            // User-friendly error message for timeouts and technical errors
             let userMessage = error.message;
+            const techErrors = [
+                'StatusRuntimeException',
+                'UNAVAILABLE',
+                'Connection reset',
+                '503',
+                '500',
+                'io exception',
+                'Failed to fetch',
+                'NetworkError'
+            ];
+
             if (error.name === 'TimeoutError' || (error.message && error.message.includes('Timeout'))) {
                 userMessage = 'AIの応答がタイムアウトしました。思考時間の長いモデルを使用している可能性があります。';
+            } else if (techErrors.some(te => error.message && error.message.includes(te))) {
+                userMessage = 'AIサービスとの一時的な通信エラーが発生しました。しばらく待ってから再試行してください。';
             }
             
             failStreamingMessage(conversationId, messageId, userMessage);

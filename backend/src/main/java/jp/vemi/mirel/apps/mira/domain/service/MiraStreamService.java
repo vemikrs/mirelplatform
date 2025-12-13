@@ -100,7 +100,8 @@ public class MiraStreamService {
                 request, mode, history, finalContext);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
-        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId, request.getWebSearchEnabled());
+        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId,
+                request.getWebSearchEnabled());
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING
@@ -174,6 +175,10 @@ public class MiraStreamService {
                     // Return empty delta to keep stream alive
                     return MiraStreamResponse.delta("", aiResponse.getModel());
                 })
+                .onErrorResume(e -> {
+                    log.error("Stream Loop Error: {}", e.getMessage(), e);
+                    return Flux.just(MiraStreamResponse.error("SYSTEM_ERROR", "AI Service Error: " + e.getMessage()));
+                })
                 .filter(resp -> resp.getContent() != null && !resp.getContent().isEmpty()) // Filter empty
                 .concatWith(Flux.defer(() -> {
                     // Turn Finished. Decide Next Step.
@@ -222,18 +227,20 @@ public class MiraStreamService {
                                     name = root.get("tool").asText();
                                     args = root.toString();
                                 }
-                                // Case 3: Llama/Mistral format {"type": "function", "name": "...", "parameters": {...}}
-                                else if (root.has("type") && "function".equals(root.path("type").asText()) && root.has("name")) {
+                                // Case 3: Llama/Mistral format {"type": "function", "name": "...",
+                                // "parameters": {...}}
+                                else if (root.has("type") && "function".equals(root.path("type").asText())
+                                        && root.has("name")) {
                                     name = root.get("name").asText();
                                     // Try "arguments" first, then "parameters"
                                     if (root.has("arguments")) {
-                                        args = root.get("arguments").isTextual() 
-                                            ? root.get("arguments").asText() 
-                                            : root.get("arguments").toString();
+                                        args = root.get("arguments").isTextual()
+                                                ? root.get("arguments").asText()
+                                                : root.get("arguments").toString();
                                     } else if (root.has("parameters")) {
                                         args = root.get("parameters").isTextual()
-                                            ? root.get("parameters").asText()
-                                            : root.get("parameters").toString();
+                                                ? root.get("parameters").asText()
+                                                : root.get("parameters").toString();
                                     }
                                 }
                                 // Case 4: webSearch-specific format mapping
@@ -249,8 +256,8 @@ public class MiraStreamService {
                                                 query = argsNode.get("query").asText();
                                             } else if (argsNode.has("latitude") && argsNode.has("longitude")) {
                                                 // Weather request detected - convert to query
-                                                query = "weather at latitude " + argsNode.get("latitude").asText() 
-                                                    + " longitude " + argsNode.get("longitude").asText();
+                                                query = "weather at latitude " + argsNode.get("latitude").asText()
+                                                        + " longitude " + argsNode.get("longitude").asText();
                                             }
                                             if (query != null) {
                                                 args = mapper.writeValueAsString(java.util.Map.of("query", query));
