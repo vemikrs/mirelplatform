@@ -33,6 +33,20 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
     private Encoder<ILoggingEvent> encoder;
 
     @Override
+    public void start() {
+        if (this.encoder == null) {
+            addError("No encoder set for the appender named \"" + name + "\".");
+            return;
+        }
+
+        if (!this.encoder.isStarted()) {
+            this.encoder.start();
+        }
+
+        super.start();
+    }
+
+    @Override
     protected void append(ILoggingEvent eventObject) {
         if (eventObject == null) {
             return;
