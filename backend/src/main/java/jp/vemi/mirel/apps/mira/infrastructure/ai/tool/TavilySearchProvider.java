@@ -22,26 +22,18 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
-@Component
 public class TavilySearchProvider implements WebSearchProvider {
 
     private static final String API_BASE_URL = "https://api.tavily.com";
-    
-    private final RestClient restClient;
-    private String apiKey;
 
-    public TavilySearchProvider() {
+    private final RestClient restClient;
+    private final String apiKey;
+
+    public TavilySearchProvider(String apiKey) {
+        this.apiKey = apiKey;
         this.restClient = RestClient.builder()
                 .baseUrl(API_BASE_URL)
                 .build();
-    }
-
-    /**
-     * APIキーを設定.
-     * @param apiKey Tavily API Key
-     */
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
     }
 
     @Override
@@ -71,8 +63,7 @@ public class TavilySearchProvider implements WebSearchProvider {
                             "query", query,
                             "search_depth", options.searchDepth(),
                             "include_answer", options.includeAnswer(),
-                            "max_results", options.maxResults()
-                    ))
+                            "max_results", options.maxResults()))
                     .retrieve()
                     .body(TavilyResponse.class);
 
@@ -98,13 +89,13 @@ public class TavilySearchProvider implements WebSearchProvider {
     record TavilyResponse(
             @JsonProperty("query") String query,
             @JsonProperty("answer") String answer,
-            @JsonProperty("results") List<TavilyResult> results
-    ) {}
+            @JsonProperty("results") List<TavilyResult> results) {
+    }
 
     record TavilyResult(
             @JsonProperty("title") String title,
             @JsonProperty("url") String url,
             @JsonProperty("content") String content,
-            @JsonProperty("score") Double score
-    ) {}
+            @JsonProperty("score") Double score) {
+    }
 }

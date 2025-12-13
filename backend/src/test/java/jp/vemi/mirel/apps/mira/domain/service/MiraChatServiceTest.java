@@ -96,37 +96,19 @@ class MiraChatServiceTest {
     private MiraSettingService settingService;
 
     @Mock
-    private TavilySearchProvider tavilySearchProvider;
+    private jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchToolFactory tavilySearchToolFactory; // Added
+                                                                                                            // mock
 
     @Mock
     private ModelCapabilityValidator modelCapabilityValidator;
 
+    @InjectMocks
     private MiraChatService miraChatService;
 
     @BeforeEach
     void globalSetUp() {
         // Setup default validation success
         lenient().when(modelCapabilityValidator.validate(any())).thenReturn(ModelCapabilityValidation.success());
-
-        miraChatService = MiraChatService.builder()
-                .aiProviderFactory(aiProviderFactory)
-                .modeResolver(modeResolver)
-                .promptBuilder(promptBuilder)
-                .policyEnforcer(policyEnforcer)
-                .responseFormatter(responseFormatter)
-                .conversationRepository(conversationRepository)
-                .messageRepository(messageRepository)
-                .contextSnapshotRepository(contextSnapshotRepository)
-                .contextMergeService(contextMergeService)
-                .auditService(auditService)
-                .rateLimitService(rateLimitService)
-                .metrics(metrics)
-                .tokenQuotaService(tokenQuotaService)
-                .tokenCounter(tokenCounter)
-                .settingService(settingService)
-                .tavilySearchProvider(tavilySearchProvider)
-                .modelCapabilityValidator(modelCapabilityValidator)
-                .build();
     }
 
     private static final String TENANT_ID = "tenant-001";

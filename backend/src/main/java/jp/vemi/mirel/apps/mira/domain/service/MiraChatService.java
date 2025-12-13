@@ -50,8 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
-@Builder
-@lombok.AllArgsConstructor
+@lombok.RequiredArgsConstructor
 public class MiraChatService {
 
     private final AiProviderFactory aiProviderFactory;
@@ -69,7 +68,7 @@ public class MiraChatService {
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
     private final MiraSettingService settingService;
-    private final TavilySearchProvider tavilySearchProvider;
+    private final jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchToolFactory tavilySearchToolFactory; // Added
     private final ModelCapabilityValidator modelCapabilityValidator;
 
     /**
@@ -882,13 +881,8 @@ public class MiraChatService {
         if (shouldEnableWebSearch) {
             String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
             if (tavilyKey != null && !tavilyKey.isEmpty()) {
-                // TavilySearchProviderにAPIキーを設定
-                tavilySearchProvider.setApiKey(tavilyKey);
-
-                // WebSearchToolsはToolCallbackを直接実装しているので、そのまま追加
-                WebSearchTools webSearchTools = new WebSearchTools(tavilySearchProvider);
-                tools.add(webSearchTools);
-
+                // Use factory to create tool
+                tools.add(tavilySearchToolFactory.create(tavilyKey));
                 log.info("Web search tool enabled for tenant={}, user={}", tenantId, userId);
             } else {
                 log.warn("Web search requested but Tavily API key is not configured for tenant={}", tenantId);
