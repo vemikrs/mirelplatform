@@ -91,7 +91,7 @@ export const UserFormDialog = ({
     }
     
     if (user) {
-      const userRoles = user.roles.split(/[|,]/).map(r => r.trim());
+      const userRoles = (user.roles || '').split(/[|,]/).map(r => r.trim()).filter(Boolean);
       setFormData({
         username: user.username,
         email: user.email,

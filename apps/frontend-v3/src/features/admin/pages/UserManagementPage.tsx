@@ -340,7 +340,7 @@ export const UserManagementPage = () => {
               </div>
               
               <div className="flex flex-wrap gap-1">
-                {user.roles.split(/[|,]/).map((role: string) => (
+                {(user.roles || '').split(/[|,]/).filter(Boolean).map((role: string) => (
                   <Badge
                     key={role}
                     variant={role === 'ADMIN' ? 'destructive' : 'neutral'}
