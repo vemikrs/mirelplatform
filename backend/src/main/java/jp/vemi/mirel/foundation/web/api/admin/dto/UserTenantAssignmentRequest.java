@@ -4,6 +4,9 @@
 package jp.vemi.mirel.foundation.web.api.admin.dto;
 
 import lombok.Data;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -12,12 +15,19 @@ import java.util.List;
  */
 @Data
 public class UserTenantAssignmentRequest {
+    @NotEmpty
+    @Valid
     private List<TenantAssignment> tenants;
 
     @Data
     public static class TenantAssignment {
+        @NotNull
         private String tenantId;
+
+        @NotNull
         private String roleInTenant;
+
+        @NotNull
         private Boolean isDefault;
     }
 }
