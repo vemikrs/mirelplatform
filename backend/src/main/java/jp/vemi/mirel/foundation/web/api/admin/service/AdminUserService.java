@@ -220,16 +220,16 @@ public class AdminUserService {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-        
+
         // 既存ユーザーチェック（SystemUser）
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists in SystemUser");
         }
-        
+
         if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists in SystemUser");
         }
@@ -246,7 +246,7 @@ public class AdminUserService {
         systemUser.setEmailVerified(false); // 管理者作成ユーザーは未認証
         systemUser.setCreatedByAdmin(true); // 管理者作成フラグをセット
         systemUser = systemUserRepository.save(systemUser);
-        
+
         logger.info("SystemUser created: id={}, username={}", systemUser.getId(), systemUser.getUsername());
 
         // 2. User作成（SystemUserと紐付け）
@@ -266,8 +266,8 @@ public class AdminUserService {
         user.setEmailVerified(false); // SystemUserと同期
 
         user = userRepository.save(user);
-        
-        logger.info("User created and linked to SystemUser: userId={}, systemUserId={}", 
+
+        logger.info("User created and linked to SystemUser: userId={}, systemUserId={}",
                 user.getUserId(), user.getSystemUserId());
 
         // 3. アカウントセットアップトークン作成とメール送信
@@ -326,7 +326,8 @@ public class AdminUserService {
 
         // ユーザーの存在確認
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "User not found with id: " + userId));
 
         // 既存のテナント割り当てを削除
         List<UserTenant> existingAssignments = userTenantRepository.findByUserId(userId);
