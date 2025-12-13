@@ -30,6 +30,7 @@ spring:
     exclude:
       - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
       - org.springframework.ai.vertexai.gemini.autoconfigure.VertexAiGeminiAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
   # Redis設定
   data:
     redis:
