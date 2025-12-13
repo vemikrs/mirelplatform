@@ -168,6 +168,11 @@ export const UserManagementPage = () => {
     }
   };
 
+  const handleTenantUpdateSuccess = (updatedUser: AdminUser) => {
+    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    setSelectedUser(updatedUser);
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedUser(null);
@@ -364,6 +369,7 @@ export const UserManagementPage = () => {
         onClose={handleDialogClose}
         onSubmit={handleFormSubmit}
         onDelete={handleDeleteFromDialog}
+        onTenantUpdateSuccess={handleTenantUpdateSuccess}
         user={selectedUser}
         isLoading={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}
       />
