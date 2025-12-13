@@ -105,7 +105,6 @@ public class GitHubModelsClient implements AiProviderClient {
 
         // 3. Create ChatClient
         return ChatClient.builder(chatModel)
-                .defaultSystem("You are a helpful assistant.")
                 .build();
     }
 

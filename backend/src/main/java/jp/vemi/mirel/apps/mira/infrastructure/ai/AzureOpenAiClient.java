@@ -82,7 +82,6 @@ public class AzureOpenAiClient implements AiProviderClient {
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultSystem("You are a helpful assistant.")
                 .build();
     }
 

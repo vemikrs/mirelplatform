@@ -84,7 +84,6 @@ public class VertexAiGeminiClient implements AiProviderClient {
         try {
             // ChatClient の準備
             ChatClient client = ChatClient.builder(this.chatModel)
-                    .defaultSystem("You are a helpful assistant.")
                     .build();
 
             // メッセージの変換
@@ -132,7 +131,6 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
         // ChatClient の準備
         ChatClient client = ChatClient.builder(this.chatModel)
-                .defaultSystem("You are a helpful assistant.")
                 .build();
 
         // メッセージの変換
