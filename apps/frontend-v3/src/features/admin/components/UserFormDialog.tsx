@@ -19,6 +19,9 @@ import {
   Separator,
   Select,
   SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   useToast,
 } from '@mirel/ui';
 import { User as UserIcon, Shield, Building2, Calendar, Trash2, Plus } from 'lucide-react';

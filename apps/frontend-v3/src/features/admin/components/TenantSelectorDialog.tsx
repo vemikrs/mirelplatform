@@ -8,9 +8,10 @@ import {
   Button,
   Input,
 } from '@mirel/ui';
-import { Search, Building2, Check } from 'lucide-react';
+import { Search, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getTenants, Tenant } from '../api';
+import { getTenants } from '../api';
+import type { Tenant } from '../api';
 
 interface TenantSelectorDialogProps {
   open: boolean;
