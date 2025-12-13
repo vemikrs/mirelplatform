@@ -22,6 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useToast, // Added import
 } from '@mirel/ui';
 import { User as UserIcon, Mail, Shield, Building2, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -67,6 +68,7 @@ export const UserFormDialog = ({
   const [isSavingTenants, setIsSavingTenants] = useState(false);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const { toast } = useToast(); // Added hook
 
   // 全テナントリストを取得
   const { data: tenantsResponse } = useQuery({
@@ -180,13 +182,21 @@ export const UserFormDialog = ({
     }));
 
     if (tenants.length === 0) {
-      alert('少なくとも1つのテナントを選択してください');
+      toast({
+        variant: 'destructive',
+        title: 'エラー',
+        description: '少なくとも1つのテナントを選択してください',
+      });
       return;
     }
 
     const hasDefault = tenants.some(t => t.isDefault);
     if (!hasDefault) {
-      alert('デフォルトテナントを1つ選択してください');
+      toast({
+        variant: 'destructive',
+        title: 'エラー',
+        description: 'デフォルトテナントを1つ選択してください',
+      });
       return;
     }
 
@@ -198,7 +208,11 @@ export const UserFormDialog = ({
       onClose();
     } catch (error) {
       console.error('Failed to update tenants', error);
-      alert('テナント割り当ての更新に失敗しました');
+      toast({
+        variant: 'destructive',
+        title: 'エラー',
+        description: 'テナント割り当ての更新に失敗しました',
+      });
     } finally {
       setIsSavingTenants(false);
     }
@@ -421,12 +435,10 @@ export const UserFormDialog = ({
                             >
                               <div className="flex items-center justify-between">
                                 <label htmlFor={`tenant-${tenant.tenantId}`} className="flex items-center gap-2 cursor-pointer flex-1">
-                                  <input
+                                  <Switch
                                     id={`tenant-${tenant.tenantId}`}
-                                    type="checkbox"
                                     checked={isAssigned}
-                                    onChange={() => handleTenantToggle(tenant.tenantId)}
-                                    className="h-4 w-4"
+                                    onCheckedChange={() => handleTenantToggle(tenant.tenantId)}
                                   />
                                   <span className="text-sm font-medium">{tenant.tenantName}</span>
                                 </label>
