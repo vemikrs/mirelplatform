@@ -25,7 +25,7 @@ repositories {
 
 // Spring AI BOM for dependency management
 ext {
-    springAiVersion = '1.1.0'
+    springAiVersion = '1.1.2'
 }
 
 dependencyManagement {
@@ -82,6 +82,10 @@ dependencies {
     
     // Spring AI - OpenAI (GitHub Models 互換)
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+    // Spring AI - Google Vertex AI (Gemini)
+    implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
+    implementation 'com.google.cloud:google-cloud-vertexai:1.40.0' // Explicit dependency to resolve class lookup
 
     // JTokkit for Token Counting
     implementation 'com.knuddels:jtokkit:1.1.0'

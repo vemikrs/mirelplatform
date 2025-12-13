@@ -17,6 +17,7 @@ import jp.vemi.mirel.foundation.service.OtpService;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
+import jp.vemi.mirel.foundation.web.api.admin.dto.UserTenantAssignmentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -182,6 +183,15 @@ public class AdminUserService {
             }
         }
 
+        // SystemUserからavatarUrlを取得
+        String avatarUrl = null;
+        if (user.getSystemUserId() != null) {
+            SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId()).orElse(null);
+            if (systemUser != null) {
+                avatarUrl = systemUser.getAvatarUrl();
+            }
+        }
+
         return AdminUserDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -192,6 +202,7 @@ public class AdminUserService {
                 .isActive(user.getIsActive())
                 .emailVerified(user.getEmailVerified())
                 .roles(user.getRoles())
+                .avatarUrl(avatarUrl)
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreateDate() != null ? Instant.ofEpochMilli(user.getCreateDate().getTime()) : null)
                 .tenants(tenantInfos)
@@ -209,16 +220,16 @@ public class AdminUserService {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-        
+
         // 既存ユーザーチェック（SystemUser）
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists in SystemUser");
         }
-        
+
         if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists in SystemUser");
         }
@@ -235,7 +246,7 @@ public class AdminUserService {
         systemUser.setEmailVerified(false); // 管理者作成ユーザーは未認証
         systemUser.setCreatedByAdmin(true); // 管理者作成フラグをセット
         systemUser = systemUserRepository.save(systemUser);
-        
+
         logger.info("SystemUser created: id={}, username={}", systemUser.getId(), systemUser.getUsername());
 
         // 2. User作成（SystemUserと紐付け）
@@ -255,8 +266,8 @@ public class AdminUserService {
         user.setEmailVerified(false); // SystemUserと同期
 
         user = userRepository.save(user);
-        
-        logger.info("User created and linked to SystemUser: userId={}, systemUserId={}", 
+
+        logger.info("User created and linked to SystemUser: userId={}, systemUserId={}",
                 user.getUserId(), user.getSystemUserId());
 
         // 3. アカウントセットアップトークン作成とメール送信
@@ -304,5 +315,50 @@ public class AdminUserService {
         }
 
         userRepository.deleteById(userId);
+    }
+
+    /**
+     * ユーザーのテナント割り当てを更新
+     */
+    @Transactional
+    public AdminUserDto updateUserTenants(String userId, UserTenantAssignmentRequest request) {
+        logger.info("Update user tenants: userId={}, tenants={}", userId, request.getTenants().size());
+
+        // ユーザーの存在確認
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "User not found with id: " + userId));
+
+        // 既存のテナント割り当てを削除
+        List<UserTenant> existingAssignments = userTenantRepository.findByUserId(userId);
+        if (!existingAssignments.isEmpty()) {
+            userTenantRepository.deleteAll(existingAssignments);
+        }
+
+        // デフォルトテナントの数をチェック
+        long defaultCount = request.getTenants().stream()
+                .filter(UserTenantAssignmentRequest.TenantAssignment::getIsDefault)
+                .count();
+        if (defaultCount != 1) {
+            throw new RuntimeException("Exactly one default tenant is required");
+        }
+
+        // 新しいテナント割り当てを作成
+        for (UserTenantAssignmentRequest.TenantAssignment assignment : request.getTenants()) {
+            // テナントの存在確認
+            if (!tenantRepository.existsById(assignment.getTenantId())) {
+                throw new RuntimeException("Tenant not found: " + assignment.getTenantId());
+            }
+
+            UserTenant userTenant = new UserTenant();
+            userTenant.setUserId(userId);
+            userTenant.setTenantId(assignment.getTenantId());
+            userTenant.setRoleInTenant(assignment.getRoleInTenant());
+            userTenant.setIsDefault(assignment.getIsDefault());
+            userTenantRepository.save(userTenant);
+        }
+
+        // 更新後のユーザー情報を返す
+        return convertToAdminUserDto(user);
     }
 }

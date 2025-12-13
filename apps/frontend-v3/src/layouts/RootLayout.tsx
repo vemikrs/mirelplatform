@@ -69,13 +69,23 @@ function RootLayoutInner() {
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
             {/* Mobile menu button */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <Sheet 
+              open={mobileMenuOpen} 
+              onOpenChange={(open) => {
+                setMobileMenuOpen(open);
+                // Sheetを閉じる際にフォーカスをクリア
+                if (!open && document.activeElement instanceof HTMLElement) {
+                  document.activeElement.blur();
+                }
+              }}
+              modal={true}
+            >
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20">
+              <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20 z-60">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Main navigation menu for mobile devices</SheetDescription>
                 <SideNavigation 

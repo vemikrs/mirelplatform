@@ -3,36 +3,32 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.ai;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.ai.retry.RetryUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ApiKey;
-import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import jp.vemi.mirel.apps.mira.domain.service.MiraSettingService;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.netty.http.client.HttpClient;
 
 /**
  * GitHub Models API クライアント.
@@ -43,107 +39,93 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class GitHubModelsClient implements AiProviderClient {
 
     private static final String PROVIDER_NAME = "github-models";
-
     private final MiraAiProperties properties;
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatClient chatClient;
+    private final boolean available;
+
+    public GitHubModelsClient(MiraAiProperties properties) {
+        this.properties = properties;
+        var config = properties.getGithubModels();
+
+        if (config.getApiKey() == null || config.getApiKey().isBlank()) {
+            log.warn("GitHub Models API key is not configured. Client will be disabled.");
+            this.chatClient = null;
+            this.available = false;
+        } else {
+            this.chatClient = buildChatClient(config);
+            this.available = true;
+        }
+    }
+
+    private ChatClient buildChatClient(MiraAiProperties.GitHubModelsConfig config) {
+        log.info("Initializing GitHubModelsClient with model: {}", config.getModel());
+
+        // 1. Create OpenAiApi
+        org.springframework.ai.model.ApiKey apiKey = new org.springframework.ai.model.SimpleApiKey(config.getApiKey());
+
+        // Use custom interceptor and message converters
+        RestClient.Builder safeRestClientBuilder = RestClient.builder()
+                .requestInterceptor(new GitHubModelsInterceptor())
+                .messageConverters(c -> c
+                        .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
+
+        // Use custom WebClient builder with filter and timeout
+        // タイムアウトを設定値から取得（gpt-5-mini / o1 モデルの思考時間対策。環境ごとに調整可能）
+        int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : 300; // デフォルト5分
+        HttpClient httpClient = HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(timeoutSeconds));
+
+        WebClient.Builder webClientBuilder = WebClient.builder()
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
+                .filter(new GitHubModelsWebClientFilter());
+
+        OpenAiApi openAiApi = new OpenAiApi(
+                config.getBaseUrl(),
+                apiKey,
+                new LinkedMultiValueMap<>(),
+                "/chat/completions",
+                "/embeddings",
+                safeRestClientBuilder,
+                webClientBuilder,
+                RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+
+        // 2. Create ChatModel
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model(config.getModel())
+                .temperature(config.getTemperature())
+                .maxTokens(config.getMaxTokens())
+                .build();
+
+        OpenAiChatModel chatModel = OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(options)
+                .build();
+
+        // 3. Create ChatClient
+        return ChatClient.builder(chatModel)
+                .build();
+    }
 
     @Override
     public AiResponse chat(AiRequest request) {
+        if (!available || chatClient == null) {
+            return AiResponse.error("PROVIDER_NOT_AVAILABLE", "GitHub Models is not configured.");
+        }
+
         var config = properties.getGithubModels();
         long startTime = System.currentTimeMillis();
 
         try {
-            // 2. Create OpenAI API (GitHub Models)
-            ApiKey apiKey = new SimpleApiKey(config.getApiKey());
-
-            RestClient.Builder safeRestClientBuilder = RestClient.builder()
-                    .requestInterceptor(new GitHubModelsInterceptor())
-                    .messageConverters(c -> c
-                            .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
-
-            OpenAiApi openAiApi = new OpenAiApi(
-                    config.getBaseUrl(),
-                    apiKey,
-                    new LinkedMultiValueMap<>(),
-                    "/chat/completions",
-                    "/embeddings",
-                    safeRestClientBuilder,
-                    WebClient.builder(),
-                    RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-
-            // 3. Create OpenAI Chat Model using Builder
-            // IMPORTANT: disable auto tool execution by NOT setting a ToolCallingManager or
-            // setting a no-op one if possible.
-            // By default, if we don't pass toolCallingManager, Spring AI might default to
-            // one if toolCallbacks are present in prompt.
-            // However, we want to Pass Tool Definitions but NOT Execute them.
-            // To do this, we should pass tools via Options, but not via
-            // prompt.toolCallbacks?
-            // Spring AI 1.x: chatModel.call(prompt) -> if prompt has toolCallbacks, it
-            // formats them into options AND prepares execution.
-            // Since we want manual control, we'll strip the ToolCallback implementation and
-            // only pass definitions if possible,
-            // OR we rely on `FunctionCallback` interface but we must stop `call()` from
-            // looping.
-            // The cleanest way in Spring AI (without internal hacks) is tricky.
-            // Strategy: We will configure the ChatModel WITHOUT ToolCallingManager, and
-            // manually set Function Definitions in Options.
-
-            OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                    .openAiApi(openAiApi)
-                    .defaultOptions(OpenAiChatOptions.builder()
-                            .model(config.getModel())
-                            .temperature(request.getTemperature() != null ? request.getTemperature()
-                                    : config.getTemperature())
-                            .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
-                            .build())
-                    // .toolCallingManager(ToolCallingManager.builder().build()) // ABOLISHED:
-                    // Disable auto execution
-                    .build();
-
-            // 4. Prepare ChatClient
-            ChatClient.Builder clientBuilder = ChatClient.builder(chatModel)
-                    .defaultSystem("You are a helpful assistant.");
-
-            ChatClient client = clientBuilder.build();
-
             // 5. Build Prompt
             List<Message> messages = request.getMessages().stream()
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
-            // Prepare Options with Tool Definitions
-            OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
-
-            // Register Tools from AiRequest
-            if (request.getToolCallbacks() != null && !request.getToolCallbacks().isEmpty()) {
-                log.info("Registering {} Tools for manual execution handling.", request.getToolCallbacks().size());
-                // Manually mapping ToolCallback to Function Callback (runtime) is hard if we
-                // don't let ChatModel handle it.
-                // But we can extract ToolDefinition and pass it via options 'functions' or
-                // 'tools'.
-                // Ideally, we want to say "Here are the tools", but "Don't run them".
-                // If we pass them as callbacks to the prompt, ChatModel will run them.
-                // NOTE: For now, we utilize the property that if ToolCallingManager is not set,
-                // OpenAiChatModel MIGHT still execute if it uses internal logic?
-                // Actually OpenAiChatModel uses `this.toolCallingManager.execute(...)`.
-                // If we don't provide it, is it null?
-                // The builder defaults it? No, checking source... usually defaults to null or
-                // disabled if not provided.
-                // IF it loops, we will need another strategy.
-                // Assuming it DOES NOT loop if manager is missing.
-
-                // We must pass the callbacks to the RequestSpec so they are formatted into the
-                // API request.
-                // But wait, requestSpec.tools() adds them to the Prompt.
-            }
-
             Prompt prompt = new Prompt(messages);
-            ChatClientRequestSpec requestSpec = client.prompt(prompt);
+            ChatClientRequestSpec requestSpec = chatClient.prompt(prompt);
 
             // Add tools to request spec (so they appear in API request)
             if (request.getToolCallbacks() != null) {
@@ -151,6 +133,32 @@ public class GitHubModelsClient implements AiProviderClient {
                     requestSpec.tools(tc);
                 }
             }
+
+            // GPT-5/o1 models logic (maxCompletionTokens) is handled in properties/options
+            // mostly,
+            // but if per-request override is needed, we might need to recreate options.
+            // For now assuming default options are sufficient or standard params work.
+            // NOTE: Dynamic max_tokens vs max_completion_tokens switch is tricky with
+            // pre-built client
+            // unless we pass OpenAiChatOptions to call().
+
+            // Check if we need to set maxCompletionTokens dynamically
+            boolean isGpt5Model = config.getModel() != null &&
+                    (config.getModel().contains("gpt-5") || config.getModel().contains("o1")
+                            || config.getModel().contains("o3"));
+
+            Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
+
+            OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
+            if (isGpt5Model) {
+                optionsBuilder.maxCompletionTokens(tokenLimit);
+            } else {
+                optionsBuilder.maxTokens(tokenLimit);
+            }
+            if (request.getTemperature() != null) {
+                optionsBuilder.temperature(request.getTemperature());
+            }
+            requestSpec.options(optionsBuilder.build());
 
             // Execute
             ChatResponse response = requestSpec
@@ -194,87 +202,87 @@ public class GitHubModelsClient implements AiProviderClient {
         }
     }
 
-    private String resolveTavilyApiKey(AiRequest request) {
-        // ... (Old logic moved to ChatService or unused, but keep for now if needed,
-        // though removed from chat() flow)
-        // Since we now rely on AiRequest.toolCallbacks, we don't strictly need this
-        // here.
-        // But keeping the method to avoid breaking other calls (not used in new chat
-        // method).
-        return null;
-    }
-
     @Override
     public reactor.core.publisher.Flux<AiResponse> stream(AiRequest request) {
+        if (!available || chatClient == null) {
+            return reactor.core.publisher.Flux
+                    .just(AiResponse.error("PROVIDER_NOT_AVAILABLE", "GitHub Models is not configured."));
+        }
         var config = properties.getGithubModels();
 
         try {
-            // 2. Create OpenAI API (GitHub Models)
-            ApiKey apiKey = new SimpleApiKey(config.getApiKey());
-
-            RestClient.Builder safeRestClientBuilder = RestClient.builder()
-                    .requestInterceptor(new GitHubModelsInterceptor())
-                    .messageConverters(c -> c
-                            .add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter()));
-
-            OpenAiApi openAiApi = new OpenAiApi(
-                    config.getBaseUrl(),
-                    apiKey,
-                    new LinkedMultiValueMap<>(),
-                    "/chat/completions",
-                    "/embeddings",
-                    safeRestClientBuilder,
-                    WebClient.builder(),
-                    RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-
-            // 3. Create OpenAI Chat Model using Builder
-            OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                    .openAiApi(openAiApi)
-                    .defaultOptions(OpenAiChatOptions.builder()
-                            .model(config.getModel())
-                            .temperature(request.getTemperature() != null ? request.getTemperature()
-                                    : config.getTemperature())
-                            .maxTokens(request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens())
-                            .build())
-                    .build();
-
-            // 4. Prepare ChatClient
-            ChatClient.Builder clientBuilder = ChatClient.builder(chatModel)
-                    .defaultSystem("You are a helpful assistant.");
-
-            ChatClient client = clientBuilder.build();
-
             // 5. Build Prompt
             List<Message> messages = request.getMessages().stream()
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
             Prompt prompt = new Prompt(messages);
-            ChatClientRequestSpec requestSpec = client.prompt(prompt);
+            ChatClientRequestSpec requestSpec = chatClient.prompt(prompt);
 
-            // Add tools to request spec (so they appear in API request)
+            // Add tools to request spec
             if (request.getToolCallbacks() != null) {
                 for (org.springframework.ai.tool.ToolCallback tc : request.getToolCallbacks()) {
                     requestSpec.tools(tc);
                 }
             }
 
+            // Dynamic Options
+            boolean isGpt5Model = config.getModel() != null &&
+                    (config.getModel().contains("gpt-5") || config.getModel().contains("o1")
+                            || config.getModel().contains("o3"));
+
+            Integer tokenLimit = request.getMaxTokens() != null ? request.getMaxTokens() : config.getMaxTokens();
+
+            OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
+            if (isGpt5Model) {
+                optionsBuilder.maxCompletionTokens(tokenLimit);
+            } else {
+                optionsBuilder.maxTokens(tokenLimit);
+            }
+            if (request.getTemperature() != null) {
+                optionsBuilder.temperature(request.getTemperature());
+            }
+            requestSpec.options(optionsBuilder.build());
+
             // Execute Stream
             return requestSpec.stream()
                     .chatResponse()
+                    .timeout(Duration.ofMinutes(5)) // Fluxレベルでもタイムアウト
                     .map(this::mapStreamResponse)
                     .onErrorResume(e -> {
+                        if (e instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+                            org.springframework.web.reactive.function.client.WebClientResponseException webEx = (org.springframework.web.reactive.function.client.WebClientResponseException) e;
+                            String errorBody = webEx.getResponseBodyAsString();
+                            log.error("[GitHubModels] Stream API Error: {} Body: {}", webEx.getStatusCode(), errorBody);
+
+                            String userMessage = "申し訳ございません。AIサービスで一時的なエラーが発生しました。しばらく待ってから再度お試しください。";
+
+                            if (errorBody.contains("extra_body")) {
+                                userMessage = "AIモデルの設定に問題があります。システム管理者に連絡してください。";
+                                log.error("[GitHubModels] extra_body parameter not supported.");
+                            } else if (errorBody.contains("max_completion_tokens")
+                                    || errorBody.contains("max_tokens")) {
+                                userMessage = "AIモデルのトークン設定に問題があります。システム管理者に連絡してください。";
+                            }
+
+                            return reactor.core.publisher.Flux.just(
+                                    AiResponse.builder()
+                                            .content(userMessage)
+                                            .metadata(AiResponse.Metadata.builder().model(config.getModel()).build())
+                                            .build());
+                        }
                         log.error("[GitHubModels] Stream Request failed", e);
                         return reactor.core.publisher.Flux.just(
-                                AiResponse.error("STREAM_ERROR",
-                                        "ストリーム処理中にエラーが発生しました: " + e.getMessage()));
+                                AiResponse.builder()
+                                        .content("申し訳ございません。予期しないエラーが発生しました。")
+                                        .metadata(AiResponse.Metadata.builder().model(config.getModel()).build())
+                                        .build());
                     });
 
         } catch (Exception e) {
             log.error("[GitHubModels] Request setup failed", e);
             return reactor.core.publisher.Flux.just(
-                    AiResponse.error("SETUP_FAILED",
-                            "リクエスト設定中にエラーが発生しました: " + e.getMessage()));
+                    AiResponse.error("SETUP_FAILED", "リクエスト設定中にエラーが発生しました: " + e.getMessage()));
         }
     }
 
@@ -292,7 +300,6 @@ public class GitHubModelsClient implements AiProviderClient {
                     .collect(Collectors.toList());
         }
 
-        // Basic metadata mapping (Note: streaming chunks often have minimal metadata)
         AiResponse.Metadata metadata = AiResponse.Metadata.builder()
                 .model(properties.getGithubModels().getModel())
                 .build();
@@ -314,8 +321,7 @@ public class GitHubModelsClient implements AiProviderClient {
             case "assistant":
                 if (msg.getToolCalls() != null && !msg.getToolCalls().isEmpty()) {
                     List<ToolCall> springToolCalls = msg.getToolCalls().stream()
-                            .map(tc -> new ToolCall(
-                                    tc.getId(), tc.getType(), tc.getName(), tc.getArguments()))
+                            .map(tc -> new ToolCall(tc.getId(), tc.getType(), tc.getName(), tc.getArguments()))
                             .collect(Collectors.toList());
                     return AssistantMessage.builder()
                             .content(msg.getContent())
@@ -338,7 +344,7 @@ public class GitHubModelsClient implements AiProviderClient {
 
     @Override
     public boolean isAvailable() {
-        return properties.getGithubModels().getApiKey() != null;
+        return available;
     }
 
     @Override
@@ -346,15 +352,6 @@ public class GitHubModelsClient implements AiProviderClient {
         return PROVIDER_NAME;
     }
 
-    /**
-     * GitHub Models 向けの特別対応インターセプター.
-     * <p>
-     * Llama 3.3 など一部のモデルは、tool_calls を含む assistant message において
-     * content フィールドが null であっても明示的に存在すること("content": null)を要求します。
-     * Spring AI (Jackson) のデフォルト設定では null フィールドは除外されるため、
-     * ここでリクエストボディを傍受して強制的に content: null を注入します。
-     * </p>
-     */
     @Slf4j
     static class GitHubModelsInterceptor implements org.springframework.http.client.ClientHttpRequestInterceptor {
 
@@ -370,11 +367,16 @@ public class GitHubModelsClient implements AiProviderClient {
             }
 
             try {
-                // 1. JSON Parse
                 com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
-
-                // 2. Modify
+                com.fasterxml.jackson.databind.node.ObjectNode rootObj = (com.fasterxml.jackson.databind.node.ObjectNode) root;
                 boolean modified = false;
+
+                if (rootObj.has("extra_body")) {
+                    log.debug("[GitHubModelsInterceptor] Removing 'extra_body' parameter");
+                    rootObj.remove("extra_body");
+                    modified = true;
+                }
+
                 if (root.has("messages") && root.get("messages").isArray()) {
                     com.fasterxml.jackson.databind.node.ArrayNode messages = (com.fasterxml.jackson.databind.node.ArrayNode) root
                             .get("messages");
@@ -382,7 +384,6 @@ public class GitHubModelsClient implements AiProviderClient {
                         if (msg.has("role") && "assistant".equals(msg.get("role").asText())) {
                             if (msg.has("tool_calls") && !msg.get("tool_calls").isEmpty()) {
                                 if (!msg.has("content")) {
-                                    // content フィールドがない場合、null として追加
                                     ((com.fasterxml.jackson.databind.node.ObjectNode) msg).putNull("content");
                                     modified = true;
                                 }
@@ -391,22 +392,10 @@ public class GitHubModelsClient implements AiProviderClient {
                     }
                 }
 
-                // 3. Serialize back if modified
                 if (modified) {
-                    log.debug("[GitHubModelsInterceptor] Injected 'content: null' into assistant tool call message(s)");
                     byte[] newBody = objectMapper.writeValueAsBytes(root);
-
-                    // Log the final modified body
-                    String bodyStr = new String(newBody, java.nio.charset.StandardCharsets.UTF_8);
-                    log.debug("[GitHubModels] Request Body (Modified): {}", bodyStr);
-
-                    // Critical: Update Content-Length as body size changed
                     request.getHeaders().setContentLength(newBody.length);
                     return execution.execute(request, newBody);
-                } else {
-                    // Log the original body
-                    String bodyStr = new String(body, java.nio.charset.StandardCharsets.UTF_8);
-                    log.debug("[GitHubModels] Request Body: {}", bodyStr);
                 }
 
             } catch (Exception e) {
@@ -414,6 +403,29 @@ public class GitHubModelsClient implements AiProviderClient {
             }
 
             return execution.execute(request, body);
+        }
+    }
+
+    @Slf4j
+    static class GitHubModelsWebClientFilter
+            implements org.springframework.web.reactive.function.client.ExchangeFilterFunction {
+
+        @Override
+        public reactor.core.publisher.Mono<org.springframework.web.reactive.function.client.ClientResponse> filter(
+                org.springframework.web.reactive.function.client.ClientRequest request,
+                org.springframework.web.reactive.function.client.ExchangeFunction next) {
+
+            if (!"POST".equals(request.method().name())) {
+                return next.exchange(request);
+            }
+            return next.exchange(request)
+                    .onErrorResume(org.springframework.web.reactive.function.client.WebClientResponseException.class,
+                            error -> {
+                                String errorBody = error.getResponseBodyAsString();
+                                log.error("[GitHubModelsWebClientFilter] API Error: {} {}", error.getStatusCode(),
+                                        errorBody);
+                                return reactor.core.publisher.Mono.error(error);
+                            });
         }
     }
 }

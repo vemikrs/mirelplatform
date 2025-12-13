@@ -20,6 +20,8 @@ export interface ChatRequest {
     content: string;
   };
   forceProvider?: string;
+  /** Web検索を有効化 */
+  webSearchEnabled?: boolean;
 }
 
 /**

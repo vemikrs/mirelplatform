@@ -11,6 +11,7 @@ export interface AdminUser {
   isActive: boolean;
   emailVerified: boolean;
   roles: string; // CSV
+  avatarUrl?: string;
   lastLoginAt: string;
   createdAt: string;
   tenants: UserTenantInfo[];
@@ -115,6 +116,20 @@ export const updateUser = async (userId: string, data: UpdateUserRequest) => {
 
 export const deleteUser = async (userId: string) => {
   return apiClient.delete(`/admin/users/${userId}`);
+};
+
+export interface TenantAssignment {
+  tenantId: string;
+  roleInTenant: string;
+  isDefault: boolean;
+}
+
+export interface UserTenantAssignmentRequest {
+  tenants: TenantAssignment[];
+}
+
+export const updateUserTenants = async (userId: string, data: UserTenantAssignmentRequest) => {
+  return apiClient.put<AdminUser>(`/admin/users/${userId}/tenants`, data);
 };
 
 // --- Tenants ---

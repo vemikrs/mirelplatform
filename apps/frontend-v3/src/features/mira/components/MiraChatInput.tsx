@@ -26,6 +26,7 @@ import {
   Maximize2,
   Settings,
   Menu,
+  Globe,
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig } from '@/lib/api/mira';
@@ -67,7 +68,7 @@ export interface AttachedFile {
 }
 
 interface MiraChatInputProps {
-  onSend: (message: string, mode?: MiraMode, config?: MessageConfig) => void;
+  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -122,6 +123,21 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempMessage, setTempMessage] = useState(''); // 履歴ナビ前のメッセージを保持
+  
+  // Web検索On/Off状態（localStorageから復元）
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('mira-web-search-enabled');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  // Web検索状態をlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('mira-web-search-enabled', String(webSearchEnabled));
+  }, [webSearchEnabled]);
   
   // 添付ファイル管理
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -275,7 +291,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       
       
       // TODO: 添付ファイルも送信処理に含める
-      onSend(trimmed, selectedMode, messageConfig);
+      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled);
       
       setMessage('');
       setMessageConfig({}); // Reset config
@@ -483,6 +499,25 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                   ref={menuRef}
                   className="absolute bottom-full left-0 mb-2 w-48 py-1 bg-popover border rounded-lg shadow-lg z-10"
                 >
+                  {/* Web検索トグル */}
+                  <button
+                    onClick={() => {
+                      setWebSearchEnabled(!webSearchEnabled);
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2",
+                      webSearchEnabled && "bg-blue-50 dark:bg-blue-950"
+                    )}
+                  >
+                    <Globe className={cn("w-4 h-4", webSearchEnabled ? "text-blue-500" : "text-muted-foreground")} />
+                    Web検索
+                    <span className={cn(
+                      "ml-auto text-xs px-1.5 py-0.5 rounded",
+                      webSearchEnabled ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"
+                    )}>
+                      {webSearchEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
                   <button
                     onClick={() => {
                       fileInputRef.current?.click();
@@ -539,6 +574,22 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           ) : (
             <>
               {/* 通常モード: 個別ボタン */}
+              {/* Web検索トグル */}
+              <button
+                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                className={cn(
+                  "p-1.5 rounded-md border",
+                  "hover:bg-muted transition-colors shrink-0",
+                  webSearchEnabled 
+                    ? "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title={webSearchEnabled ? "Web検索を無効化" : "Web検索を有効化"}
+                disabled={disabled}
+              >
+                <Globe className="w-4 h-4" />
+              </button>
+
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(

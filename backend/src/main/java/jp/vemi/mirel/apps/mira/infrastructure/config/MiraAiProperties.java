@@ -27,6 +27,7 @@ public class MiraAiProperties {
     private GitHubModelsConfig githubModels = new GitHubModelsConfig();
     private AzureOpenAiConfig azureOpenai = new AzureOpenAiConfig();
     private OpenAiConfig openai = new OpenAiConfig();
+    private VertexAiConfig vertexAi = new VertexAiConfig();
     private MockConfig mock = new MockConfig();
 
     /** 監査ログ設定. */
@@ -68,6 +69,15 @@ public class MiraAiProperties {
     public static class OpenAiConfig {
         private String apiKey;
         private String model = "gpt-4o";
+        private Double temperature = 0.7;
+        private Integer maxTokens = 4096;
+    }
+
+    @Data
+    public static class VertexAiConfig {
+        private String projectId;
+        private String location = "us-central1";
+        private String model = "gemini-2.5-flash";
         private Double temperature = 0.7;
         private Integer maxTokens = 4096;
     }

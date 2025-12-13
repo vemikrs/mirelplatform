@@ -14,6 +14,7 @@ import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraAuditLog;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraConversation;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig;
+import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
@@ -43,6 +44,7 @@ public class MiraStreamService {
     private final MiraRateLimitService rateLimitService;
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
+    private final ModelCapabilityValidator modelCapabilityValidator;
 
     /**
      * ストリームチャット実行.
@@ -59,6 +61,12 @@ public class MiraStreamService {
             tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
         } catch (Exception e) {
             return Flux.just(MiraStreamResponse.error("PREFLIGHT_ERROR", e.getMessage()));
+        }
+
+        // 0.5. モデル機能バリデーション (Web検索・マルチモーダル等)
+        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validate(request);
+        if (!capabilityValidation.isValid()) {
+            return Flux.just(MiraStreamResponse.error("CAPABILITY_ERROR", capabilityValidation.getErrorMessage()));
         }
 
         // 1. Policy & Mode
@@ -91,8 +99,9 @@ public class MiraStreamService {
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
 
-        // 2a. Resolve Tools
-        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId);
+        // 2a. Resolve Tools (webSearchEnabledを参照)
+        List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId,
+                request.getWebSearchEnabled());
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING
@@ -166,6 +175,10 @@ public class MiraStreamService {
                     // Return empty delta to keep stream alive
                     return MiraStreamResponse.delta("", aiResponse.getModel());
                 })
+                .onErrorResume(e -> {
+                    log.error("Stream Loop Error: {}", e.getMessage(), e);
+                    return Flux.just(MiraStreamResponse.error("SYSTEM_ERROR", "AI Service Error: " + e.getMessage()));
+                })
                 .filter(resp -> resp.getContent() != null && !resp.getContent().isEmpty()) // Filter empty
                 .concatWith(Flux.defer(() -> {
                     // Turn Finished. Decide Next Step.
@@ -198,7 +211,7 @@ public class MiraStreamService {
                                 String name = null;
                                 String args = "{}";
 
-                                // Case 1: Standard/Flat OpenAI-like format
+                                // Case 1: Standard/Flat OpenAI-like format {"name": "...", "parameters": {...}}
                                 if (root.has("name") && root.has("parameters")) {
                                     name = root.get("name").asText();
                                     if (root.get("parameters").isObject()) {
@@ -209,12 +222,50 @@ public class MiraStreamService {
                                         args = root.get("parameters").toString();
                                     }
                                 }
-                                // Case 2: Observed "tool" key format (e.g. {"tool": "websearch", "query":
-                                // "..."})
+                                // Case 2: Observed "tool" key format {"tool": "websearch", "query": "..."}
                                 else if (root.has("tool")) {
                                     name = root.get("tool").asText();
-                                    args = root.toString(); // Use the whole object as args (Tavily tool should pick up
-                                                            // "query")
+                                    args = root.toString();
+                                }
+                                // Case 3: Llama/Mistral format {"type": "function", "name": "...",
+                                // "parameters": {...}}
+                                else if (root.has("type") && "function".equals(root.path("type").asText())
+                                        && root.has("name")) {
+                                    name = root.get("name").asText();
+                                    // Try "arguments" first, then "parameters"
+                                    if (root.has("arguments")) {
+                                        args = root.get("arguments").isTextual()
+                                                ? root.get("arguments").asText()
+                                                : root.get("arguments").toString();
+                                    } else if (root.has("parameters")) {
+                                        args = root.get("parameters").isTextual()
+                                                ? root.get("parameters").asText()
+                                                : root.get("parameters").toString();
+                                    }
+                                }
+                                // Case 4: webSearch-specific format mapping
+                                if (name != null) {
+                                    // Map tool names to our webSearch tool
+                                    if (name.contains("tavily") || name.contains("web") || name.contains("search")) {
+                                        name = "webSearch"; // Match our @Tool method name
+                                        // Extract query from various formats
+                                        try {
+                                            com.fasterxml.jackson.databind.JsonNode argsNode = mapper.readTree(args);
+                                            String query = null;
+                                            if (argsNode.has("query")) {
+                                                query = argsNode.get("query").asText();
+                                            } else if (argsNode.has("latitude") && argsNode.has("longitude")) {
+                                                // Weather request detected - convert to query
+                                                query = "weather at latitude " + argsNode.get("latitude").asText()
+                                                        + " longitude " + argsNode.get("longitude").asText();
+                                            }
+                                            if (query != null) {
+                                                args = mapper.writeValueAsString(java.util.Map.of("query", query));
+                                            }
+                                        } catch (Exception e) {
+                                            log.debug("Args reformat failed, using original", e);
+                                        }
+                                    }
                                 }
 
                                 if (name != null) {

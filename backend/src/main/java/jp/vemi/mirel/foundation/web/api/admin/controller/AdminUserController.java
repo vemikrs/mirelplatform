@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jp.vemi.mirel.foundation.web.api.admin.dto.AdminUserDto;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateUserRequest;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
+import jp.vemi.mirel.foundation.web.api.admin.dto.UserTenantAssignmentRequest;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -76,5 +77,16 @@ public class AdminUserController {
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         adminUserService.deleteUser(id);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * ユーザーのテナント割り当て更新
+     */
+    @PutMapping("/{id}/tenants")
+    public ResponseEntity<AdminUserDto> updateUserTenants(
+            @PathVariable String id,
+            @Valid @RequestBody UserTenantAssignmentRequest request) {
+        AdminUserDto user = adminUserService.updateUserTenants(id, request);
+        return ResponseEntity.ok(user);
     }
 }

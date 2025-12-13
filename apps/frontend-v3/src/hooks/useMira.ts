@@ -96,6 +96,7 @@ export function useMiraChat() {
       messageConfig?: MessageConfig;
       forceProvider?: string;
       useStream?: boolean; // Add useStream option
+      webSearchEnabled?: boolean; // Web検索を有効化
     }
   ) => {
     // 会話がなければ新規作成
@@ -124,6 +125,7 @@ export function useMiraChat() {
       },
       message: { content },
       forceProvider: options?.forceProvider,
+      webSearchEnabled: options?.webSearchEnabled,
     };
     
     return mutation.mutateAsync(request);

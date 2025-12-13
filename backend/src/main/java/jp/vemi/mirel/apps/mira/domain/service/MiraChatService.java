@@ -32,10 +32,13 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
+import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchTool; // Import Tool
-import lombok.RequiredArgsConstructor;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchProvider;
+import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchTools;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -47,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
+@lombok.RequiredArgsConstructor
 public class MiraChatService {
 
     private final AiProviderFactory aiProviderFactory;
@@ -64,7 +67,9 @@ public class MiraChatService {
     private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
-    private final MiraSettingService settingService; // Add SettingService
+    private final MiraSettingService settingService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchToolFactory tavilySearchToolFactory; // Added
+    private final ModelCapabilityValidator modelCapabilityValidator;
 
     /**
      * 会話一覧取得.
@@ -157,6 +162,15 @@ public class MiraChatService {
         int estimatedInputTokens = tokenCounter.count(request.getMessage().getContent(), "gpt-4o");
         tokenQuotaService.checkQuota(tenantId, estimatedInputTokens);
 
+        // 0.5. モデル機能バリデーション (Web検索・マルチモーダル等)
+        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validate(request);
+        if (!capabilityValidation.isValid()) {
+            auditService.logChatResponse(tenantId, userId, request.getConversationId(),
+                    "UNKNOWN", null, (int) (System.currentTimeMillis() - startTime), 0, 0,
+                    MiraAuditLog.AuditStatus.ERROR);
+            return buildErrorResponse(request.getConversationId(), capabilityValidation.getErrorMessage());
+        }
+
         // 1. ポリシー検証
         PolicyEnforcer.ValidationResult validation = policyEnforcer.validateRequest(request);
         if (!validation.valid()) {
@@ -202,8 +216,9 @@ public class MiraChatService {
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
 
-        // 7. ツール解決 & セット
-        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId);
+        // 7. ツール解決 & セット (webSearchEnabledを参照)
+        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId,
+                request.getWebSearchEnabled());
         aiRequest.setToolCallbacks(tools);
 
         // 8. AI 呼び出し Loop
@@ -856,16 +871,32 @@ public class MiraChatService {
         log.info("Auto title generated: conversationId={}, title={}", conversation.getId(), title);
     }
 
-    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
+    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId,
+            Boolean webSearchEnabled) {
         List<org.springframework.ai.tool.ToolCallback> tools = new ArrayList<>();
 
-        // Tavily Search
-        String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
-        if (tavilyKey != null && !tavilyKey.isEmpty()) {
-            tools.add(new TavilySearchTool(tavilyKey));
+        // Web Search Tool (明示的に有効化された場合、またはAPIキーが設定されている場合)
+        boolean shouldEnableWebSearch = Boolean.TRUE.equals(webSearchEnabled);
+
+        if (shouldEnableWebSearch) {
+            String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
+            if (tavilyKey != null && !tavilyKey.isEmpty()) {
+                // Use factory to create tool
+                tools.add(tavilySearchToolFactory.create(tavilyKey));
+                log.info("Web search tool enabled for tenant={}, user={}", tenantId, userId);
+            } else {
+                log.warn("Web search requested but Tavily API key is not configured for tenant={}", tenantId);
+            }
         }
 
         return tools;
+    }
+
+    /**
+     * 後方互換性のためのオーバーロード.
+     */
+    public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId) {
+        return resolveTools(tenantId, userId, false);
     }
 
     public String executeTool(AiRequest.Message.ToolCall call, List<org.springframework.ai.tool.ToolCallback> tools) {
