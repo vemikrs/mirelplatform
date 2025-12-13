@@ -13,8 +13,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
@@ -23,32 +21,78 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Azure OpenAI AI クライアント.
  * 
- * <p>Spring AI 1.1 を使用した Azure OpenAI Service への接続を提供します。</p>
+ * <p>
+ * Spring AI 1.1 を使用した Azure OpenAI Service への接続を提供します。
+ * </p>
  * 
- * <p>このコンポーネントは {@code mira.ai.mock.enabled=false}（デフォルト）かつ
- * {@link ChatClient.Builder} Bean が存在する場合にのみ有効になります。</p>
+ * <p>
+ * このコンポーネントは {@code mira.ai.mock.enabled=false}（デフォルト）かつ
+ * {@link ChatClient.Builder} Bean が存在する場合にのみ有効になります。
+ * </p>
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "mira.ai.mock.enabled", havingValue = "false", matchIfMissing = true)
-@ConditionalOnBean(ChatClient.Builder.class)
 public class AzureOpenAiClient implements AiProviderClient {
 
-    private final ChatClient chatClient;
     private final MiraAiProperties properties;
+    private final ChatClient chatClient;
+    private final boolean available;
 
     private static final String PROVIDER_NAME = "azure-openai";
 
-    public AzureOpenAiClient(ChatClient.Builder chatClientBuilder, MiraAiProperties properties) {
-        this.chatClient = chatClientBuilder.build();
+    public AzureOpenAiClient(MiraAiProperties properties) {
         this.properties = properties;
-        log.info("AzureOpenAiClient initialized with deployment: {}",
-                properties.getAzureOpenai().getDeploymentName());
+        var config = properties.getAzureOpenai();
+
+        if (config.getEndpoint() == null || config.getEndpoint().isBlank() ||
+                config.getApiKey() == null || config.getApiKey().isBlank()) {
+            log.warn("Azure OpenAI config is missing. Client will be disabled.");
+            this.chatClient = null;
+            this.available = false;
+        } else {
+            this.chatClient = buildChatClient(config);
+            this.available = true;
+        }
+        log.info("AzureOpenAiClient initialized with deployment: {}", config.getDeploymentName());
+    }
+
+    private ChatClient buildChatClient(MiraAiProperties.AzureOpenAiConfig config) {
+        // Build Azure OpenAI Client with timeout
+        com.azure.core.util.HttpClientOptions clientOptions = new com.azure.core.util.HttpClientOptions()
+                .setResponseTimeout(java.time.Duration.ofSeconds(config.getTimeoutSeconds()));
+
+        com.azure.ai.openai.OpenAIClientBuilder clientBuilder = new com.azure.ai.openai.OpenAIClientBuilder()
+                .endpoint(config.getEndpoint())
+                .credential(new com.azure.core.credential.AzureKeyCredential(config.getApiKey()))
+                .httpClient(com.azure.core.http.HttpClient.createDefault(clientOptions))
+                .httpLogOptions(new com.azure.core.http.policy.HttpLogOptions()
+                        .setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BASIC));
+
+        org.springframework.ai.azure.openai.AzureOpenAiChatOptions options = org.springframework.ai.azure.openai.AzureOpenAiChatOptions
+                .builder()
+                .deploymentName(config.getDeploymentName())
+                .temperature(config.getTemperature())
+                .maxTokens(config.getMaxTokens())
+                .build();
+
+        org.springframework.ai.azure.openai.AzureOpenAiChatModel chatModel = org.springframework.ai.azure.openai.AzureOpenAiChatModel
+                .builder()
+                .openAIClientBuilder(clientBuilder)
+                .defaultOptions(options)
+                .build();
+
+        return ChatClient.builder(chatModel)
+                .defaultSystem("You are a helpful assistant.")
+                .build();
     }
 
     @Override
     public AiResponse chat(AiRequest request) {
         log.debug("AzureOpenAiClient.chat() called");
+
+        if (!available || chatClient == null) {
+            return AiResponse.error("PROVIDER_NOT_AVAILABLE", "Azure OpenAI is not configured.");
+        }
 
         long startTime = System.currentTimeMillis();
 
@@ -71,13 +115,12 @@ public class AzureOpenAiClient implements AiProviderClient {
                             .model(properties.getAzureOpenai().getDeploymentName())
                             .finishReason(chatResponse.getResult().getMetadata().getFinishReason())
                             .latencyMs(latencyMs)
-                            .build()
-            );
+                            .build());
 
         } catch (Exception e) {
             log.error("Azure OpenAI API call failed", e);
             long latencyMs = System.currentTimeMillis() - startTime;
-            
+
             return AiResponse.builder()
                     .error(AiResponse.ErrorInfo.builder()
                             .code("AZURE_OPENAI_ERROR")
@@ -93,9 +136,7 @@ public class AzureOpenAiClient implements AiProviderClient {
 
     @Override
     public boolean isAvailable() {
-        String endpoint = properties.getAzureOpenai().getEndpoint();
-        String apiKey = properties.getAzureOpenai().getApiKey();
-        return endpoint != null && !endpoint.isEmpty() && apiKey != null && !apiKey.isEmpty();
+        return available;
     }
 
     @Override
