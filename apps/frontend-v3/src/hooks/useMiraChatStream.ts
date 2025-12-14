@@ -89,12 +89,13 @@ export function useMiraChatStream() {
 
     try {
         // Use /mapi prefix to route through Vite proxy to backend
+        // Backend expects ApiRequest<ChatRequest> format
         const response = await fetch('/mapi/apps/mira/api/stream/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(request),
+            body: JSON.stringify({ model: request }),
             signal: abortController.signal,
         });
 

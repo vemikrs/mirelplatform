@@ -293,9 +293,10 @@ export interface MiraConversationDetailApiResponse {
  * チャットメッセージ送信
  */
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
+  // Backend expects ApiRequest<ChatRequest> format
   const response = await apiClient.post<MiraChatApiResponse>(
     '/apps/mira/api/chat',
-    request
+    { model: request }
   );
   
   if (response.data.errors?.length > 0) {
