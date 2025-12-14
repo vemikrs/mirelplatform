@@ -15,8 +15,13 @@
     </logger>
 
     <!-- 認証ログ設定 -->
-    <logger name="auth" level="DEBUG" additivity="false">
+    <logger name="auth" additivity="false">
         <appender-ref ref="AUTH" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- Mira AI ログ設定 -->
+    <logger name="jp.vemi.mirel.apps.mira" additivity="false">
         <appender-ref ref="CONSOLE" />
     </logger>
 </included>

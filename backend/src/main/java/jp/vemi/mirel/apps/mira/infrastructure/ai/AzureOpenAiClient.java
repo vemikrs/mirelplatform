@@ -13,7 +13,11 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeTypeUtils;
 
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +43,9 @@ public class AzureOpenAiClient implements AiProviderClient {
     private final boolean available;
 
     private static final String PROVIDER_NAME = "azure-openai";
+    
+    @Autowired(required = false)
+    private jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository fileManagementRepository;
 
     public AzureOpenAiClient(MiraAiProperties properties) {
         this.properties = properties;
@@ -153,7 +160,12 @@ public class AzureOpenAiClient implements AiProviderClient {
             for (AiRequest.Message msg : request.getMessages()) {
                 switch (msg.getRole().toLowerCase()) {
                     case "user":
-                        messages.add(new UserMessage(msg.getContent()));
+                        // ファイル添付がある場合はマルチモーダル入力として処理
+                        if (msg.getAttachedFiles() != null && !msg.getAttachedFiles().isEmpty()) {
+                            messages.add(createMultimodalUserMessage(msg));
+                        } else {
+                            messages.add(new UserMessage(msg.getContent()));
+                        }
                         break;
                     case "assistant":
                         messages.add(new AssistantMessage(msg.getContent()));
@@ -169,4 +181,68 @@ public class AzureOpenAiClient implements AiProviderClient {
 
         return messages;
     }
+    
+    /**
+     * マルチモーダルユーザーメッセージを作成.
+     * 
+     * @param msg AIリクエストメッセージ
+     * @return マルチモーダルUserMessage
+     */
+    private UserMessage createMultimodalUserMessage(AiRequest.Message msg) {
+
+        try {
+
+            log.info("Creating multimodal message with {} attached files", msg.getAttachedFiles().size());
+            final List<Media> media = msg.getAttachedFiles().stream().map(attachedFile -> {
+
+                try {
+                log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(), attachedFile.getMimeType());
+                String filePath = getFilePathFromFileId(attachedFile.getFileId());
+                if (filePath == null) {
+                    log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                    return null;
+                }
+                FileSystemResource resource = new FileSystemResource(filePath);
+                if (!resource.exists()) {
+                    log.warn("File does not exist: {}", filePath);
+                    return null;
+                }
+                log.debug("File loaded successfully: {}", filePath);
+
+                return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
+
+            } catch (Exception e) {
+                log.error("Failed to load file: {}", attachedFile.getFileId(), e);
+                return null;
+            }
+        }).filter(mediaItem -> mediaItem != null).toList();
+
+        return UserMessage.builder()
+                .text(msg.getContent())
+                .media(media)
+                .build();
+
+        } catch (Exception e) {
+            log.error("Failed to create multimodal user message", e);
+            return new UserMessage(msg.getContent());
+        }
+    }
+    
+    /**
+     * FileIDからファイルパスを取得.
+     * 
+     * @param fileId ファイルID
+     * @return ファイルパス
+     */
+    private String getFilePathFromFileId(String fileId) {
+        if (fileManagementRepository == null) {
+            log.warn("FileManagementRepository is not available");
+            return null;
+        }
+        
+        return fileManagementRepository.findById(fileId)
+                .map(fm -> fm.getFilePath())
+                .orElse(null);
+    }
+    
 }

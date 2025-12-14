@@ -95,8 +95,10 @@ export function useMiraChat() {
       context?: ChatContext;
       messageConfig?: MessageConfig;
       forceProvider?: string;
+      forceModel?: string; // Phase 4: Model selection
       useStream?: boolean; // Add useStream option
       webSearchEnabled?: boolean; // Web検索を有効化
+      attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]; // 添付ファイル
     }
   ) => {
     // 会話がなければ新規作成
@@ -123,8 +125,12 @@ export function useMiraChat() {
         ...options?.context,
         messageConfig: options?.messageConfig,
       },
-      message: { content },
+      message: { 
+        content,
+        attachedFiles: options?.attachedFiles,
+      },
       forceProvider: options?.forceProvider,
+      forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
     };
     
@@ -366,11 +372,14 @@ export function useMira() {
     resendEditedMessage,
   } = useMiraStore();
   
+  // conversationオブジェクトから必要なプロパティを分割代入
+  const { hasMore, currentPage, fetchConversations } = conversation;
+  
   const loadMoreConversations = useCallback(async () => {
-    if (conversation.hasMore) {
-      await conversation.fetchConversations(conversation.currentPage + 1);
+    if (hasMore) {
+      await fetchConversations(currentPage + 1);
     }
-  }, [conversation.hasMore, conversation.currentPage, conversation.fetchConversations]);
+  }, [hasMore, currentPage, fetchConversations]);
 
   return {
     // パネル

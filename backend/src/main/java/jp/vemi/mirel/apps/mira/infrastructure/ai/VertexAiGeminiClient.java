@@ -3,6 +3,10 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.ai;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,9 +17,13 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeTypeUtils;
 
 import com.google.cloud.vertexai.VertexAI;
 
@@ -39,6 +47,9 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
     private final MiraAiProperties properties;
     private final VertexAiGeminiChatModel chatModel;
+    
+    @Autowired(required = false)
+    private jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository fileManagementRepository;
 
     public VertexAiGeminiClient(MiraAiProperties properties) {
         this.properties = properties;
@@ -125,9 +136,10 @@ public class VertexAiGeminiClient implements AiProviderClient {
             return AiResponse.success(content, metadata);
 
         } catch (Exception e) {
-            log.error("[VertexAiGemini] Request failed: {}", e.getMessage(), e);
+            log.error("[VertexAiGemini] Request failed", e);
+            // エラー詳細はログに記録し、ユーザーには簡潔なメッセージのみ表示
             return AiResponse.error("REQUEST_FAILED",
-                    "Vertex AI エラー: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    "AI の応答生成に失敗しました。しばらくしてから再度お試しください。");
         }
     }
 
@@ -196,6 +208,10 @@ public class VertexAiGeminiClient implements AiProviderClient {
     private Message mapMessage(AiRequest.Message msg) {
         switch (msg.getRole()) {
             case "user":
+                // ファイル添付がある場合はマルチモーダル入力として処理
+                if (msg.getAttachedFiles() != null && !msg.getAttachedFiles().isEmpty()) {
+                    return createMultimodalUserMessage(msg);
+                }
                 return new UserMessage(msg.getContent());
             case "system":
                 return new SystemMessage(msg.getContent());
@@ -205,7 +221,72 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 return new UserMessage(msg.getContent());
         }
     }
+    
+    /**
+     * マルチモーダルユーザーメッセージを作成.
+     * 
+     * @param msg AIリクエストメッセージ
+     * @return マルチモーダルUserMessage
+     */
+    private UserMessage createMultimodalUserMessage(AiRequest.Message msg) {
 
+        try {
+
+            log.info("Creating multimodal message with {} attached files", msg.getAttachedFiles().size());
+            final List<Media> media = msg.getAttachedFiles().stream().map(attachedFile -> {
+
+                try {
+                log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(), attachedFile.getMimeType());
+                String filePath = getFilePathFromFileId(attachedFile.getFileId());
+                if (filePath == null) {
+                    log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                    return null;
+                }
+                FileSystemResource resource = new FileSystemResource(filePath);
+                if (!resource.exists()) {
+                    log.warn("File does not exist: {}", filePath);
+                    return null;
+                }
+                log.debug("File loaded successfully: {}", filePath);
+
+                return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
+
+            } catch (Exception e) {
+                log.error("Failed to load file: {}", attachedFile.getFileId(), e);
+                return null;
+            }
+        }).filter(mediaItem -> mediaItem != null).toList();
+
+        return UserMessage.builder()
+                .text(msg.getContent())
+                .media(media)
+                .build();
+
+        } catch (Exception e) {
+            log.error("Failed to create multimodal user message", e);
+            // ファイル読み込み失敗時はテキストのみで送信
+            log.warn("Falling back to text-only message due to file processing error");
+            return new UserMessage(msg.getContent());
+        }
+    }
+    
+    /**
+     * FileIDからファイルパスを取得.
+     * 
+     * @param fileId ファイルID
+     * @return ファイルパス
+     */
+    private String getFilePathFromFileId(String fileId) {
+        if (fileManagementRepository == null) {
+            log.warn("FileManagementRepository is not available");
+            return null;
+        }
+        
+        return fileManagementRepository.findById(fileId)
+                .map(fm -> fm.getFilePath())
+                .orElse(null);
+    }
+    
     @Override
     public boolean isAvailable() {
         return this.chatModel != null;

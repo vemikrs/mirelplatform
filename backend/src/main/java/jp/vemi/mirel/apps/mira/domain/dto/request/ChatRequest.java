@@ -37,6 +37,9 @@ public class ChatRequest {
     /** 強制プロバイダ指定 (Admin only, testing purpose) */
     private String forceProvider;
 
+    /** 強制モデル指定 (ユーザーが一時的にモデル変更) */
+    private String forceModel;
+
     /** Web検索を有効化 (明示的指定時) */
     private Boolean webSearchEnabled;
 
@@ -130,5 +133,29 @@ public class ChatRequest {
         /** コンテンツタイプ（plain / markdown） */
         @Builder.Default
         private String contentType = "plain";
+
+        /** 添付ファイルリスト */
+        private java.util.List<AttachedFile> attachedFiles;
+    }
+
+    /**
+     * 添付ファイル情報.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AttachedFile {
+        /** ファイルID (FileManagementのUUID) */
+        private String fileId;
+
+        /** ファイル名 */
+        private String fileName;
+
+        /** MIMEタイプ */
+        private String mimeType;
+
+        /** ファイルサイズ（バイト） */
+        private Long fileSize;
     }
 }

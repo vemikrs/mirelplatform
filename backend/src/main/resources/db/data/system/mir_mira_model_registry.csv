@@ -1,0 +1,10 @@
+id,provider,model_name,display_name,description,capabilities,max_tokens,context_window,is_active,is_recommended,is_experimental,metadata,created_at,updated_at
+vertex-ai-gemini:gemini-2.5-flash,vertex-ai-gemini,gemini-2.5-flash,Gemini 2.5 Flash,高速・低コストの最新モデル,"[""TOOL_CALLING"",""MULTIMODAL_INPUT"",""STREAMING"",""LONG_CONTEXT""]",8192,1000000,true,true,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+vertex-ai-gemini:gemini-2.0-flash-exp,vertex-ai-gemini,gemini-2.0-flash-exp,Gemini 2.0 Flash (Experimental),実験的な次世代モデル,"[""TOOL_CALLING"",""MULTIMODAL_INPUT"",""STREAMING"",""LONG_CONTEXT""]",8192,1000000,true,false,true,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+vertex-ai-gemini:gemini-1.5-pro,vertex-ai-gemini,gemini-1.5-pro,Gemini 1.5 Pro,高精度な汎用モデル,"[""TOOL_CALLING"",""MULTIMODAL_INPUT"",""STREAMING"",""LONG_CONTEXT""]",8192,2000000,true,false,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+github-models:openai/gpt-4o,github-models,openai/gpt-4o,GPT-4o,OpenAI の最新マルチモーダルモデル,"[""TOOL_CALLING"",""MULTIMODAL_INPUT"",""STREAMING""]",16384,128000,true,true,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+github-models:openai/gpt-4o-mini,github-models,openai/gpt-4o-mini,GPT-4o Mini,高速・低コストの GPT-4 系モデル,"[""TOOL_CALLING"",""STREAMING""]",16384,128000,true,false,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+github-models:openai/o1-preview,github-models,openai/o1-preview,o1 Preview,推論特化型モデル（実験的）,"[""TOOL_CALLING""]",32768,128000,true,false,true,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+github-models:meta/llama-3.3-70b-instruct,github-models,meta/llama-3.3-70b-instruct,Llama 3.3 70B Instruct,Meta の最新オープンソースモデル（ツール呼び出し非対応）,"[""STREAMING"",""LONG_CONTEXT""]",8192,128000,true,false,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+azure-openai:gpt-4o,azure-openai,gpt-4o,GPT-4o,Azure OpenAI Service の GPT-4o,"[""TOOL_CALLING"",""MULTIMODAL_INPUT"",""STREAMING""]",16384,128000,true,true,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00
+azure-openai:gpt-4,azure-openai,gpt-4,GPT-4,Azure OpenAI Service の GPT-4,"[""TOOL_CALLING"",""STREAMING""]",8192,8192,true,false,false,{},2025-01-01T00:00:00,2025-01-01T00:00:00

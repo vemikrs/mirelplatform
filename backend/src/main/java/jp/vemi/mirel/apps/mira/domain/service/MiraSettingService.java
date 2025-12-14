@@ -127,23 +127,69 @@ public class MiraSettingService {
     }
 
     public String getAiModel(String tenantId) {
-        // Note: Default depend on provider, but simple mapping here.
-        // Assuming properties has a default model for the active provider.
-        // For simplicity, fallback to GitHub Models default if not specified.
-        String defaultModel = miraAiProperties.getGithubModels().getModel();
-        if ("azure-openai".equals(getAiProvider(tenantId))) {
-            defaultModel = miraAiProperties.getAzureOpenai().getDeploymentName();
+        // プロバイダに応じたデフォルトモデルを取得
+        String provider = getAiProvider(tenantId);
+        String defaultModel;
+        
+        switch (provider) {
+            case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
+                defaultModel = miraAiProperties.getVertexAi().getModel();
+                break;
+            case MiraAiProperties.PROVIDER_AZURE_OPENAI:
+                defaultModel = miraAiProperties.getAzureOpenai().getDeploymentName();
+                break;
+            case MiraAiProperties.PROVIDER_GITHUB_MODELS:
+                defaultModel = miraAiProperties.getGithubModels().getModel();
+                break;
+            default:
+                log.warn("Unknown provider: {}, falling back to github-models default", provider);
+                defaultModel = miraAiProperties.getGithubModels().getModel();
         }
+        
         return getString(tenantId, KEY_AI_MODEL, defaultModel);
     }
 
     public Double getAiTemperature(String tenantId) {
-        Double defaultTemp = miraAiProperties.getGithubModels().getTemperature();
+        // プロバイダに応じたデフォルト temperature を取得
+        String provider = getAiProvider(tenantId);
+        Double defaultTemp;
+        
+        switch (provider) {
+            case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
+                defaultTemp = miraAiProperties.getVertexAi().getTemperature();
+                break;
+            case MiraAiProperties.PROVIDER_AZURE_OPENAI:
+                defaultTemp = miraAiProperties.getAzureOpenai().getTemperature();
+                break;
+            case MiraAiProperties.PROVIDER_GITHUB_MODELS:
+                defaultTemp = miraAiProperties.getGithubModels().getTemperature();
+                break;
+            default:
+                defaultTemp = 0.7;
+        }
+        
         return getDouble(tenantId, KEY_AI_TEMPERATURE, defaultTemp);
     }
 
     public Integer getAiMaxTokens(String tenantId) {
-        Integer defaultMax = miraAiProperties.getGithubModels().getMaxTokens();
+        // プロバイダに応じたデフォルト maxTokens を取得
+        String provider = getAiProvider(tenantId);
+        Integer defaultMax;
+        
+        switch (provider) {
+            case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
+                defaultMax = 4096; // Vertex AI のデフォルト（プロパティに未定義の場合）
+                break;
+            case MiraAiProperties.PROVIDER_AZURE_OPENAI:
+                defaultMax = miraAiProperties.getAzureOpenai().getMaxTokens();
+                break;
+            case MiraAiProperties.PROVIDER_GITHUB_MODELS:
+                defaultMax = miraAiProperties.getGithubModels().getMaxTokens();
+                break;
+            default:
+                defaultMax = 4096;
+        }
+        
         return getInteger(tenantId, KEY_AI_MAX_TOKENS, defaultMax);
     }
 

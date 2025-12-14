@@ -46,6 +46,8 @@ public class MiraAdminController {
     private final MiraDataExportService dataExportService;
     private final MiraAiProperties properties;
     private final jp.vemi.mirel.apps.mira.domain.service.MiraSettingService settingService; // Inject SettingService
+    private final jp.vemi.mirel.apps.mira.domain.service.ModelSelectionService modelSelectionService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory aiProviderFactory;
 
     // ==========================================
     // Context Management
@@ -235,5 +237,72 @@ public class MiraAdminController {
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"mira_conversations_" + tenantId + ".csv\"")
                 .body(csvContent);
+    }
+
+    // ==========================================
+    // Model Management (Phase 3)
+    // ==========================================
+
+    /**
+     * 利用可能なプロバイダ一覧取得.
+     */
+    @GetMapping("/providers")
+    @Operation(summary = "利用可能なプロバイダ一覧取得", description = "設定されているAIプロバイダの一覧を取得します")
+    public ResponseEntity<List<ProviderInfo>> getProviders() {
+        List<String> availableProviders = aiProviderFactory.getAvailableProviders();
+
+        List<ProviderInfo> providers = availableProviders.stream()
+                .map(name -> {
+                    String displayName = getProviderDisplayName(name);
+                    boolean available = aiProviderFactory.getProvider(name).isPresent();
+
+                    return ProviderInfo.builder()
+                            .name(name)
+                            .displayName(displayName)
+                            .available(available)
+                            .build();
+                })
+                .toList();
+
+        return ResponseEntity.ok(providers);
+    }
+
+    /**
+     * モデル一覧取得.
+     */
+    @GetMapping("/models")
+    @Operation(summary = "モデル一覧取得", description = "プロバイダ別またはすべてのモデル一覧を取得します")
+    public ResponseEntity<List<jp.vemi.mirel.apps.mira.domain.dao.entity.MiraModelRegistry>> getModels(
+            @RequestParam(required = false) String provider) {
+
+        if (provider != null && !provider.isEmpty()) {
+            return ResponseEntity.ok(modelSelectionService.getAvailableModels(provider));
+        } else {
+            return ResponseEntity.ok(modelSelectionService.getAllAvailableModels());
+        }
+    }
+
+    /**
+     * プロバイダ表示名を取得.
+     */
+    private String getProviderDisplayName(String name) {
+        return switch (name) {
+            case "vertex-ai-gemini" -> "Vertex AI (Gemini)";
+            case "github-models" -> "GitHub Models";
+            case "azure-openai" -> "Azure OpenAI";
+            case "mock" -> "Mock Provider";
+            default -> name;
+        };
+    }
+
+    /**
+     * プロバイダ情報.
+     */
+    @Data
+    @Builder
+    public static class ProviderInfo {
+        private String name;
+        private String displayName;
+        private boolean available;
     }
 }

@@ -10,6 +10,16 @@ import { apiClient } from './client';
 // ========================================
 
 /**
+ * 添付ファイル情報
+ */
+export interface AttachedFileInfo {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+/**
  * チャットリクエスト
  */
 export interface ChatRequest {
@@ -18,8 +28,12 @@ export interface ChatRequest {
   context?: ChatContext;
   message: {
     content: string;
+    /** 添付ファイルリスト */
+    attachedFiles?: AttachedFileInfo[];
   };
   forceProvider?: string;
+  /** 強制モデル指定 */
+  forceModel?: string;
   /** Web検索を有効化 */
   webSearchEnabled?: boolean;
 }
@@ -279,6 +293,7 @@ export interface MiraConversationDetailApiResponse {
  * チャットメッセージ送信
  */
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
+  // Backend expects ApiRequest<ChatRequest> format
   const response = await apiClient.post<MiraChatApiResponse>(
     '/apps/mira/api/chat',
     { model: request }
@@ -521,4 +536,66 @@ export async function regenerateConversationTitle(
   }
 
   return response.data.data;
+}
+
+// ========================================
+// Model Management (Phase 3)
+// ========================================
+
+/**
+ * モデル情報
+ */
+export interface ModelInfo {
+  id: string;
+  provider: string;
+  modelName: string;
+  displayName: string;
+  description?: string;
+  capabilities: string[];
+  maxTokens?: number;
+  contextWindow?: number;
+  isActive: boolean;
+  isRecommended: boolean;
+  isExperimental: boolean;
+}
+
+/**
+ * プロバイダ情報
+ */
+export interface ProviderInfo {
+  name: string;
+  displayName: string;
+  available: boolean;
+}
+
+/**
+ * プロバイダ一覧取得（管理者向け）
+ */
+export async function getProviders(): Promise<ProviderInfo[]> {
+  const response = await apiClient.get<ProviderInfo[]>(
+    '/apps/mira/api/admin/providers'
+  );
+  return response.data || [];
+}
+
+/**
+ * モデル一覧取得（管理者向け）
+ */
+export async function getModels(provider?: string): Promise<ModelInfo[]> {
+  const params = provider ? { provider } : {};
+  const response = await apiClient.get<ModelInfo[]>(
+    '/apps/mira/api/admin/models',
+    { params }
+  );
+  return response.data || [];
+}
+
+/**
+ * 利用可能モデル取得（ユーザー向け）
+ */
+export async function getAvailableModels(): Promise<ModelInfo[]> {
+  const response = await apiClient.get<ModelInfo[]>(
+    '/apps/mira/api/available-models'
+  );
+  return response.data || [];
 }

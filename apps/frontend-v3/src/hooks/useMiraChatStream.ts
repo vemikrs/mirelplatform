@@ -35,7 +35,10 @@ export function useMiraChatStream() {
         mode?: any; // MiraMode
         context?: any;
         messageConfig?: any;
+        forceProvider?: string;
+        forceModel?: string; // Phase 4: Model selection
         webSearchEnabled?: boolean;
+        attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]; // 添付ファイル
     }
   ) => {
     // 1. Setup Conversation
@@ -63,7 +66,12 @@ export function useMiraChatStream() {
         ...options?.context,
         messageConfig: options?.messageConfig,
       },
-      message: { content },
+      message: { 
+        content,
+        attachedFiles: options?.attachedFiles,
+      },
+      forceProvider: options?.forceProvider,
+      forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
     };
 
@@ -81,12 +89,13 @@ export function useMiraChatStream() {
 
     try {
         // Use /mapi prefix to route through Vite proxy to backend
+        // Backend expects ApiRequest<ChatRequest> format
         const response = await fetch('/mapi/apps/mira/api/stream/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model: request }), // Wrapper to match createApiRequest structure
+            body: JSON.stringify({ model: request }),
             signal: abortController.signal,
         });
 
