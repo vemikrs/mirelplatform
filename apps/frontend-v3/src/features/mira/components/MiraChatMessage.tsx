@@ -7,7 +7,9 @@ import { useState } from 'react';
 import { cn, Button } from '@mirel/ui';
 import { Bot, User, Copy, Check, Edit } from 'lucide-react';
 import type { MiraMessage } from '@/stores/miraStore';
+import type { MiraMessage } from '@/stores/miraStore';
 import { MiraMarkdown } from './MiraMarkdown';
+import { AttachmentPreview } from './AttachmentPreview';
 
 interface MiraChatMessageProps {
   message: MiraMessage;
@@ -144,6 +146,30 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                  <div className="text-xs text-primary animate-pulse">
                     {message.metadata.status}
                  </div>
+            )}
+
+            {/* 添付ファイル表示 */}
+            {message.attachedFiles && message.attachedFiles.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {message.attachedFiles.map((file) => (
+                        <AttachmentPreview 
+                            key={file.fileId} 
+                            item={{
+                                id: file.fileId,
+                                name: file.fileName,
+                                size: file.fileSize,
+                                type: file.mimeType.startsWith('image/') ? 'image' : 
+                                      file.mimeType.startsWith('text/') ? 'text' :
+                                      file.mimeType.includes('pdf') ? 'document' :
+                                      ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
+                                fileId: file.fileId,
+                                previewUrl: file.mimeType.startsWith('image/') ? `/apps/mira/api/files/${file.fileId}` : undefined
+                            }}
+                            readonly={true}
+                            compact={compact}
+                        />
+                    ))}
+                </div>
             )}
           </div>
 

@@ -33,6 +33,7 @@ export interface MiraMessage {
     latencyMs?: number;
     status?: string; // Streaming status
   };
+  attachedFiles?: AttachedFileInfo[];
 }
 
 /**
@@ -211,6 +212,7 @@ export const useMiraStore = create<MiraState>()(
               content: m.content,
               contentType: m.contentType as 'text' | 'markdown' | 'html',
               timestamp: new Date(m.createdAt),
+              attachedFiles: m.attachedFiles,
             }));
 
             const updatedConversation: MiraConversation = {
@@ -360,6 +362,7 @@ export const useMiraStore = create<MiraState>()(
           contentType: response.assistantMessage.contentType,
           timestamp: new Date(),
           metadata: response.metadata,
+          attachedFiles: response.assistantMessage.attachedFiles,
         };
         
         set((state) => {
