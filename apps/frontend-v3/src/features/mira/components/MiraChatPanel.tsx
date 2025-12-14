@@ -99,15 +99,15 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePanel]);
   
-  const handleSend = (message: string, mode?: MiraMode, config?: MessageConfig) => {
+  const handleSend = (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]) => {
     if (editingMessageId && activeConversationId) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversationId, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined });
+      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined, webSearchEnabled, forceModel, attachedFiles });
     } else {
       // 通常の送信
-      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined });
+      sendMessage(message, { mode, messageConfig: config, forceProvider: selectedProvider || undefined, webSearchEnabled, forceModel, attachedFiles });
     }
     // 送信時に最小化を解除
     if (isMinimized) {

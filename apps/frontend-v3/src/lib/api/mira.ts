@@ -10,6 +10,16 @@ import { apiClient } from './client';
 // ========================================
 
 /**
+ * 添付ファイル情報
+ */
+export interface AttachedFileInfo {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+/**
  * チャットリクエスト
  */
 export interface ChatRequest {
@@ -18,6 +28,8 @@ export interface ChatRequest {
   context?: ChatContext;
   message: {
     content: string;
+    /** 添付ファイルリスト */
+    attachedFiles?: AttachedFileInfo[];
   };
   forceProvider?: string;
   /** 強制モデル指定 */

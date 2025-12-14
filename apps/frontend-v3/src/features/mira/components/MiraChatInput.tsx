@@ -30,7 +30,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
-import { type MessageConfig, getAvailableModels, type ModelInfo } from '@/lib/api/mira';
+import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
+import { useFileUpload } from '@/features/promarker/hooks/useFileUpload';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
 
@@ -69,7 +70,7 @@ export interface AttachedFile {
 }
 
 interface MiraChatInputProps {
-  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string) => void;
+  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: AttachedFileInfo[]) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -161,11 +162,15 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   // 添付ファイル管理
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null); // Phase 4
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // ファイルアップロードMutation
+  const uploadMutation = useFileUpload();
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -301,9 +306,9 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     }
   };
   
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = message.trim();
-    if ((trimmed || attachedFiles.length > 0) && !isLoading && !disabled) {
+    if ((trimmed || attachedFiles.length > 0) && !isLoading && !disabled && !isUploading) {
       // 履歴に追加（重複は除く）
       if (trimmed) {
         setInputHistory((prev) => {
@@ -312,9 +317,37 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         });
       }
       
+      // 添付ファイルをアップロード
+      let uploadedFileInfos: AttachedFileInfo[] = [];
+      if (attachedFiles.length > 0) {
+        setIsUploading(true);
+        try {
+          // 並列アップロード
+          const uploadPromises = attachedFiles.map(async (attachedFile) => {
+            const result = await uploadMutation.mutateAsync(attachedFile.file);
+            if (result.data && result.data.length > 0 && result.data[0]) {
+              return {
+                fileId: result.data[0].fileId,
+                fileName: result.data[0].name,
+                mimeType: attachedFile.file.type,
+                fileSize: attachedFile.file.size,
+              } as AttachedFileInfo;
+            }
+            return null;
+          });
+          
+          const results = await Promise.all(uploadPromises);
+          uploadedFileInfos = results.filter((r): r is AttachedFileInfo => r !== null);
+        } catch (error) {
+          console.error('File upload failed:', error);
+          // アップロード失敗時もメッセージは送信
+        } finally {
+          setIsUploading(false);
+        }
+      }
       
-      // TODO: 添付ファイルも送信処理に含める
-      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled, selectedModel);
+      // メッセージ送信（添付ファイル情報を含む）
+      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled, selectedModel, uploadedFileInfos);
       
       setMessage('');
       setMessageConfig({}); // Reset config
@@ -807,11 +840,12 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           {/* 送信ボタン */}
           <Button
             onClick={handleSend}
-            disabled={(!message.trim() && attachedFiles.length === 0) || isLoading || disabled}
+            disabled={(!message.trim() && attachedFiles.length === 0) || isLoading || disabled || isUploading}
             size="icon"
             className="shrink-0"
+            title={isUploading ? 'ファイルをアップロード中...' : '送信'}
           >
-            {isLoading ? (
+            {isLoading || isUploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
