@@ -198,6 +198,31 @@ mira:
   ai:
     # AI プロバイダ: azure-openai | github-models | openai | mock
     provider: ${MIRA_AI_PROVIDER:mock}
+
+    # Vertex AI (Gemini) 設定
+    vertex-ai:
+      project-id: ${GEMINI_PROJECT_ID:}
+      location: ${GEMINI_LOCATION:us-central1}
+      model: ${GEMINI_MODEL:gemini-2.5-flash}
+
+    # GitHub Models 設定
+    github-models:
+      api-key: ${GITHUB_TOKEN:}
+      base-url: https://models.github.ai/inference
+      model: ${GITHUB_MODELS_MODEL:openai/gpt-5-mini}
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 60
+
+    # Azure OpenAI 設定
+    azure-openai:
+      endpoint: ${AZURE_OPENAI_ENDPOINT:}
+      api-key: ${AZURE_OPENAI_API_KEY:}
+      deployment-name: gpt-4o
+      temperature: 0.7
+      max-tokens: 4096
+      timeout-seconds: 60
+
     audit:
       # 保存ポリシー: FULL | SUMMARY | METADATA_ONLY
       storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
