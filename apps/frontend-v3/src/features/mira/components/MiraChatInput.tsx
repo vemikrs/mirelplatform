@@ -460,7 +460,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               <span>Web検索</span>
               <Switch 
                 checked={webSearchEnabled}
-                onCheckedChange={(checked) => {
+                onCheckedChange={() => {
                   // Switch自体のクリックイベントは親のonClickと重複するため、ここでは何もしない
                   // 親buttonのonClickで状態を変更する
                 }}
