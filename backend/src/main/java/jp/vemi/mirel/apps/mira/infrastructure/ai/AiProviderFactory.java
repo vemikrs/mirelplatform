@@ -45,18 +45,13 @@ public class AiProviderFactory {
 
     public AiProviderClient createClient(String tenantId) {
         String providerName = settingService.getAiProvider(tenantId);
-        
+
         log.info("Selecting AI provider: '{}' for tenant: '{}'", providerName, tenantId);
 
         return getProvider(providerName)
-                .orElseGet(() -> {
-                    log.warn("Requested provider '{}' for tenant '{}' is not available. Falling back to default.",
-                            providerName, tenantId);
-                    // Fallback to "github-models" or "mock" if available
-                    return getProvider("github-models")
-                            .orElseGet(() -> getProvider("mock")
-                                    .orElseThrow(() -> new IllegalStateException(
-                                            "No AI provider available. Requested: " + providerName)));
+                .orElseThrow(() -> {
+                    log.error("Requested provider '{}' for tenant '{}' is not available.", providerName, tenantId);
+                    return new IllegalStateException("Requested provider '" + providerName + "' is not available.");
                 });
     }
 
@@ -76,10 +71,8 @@ public class AiProviderFactory {
                     .orElseThrow(() -> new IllegalStateException("Mock provider is enabled but not available"));
         }
 
-        return getProvider(providerName).orElseGet(() -> {
-            log.warn("Provider '{}' not available, falling back to mock", providerName);
-            return getProvider("mock").orElseThrow(() -> new IllegalStateException("No AI provider available"));
-        });
+        return getProvider(providerName).orElseThrow(() -> new IllegalStateException(
+                "Requested provider '" + providerName + "' is not available. Please check your configuration."));
     }
 
     /**
@@ -125,13 +118,10 @@ public class AiProviderFactory {
 
         AiResponse response = provider.chat(request);
 
-        // エラー時にフォールバック
-        if (response.hasError() && !provider.getProviderName().equals("mock")) {
-            log.warn("Primary provider failed, trying fallback to mock");
-            Optional<AiProviderClient> fallback = getProvider("mock");
-            if (fallback.isPresent()) {
-                return fallback.get().chat(request);
-            }
+        // エラー時にフォールバックしない（厳格モード）
+        if (response.hasError()) {
+            log.error("Provider '{}' returned error: {}", provider.getProviderName(), response.getMetadata());
+            // 必要に応じて例外をスローするか、エラーレスポンスをそのまま返す
         }
 
         return response;
