@@ -373,6 +373,7 @@ export function useMira() {
   } = useMiraStore();
   
   // conversationオブジェクトから必要なプロパティを分割代入
+  // （useCallbackの依存配列最適化のため。conversation全体を依存配列に入れるとパフォーマンス悪化）
   const { hasMore, currentPage, fetchConversations } = conversation;
   
   const loadMoreConversations = useCallback(async () => {

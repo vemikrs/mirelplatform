@@ -32,6 +32,9 @@ import reactor.core.publisher.Flux;
 @Tag(name = "Mira AI Stream", description = "AI Realtime Streaming API")
 public class MiraStreamController {
 
+    /** エラーコードの最大長 */
+    private static final int MAX_ERROR_CODE_LENGTH = 36;
+
     private final MiraStreamService streamService;
     private final MiraTenantContextManager tenantContextManager;
     private final MiraRbacAdapter rbacAdapter;
@@ -63,10 +66,10 @@ public class MiraStreamController {
             return streamService.streamChat(chatRequest, tenantId, userId);
         } catch (Exception e) {
             log.error("Stream initialization error", e);
-            // エラーメッセージを36文字以内に制限
+            // エラーメッセージを最大長以内に制限
             String errorCode = e.getClass().getSimpleName();
-            if (errorCode.length() > 36) {
-                errorCode = errorCode.substring(0, 36);
+            if (errorCode.length() > MAX_ERROR_CODE_LENGTH) {
+                errorCode = errorCode.substring(0, MAX_ERROR_CODE_LENGTH);
             }
             auditService.logApiError(tenantId, userId, "stream/chat", errorCode);
             return Flux.just(MiraStreamResponse.error("INTERNAL_ERROR", "Server error during stream init"));
