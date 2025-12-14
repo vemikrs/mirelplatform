@@ -53,11 +53,22 @@ public class MiraStreamController {
             return Flux.just(MiraStreamResponse.error("FORBIDDEN", "Mira access denied"));
         }
 
+        ChatRequest chatRequest = request.getModel();
+        if (chatRequest == null) {
+            log.error("ChatRequest is null in ApiRequest");
+            return Flux.just(MiraStreamResponse.error("INVALID_REQUEST", "Invalid request format"));
+        }
+        
         try {
-            return streamService.streamChat(request.getModel(), tenantId, userId);
+            return streamService.streamChat(chatRequest, tenantId, userId);
         } catch (Exception e) {
             log.error("Stream initialization error", e);
-            auditService.logApiError(tenantId, userId, "stream/chat", e.getMessage());
+            // エラーメッセージを36文字以内に制限
+            String errorCode = e.getClass().getSimpleName();
+            if (errorCode.length() > 36) {
+                errorCode = errorCode.substring(0, 36);
+            }
+            auditService.logApiError(tenantId, userId, "stream/chat", errorCode);
             return Flux.just(MiraStreamResponse.error("INTERNAL_ERROR", "Server error during stream init"));
         }
     }
