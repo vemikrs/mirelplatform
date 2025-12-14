@@ -167,10 +167,21 @@ public class VertexAiGeminiClient implements AiProviderClient {
     }
 
     private AiResponse mapStreamResponse(ChatResponse response) {
-        String content = "";
-        if (response.getResult() != null && response.getResult().getOutput().getText() != null) {
-            content = response.getResult().getOutput().getText();
+        if (response.getResult() == null) {
+            log.warn("[VertexAiGemini] Stream response result is null: {}", response);
+            return AiResponse.builder().content("").build();
         }
+
+        String content = "";
+        if (response.getResult().getOutput().getText() != null) {
+            content = response.getResult().getOutput().getText();
+        } else {
+            log.warn("[VertexAiGemini] Stream response text is null. FinishReason: {}",
+                    response.getResult().getMetadata().getFinishReason());
+        }
+
+        // ログ出力でデバッグ (一時的)
+        log.debug("[VertexAiGemini] Stream chunk: content='{}', metadata={}", content, response.getMetadata());
 
         AiResponse.Metadata metadata = AiResponse.Metadata.builder()
                 .model(properties.getVertexAi().getModel())
