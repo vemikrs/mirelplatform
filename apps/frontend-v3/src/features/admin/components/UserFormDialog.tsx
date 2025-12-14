@@ -299,7 +299,10 @@ export const UserFormDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 gap-0 overflow-hidden flex flex-col md:flex-row">
+        <DialogContent 
+          className="max-w-5xl h-[90vh] p-0 gap-0 overflow-hidden flex flex-col md:flex-row"
+          overlayClassName={isTenantSelectorOpen ? 'bg-transparent' : undefined}
+        >
           
           {/* Sidebar */}
           <div className="w-full md:w-64 bg-muted/30 border-b md:border-b-0 md:border-r flex flex-col">
