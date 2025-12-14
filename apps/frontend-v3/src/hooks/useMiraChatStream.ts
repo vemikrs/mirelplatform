@@ -38,6 +38,7 @@ export function useMiraChatStream() {
         forceProvider?: string;
         forceModel?: string; // Phase 4: Model selection
         webSearchEnabled?: boolean;
+        attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]; // 添付ファイル
     }
   ) => {
     // 1. Setup Conversation
@@ -65,7 +66,10 @@ export function useMiraChatStream() {
         ...options?.context,
         messageConfig: options?.messageConfig,
       },
-      message: { content },
+      message: { 
+        content,
+        attachedFiles: options?.attachedFiles,
+      },
       forceProvider: options?.forceProvider,
       forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
