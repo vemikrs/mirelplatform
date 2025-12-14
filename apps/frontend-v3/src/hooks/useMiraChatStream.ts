@@ -94,7 +94,7 @@ export function useMiraChatStream() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model: request }), // Wrapper to match createApiRequest structure
+            body: JSON.stringify(request),
             signal: abortController.signal,
         });
 
