@@ -45,6 +45,8 @@ public class AiProviderFactory {
 
     public AiProviderClient createClient(String tenantId) {
         String providerName = settingService.getAiProvider(tenantId);
+        
+        log.info("Selecting AI provider: '{}' for tenant: '{}'", providerName, tenantId);
 
         return getProvider(providerName)
                 .orElseGet(() -> {
