@@ -39,6 +39,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchProvider;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchTools;
+import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
