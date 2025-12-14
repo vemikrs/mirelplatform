@@ -211,6 +211,8 @@ export function SetupAccountPage() {
             autoComplete="username"
             className="hidden"
             readOnly
+            tabIndex={-1}
+            aria-hidden="true"
           />
 
           <div>
