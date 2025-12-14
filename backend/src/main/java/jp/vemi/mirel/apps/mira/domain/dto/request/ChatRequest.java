@@ -133,5 +133,29 @@ public class ChatRequest {
         /** コンテンツタイプ（plain / markdown） */
         @Builder.Default
         private String contentType = "plain";
+
+        /** 添付ファイルリスト */
+        private java.util.List<AttachedFile> attachedFiles;
+    }
+
+    /**
+     * 添付ファイル情報.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AttachedFile {
+        /** ファイルID (FileManagementのUUID) */
+        private String fileId;
+
+        /** ファイル名 */
+        private String fileName;
+
+        /** MIMEタイプ */
+        private String mimeType;
+
+        /** ファイルサイズ（バイト） */
+        private Long fileSize;
     }
 }
