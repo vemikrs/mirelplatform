@@ -21,6 +21,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -45,6 +46,7 @@ public class MiraStreamService {
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
     private final ModelCapabilityValidator modelCapabilityValidator;
+    private final AdminSystemSettingsService adminSystemSettingsService;
 
     /**
      * ストリームチャット実行.
@@ -100,8 +102,15 @@ public class MiraStreamService {
                 request, mode, history, finalContext);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
+        // Web検索の有効化判定 (MiraChatService の共通メソッドを使用)
+        boolean isWebSearchActive = chatService.isWebSearchActive(request);
+
+        if (isWebSearchActive) {
+            aiRequest.setGoogleSearchRetrieval(true);
+        }
+
         List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId,
-                request.getWebSearchEnabled());
+                isWebSearchActive);
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING
@@ -141,7 +150,36 @@ public class MiraStreamService {
         // ArrayList is fine if we are careful.
         List<AiRequest.Message.ToolCall> accumulatedToolCalls = new ArrayList<>();
 
-        return client.stream(aiRequest)
+        // Google Search Grounding (Vertex AI) が有効な場合のワークアラウンド:
+        // 
+        // 【問題】
+        // - Vertex AI の Google Search Grounding を有効にした場合、ストリーミングモードで空応答が返される
+        // - これは Spring AI 1.0.0-M6 と Vertex AI API の組み合わせにおける既知の問題
+        // 
+        // 【対策】
+        // - ブロッキング chat() 呼び出しを使用し、単一チャンクとしてストリームをシミュレート
+        // - Schedulers.boundedElastic() で非同期実行し、メインスレッドをブロックしない
+        // 
+        // 【影響】
+        // - レスポンスタイム: ブロッキング呼び出しにより最初のトークンまでの時間が増加
+        // - ユーザー体験: ストリーミング表示ではなく一括表示になる
+        // 
+        // 【解決確認方法】
+        // - Spring AI または Vertex AI SDK の更新時に stream() でテストし、正常動作を確認
+        // - 問題が解決されていればこのワークアラウンドを削除可能
+        // 
+        // 関連: Spring AI Issue (検討中)
+        Flux<AiResponse> responseStream;
+        if (Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval())) {
+            log.info("Google Search Grounding enabled. Switching to blocking chat for reliability.");
+            responseStream = Mono.fromCallable(() -> client.chat(aiRequest))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .flux();
+        } else {
+            responseStream = client.stream(aiRequest);
+        }
+
+        return responseStream
                 .map(aiResponse -> {
                     if (aiResponse.hasError()) {
                         return MiraStreamResponse.error("AI_ERROR", aiResponse.getErrorMessage());

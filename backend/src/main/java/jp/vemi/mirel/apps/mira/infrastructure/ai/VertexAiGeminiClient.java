@@ -91,7 +91,15 @@ public class VertexAiGeminiClient implements AiProviderClient {
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
-            Prompt prompt = new Prompt(messages);
+            // オプション生成 (リクエスト単位で上書き)
+            VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
+                    .model(properties.getVertexAi().getModel())
+                    .temperature(request.getTemperature() != null ? request.getTemperature()
+                            : properties.getVertexAi().getTemperature())
+                    .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                    .build();
+
+            Prompt prompt = new Prompt(messages, options);
 
             // TODO: ToolCallback / Function Call 対応は必要に応じて実装
             // 現状はシンプルチャットのみ
@@ -138,7 +146,15 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .map(this::mapMessage)
                 .collect(Collectors.toList());
 
-        Prompt prompt = new Prompt(messages);
+        // オプション生成
+        VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
+                .model(properties.getVertexAi().getModel())
+                .temperature(request.getTemperature() != null ? request.getTemperature()
+                        : properties.getVertexAi().getTemperature())
+                .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                .build();
+
+        Prompt prompt = new Prompt(messages, options);
 
         return client.prompt(prompt)
                 .stream()
@@ -151,9 +167,20 @@ public class VertexAiGeminiClient implements AiProviderClient {
     }
 
     private AiResponse mapStreamResponse(ChatResponse response) {
+        if (response.getResult() == null) {
+            log.warn("[VertexAiGemini] Stream response result is null: {}", response);
+            return AiResponse.builder().content("").build();
+        }
+
         String content = "";
-        if (response.getResult() != null && response.getResult().getOutput().getText() != null) {
+        if (response.getResult().getOutput() != null && response.getResult().getOutput().getText() != null) {
             content = response.getResult().getOutput().getText();
+        } else {
+            String finishReason = "unknown";
+            if (response.getResult().getMetadata() != null && response.getResult().getMetadata().getFinishReason() != null) {
+                finishReason = response.getResult().getMetadata().getFinishReason();
+            }
+            log.warn("[VertexAiGemini] Stream response text is null. FinishReason: {}", finishReason);
         }
 
         AiResponse.Metadata metadata = AiResponse.Metadata.builder()

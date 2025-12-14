@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   Button,
   Input,
@@ -22,20 +22,31 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  useToast, // Added import
+  useToast,
 } from '@mirel/ui';
-import { User as UserIcon, Mail, Shield, Building2, Calendar } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import type { AdminUser, CreateUserRequest, UpdateUserRequest, TenantAssignment, UserTenantAssignmentRequest } from '../api';
-import { getTenants, updateUserTenants } from '../api';
+import { User as UserIcon, Shield, Building2, Calendar, Trash2, Plus } from 'lucide-react';
+import type { AdminUser, CreateUserRequest, UpdateUserRequest, TenantAssignment, UserTenantAssignmentRequest, Tenant } from '../api';
+import { updateUserTenants } from '../api';
+import { TenantSelectorDialog } from './TenantSelectorDialog';
+import { cn } from '@/lib/utils/cn';
 
 interface UserFormDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserRequest | UpdateUserRequest) => void;
   onDelete?: (userId: string) => void;
+  onTenantUpdateSuccess?: (updatedUser: AdminUser) => void;
   user?: AdminUser | null;
   isLoading?: boolean;
+}
+
+type Section = 'basic' | 'roles' | 'tenants' | 'account';
+
+interface TenantAssignmentData {
+  tenantName: string;
+  domain?: string;
+  roleInTenant: string;
+  isDefault: boolean;
 }
 
 export const UserFormDialog = ({ 
@@ -43,9 +54,11 @@ export const UserFormDialog = ({
   onClose, 
   onSubmit, 
   onDelete,
+  onTenantUpdateSuccess,
   user,
   isLoading = false 
 }: UserFormDialogProps) => {
+  const [activeSection, setActiveSection] = useState<Section>('basic');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -62,29 +75,23 @@ export const UserFormDialog = ({
     TENANT_ADMIN: false,
   });
 
-  const [tenantAssignments, setTenantAssignments] = useState<Map<string, { roleInTenant: string; isDefault: boolean }>>(
+  const [tenantAssignments, setTenantAssignments] = useState<Map<string, TenantAssignmentData>>(
     new Map()
   );
   const [isSavingTenants, setIsSavingTenants] = useState(false);
+  const [isTenantSelectorOpen, setIsTenantSelectorOpen] = useState(false);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const { toast } = useToast(); // Added hook
-
-  // 全テナントリストを取得
-  const { data: tenantsResponse } = useQuery({
-    queryKey: ['admin-tenants'],
-    queryFn: async () => {
-      const res = await getTenants();
-      return res.data;
-    },
-  });
-  const allTenants = tenantsResponse || [];
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setActiveSection('basic');
+      return;
+    }
     
     if (user) {
-      const userRoles = user.roles.split(/[|,]/).map(r => r.trim());
+      const userRoles = (user.roles || '').split(/[|,]/).map(r => r.trim()).filter(Boolean);
       setFormData({
         username: user.username,
         email: user.email,
@@ -100,10 +107,13 @@ export const UserFormDialog = ({
         TENANT_ADMIN: userRoles.includes('TENANT_ADMIN'),
       });
       
-      // テナント割り当てを初期化
-      const tenantMap = new Map<string, { roleInTenant: string; isDefault: boolean }>();
+      const tenantMap = new Map<string, TenantAssignmentData>();
       user.tenants?.forEach(t => {
-        tenantMap.set(t.tenantId, { roleInTenant: t.roleInTenant, isDefault: t.isDefault });
+        tenantMap.set(t.tenantId, {
+          tenantName: t.tenantName,
+          roleInTenant: t.roleInTenant,
+          isDefault: t.isDefault
+        });
       });
       setTenantAssignments(tenantMap);
     } else {
@@ -136,15 +146,35 @@ export const UserFormDialog = ({
     });
   };
 
-  const handleTenantToggle = (tenantId: string) => {
+  const handleAddTenants = (selected: Tenant[]) => {
     setTenantAssignments(prev => {
       const newMap = new Map(prev);
-      if (newMap.has(tenantId)) {
-        newMap.delete(tenantId);
-      } else {
-        // 新規追加時はUSERロールをデフォルトとし、他にデフォルトがなければデフォルトに設定
-        const hasDefault = Array.from(newMap.values()).some(v => v.isDefault);
-        newMap.set(tenantId, { roleInTenant: 'USER', isDefault: !hasDefault });
+      let hasDefault = Array.from(newMap.values()).some(v => v.isDefault);
+
+      selected.forEach(t => {
+        if (!newMap.has(t.tenantId)) {
+          newMap.set(t.tenantId, {
+            tenantName: t.tenantName,
+            domain: t.domain,
+            roleInTenant: 'USER',
+            isDefault: !hasDefault
+          });
+          if (!hasDefault) hasDefault = true;
+        }
+      });
+      return newMap;
+    });
+  };
+
+  const handleRemoveTenant = (tenantId: string) => {
+    setTenantAssignments(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(tenantId);
+      // If we removed the default, set another one as default if exists
+      if (newMap.size > 0 && !Array.from(newMap.values()).some(v => v.isDefault)) {
+        const firstKey = newMap.keys().next().value!;
+        const firstVal = newMap.get(firstKey)!;
+        newMap.set(firstKey, { ...firstVal, isDefault: true });
       }
       return newMap;
     });
@@ -164,7 +194,6 @@ export const UserFormDialog = ({
   const handleTenantDefaultChange = (tenantId: string) => {
     setTenantAssignments(prev => {
       const newMap = new Map(prev);
-      // すべてのデフォルトを解除してから、選択されたテナントをデフォルトに
       newMap.forEach((value, key) => {
         newMap.set(key, { ...value, isDefault: key === tenantId });
       });
@@ -203,9 +232,16 @@ export const UserFormDialog = ({
     try {
       setIsSavingTenants(true);
       const request: UserTenantAssignmentRequest = { tenants };
-      await updateUserTenants(user.userId, request);
-      // 成功後、親コンポーネントに通知してリストを再取得
-      onClose();
+      const res = await updateUserTenants(user.userId, request);
+      
+      toast({
+        title: '更新完了',
+        description: 'テナント割り当てを更新しました',
+      });
+      
+      if (onTenantUpdateSuccess) {
+        onTenantUpdateSuccess(res.data);
+      }
     } catch (error) {
       console.error('Failed to update tenants', error);
       toast({
@@ -244,209 +280,242 @@ export const UserFormDialog = ({
     }
   };
 
+  const renderSidebarItem = (id: Section, icon: React.ReactNode, label: string) => (
+    <button
+      type="button"
+      onClick={() => setActiveSection(id)}
+      className={cn(
+        "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+        activeSection === id 
+          ? "bg-primary/10 text-primary" 
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-            <div className="flex items-center gap-4">
-              {user && (
+        <DialogContent 
+          className="max-w-5xl h-[90vh] p-0 gap-0 overflow-hidden flex flex-col md:flex-row"
+          overlayClassName={isTenantSelectorOpen ? 'bg-transparent' : undefined}
+        >
+          
+          {/* Sidebar */}
+          <div className="w-full md:w-64 bg-muted/30 border-b md:border-b-0 md:border-r flex flex-col">
+            <div className="p-6 pb-4">
+              <div className="flex items-center gap-3 mb-1">
                 <Avatar 
-                  src={user.avatarUrl} 
-                  alt={user.displayName}
-                  fallback={user.displayName.charAt(0).toUpperCase()}
-                  className="h-16 w-16"
+                  src={user?.avatarUrl} 
+                  alt={user?.displayName || formData.username}
+                  fallback={(user?.displayName || formData.username || 'U').charAt(0).toUpperCase()}
+                  className="h-10 w-10"
                 />
-              )}
-              <div className="flex-1">
-                <DialogTitle className="text-2xl">{user ? 'ユーザー編集' : '新規ユーザー作成'}</DialogTitle>
-                <DialogDescription>
-                  {user ? 'ユーザー情報を編集します。' : '新しいユーザーを作成します。作成後、セットアップリンクがメールで送信され、ユーザー自身がパスワードを設定します。'}
-                </DialogDescription>
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">
+                    {user?.displayName || '新規ユーザー'}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {user?.email || formData.email || 'メールアドレス未設定'}
+                  </div>
+                </div>
               </div>
             </div>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-              {/* 左カラム: 基本情報 */}
-              <div className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <UserIcon className="h-4 w-4" />
-                      基本情報
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">ユーザー名 *</Label>
-                      <Input
-                        id="username"
-                        value={formData.username}
-                        onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                        disabled={!!user}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">メールアドレス *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            
+            <Separator />
+            
+            <div className="flex-1 p-4 space-y-1 overflow-y-auto">
+              {renderSidebarItem('basic', <UserIcon className="h-4 w-4" />, '基本情報')}
+              {renderSidebarItem('roles', <Shield className="h-4 w-4" />, 'ロール設定')}
+              {renderSidebarItem('tenants', <Building2 className="h-4 w-4" />, '所属テナント')}
+              {user && renderSidebarItem('account', <Calendar className="h-4 w-4" />, 'アカウント情報')}
+            </div>
+
+            <div className="p-4 border-t">
+              {user && onDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  ユーザー削除
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col min-h-0 bg-background">
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 max-w-3xl mx-auto">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold">
+                    {activeSection === 'basic' && '基本情報'}
+                    {activeSection === 'roles' && 'ロール設定'}
+                    {activeSection === 'tenants' && '所属テナント'}
+                    {activeSection === 'account' && 'アカウント情報'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {activeSection === 'basic' && 'ユーザーの基本プロフィール情報を管理します'}
+                    {activeSection === 'roles' && 'システム全体での権限レベルを設定します'}
+                    {activeSection === 'tenants' && '所属するテナントとテナント内での権限を管理します'}
+                    {activeSection === 'account' && 'ログイン履歴や作成日などの監査情報'}
+                  </p>
+                </div>
+
+                {/* Form starts here but logic depends on section */}
+                <form id="user-form" onSubmit={handleSubmit}>
+                  {activeSection === 'basic' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">ユーザー名 *</Label>
+                        <Input
+                          id="username"
+                          value={formData.username}
+                          onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                          disabled={!!user}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email">メールアドレス *</Label>
                         <Input
                           id="email"
                           type="email"
-                          className="pl-10"
                           value={formData.email}
                           onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                           disabled={!!user}
                           required
                         />
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">表示名 *</Label>
-                      <Input
-                        id="displayName"
-                        value={formData.displayName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">姓</Label>
+                        <Label htmlFor="displayName">表示名 *</Label>
                         <Input
-                          id="lastName"
-                          value={formData.lastName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                          id="displayName"
+                          value={formData.displayName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                          required
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">名</Label>
-                        <Input
-                          id="firstName"
-                          value={formData.firstName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">姓</Label>
+                          <Input
+                            id="lastName"
+                            value={formData.lastName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">名</Label>
+                          <Input
+                            id="firstName"
+                            value={formData.firstName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <Separator />
+                      <Separator className="my-4" />
 
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isActive" className="cursor-pointer font-medium">
-                          アカウント状態
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          無効にするとログインできなくなります
-                        </p>
-                      </div>
-                      <Switch
-                        id="isActive"
-                        checked={formData.isActive}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* 右カラム: ロール・テナント情報 */}
-              <div className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      ロール設定
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {[
-                      { id: 'ADMIN', label: 'ADMIN', desc: 'システム全体の管理権限を持ちます', color: 'destructive' },
-                      { id: 'TENANT_ADMIN', label: 'TENANT_ADMIN', desc: '所属テナント内の管理権限を持ちます', color: 'warning' },
-                      { id: 'USER', label: 'USER', desc: '一般的な利用権限のみを持ちます', color: 'neutral' },
-                    ].map((role) => (
-                      <div
-                        key={role.id}
-                        className={`flex flex-row items-center justify-between rounded-lg border p-2 sm:p-3 shadow-xs transition-all ${
-                          roleCheckboxes[role.id as keyof typeof roleCheckboxes]
-                            ? 'border-primary bg-primary/5'
-                            : 'hover:bg-surface-raised'
-                        }`}
-                      >
-                        <label 
-                          htmlFor={`role-${role.id}`}
-                          className="flex-1 space-y-0.5 cursor-pointer"
-                        >
-                          <div className="text-sm font-medium">
-                            {role.label}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {role.desc}
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="isActive" className="text-base">アカウント有効化</Label>
+                          <p className="text-sm text-muted-foreground">
+                            無効にするとユーザーはログインできなくなります
                           </p>
-                        </label>
+                        </div>
                         <Switch
-                          id={`role-${role.id}`}
-                          checked={roleCheckboxes[role.id as keyof typeof roleCheckboxes]}
-                          onCheckedChange={() => handleRoleToggle(role.id as keyof typeof roleCheckboxes)}
+                          id="isActive"
+                          checked={formData.isActive}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                         />
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        所属テナント
-                      </CardTitle>
-                      {tenantAssignments.size > 0 && (
-                        <Badge variant="outline" size="sm">
-                          {tenantAssignments.size}件
-                        </Badge>
-                      )}
                     </div>
-                    {user && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        チェックボックスでテナントを選択し、ロールとデフォルトを設定してください
-                      </p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-2 max-h-64 overflow-y-auto">
-                    {user ? (
-                      allTenants.length > 0 ? (
-                        allTenants.map((tenant) => {
-                          const isAssigned = tenantAssignments.has(tenant.tenantId);
-                          const assignment = tenantAssignments.get(tenant.tenantId);
-                          return (
-                            <div
-                              key={tenant.tenantId}
-                              className={`flex flex-col gap-2 p-2 sm:p-3 rounded-lg border transition-all ${
-                                isAssigned ? 'border-primary bg-primary/5' : 'hover:bg-surface-raised'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <label htmlFor={`tenant-${tenant.tenantId}`} className="flex items-center gap-2 cursor-pointer flex-1">
-                                  <Switch
-                                    id={`tenant-${tenant.tenantId}`}
-                                    checked={isAssigned}
-                                    onCheckedChange={() => handleTenantToggle(tenant.tenantId)}
-                                  />
-                                  <span className="text-sm font-medium">{tenant.tenantName}</span>
-                                </label>
-                              </div>
-                              {isAssigned && assignment && (
-                                <div className="flex items-center gap-2 ml-6">
-                                  <Select value={assignment.roleInTenant} onValueChange={(v) => handleTenantRoleChange(tenant.tenantId, v)}>
-                                    <SelectTrigger className="w-32 h-8 text-xs">
+                  )}
+
+                  {activeSection === 'roles' && (
+                    <div className="space-y-4">
+                      {[
+                        { id: 'ADMIN', label: 'システム管理者 (ADMIN)', desc: 'システム全体の完全な管理権限を持ちます' },
+                        { id: 'TENANT_ADMIN', label: 'テナント管理者 (TENANT_ADMIN)', desc: '所属するテナントの管理権限を持ちます' },
+                        { id: 'USER', label: '一般ユーザー (USER)', desc: '一般的な機能の利用権限のみを持ちます' },
+                      ].map((role) => (
+                        <div
+                          key={role.id}
+                          className={cn(
+                            "flex flex-row items-center justify-between rounded-lg border p-4 transition-all",
+                            roleCheckboxes[role.id as keyof typeof roleCheckboxes]
+                              ? "border-primary bg-primary/5"
+                              : "hover:bg-muted/50"
+                          )}
+                        >
+                          <div className="space-y-0.5 flex-1">
+                            <Label htmlFor={`role-${role.id}`} className="text-base cursor-pointer">
+                              {role.label}
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              {role.desc}
+                            </p>
+                          </div>
+                          <Switch
+                            id={`role-${role.id}`}
+                            checked={roleCheckboxes[role.id as keyof typeof roleCheckboxes]}
+                            onCheckedChange={() => handleRoleToggle(role.id as keyof typeof roleCheckboxes)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </form>
+
+                {/* Tenant Logic is separate from main form/submit */}
+                {activeSection === 'tenants' && (
+                  <div className="space-y-4">
+                    {!user ? (
+                      <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
+                        ユーザーを作成後にテナントを割り当てることができます
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-end">
+                          <Button onClick={() => setIsTenantSelectorOpen(true)} size="sm">
+                            <Plus className="mr-2 h-4 w-4" />
+                            テナントを追加
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-md divide-y">
+                          {tenantAssignments.size === 0 ? (
+                            <div className="p-8 text-center text-muted-foreground">
+                              所属しているテナントはありません
+                            </div>
+                          ) : (
+                            Array.from(tenantAssignments.entries()).map(([tenantId, data]) => (
+                              <div key={tenantId} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate flex items-center gap-2">
+                                    {data.tenantName}
+                                    {data.isDefault && <Badge variant="outline" className="text-xs">Default</Badge>}
+                                  </div>
+                                  {data.domain && <div className="text-xs text-muted-foreground truncate">{data.domain}</div>}
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                  <Select 
+                                    value={data.roleInTenant} 
+                                    onValueChange={(v) => handleTenantRoleChange(tenantId, v)}
+                                  >
+                                    <SelectTrigger className="w-32">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -455,76 +524,72 @@ export const UserFormDialog = ({
                                       <SelectItem value="MEMBER">MEMBER</SelectItem>
                                     </SelectContent>
                                   </Select>
-                                  <label className="flex items-center gap-1 cursor-pointer text-xs">
-                                    <input
-                                      type="radio"
-                                      name="defaultTenant"
-                                      checked={assignment.isDefault}
-                                      onChange={() => handleTenantDefaultChange(tenant.tenantId)}
-                                      className="h-3 w-3"
-                                    />
-                                    <span>デフォルト</span>
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-sm text-muted-foreground text-center py-4">
-                          利用可能なテナントがありません
-                        </div>
-                      )
-                    ) : (
-                      <div className="text-sm text-muted-foreground text-center py-4">
-                        ユーザー作成後にテナントを割り当てられます
-                      </div>
-                    )}
-                  </CardContent>
-                  {user && tenantAssignments.size > 0 && (
-                    <div className="px-4 pb-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSaveTenants}
-                        disabled={isSavingTenants}
-                        className="w-full"
-                      >
-                        {isSavingTenants ? 'テナント割り当てを保存中...' : 'テナント割り当てを保存'}
-                      </Button>
-                    </div>
-                  )}
-                </Card>
 
-                {user && (
+                                  <Button 
+                                    onClick={() => handleTenantDefaultChange(tenantId)}
+                                    disabled={data.isDefault}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn("text-xs", data.isDefault && "text-primary font-medium")}
+                                  >
+                                    デフォルト
+                                  </Button>
+
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleRemoveTenant(tenantId)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        
+                        {tenantAssignments.size > 0 && (
+                          <div className="flex justify-end pt-4">
+                            <Button 
+                              onClick={handleSaveTenants} 
+                              disabled={isSavingTenants}
+                              className="min-w-[120px]"
+                            >
+                              {isSavingTenants ? '保存中...' : '変更を保存'}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeSection === 'account' && user && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        アカウント情報
-                      </CardTitle>
+                      <CardTitle className="text-base">アカウント監査情報</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">最終ログイン</span>
-                        <span className="font-medium">
-                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('ja-JP') : '未ログイン'}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">作成日時</span>
-                        <span className="font-medium">
-                          {new Date(user.createdAt).toLocaleString('ja-JP')}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">メール認証</span>
-                        <Badge variant={user.emailVerified ? 'success' : 'outline'} size="sm">
-                          {user.emailVerified ? '認証済み' : '未認証'}
-                        </Badge>
+                    <CardContent className="space-y-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-muted-foreground mb-1">ユーザーID</p>
+                          <p className="font-mono">{user.userId}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">作成日時</p>
+                          <p>{new Date(user.createdAt).toLocaleString('ja-JP')}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">最終ログイン</p>
+                          <p>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('ja-JP') : '未ログイン'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">メール認証状態</p>
+                          <Badge variant={user.emailVerified ? 'success' : 'outline'}>
+                            {user.emailVerified ? '認証済み' : '未認証'}
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -532,28 +597,31 @@ export const UserFormDialog = ({
               </div>
             </div>
 
-            <DialogFooter className="mt-6 gap-2 sm:gap-0">
-              {user && onDelete && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={isLoading}
-                  className="sm:mr-auto"
-                >
-                  削除
+            {/* Footer */}
+            {activeSection !== 'tenants' && (
+              <div className="p-4 border-t bg-background flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+                  キャンセル
                 </Button>
-              )}
-              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-                キャンセル
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? '保存中...' : (user ? '更新' : '作成')}
-              </Button>
-            </DialogFooter>
-          </form>
+                <Button 
+                  type="submit" 
+                  form="user-form" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? '保存中...' : (user ? '更新' : '作成')}
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
+
+      <TenantSelectorDialog
+        open={isTenantSelectorOpen}
+        onClose={() => setIsTenantSelectorOpen(false)}
+        onSelect={handleAddTenants}
+        excludedTenantIds={Array.from(tenantAssignments.keys())}
+      />
 
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>

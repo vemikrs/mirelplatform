@@ -31,7 +31,7 @@ public class MenuController {
         User user = executionContext.getCurrentUser();
         List<String> roles = new java.util.ArrayList<>();
         if (user != null && user.getRoles() != null && !user.getRoles().isEmpty()) {
-            roles = java.util.Arrays.asList(user.getRoles().split("\\|"));
+            roles = java.util.Arrays.asList(user.getRoles().split("[,|]"));
         }
         return menuService.getMenuTree(roles);
     }

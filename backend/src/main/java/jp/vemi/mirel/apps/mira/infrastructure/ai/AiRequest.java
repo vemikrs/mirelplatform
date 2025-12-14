@@ -47,6 +47,10 @@ public class AiRequest {
     /** 追加パラメータ */
     private Map<String, Object> additionalParams;
 
+    /** Google Search Grounding の有効化フラグ */
+    @Builder.Default
+    private boolean googleSearchRetrieval = false;
+
     /** ツールコールバック（関数定義と実行ロジック） */
     private List<org.springframework.ai.tool.ToolCallback> toolCallbacks;
 

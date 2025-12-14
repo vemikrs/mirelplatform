@@ -96,6 +96,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         } catch (error) {
           console.warn('Failed to clear authLoader cache', error);
         }
+
+        // Miraの会話履歴をクリア（ローカルストレージ）
+        console.log('[DEBUG logout] Step 2.6: Clearing Mira store persistence...');
+        try {
+          // useMiraStoreを動的インポート（循環参照回避のため）
+          const { useMiraStore } = await import('@/stores/miraStore');
+          useMiraStore.persist.clearStorage();
+          
+          // メモリストアもリセット（念のため）
+          // useMiraStore.setState({ conversations: {}, activeConversationId: null });
+        } catch (error) {
+          console.warn('Failed to clear Mira store persistence', error);
+        }
         
         console.log('[DEBUG logout] Step 3: Redirecting to /login (immediate)...');
         // 3. ログイン画面へリダイレクト(履歴を残さない)

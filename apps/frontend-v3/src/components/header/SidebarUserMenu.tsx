@@ -154,7 +154,7 @@ export function SidebarUserMenu({ isExpanded }: SidebarUserMenuProps) {
       )}
       
       <DropdownMenuContent 
-        className="w-64" 
+        className="w-64 z-[100]" 
         side={isExpanded ? "top" : "right"} 
         align="end" 
         sideOffset={8}

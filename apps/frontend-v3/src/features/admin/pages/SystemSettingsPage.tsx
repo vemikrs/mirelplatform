@@ -159,6 +159,19 @@ export function SystemSettingsPage() {
                     placeholder="https://support.example.com" 
                   />
                 </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Web検索機能</Label>
+                    <p className="text-sm text-muted-foreground">
+                      AIチャットでのWeb検索機能を有効にします。
+                    </p>
+                  </div>
+                  <Switch 
+                      checked={formData['mira.ai.web_search.enabled'] === 'true'}
+                      onCheckedChange={(c: boolean) => handleSwitchChange('mira.ai.web_search.enabled', c)}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

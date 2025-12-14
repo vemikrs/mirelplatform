@@ -44,14 +44,19 @@ interface SideNavigationProps {
   };
   helpAction?: NavigationAction;
   className?: string;
+  onClose?: () => void;
+  isMobile?: boolean;
 }
 
-export function SideNavigation({ items, brand, helpAction, className }: SideNavigationProps) {
+export function SideNavigation({ items, brand, helpAction, className, onClose, isMobile = false }: SideNavigationProps) {
   const location = useLocation();
   const navigate = useNavigate();
   
   // Single source of truth for expansion state (persisted)
   const [isExpanded, setIsExpanded] = useState(() => {
+    // Force expanded on mobile
+    if (isMobile) return true;
+    
     if (typeof window === 'undefined') return true;
     const stored = window.localStorage.getItem(SIDEBAR_EXPANDED_KEY);
     // Default to true (expanded) if not set, or restore previous state
@@ -59,12 +64,23 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
   });
 
   const toggleExpanded = useCallback(() => {
+    if (isMobile) return; // Disable toggle on mobile
     setIsExpanded(prev => {
       const next = !prev;
       window.localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(next));
       return next;
     });
-  }, []);
+  }, [isMobile]);
+
+  const handleCollapseOrClose = useCallback(() => {
+    // If we have an onClose handler (typical for mobile/drawer mode), use it
+    if (onClose) {
+      onClose();
+    } else {
+      // Otherwise toggle expansion (desktop mode)
+      toggleExpanded();
+    }
+  }, [onClose, toggleExpanded]);
 
   // Track expanded state for each menu item
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
@@ -154,6 +170,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
         )}>
           <Link 
             to="/home" 
+            onClick={onClose}
             className={cn(
               "group flex items-center gap-3 text-left",
               !isExpanded && "justify-center"
@@ -201,6 +218,7 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
               item={item} 
               expandedItems={expandedItems}
               onToggle={toggleItem}
+              onLinkClick={onClose}
             />
           ))}
         </div>
@@ -226,7 +244,10 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
               "w-full justify-start gap-2 text-sm font-medium",
               location.pathname === '/mira' && "bg-primary/10 text-primary border-primary/30"
             )}
-            onClick={() => navigate('/mira')}
+            onClick={() => {
+              navigate('/mira');
+              onClose?.();
+            }}
           >
             <Bot className="size-4" />
             <span>Mira (mirel Assistant)</span>
@@ -250,7 +271,11 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
             {/* Right side controls - Vertical stack */}
             <div className="flex flex-col justify-between shrink-0 gap-1 h-auto">
                <div className="flex flex-col gap-1 items-center">
-                 <NotificationPopover isCompact={true} />
+                 <NotificationPopover 
+                   isCompact={true} 
+                   side={isMobile ? "top" : "right"}
+                   align="end"
+                 />
                </div>
 
                <div className="flex flex-col gap-1 items-center mt-auto">
@@ -286,14 +311,14 @@ export function SideNavigation({ items, brand, helpAction, className }: SideNavi
                         variant="ghost" 
                         size="icon"
                         className="size-7 text-muted-foreground hover:text-foreground"
-                        onClick={toggleExpanded}
-                        aria-label="サイドバーを折りたたむ"
+                        onClick={handleCollapseOrClose}
+                        aria-label={isMobile ? "メニューを閉じる" : "サイドバーを折りたたむ"}
                       >
                         <PanelLeftClose className="size-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      サイドバーを折りたたむ
+                      {isMobile ? "メニューを閉じる" : "サイドバーを折りたたむ"}
                     </TooltipContent>
                   </Tooltip>
                </div>
@@ -434,9 +459,10 @@ interface NavItemProps {
   depth?: number;
   expandedItems: Set<string>;
   onToggle: (itemId: string) => void;
+  onLinkClick?: () => void;
 }
 
-function NavItem({ item, depth = 0, expandedItems, onToggle }: NavItemProps) {
+function NavItem({ item, depth = 0, expandedItems, onToggle, onLinkClick }: NavItemProps) {
   const Icon = item.icon ? ICON_MAP[item.icon] : null;
   const hasChildren = item.children && item.children.length > 0;
   const isOpen = expandedItems.has(item.id);
@@ -475,6 +501,7 @@ function NavItem({ item, depth = 0, expandedItems, onToggle }: NavItemProps) {
                 depth={depth + 1}
                 expandedItems={expandedItems}
                 onToggle={onToggle}
+                onLinkClick={onLinkClick}
               />
             ))}
           </div>
@@ -486,6 +513,7 @@ function NavItem({ item, depth = 0, expandedItems, onToggle }: NavItemProps) {
   return (
     <NavLink
       to={item.path}
+      onClick={onLinkClick}
       className={({ isActive }) =>
         cn(
           "flex items-center gap-2 px-2 py-2 text-sm font-medium rounded-md transition-all duration-200",

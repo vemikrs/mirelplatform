@@ -4,7 +4,7 @@
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@mirel/ui';
+import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch } from '@mirel/ui';
 import { 
   Send, 
   Loader2, 
@@ -445,6 +445,30 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
             className="absolute bottom-full left-3 mb-2 w-56 py-1 bg-popover border rounded-lg shadow-lg z-10"
           >
             <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              機能設定
+            </p>
+            <button
+              onClick={() => {
+                setWebSearchEnabled(!webSearchEnabled);
+              }}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
+                webSearchEnabled && "bg-blue-50 dark:bg-blue-950"
+              )}
+            >
+              <Globe className={cn("w-4 h-4", webSearchEnabled ? "text-blue-500" : "text-muted-foreground")} />
+              <span>Web検索</span>
+              <Switch 
+                checked={webSearchEnabled}
+                onCheckedChange={() => {
+                  // Switch自体のクリックイベントは親のonClickと重複するため、ここでは何もしない
+                  // 親buttonのonClickで状態を変更する
+                }}
+                className="ml-auto scale-75 pointer-events-none"
+              />
+            </button>
+            <div className="border-t my-1" />
+            <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               モードを選択
             </p>
             {MODES.map(({ mode, label, icon: Icon, color }) => (
@@ -575,20 +599,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
             <>
               {/* 通常モード: 個別ボタン */}
               {/* Web検索トグル */}
-              <button
-                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-                className={cn(
-                  "p-1.5 rounded-md border",
-                  "hover:bg-muted transition-colors shrink-0",
-                  webSearchEnabled 
-                    ? "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title={webSearchEnabled ? "Web検索を無効化" : "Web検索を有効化"}
-                disabled={disabled}
-              >
-                <Globe className="w-4 h-4" />
-              </button>
+
 
               <button
                 onClick={() => fileInputRef.current?.click()}

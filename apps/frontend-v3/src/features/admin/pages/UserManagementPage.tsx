@@ -168,6 +168,11 @@ export const UserManagementPage = () => {
     }
   };
 
+  const handleTenantUpdateSuccess = (updatedUser: AdminUser) => {
+    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    setSelectedUser(updatedUser);
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedUser(null);
@@ -241,7 +246,7 @@ export const UserManagementPage = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                        {user.roles.split(/[|,]/).map((role: string) => (
+                        {(user.roles || '').split(/[|,]/).filter(Boolean).map((role: string) => (
                         <Badge
                             key={role}
                             variant={role === 'ADMIN' ? 'destructive' : 'neutral'}
@@ -335,7 +340,7 @@ export const UserManagementPage = () => {
               </div>
               
               <div className="flex flex-wrap gap-1">
-                {user.roles.split(/[|,]/).map((role: string) => (
+                {(user.roles || '').split(/[|,]/).filter(Boolean).map((role: string) => (
                   <Badge
                     key={role}
                     variant={role === 'ADMIN' ? 'destructive' : 'neutral'}
@@ -364,6 +369,7 @@ export const UserManagementPage = () => {
         onClose={handleDialogClose}
         onSubmit={handleFormSubmit}
         onDelete={handleDeleteFromDialog}
+        onTenantUpdateSuccess={handleTenantUpdateSuccess}
         user={selectedUser}
         isLoading={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}
       />

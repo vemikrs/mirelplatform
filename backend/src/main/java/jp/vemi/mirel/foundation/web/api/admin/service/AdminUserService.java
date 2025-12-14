@@ -151,7 +151,8 @@ public class AdminUserService {
             user.setLastName(request.getLastName());
         }
         if (request.getRoles() != null) {
-            user.setRoles(request.getRoles());
+            // カンマ区切りなどで渡された場合もパイプ区切りに統一して保存
+            user.setRoles(request.getRoles().replace(",", "|"));
         }
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
@@ -260,7 +261,7 @@ public class AdminUserService {
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         if (request.getRoles() != null) {
-            user.setRoles(String.join(",", request.getRoles()));
+            user.setRoles(String.join("|", request.getRoles()));
         }
         user.setIsActive(systemUser.getIsActive());
         user.setEmailVerified(false); // SystemUserと同期
