@@ -47,6 +47,7 @@ public class MiraStreamService {
     private final TokenCounter tokenCounter;
     private final ModelCapabilityValidator modelCapabilityValidator;
     private final AdminSystemSettingsService adminSystemSettingsService;
+    private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
 
     /**
      * ストリームチャット実行.
@@ -100,6 +101,13 @@ public class MiraStreamService {
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
+
+        // Phase 4: Model selection (5-step priority)
+        String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
+        String selectedModel = modelSelectionService.resolveModel(
+                tenantId, userId, snapshotId, request.getForceModel());
+        aiRequest.setModel(selectedModel);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId, snapshotId);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
         // Web検索の有効化判定 (MiraChatService の共通メソッドを使用)

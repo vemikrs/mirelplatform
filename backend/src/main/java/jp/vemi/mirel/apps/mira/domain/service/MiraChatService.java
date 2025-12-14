@@ -74,6 +74,7 @@ public class MiraChatService {
     private final ModelCapabilityValidator modelCapabilityValidator;
     private final AdminSystemSettingsService adminSystemSettingsService;
     private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties; // To check provider
+    private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
 
     /**
      * 会話一覧取得.
@@ -219,6 +220,13 @@ public class MiraChatService {
                 request, mode, history, finalContext);
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
+        
+        // Phase 4: Model selection (5-step priority)
+        String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
+        String selectedModel = modelSelectionService.resolveModel(
+                tenantId, userId, snapshotId, request.getForceModel());
+        aiRequest.setModel(selectedModel);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId, snapshotId);
 
         // 7. ツール解決 & セット
         // Web検索の有効化判定 (共通メソッド使用)
