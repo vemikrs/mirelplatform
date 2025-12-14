@@ -38,6 +38,12 @@ import {
   type LimitsSettings
 } from '@/lib/api/mira-admin';
 import {
+  getProviders,
+  getModels,
+  type ProviderInfo,
+  type ModelInfo
+} from '@/lib/api/mira';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -90,11 +96,25 @@ const SettingsTab = () => {
     const [limitsConfig, setLimitsConfig] = useState<LimitsSettings>({});
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    
+    // Model Selection States (Phase 4)
+    const [providers, setProviders] = useState<ProviderInfo[]>([]);
+    const [models, setModels] = useState<ModelInfo[]>([]);
+    const [loadingProviders, setLoadingProviders] = useState(false);
+    const [loadingModels, setLoadingModels] = useState(false);
 
     // Initial Load & Tenant Change
     useEffect(() => {
         loadConfig();
+        loadProviders();
     }, [tenantId]);
+    
+    // Load models when provider changes
+    useEffect(() => {
+        if (aiConfig.provider) {
+            loadModels(aiConfig.provider);
+        }
+    }, [aiConfig.provider]);
 
     const loadConfig = async () => {
         setLoading(true);
@@ -110,6 +130,32 @@ const SettingsTab = () => {
             toast({ variant: "destructive", title: "設定の読み込みに失敗しました" });
         } finally {
             setLoading(false);
+        }
+    };
+    
+    const loadProviders = async () => {
+        setLoadingProviders(true);
+        try {
+            const data = await getProviders();
+            setProviders(data);
+        } catch (e) {
+            console.error(e);
+            toast({ variant: "destructive", title: "プロバイダ一覧の取得に失敗しました" });
+        } finally {
+            setLoadingProviders(false);
+        }
+    };
+    
+    const loadModels = async (provider: string) => {
+        setLoadingModels(true);
+        try {
+            const data = await getModels(provider);
+            setModels(data);
+        } catch (e) {
+            console.error(e);
+            toast({ variant: "destructive", title: "モデル一覧の取得に失敗しました" });
+        } finally {
+            setLoadingModels(false);
         }
     };
 
@@ -221,33 +267,53 @@ const SettingsTab = () => {
                                     <div className="space-y-4">
                                         <div className="grid gap-2">
                                             <Label>AI Provider</Label>
-                                            <Combobox 
-                                                options={[
-                                                    { value: "github-models", label: "GitHub Models" },
-                                                    { value: "azure-openai", label: "Azure OpenAI" },
-                                                    { value: "mock", label: "Mock Provider" }
-                                                ]}
-                                                value={aiConfig.provider || ""}
-                                                onValueChange={(v) => setAiConfig({...aiConfig, provider: v})}
-                                                placeholder="プロバイダを選択"
-                                            />
+                                            {loadingProviders ? (
+                                                <div className="flex items-center gap-2 p-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <span className="text-sm text-muted-foreground">読み込み中...</span>
+                                                </div>
+                                            ) : (
+                                                <Combobox 
+                                                    options={providers.map(p => ({
+                                                        value: p.name,
+                                                        label: `${p.displayName}${!p.available ? ' (利用不可)' : ''}`,
+                                                        disabled: !p.available
+                                                    }))}
+                                                    value={aiConfig.provider || ""}
+                                                    onValueChange={(v) => setAiConfig({...aiConfig, provider: v, model: ''})}
+                                                    placeholder="プロバイダを選択"
+                                                />
+                                            )}
                                         </div>
                                         <div className="grid gap-2">
                                             <Label>Model Name</Label>
-                                            <Combobox 
-                                                 options={[
-                                                    { value: "gpt-4o", label: "GPT-4o" },
-                                                    { value: "gpt-4o-mini", label: "GPT-4o Mini" },
-                                                    { value: "o1-preview", label: "o1 Preview" }, 
-                                                    { value: "o1-mini", label: "o1 Mini" },
-                                                    { value: "Phi-3.5-mini-instruct", label: "Phi 3.5 Mini" }
-                                                ]}
-                                                value={aiConfig.model || ""}
-                                                onValueChange={(v) => setAiConfig({...aiConfig, model: v})}
-                                                placeholder="モデル名を選択または入力"
-                                                allowCustom
-                                            />
-                                            <p className="text-xs text-muted-foreground">プロバイダで利用可能なモデルIDを指定してください。</p>
+                                            {loadingModels ? (
+                                                <div className="flex items-center gap-2 p-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <span className="text-sm text-muted-foreground">読み込み中...</span>
+                                                </div>
+                                            ) : (
+                                                <Combobox 
+                                                    options={models
+                                                        .filter(m => m.isActive)
+                                                        .map(m => ({
+                                                            value: m.modelName,
+                                                            label: `${m.displayName}${m.isRecommended ? ' ⭐' : ''}${m.isExperimental ? ' 🧪' : ''}`
+                                                        }))}
+                                                    value={aiConfig.model || ""}
+                                                    onValueChange={(v) => setAiConfig({...aiConfig, model: v})}
+                                                    placeholder={aiConfig.provider ? "モデル名を選択または入力" : "先にプロバイダを選択"}
+                                                    allowCustom
+                                                    disabled={!aiConfig.provider}
+                                                />
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                {aiConfig.provider ? (
+                                                    models.length > 0 
+                                                        ? `${models.filter(m => m.isActive).length}個の利用可能なモデル` 
+                                                        : 'モデル情報を取得できませんでした'
+                                                ) : 'プロバイダで利用可能なモデルIDを指定してください。'}
+                                            </p>
                                         </div>
                                         <div className="pt-4">
                                             <Button onClick={handleSaveAi} disabled={saving}><Save className="mr-2 h-4 w-4"/> 保存</Button>
