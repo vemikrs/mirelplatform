@@ -55,6 +55,11 @@ public class MiraStreamService {
     @Transactional
     public Flux<MiraStreamResponse> streamChat(ChatRequest request, String tenantId, String userId) {
         log.info("StreamChat called. ConversationID: {}, Mode: {}", request.getConversationId(), request.getMode());
+        log.info("ChatRequest.message: content={}, attachedFiles={}", 
+            request.getMessage() != null ? request.getMessage().getContent() : "null",
+            request.getMessage() != null && request.getMessage().getAttachedFiles() != null 
+                ? request.getMessage().getAttachedFiles().size() + " files" 
+                : "null");
         long startTime = System.currentTimeMillis();
 
         // 0. Pre-flight Checks (Rate Limit, Quota)

@@ -19,4 +19,9 @@
         <appender-ref ref="AUTH" />
         <appender-ref ref="CONSOLE" />
     </logger>
+
+    <!-- Mira AI ログ設定 -->
+    <logger name="jp.vemi.mirel.apps.mira" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
 </included>

@@ -151,21 +151,30 @@ public class PromptBuilder {
         // ファイル添付情報を変換
         List<AiRequest.Message.AttachedFile> aiAttachedFiles = null;
         if (request.getMessage().getAttachedFiles() != null && !request.getMessage().getAttachedFiles().isEmpty()) {
+            log.info("PromptBuilder: Converting {} attached files to AiRequest", request.getMessage().getAttachedFiles().size());
             aiAttachedFiles = request.getMessage().getAttachedFiles().stream()
-                    .map(f -> AiRequest.Message.AttachedFile.builder()
-                            .fileId(f.getFileId())
-                            .fileName(f.getFileName())
-                            .mimeType(f.getMimeType())
-                            .fileSize(f.getFileSize())
-                            .build())
+                    .map(f -> {
+                        log.debug("Converting file: fileId={}, fileName={}, mimeType={}", f.getFileId(), f.getFileName(), f.getMimeType());
+                        return AiRequest.Message.AttachedFile.builder()
+                                .fileId(f.getFileId())
+                                .fileName(f.getFileName())
+                                .mimeType(f.getMimeType())
+                                .fileSize(f.getFileSize())
+                                .build();
+                    })
                     .collect(java.util.stream.Collectors.toList());
+        } else {
+            log.info("PromptBuilder: No attached files in ChatRequest.message");
         }
         
-        messages.add(AiRequest.Message.builder()
+        AiRequest.Message userMessage = AiRequest.Message.builder()
                 .role("user")
                 .content(sandboxedContent)
                 .attachedFiles(aiAttachedFiles)
-                .build());
+                .build();
+        log.info("PromptBuilder: Created user message with {} attachedFiles", 
+            userMessage.getAttachedFiles() != null ? userMessage.getAttachedFiles().size() : 0);
+        messages.add(userMessage);
 
         return AiRequest.builder()
                 .messages(messages)
