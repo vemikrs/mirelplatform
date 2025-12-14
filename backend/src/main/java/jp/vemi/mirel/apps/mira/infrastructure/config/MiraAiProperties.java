@@ -80,6 +80,8 @@ public class MiraAiProperties {
         private String model = "gemini-2.5-flash";
         private Double temperature = 0.7;
         private Integer maxTokens = 4096;
+        /** Google Search Grounding の有効化フラグ. */
+        private boolean googleSearchRetrieval = false;
     }
 
     @Data
