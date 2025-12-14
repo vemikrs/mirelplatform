@@ -15,12 +15,18 @@ import { NotificationList } from '@/features/home/components/NotificationList';
 interface NotificationPopoverProps {
   /** コンパクト表示（サイドバー折りたたみ時） */
   isCompact?: boolean;
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
 }
 
 /**
  * 通知ポップオーバーコンポーネント
  */
-export function NotificationPopover({ isCompact = false }: NotificationPopoverProps) {
+export function NotificationPopover({ 
+  isCompact = false,
+  side = "right",
+  align = "end"
+}: NotificationPopoverProps) {
   const { data } = useQuery({
     queryKey: ['unread-count'],
     queryFn: getUnreadCount,
@@ -58,7 +64,7 @@ export function NotificationPopover({ isCompact = false }: NotificationPopoverPr
             通知 {count > 0 && `(${count})`}
           </TooltipContent>
         </Tooltip>
-        <PopoverContent className="w-[380px] p-0" side="right" align="end">
+        <PopoverContent className="w-[280px] sm:w-[380px] p-0 z-[100]" side={side} align={align}>
           <div className="p-4 border-b border-border">
             <h4 className="font-semibold leading-none">お知らせ</h4>
           </div>
@@ -75,7 +81,7 @@ export function NotificationPopover({ isCompact = false }: NotificationPopoverPr
       <PopoverTrigger asChild>
         {triggerButton}
       </PopoverTrigger>
-      <PopoverContent className="w-[380px] p-0" side="right" align="end">
+      <PopoverContent className="w-[380px] p-0 z-[100]" side="right" align="end">
         <div className="p-4 border-b border-border">
           <h4 className="font-semibold leading-none">お知らせ</h4>
         </div>
