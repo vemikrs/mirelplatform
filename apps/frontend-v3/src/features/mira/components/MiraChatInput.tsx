@@ -341,12 +341,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           // 並列アップロード
           const uploadPromises = attachedFiles.map(async (attachedFile) => {
             const result = await uploadMutation.mutateAsync(attachedFile.file);
-            // result.data は FileUploadResult[] 形式: [{ fileId, name }]
-            const uploadedFile = result.data?.[0];
-            if (uploadedFile?.fileId && uploadedFile?.name) {
+            // result.data は FileUploadResult { uuid, fileName, paths } 形式
+            if (result.data && result.data.uuid && result.data.fileName) {
               return {
-                fileId: uploadedFile.fileId,
-                fileName: uploadedFile.name,
+                fileId: result.data.uuid,
+                fileName: result.data.fileName,
                 mimeType: attachedFile.file.type,
                 fileSize: attachedFile.file.size,
               } as AttachedFileInfo;
