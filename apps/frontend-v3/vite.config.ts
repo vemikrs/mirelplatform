@@ -20,8 +20,11 @@ export default defineConfig({
         manualChunks: (id) => {
           // node_modules のベンダーライブラリを分割
           if (id.includes('node_modules')) {
-            // React コアライブラリ
-            if (id.includes('react') || id.includes('react-dom')) {
+            // React コアライブラリ（react-router等を含まないよう厳密にチェック）
+            if (
+              /[\\/]node_modules[\\/]react[\\/]/.test(id) ||
+              /[\\/]node_modules[\\/]react-dom[\\/]/.test(id)
+            ) {
               return 'vendor-react';
             }
             // ルーティング関連

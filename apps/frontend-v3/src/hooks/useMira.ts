@@ -372,11 +372,15 @@ export function useMira() {
     resendEditedMessage,
   } = useMiraStore();
   
+  // conversationオブジェクトから必要なプロパティを分割代入
+  // （useCallbackの依存配列最適化のため。conversation全体を依存配列に入れるとパフォーマンス悪化）
+  const { hasMore, currentPage, fetchConversations } = conversation;
+  
   const loadMoreConversations = useCallback(async () => {
-    if (conversation.hasMore) {
-      await conversation.fetchConversations(conversation.currentPage + 1);
+    if (hasMore) {
+      await fetchConversations(currentPage + 1);
     }
-  }, [conversation.hasMore, conversation.currentPage, conversation.fetchConversations]);
+  }, [hasMore, currentPage, fetchConversations]);
 
   return {
     // パネル

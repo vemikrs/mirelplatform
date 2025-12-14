@@ -39,7 +39,15 @@ import lombok.Setter;
 @Builder
 public class MiraModelRegistry {
 
-    /** JSON シリアライズ/デシリアライズ用の共有ObjectMapper */
+    /**
+     * JSON シリアライズ/デシリアライズ用の共有ObjectMapper。
+     * <p>
+     * <b>スレッドセーフ</b>です（Jackson公式ドキュメントに基づく）。
+     * ただし、<b>設定の追加・変更は必ず初期化時（static初期化子または宣言時）のみで行い、以降は不変としてください</b>。
+     * これにより、JPAエンティティとして複数スレッドから同時にアクセスされても安全です。
+     * 将来的に設定を追加する場合も、必ずこのルールを守ってください。
+     * </p>
+     */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /** モデルID (例: vertex-ai-gemini:gemini-2.5-flash) */
