@@ -59,6 +59,11 @@ public class MiraMessage {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    /** 添付ファイル情報 (JSON) */
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String attachedFiles;
+
     /** コンテンツタイプ */
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)

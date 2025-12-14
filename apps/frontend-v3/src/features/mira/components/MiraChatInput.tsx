@@ -4,30 +4,11 @@
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch, toast } from '@mirel/ui';
-import { 
-  Send, 
-  Loader2, 
-  ChevronDown, 
-  HelpCircle, 
-  AlertTriangle, 
-  Paintbrush2, 
-  Workflow, 
-  MessageSquare,
-  Paperclip,
-  X,
-  FileText,
-  Image,
-  FileCode,
-  File,
-  Upload,
-  Eye,
-  Download,
-  Maximize2,
   Settings,
   Menu,
   Globe,
   Sparkles,
+  Upload
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
@@ -265,7 +246,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   const handleAddFiles = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     
-    const newFiles: AttachedFile[] = fileArray
+    const newFiles: AttachmentItem[] = fileArray
       .filter(file => file.size <= MAX_FILE_SIZE)
       .map(file => ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

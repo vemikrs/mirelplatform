@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { cn, Button } from '@mirel/ui';
 import { Bot, User, Copy, Check, Edit } from 'lucide-react';
 import type { MiraMessage } from '@/stores/miraStore';
-import type { MiraMessage } from '@/stores/miraStore';
 import { MiraMarkdown } from './MiraMarkdown';
 import { AttachmentPreview } from './AttachmentPreview';
 

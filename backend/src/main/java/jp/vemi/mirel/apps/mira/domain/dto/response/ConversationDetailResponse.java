@@ -30,6 +30,18 @@ public record ConversationDetailResponse(
             @Schema(description = "ロール (user/assistant)") String role,
             @Schema(description = "本文") String content,
             @Schema(description = "コンテンツタイプ") String contentType,
-            @Schema(description = "送信日時") LocalDateTime createdAt) {
+            @Schema(description = "送信日時") LocalDateTime createdAt,
+            @Schema(description = "添付ファイルリスト") List<AttachedFile> attachedFiles) {
+    }
+
+    /**
+     * 添付ファイル情報.
+     */
+    @Schema(description = "添付ファイル情報")
+    public record AttachedFile(
+            @Schema(description = "ファイルID") String fileId,
+            @Schema(description = "ファイル名") String fileName,
+            @Schema(description = "MIMEタイプ") String mimeType,
+            @Schema(description = "ファイルサイズ") Long fileSize) {
     }
 }
