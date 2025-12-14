@@ -93,6 +93,8 @@ function RootLayoutInner() {
                   brand={initialNavigation.brand}
                   helpAction={helpAction}
                   className="h-full border-0 w-full"
+                  onClose={() => setMobileMenuOpen(false)}
+                  isMobile={true}
                 />
               </SheetContent>
             </Sheet>
