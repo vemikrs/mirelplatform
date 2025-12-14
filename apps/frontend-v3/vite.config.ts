@@ -35,9 +35,27 @@ export default defineConfig({
             if (id.includes('@tanstack/react-query')) {
               return 'vendor-query';
             }
-            // Radix UI コンポーネント
+            // Radix UI コンポーネント（サイズ別に分割）
             if (id.includes('@radix-ui')) {
-              return 'vendor-radix';
+              // Dialog, Popover, Dropdown など大きめのコンポーネント
+              if (
+                id.includes('dialog') ||
+                id.includes('popover') ||
+                id.includes('dropdown-menu') ||
+                id.includes('select')
+              ) {
+                return 'vendor-radix-overlays';
+              }
+              // その他の小さいコンポーネント
+              return 'vendor-radix-core';
+            }
+            // UI utility libraries
+            if (
+              id.includes('class-variance-authority') ||
+              id.includes('clsx') ||
+              id.includes('tailwind-merge')
+            ) {
+              return 'vendor-ui-utils';
             }
             // アイコンライブラリ
             if (id.includes('lucide-react')) {
@@ -62,6 +80,42 @@ export default defineConfig({
             // Form libraries
             if (id.includes('react-hook-form') || id.includes('zod')) {
               return 'vendor-form';
+            }
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'vendor-date';
+            }
+            // Chart library
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            // Flow diagram library
+            if (id.includes('reactflow')) {
+              return 'vendor-flow';
+            }
+            // Drag and drop
+            if (id.includes('@dnd-kit')) {
+              return 'vendor-dnd';
+            }
+            // Table library
+            if (id.includes('@tanstack/react-table')) {
+              return 'vendor-table';
+            }
+            // Grid layout
+            if (id.includes('react-grid-layout') || id.includes('react-resizable')) {
+              return 'vendor-layout';
+            }
+            // YAML parser
+            if (id.includes('js-yaml')) {
+              return 'vendor-yaml';
+            }
+            // Diff viewer
+            if (id.includes('react-diff-viewer')) {
+              return 'vendor-diff';
+            }
+            // Image crop
+            if (id.includes('react-easy-crop')) {
+              return 'vendor-crop';
             }
             // その他のベンダーライブラリ
             return 'vendor-misc';
