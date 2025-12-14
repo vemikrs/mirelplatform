@@ -58,6 +58,9 @@ logging:
     jp.vemi.mirel: DEBUG
     jp.vemi.framework: DEBUG
     jp.vemi.ste: DEBUG
+    jp.vemi.mirel.apps.mira: DEBUG
+    request: DEBUG
+    auth: DEBUG
     org.springframework.security: DEBUG
     org.springframework.ai: DEBUG
     org.springframework.web.reactive.function.client: DEBUG

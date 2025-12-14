@@ -136,9 +136,10 @@ public class VertexAiGeminiClient implements AiProviderClient {
             return AiResponse.success(content, metadata);
 
         } catch (Exception e) {
-            log.error("[VertexAiGemini] Request failed: {}", e.getMessage(), e);
+            log.error("[VertexAiGemini] Request failed", e);
+            // エラー詳細はログに記録し、ユーザーには簡潔なメッセージのみ表示
             return AiResponse.error("REQUEST_FAILED",
-                    "Vertex AI エラー: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    "AI の応答生成に失敗しました。しばらくしてから再度お試しください。");
         }
     }
 
@@ -263,6 +264,8 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
         } catch (Exception e) {
             log.error("Failed to create multimodal user message", e);
+            // ファイル読み込み失敗時はテキストのみで送信
+            log.warn("Falling back to text-only message due to file processing error");
             return new UserMessage(msg.getContent());
         }
     }
