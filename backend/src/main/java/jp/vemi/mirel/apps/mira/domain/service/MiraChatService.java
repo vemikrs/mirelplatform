@@ -220,13 +220,8 @@ public class MiraChatService {
         aiRequest.setUserId(userId);
 
         // 7. ツール解決 & セット
-        // Web検索の有効化判定
-        boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
-                adminSystemSettingsService.getSystemSettings().getOrDefault(
-                        AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
-
-        boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
-        boolean isWebSearchActive = isSystemWebSearchEnabled && isRequestWebSearchEnabled;
+        // Web検索の有効化判定 (共通メソッド使用)
+        boolean isWebSearchActive = isWebSearchActive(request);
 
         // Grounding (Vertex AI) 用フラグセット
         if (isWebSearchActive) {
@@ -924,6 +919,23 @@ public class MiraChatService {
             }
         }
         return tools;
+    }
+
+    /**
+     * Web検索の有効化判定を行う共通メソッド.
+     * 
+     * @param request
+     *            チャットリクエスト
+     * @return Web検索が有効な場合true
+     */
+    public boolean isWebSearchActive(ChatRequest request) {
+        boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
+                adminSystemSettingsService.getSystemSettings().getOrDefault(
+                        AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
+        
+        boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
+        
+        return isSystemWebSearchEnabled && isRequestWebSearchEnabled;
     }
 
     /**

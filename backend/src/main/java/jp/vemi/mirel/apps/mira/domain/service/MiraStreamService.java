@@ -102,12 +102,8 @@ public class MiraStreamService {
                 request, mode, history, finalContext);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
-        // Web検索の有効化判定 (MiraChatServiceと同様のロジック)
-        boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
-                adminSystemSettingsService.getSystemSettings().getOrDefault(
-                        AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
-        boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
-        boolean isWebSearchActive = isSystemWebSearchEnabled && isRequestWebSearchEnabled;
+        // Web検索の有効化判定 (MiraChatService の共通メソッドを使用)
+        boolean isWebSearchActive = chatService.isWebSearchActive(request);
 
         if (isWebSearchActive) {
             aiRequest.setGoogleSearchRetrieval(true);
