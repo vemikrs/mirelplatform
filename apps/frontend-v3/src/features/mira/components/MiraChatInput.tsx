@@ -27,9 +27,10 @@ import {
   Settings,
   Menu,
   Globe,
+  Sparkles,
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
-import { type MessageConfig } from '@/lib/api/mira';
+import { type MessageConfig, getAvailableModels, type ModelInfo } from '@/lib/api/mira';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
 
@@ -68,7 +69,7 @@ export interface AttachedFile {
 }
 
 interface MiraChatInputProps {
-  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean) => void;
+  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -134,10 +135,28 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     }
   });
   
+  // Phase 4: Model Selection
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  
   // Web検索状態をlocalStorageに保存
   useEffect(() => {
     localStorage.setItem('mira-web-search-enabled', String(webSearchEnabled));
   }, [webSearchEnabled]);
+  
+  // Phase 4: Load available models on mount
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const models = await getAvailableModels();
+        setAvailableModels(models);
+      } catch (error) {
+        console.error('Failed to load available models:', error);
+      }
+    };
+    loadModels();
+  }, []);
   
   // 添付ファイル管理
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -145,6 +164,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const modelSelectorRef = useRef<HTMLDivElement>(null); // Phase 4
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -171,12 +191,15 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowModeMenu(false);
       }
+      if (modelSelectorRef.current && !modelSelectorRef.current.contains(e.target as Node)) {
+        setShowModelSelector(false);
+      }
     };
-    if (showModeMenu) {
+    if (showModeMenu || showModelSelector) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showModeMenu]);
+  }, [showModeMenu, showModelSelector]);
   
   // 入力履歴をlocalStorageに保存
   useEffect(() => {
@@ -291,12 +314,13 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       
       
       // TODO: 添付ファイルも送信処理に含める
-      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled);
+      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled, selectedModel);
       
       setMessage('');
       setMessageConfig({}); // Reset config
       setHistoryIndex(-1);
       setTempMessage('');
+      setSelectedModel(undefined); // Reset model selection
       // 添付ファイルをクリア
       attachedFiles.forEach(f => {
         if (f.preview) URL.revokeObjectURL(f.preview);
@@ -627,6 +651,85 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               >
                 <Settings className="w-4 h-4" />
               </button>
+              
+              {/* Phase 4: Model Selector */}
+              {availableModels.length > 0 && (
+                <div ref={modelSelectorRef} className="relative">
+                  <button
+                    onClick={() => setShowModelSelector(!showModelSelector)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1.5 text-xs rounded-md border",
+                      "hover:bg-muted transition-colors shrink-0",
+                      selectedModel ? "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    title={selectedModel ? `選択: ${selectedModel}` : "モデルを選択（オプション）"}
+                    disabled={disabled}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {selectedModel ? (
+                      <span className="max-w-[80px] truncate">{availableModels.find(m => m.modelName === selectedModel)?.displayName || selectedModel}</span>
+                    ) : (
+                      <span>Auto</span>
+                    )}
+                    <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", showModelSelector && "rotate-180")} />
+                  </button>
+                  
+                  {showModelSelector && (
+                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedModel(undefined);
+                          setShowModelSelector(false);
+                        }}
+                        className={cn(
+                          'w-full px-3 py-2 text-left text-sm flex items-center gap-2',
+                          'hover:bg-muted transition-colors',
+                          !selectedModel && 'bg-muted font-medium'
+                        )}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>自動選択 (推奨)</span>
+                        {!selectedModel && <span className="ml-auto text-xs text-primary">✓</span>}
+                      </button>
+                      <div className="border-t my-1" />
+                      <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                        利用可能なモデル
+                      </p>
+                      {availableModels
+                        .filter(m => m.isActive)
+                        .sort((a, b) => {
+                          if (a.isRecommended && !b.isRecommended) return -1;
+                          if (!a.isRecommended && b.isRecommended) return 1;
+                          return a.displayName.localeCompare(b.displayName);
+                        })
+                        .map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => {
+                              setSelectedModel(model.modelName);
+                              setShowModelSelector(false);
+                            }}
+                            className={cn(
+                              'w-full px-3 py-2 text-left text-sm flex flex-col gap-0.5',
+                              'hover:bg-muted transition-colors',
+                              selectedModel === model.modelName && 'bg-muted font-medium'
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{model.displayName}</span>
+                              {model.isRecommended && <span className="text-xs">⭐</span>}
+                              {model.isExperimental && <span className="text-xs">🧪</span>}
+                              {selectedModel === model.modelName && <span className="ml-auto text-xs text-primary">✓</span>}
+                            </div>
+                            {model.description && (
+                              <span className="text-xs text-muted-foreground line-clamp-1">{model.description}</span>
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <button
                 onClick={handleModeButtonClick}

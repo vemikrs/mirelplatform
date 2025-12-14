@@ -95,6 +95,7 @@ export function useMiraChat() {
       context?: ChatContext;
       messageConfig?: MessageConfig;
       forceProvider?: string;
+      forceModel?: string; // Phase 4: Model selection
       useStream?: boolean; // Add useStream option
       webSearchEnabled?: boolean; // Web検索を有効化
     }
@@ -125,6 +126,7 @@ export function useMiraChat() {
       },
       message: { content },
       forceProvider: options?.forceProvider,
+      forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
     };
     

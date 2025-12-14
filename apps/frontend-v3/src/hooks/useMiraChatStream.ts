@@ -35,6 +35,8 @@ export function useMiraChatStream() {
         mode?: any; // MiraMode
         context?: any;
         messageConfig?: any;
+        forceProvider?: string;
+        forceModel?: string; // Phase 4: Model selection
         webSearchEnabled?: boolean;
     }
   ) => {
@@ -64,6 +66,8 @@ export function useMiraChatStream() {
         messageConfig: options?.messageConfig,
       },
       message: { content },
+      forceProvider: options?.forceProvider,
+      forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
     };
 
