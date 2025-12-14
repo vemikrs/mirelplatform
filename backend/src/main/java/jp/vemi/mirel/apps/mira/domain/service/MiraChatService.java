@@ -910,7 +910,7 @@ public class MiraChatService {
             String currentProvider = miraAiProperties.getProvider();
 
             // Vertex AI の場合は Grounding を使用するため、ここではツールを追加しない
-            if ("vertex-ai-gemini".equals(currentProvider)) {
+            if (MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI.equals(currentProvider)) {
                 return tools;
             }
 

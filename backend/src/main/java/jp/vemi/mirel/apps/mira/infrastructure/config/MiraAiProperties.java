@@ -18,10 +18,22 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "mira.ai")
 public class MiraAiProperties {
 
+    /** プロバイダ名定数: Vertex AI. */
+    public static final String PROVIDER_VERTEX_AI_GEMINI = "vertex-ai-gemini";
+    
+    /** プロバイダ名定数: GitHub Models. */
+    public static final String PROVIDER_GITHUB_MODELS = "github-models";
+    
+    /** プロバイダ名定数: Azure OpenAI. */
+    public static final String PROVIDER_AZURE_OPENAI = "azure-openai";
+    
+    /** プロバイダ名定数: OpenAI. */
+    public static final String PROVIDER_OPENAI = "openai";
+
     /** Mira AI 機能全体の有効化フラグ. */
     private boolean enabled = true;
 
-    /** AI プロバイダ種別 (github-models | azure-openai | mock). */
+    /** AI プロバイダ種別 (github-models | azure-openai | vertex-ai-gemini | openai | mock). */
     private String provider = "github-models";
 
     private GitHubModelsConfig githubModels = new GitHubModelsConfig();
