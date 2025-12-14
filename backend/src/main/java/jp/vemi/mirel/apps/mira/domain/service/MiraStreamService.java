@@ -150,8 +150,25 @@ public class MiraStreamService {
         // ArrayList is fine if we are careful.
         List<AiRequest.Message.ToolCall> accumulatedToolCalls = new ArrayList<>();
 
-        // Google Search Grounding (Vertex AI) が有効な場合は、ストリーミングで空応答になる問題があるため
-        // ブロッキングChat呼び出しを行い、単一のチャンクとしてストリームをシミュレートする (Best Practice/Workaround)
+        // Google Search Grounding (Vertex AI) が有効な場合のワークアラウンド:
+        // 
+        // 【問題】
+        // - Vertex AI の Google Search Grounding を有効にした場合、ストリーミングモードで空応答が返される
+        // - これは Spring AI 1.0.0-M6 と Vertex AI API の組み合わせにおける既知の問題
+        // 
+        // 【対策】
+        // - ブロッキング chat() 呼び出しを使用し、単一チャンクとしてストリームをシミュレート
+        // - Schedulers.boundedElastic() で非同期実行し、メインスレッドをブロックしない
+        // 
+        // 【影響】
+        // - レスポンスタイム: ブロッキング呼び出しにより最初のトークンまでの時間が増加
+        // - ユーザー体験: ストリーミング表示ではなく一括表示になる
+        // 
+        // 【解決確認方法】
+        // - Spring AI または Vertex AI SDK の更新時に stream() でテストし、正常動作を確認
+        // - 問題が解決されていればこのワークアラウンドを削除可能
+        // 
+        // 関連: Spring AI Issue (検討中)
         Flux<AiResponse> responseStream;
         if (Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval())) {
             log.info("Google Search Grounding enabled. Switching to blocking chat for reliability.");
