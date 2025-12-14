@@ -37,6 +37,9 @@ public class ChatRequest {
     /** 強制プロバイダ指定 (Admin only, testing purpose) */
     private String forceProvider;
 
+    /** 強制モデル指定 (ユーザーが一時的にモデル変更) */
+    private String forceModel;
+
     /** Web検索を有効化 (明示的指定時) */
     private Boolean webSearchEnabled;
 
