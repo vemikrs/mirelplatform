@@ -671,15 +671,77 @@ const handleSendMessage = async () => {
 6. **Phase 4 続き**: フロントエンド（チャット画面）
 7. **Phase 5**: テストとドキュメント
 
+## 実装状況（2025-12-14 更新）
+
+### Phase 1: データベーススキーマと初期データ ✅ **完了**
+- [x] `MiraModelRegistry` Entity作成
+- [x] `MiraModelRegistryRepository` 作成
+- [x] CSV初期データ作成（9モデル定義）
+- [x] データロード動作確認
+
+### Phase 2: バックエンドロジック実装 ✅ **完了**
+- [x] `ModelSelectionService` 実装
+  - 5段階優先順位ロジック完成
+  - `resolveModel()` メソッド実装
+  - プロバイダ別デフォルトモデル取得
+- [x] `MiraSettingService` 修正（プロバイダ別デフォルトモデル対応）
+- [x] `MiraChatService` / `MiraStreamService` に統合
+
+### Phase 3: API エンドポイント実装 ✅ **完了**
+- [x] 管理者API実装
+  - `GET /apps/mira/api/admin/providers` - プロバイダ一覧
+  - `GET /apps/mira/api/admin/models` - モデル一覧
+- [x] ユーザーAPI実装
+  - `GET /apps/mira/api/available-models` - 利用可能モデル取得
+- [x] `ChatRequest` DTO に `forceModel` フィールド追加
+
+### Phase 4: フロントエンド実装 ✅ **完了**
+- [x] `mira.ts` に型定義とAPI関数追加
+  - `ProviderInfo`, `ModelInfo` 型定義
+  - `getProviders()`, `getModels()`, `getAvailableModels()` 実装
+- [x] Mira管理画面の動的モデル選択実装
+  - プロバイダ一覧をAPI取得
+  - プロバイダ選択時にモデル一覧を動的取得
+  - 推奨/実験的モデルのマーク表示
+- [x] Miraチャット画面のモデル選択UI実装
+  - `useMira` / `useMiraChatStream` に `forceModel` オプション追加
+  - `MiraChatInput` にモデルセレクター追加
+  - 利用可能モデル一覧の自動取得と表示
+
+### Phase 5: テストとドキュメント 🔄 **進行中**
+- [ ] 動作確認
+- [ ] 統合テスト
+- [ ] ドキュメント更新
+
+## 実装完了コミット一覧
+
+1. `7de3a42` - MiraSettingService修正（プロバイダ別デフォルトモデル取得）
+2. `be57766` - AiProviderFactoryログ追加
+3. `7afc09c` - mira-ai-provider-issues.mdドキュメント
+4. `ef44bd8` - saas-llama-provider-investigation.mdドキュメント
+5. `84a7de3` - model-selection-enhancement-plan.mdドキュメント
+6. `14805a9` - MiraModelRegistry Entity/Repository
+7. `8a619c9` - CSV初期データ（9モデル定義）
+8. `402e728` - ModelSelectionService実装
+9. `4905c82` - ChatRequest.forceModelフィールド追加
+10. `09c97d8` - 管理者API（providers/models）
+11. `728c0ff` - ユーザーAPI（available-models）
+12. `9b6c0b2` - Mira API型定義とクライアント関数追加
+13. `e6b4721` - Mira管理画面の動的プロバイダ/モデル選択実装
+14. `1268cfd` - Miraチャット画面のモデル選択UI実装
+
 ## 次のアクション
 
-- [ ] テーブル定義を既存システムに追加
-- [ ] CSV初期データ作成（`data/system/` または `data/sample/`）
-- [ ] Entity クラスと Repository 実装
-- [ ] データロード機能で CSV を投入し動作確認
-- [ ] `ModelSelectionService` のコア実装
-- [ ] 管理者 API のプロトタイプ作成
-- [ ] フロントエンド UI のモックアップ作成
+- [ ] ~~テーブル定義を既存システムに追加~~ ✅ 完了
+- [ ] ~~CSV初期データ作成（`data/system/` または `data/sample/`）~~ ✅ 完了
+- [ ] ~~Entity クラスと Repository 実装~~ ✅ 完了
+- [ ] ~~データロード機能で CSV を投入し動作確認~~ ✅ 完了
+- [ ] ~~`ModelSelectionService` のコア実装~~ ✅ 完了
+- [ ] ~~管理者 API のプロトタイプ作成~~ ✅ 完了
+- [ ] ~~フロントエンド UI のモックアップ作成~~ ✅ 完了
+- [ ] サービス起動と動作確認（Phase 5）
+- [ ] 統合テスト実施
+- [ ] ユーザーガイド作成
 
 ## 参考
 
