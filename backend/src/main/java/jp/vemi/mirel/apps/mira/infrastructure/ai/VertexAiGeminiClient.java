@@ -173,15 +173,15 @@ public class VertexAiGeminiClient implements AiProviderClient {
         }
 
         String content = "";
-        if (response.getResult().getOutput().getText() != null) {
+        if (response.getResult().getOutput() != null && response.getResult().getOutput().getText() != null) {
             content = response.getResult().getOutput().getText();
         } else {
-            log.warn("[VertexAiGemini] Stream response text is null. FinishReason: {}",
-                    response.getResult().getMetadata().getFinishReason());
+            String finishReason = "unknown";
+            if (response.getResult().getMetadata() != null && response.getResult().getMetadata().getFinishReason() != null) {
+                finishReason = response.getResult().getMetadata().getFinishReason();
+            }
+            log.warn("[VertexAiGemini] Stream response text is null. FinishReason: {}", finishReason);
         }
-
-        // ログ出力でデバッグ (一時的)
-        log.debug("[VertexAiGemini] Stream chunk: content='{}', metadata={}", content, response.getMetadata());
 
         AiResponse.Metadata metadata = AiResponse.Metadata.builder()
                 .model(properties.getVertexAi().getModel())
