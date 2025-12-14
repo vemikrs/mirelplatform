@@ -589,6 +589,38 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       <span className="ml-auto w-2 h-2 rounded-full bg-purple-500" />
                     )}
                   </button>
+                  
+                  {/* Phase 4: Model Selector in Menu */}
+                  {availableModels.length > 0 && (
+                    <>
+                      <div className="border-t my-1" />
+                      <div className="px-3 py-1.5">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">モデル選択</p>
+                        <select
+                          value={selectedModel || ''}
+                          onChange={(e) => setSelectedModel(e.target.value || undefined)}
+                          className="w-full px-2 py-1.5 text-sm border rounded-md bg-background"
+                        >
+                          <option value="">自動選択 (推奨)</option>
+                          {availableModels
+                            .filter(m => m.isActive)
+                            .sort((a, b) => {
+                              if (a.isRecommended && !b.isRecommended) return -1;
+                              if (!a.isRecommended && b.isRecommended) return 1;
+                              return a.displayName.localeCompare(b.displayName);
+                            })
+                            .map((model) => (
+                              <option key={model.id} value={model.modelName}>
+                                {model.displayName}
+                                {model.isRecommended && ' ⭐'}
+                                {model.isExperimental && ' 🧪'}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="border-t my-1" />
                   <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
                     モード選択
