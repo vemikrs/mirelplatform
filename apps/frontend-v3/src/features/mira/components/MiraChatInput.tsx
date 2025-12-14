@@ -4,7 +4,7 @@
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle } from '@mirel/ui';
+import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch } from '@mirel/ui';
 import { 
   Send, 
   Loader2, 
