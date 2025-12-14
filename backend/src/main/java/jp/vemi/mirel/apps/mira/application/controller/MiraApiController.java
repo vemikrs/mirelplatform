@@ -65,6 +65,8 @@ public class MiraApiController {
     private final MiraTenantContextManager tenantContextManager;
     private final MiraExportService exportService;
     private final MiraPresetSuggestionService presetSuggestionService;
+    private final jp.vemi.mirel.apps.mira.domain.service.ModelSelectionService modelSelectionService;
+    private final jp.vemi.mirel.apps.mira.domain.service.MiraSettingService settingService;
 
     // ========================================
     // Chat Endpoints
@@ -614,6 +616,28 @@ public class MiraApiController {
                     e.getMessage());
             return ResponseEntity.internalServerError()
                     .body(MiraExportApiResponse.error("エクスポート処理中にエラーが発生しました"));
+        }
+    }
+
+    // ========================================
+    // Model Selection (Phase 3)
+    // ========================================
+
+    /**
+     * 利用可能なモデル一覧取得（ユーザー向け）.
+     */
+    @GetMapping("/available-models")
+    @Operation(summary = "利用可能なモデル一覧取得", description = "現在のプロバイダで利用可能なモデル一覧を取得します")
+    @ApiResponse(responseCode = "200", description = "成功")
+    public ResponseEntity<java.util.List<jp.vemi.mirel.apps.mira.domain.dao.entity.MiraModelRegistry>> getAvailableModels() {
+        try {
+            String tenantId = tenantContextManager.getCurrentTenantId();
+            String provider = settingService.getAiProvider(tenantId);
+
+            return ResponseEntity.ok(modelSelectionService.getAvailableModels(provider));
+        } catch (Exception e) {
+            log.error("利用可能モデル取得エラー", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
