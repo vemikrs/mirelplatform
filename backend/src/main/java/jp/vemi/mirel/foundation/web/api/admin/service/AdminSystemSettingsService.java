@@ -21,6 +21,7 @@ public class AdminSystemSettingsService {
     private final TenantSystemMasterRepository repository;
 
     private static final String SYSTEM_TENANT_ID = "SYSTEM";
+    public static final String WEB_SEARCH_ENABLED_KEY = "mira.ai.web_search.enabled";
 
     /**
      * システム設定一覧を取得します

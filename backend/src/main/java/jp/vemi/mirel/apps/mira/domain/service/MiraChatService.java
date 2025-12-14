@@ -31,6 +31,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderClient;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
+import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
 import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
@@ -70,6 +71,8 @@ public class MiraChatService {
     private final MiraSettingService settingService;
     private final jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchToolFactory tavilySearchToolFactory; // Added
     private final ModelCapabilityValidator modelCapabilityValidator;
+    private final AdminSystemSettingsService adminSystemSettingsService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties; // To check provider
 
     /**
      * 会話一覧取得.
@@ -216,9 +219,21 @@ public class MiraChatService {
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
 
-        // 7. ツール解決 & セット (webSearchEnabledを参照)
-        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId,
-                request.getWebSearchEnabled());
+        // 7. ツール解決 & セット
+        // Web検索の有効化判定
+        boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
+                adminSystemSettingsService.getSystemSettings().getOrDefault(
+                        AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
+
+        boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
+        boolean isWebSearchActive = isSystemWebSearchEnabled && isRequestWebSearchEnabled;
+
+        // Grounding (Vertex AI) 用フラグセット
+        if (isWebSearchActive) {
+            aiRequest.setGoogleSearchRetrieval(true);
+        }
+
+        List<org.springframework.ai.tool.ToolCallback> tools = resolveTools(tenantId, userId, isWebSearchActive);
         aiRequest.setToolCallbacks(tools);
 
         // 8. AI 呼び出し Loop
@@ -875,10 +890,19 @@ public class MiraChatService {
             Boolean webSearchEnabled) {
         List<org.springframework.ai.tool.ToolCallback> tools = new ArrayList<>();
 
-        // Web Search Tool (明示的に有効化された場合、またはAPIキーが設定されている場合)
+        // Web Search Tool (Tavily) の追加判定
+        // Google Search Grounding (Vertex AI) が有効な場合は Tavily を追加しない (Vertex側で処理)
+        // または、Provider が Vertex AI 以外の場合のみ Tavily を追加する
         boolean shouldEnableWebSearch = Boolean.TRUE.equals(webSearchEnabled);
 
         if (shouldEnableWebSearch) {
+            String currentProvider = miraAiProperties.getProvider();
+
+            // Vertex AI の場合は Grounding を使用するため、ここではツールを追加しない
+            if ("vertex-ai-gemini".equals(currentProvider)) {
+                return tools;
+            }
+
             String tavilyKey = settingService.getString(tenantId, MiraSettingService.KEY_TAVILY_API_KEY, null);
             if (tavilyKey != null && !tavilyKey.isEmpty()) {
                 // Use factory to create tool
@@ -888,7 +912,6 @@ public class MiraChatService {
                 log.warn("Web search requested but Tavily API key is not configured for tenant={}", tenantId);
             }
         }
-
         return tools;
     }
 
