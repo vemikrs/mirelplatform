@@ -3,7 +3,7 @@
  * 
  * GitHub Copilot風の右下コンパクトウィンドウUI
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   cn,
@@ -99,7 +99,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePanel]);
   
-  const handleSend = (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]) => {
+  const handleSend = useCallback((message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]) => {
     if (editingMessageId && activeConversationId) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversationId, editingMessageId);
@@ -113,7 +113,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     if (isMinimized) {
       setIsMinimized(false);
     }
-  };
+  }, [editingMessageId, activeConversationId, resendEditedMessage, sendMessage, selectedProvider, isMinimized, setIsMinimized]);
   
   const handleEditMessage = (messageId: string) => {
     if (!activeConversationId) return;
