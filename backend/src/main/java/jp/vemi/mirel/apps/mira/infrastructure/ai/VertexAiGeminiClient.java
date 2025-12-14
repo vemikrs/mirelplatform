@@ -91,7 +91,15 @@ public class VertexAiGeminiClient implements AiProviderClient {
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
-            Prompt prompt = new Prompt(messages);
+            // オプション生成 (リクエスト単位で上書き)
+            VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
+                    .model(properties.getVertexAi().getModel())
+                    .temperature(request.getTemperature() != null ? request.getTemperature()
+                            : properties.getVertexAi().getTemperature())
+                    .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                    .build();
+
+            Prompt prompt = new Prompt(messages, options);
 
             // TODO: ToolCallback / Function Call 対応は必要に応じて実装
             // 現状はシンプルチャットのみ
@@ -138,7 +146,15 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .map(this::mapMessage)
                 .collect(Collectors.toList());
 
-        Prompt prompt = new Prompt(messages);
+        // オプション生成
+        VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
+                .model(properties.getVertexAi().getModel())
+                .temperature(request.getTemperature() != null ? request.getTemperature()
+                        : properties.getVertexAi().getTemperature())
+                .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                .build();
+
+        Prompt prompt = new Prompt(messages, options);
 
         return client.prompt(prompt)
                 .stream()
