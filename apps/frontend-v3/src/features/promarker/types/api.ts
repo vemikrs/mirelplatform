@@ -193,10 +193,11 @@ export type ReloadStencilMasterResult = null;
 
 /**
  * File Upload Response
+ * Matches backend FileUploadResult { uuid, fileName, paths }
  */
 export interface FileUploadResult {
-  fileId: string;
-  name: string;
+  uuid: string;
+  fileName: string;
 }
 
 // ============================================

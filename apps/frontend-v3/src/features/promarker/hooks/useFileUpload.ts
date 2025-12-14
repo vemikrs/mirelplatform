@@ -5,10 +5,11 @@ import { handleApiError } from '@/lib/utils/error'
 
 /**
  * File upload response structure
+ * Matches backend FileUploadResult { uuid, fileName, paths }
  */
 interface FileUploadResult {
-  fileId: string
-  name: string
+  uuid: string
+  fileName: string
 }
 
 /**
@@ -24,8 +25,8 @@ interface FileUploadResult {
  * const handleFileChange = async (file: File) => {
  *   const result = await uploadMutation.mutateAsync(file)
  *   
- *   if (result.data && result.data.length > 0) {
- *     const fileId = result.data[0].fileId
+ *   if (result.data) {
+ *     const fileId = result.data.uuid
  *     // Set fileId to parameter value
  *     setParameterValue('configFile', fileId)
  *   }
@@ -38,7 +39,7 @@ export function useFileUpload() {
       const formData = new FormData()
       formData.append('file', file)
       
-      const response = await apiClient.post<ApiResponse<FileUploadResult[]>>(
+      const response = await apiClient.post<ApiResponse<FileUploadResult>>(
         '/commons/upload',
         formData,
         {
@@ -58,11 +59,8 @@ export function useFileUpload() {
       }
       
       // Success notification is handled by the component
-      if (data.data && data.data.length > 0) {
-        const uploadedFile = data.data[0]
-        if (uploadedFile) {
-          console.log(`File uploaded: ${uploadedFile.name} (ID: ${uploadedFile.fileId})`)
-        }
+      if (data.data) {
+        console.log(`File uploaded: ${data.data.fileName} (ID: ${data.data.uuid})`)
       }
     },
     onError: (error) => {
