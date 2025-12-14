@@ -12,7 +12,7 @@ export interface UserProfile {
   displayName: string;
   firstName?: string;
   lastName?: string;
-  avatarUrl?: string; // URL starts with /mapi/api/..., transformed from /mipla2/api/...
+  avatarUrl?: string; // URL format: /mipla2/api/files/avatars/... (static file proxy)
   bio?: string;
   phoneNumber?: string;
   preferredLanguage?: string;
@@ -69,8 +69,10 @@ export interface LicenseInfo {
  */
 function transformAvatarUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  // Replace backend context /mipla2 with frontend proxy /mapi
-  return url.replace(/^\/mipla2/, '/mapi');
+  // Avatar URLs use /mipla2 for static file access (direct passthrough proxy)
+  // No transformation needed - backend returns /mipla2/api/files/avatars/...
+  // which is proxied directly to backend without rewrite
+  return url;
 }
 
 /**

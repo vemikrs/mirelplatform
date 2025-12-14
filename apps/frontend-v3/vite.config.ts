@@ -52,6 +52,7 @@ function createProxyConfig() {
   const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:3000';
   
   return {
+    // API endpoints proxy - rewrites /mapi to /mipla2
     '/mapi': {
       target: `${backendUrl}/mipla2`,
       changeOrigin: true,
@@ -68,6 +69,12 @@ function createProxyConfig() {
           }
         });
       },
+    },
+    // Static files proxy (avatars, uploaded files, etc.) - direct passthrough
+    // This is needed for <img> and other static resource requests that bypass API client
+    '/mipla2': {
+      target: backendUrl,
+      changeOrigin: true,
     },
   };
 }
