@@ -231,9 +231,11 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
         try {
 
+            log.info("Creating multimodal message with {} attached files", msg.getAttachedFiles().size());
             final List<Media> media = msg.getAttachedFiles().stream().map(attachedFile -> {
 
                 try {
+                log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(), attachedFile.getMimeType());
                 String filePath = getFilePathFromFileId(attachedFile.getFileId());
                 if (filePath == null) {
                     log.warn("File not found for fileId: {}", attachedFile.getFileId());
@@ -244,6 +246,7 @@ public class VertexAiGeminiClient implements AiProviderClient {
                     log.warn("File does not exist: {}", filePath);
                     return null;
                 }
+                log.debug("File loaded successfully: {}", filePath);
 
                 return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
 
@@ -259,7 +262,7 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .build();
 
         } catch (Exception e) {
-            log.error("Failed to create multimodal user message: {}",  e);
+            log.error("Failed to create multimodal user message", e);
             return new UserMessage(msg.getContent());
         }
     }
