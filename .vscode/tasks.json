@@ -218,6 +218,34 @@
       }
     },
     {
+      "label": "Frontend-v3: Preview",
+      "type": "shell",
+      "command": "fuser -k 4173/tcp 2>/dev/null || true; pnpm --filter frontend-v3 preview -- --host 0.0.0.0 --port 4173",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "${env:HOME}/.nvm/versions/node/v22.20.0/bin:${env:PATH}"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "Frontend-v3: Stop",
       "type": "shell",
       "command": "pkill",
