@@ -314,7 +314,7 @@ export function SideNavigation({ items, brand, helpAction, className, onClose, i
                         onClick={handleCollapseOrClose}
                         aria-label={isMobile ? "メニューを閉じる" : "サイドバーを折りたたむ"}
                       >
-                        {isMobile ? <PanelLeftClose className="size-4" /> : <PanelLeftClose className="size-4" />}
+                        <PanelLeftClose className="size-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">

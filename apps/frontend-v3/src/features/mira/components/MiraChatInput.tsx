@@ -450,9 +450,6 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
             <button
               onClick={() => {
                 setWebSearchEnabled(!webSearchEnabled);
-                // メニューは開いたままにするか閉じるか？ UX的には開いたままが便利だが、他は閉じる動作。
-                // ここではトグルなので開いたままにする（が、フォーカス戻る問題があるかも）
-                // いったんCloseせずにstateだけ変える
               }}
               className={cn(
                 "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
@@ -463,8 +460,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               <span>Web検索</span>
               <Switch 
                 checked={webSearchEnabled}
-                onCheckedChange={setWebSearchEnabled}
-                className="ml-auto scale-75"
+                onCheckedChange={(checked) => {
+                  // Switch自体のクリックイベントは親のonClickと重複するため、ここでは何もしない
+                  // 親buttonのonClickで状態を変更する
+                }}
+                className="ml-auto scale-75 pointer-events-none"
               />
             </button>
             <div className="border-t my-1" />
