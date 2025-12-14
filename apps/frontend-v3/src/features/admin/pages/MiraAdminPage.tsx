@@ -107,6 +107,7 @@ const SettingsTab = () => {
     useEffect(() => {
         loadConfig();
         loadProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tenantId]);
     
     // Load models when provider changes
@@ -114,6 +115,7 @@ const SettingsTab = () => {
         if (aiConfig.provider) {
             loadModels(aiConfig.provider);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [aiConfig.provider]);
 
     const loadConfig = async () => {
@@ -125,8 +127,7 @@ const SettingsTab = () => {
             ]);
             setAiConfig(ai);
             setLimitsConfig(lim);
-        } catch (e) {
-            console.error(e);
+        } catch (_) {
             toast({ variant: "destructive", title: "設定の読み込みに失敗しました" });
         } finally {
             setLoading(false);
@@ -138,8 +139,7 @@ const SettingsTab = () => {
         try {
             const data = await getProviders();
             setProviders(data);
-        } catch (e) {
-            console.error(e);
+        } catch (_) {
             toast({ variant: "destructive", title: "プロバイダ一覧の取得に失敗しました" });
         } finally {
             setLoadingProviders(false);
@@ -151,8 +151,7 @@ const SettingsTab = () => {
         try {
             const data = await getModels(provider);
             setModels(data);
-        } catch (e) {
-            console.error(e);
+        } catch (_) {
             toast({ variant: "destructive", title: "モデル一覧の取得に失敗しました" });
         } finally {
             setLoadingModels(false);
@@ -461,6 +460,7 @@ const ContextManagementWrapper = ({ tenantId }: { tenantId: string }) => {
 
      useEffect(() => {
          fetchContexts();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
      }, [tenantId]);
 
      const handleCreate = async () => {
@@ -483,7 +483,7 @@ const ContextManagementWrapper = ({ tenantId }: { tenantId: string }) => {
             setCreating(false);
             setNewContext({ category: '', content: '', priority: 0 });
             fetchContexts();
-        } catch (e) {
+        } catch (_) {
             toast({ variant: "destructive", title: "作成失敗" });
         }
      };

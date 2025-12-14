@@ -74,14 +74,17 @@ public class MiraModelRegistry {
 
     /** 有効/無効 */
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 
     /** 推奨モデルフラグ */
     @Column(name = "is_recommended")
+    @Builder.Default
     private Boolean isRecommended = false;
 
     /** 実験的モデルフラグ */
     @Column(name = "is_experimental")
+    @Builder.Default
     private Boolean isExperimental = false;
 
     /** その他メタデータ (JSON文字列) */
