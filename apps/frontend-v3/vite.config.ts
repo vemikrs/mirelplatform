@@ -14,6 +14,82 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@mirel/ui'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // node_modules のベンダーライブラリを分割
+          if (id.includes('node_modules')) {
+            // React コアライブラリ
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            // ルーティング関連
+            if (id.includes('react-router')) {
+              return 'vendor-router';
+            }
+            // TanStack Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'vendor-query';
+            }
+            // Radix UI コンポーネント
+            if (id.includes('@radix-ui')) {
+              return 'vendor-radix';
+            }
+            // アイコンライブラリ
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            // Monaco Editor (大きいので単独分割)
+            if (id.includes('monaco-editor') || id.includes('@monaco-editor')) {
+              return 'vendor-monaco';
+            }
+            // State management
+            if (id.includes('zustand')) {
+              return 'vendor-state';
+            }
+            // HTTP client
+            if (id.includes('axios')) {
+              return 'vendor-http';
+            }
+            // Code editor
+            if (id.includes('codemirror') || id.includes('@codemirror') || id.includes('@uiw/react-codemirror')) {
+              return 'vendor-codemirror';
+            }
+            // Form libraries
+            if (id.includes('react-hook-form') || id.includes('zod')) {
+              return 'vendor-form';
+            }
+            // その他のベンダーライブラリ
+            return 'vendor-misc';
+          }
+          
+          // 機能モジュールごとに分割
+          if (id.includes('/src/features/')) {
+            if (id.includes('/features/promarker/')) {
+              return 'feature-promarker';
+            }
+            if (id.includes('/features/mira/')) {
+              return 'feature-mira';
+            }
+            if (id.includes('/features/studio/')) {
+              return 'feature-studio';
+            }
+            if (id.includes('/features/admin/')) {
+              return 'feature-admin';
+            }
+            if (id.includes('/features/auth/')) {
+              return 'feature-auth';
+            }
+            if (id.includes('/features/stencil-editor/')) {
+              return 'feature-stencil-editor';
+            }
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1500, // React本体は1.4MBだがgzip後は432KB。実用上問題ないため閾値を調整
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
