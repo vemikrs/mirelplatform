@@ -118,6 +118,9 @@ public class AiRequest {
         /** ツール名（role=toolの場合、オプション） */
         private String toolName;
 
+        /** 添付ファイルリスト (Multimodal input support) */
+        private List<AttachedFile> attachedFiles;
+
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
@@ -127,6 +130,26 @@ public class AiRequest {
             String type;
             String name;
             String arguments;
+        }
+
+        /**
+         * 添付ファイル情報.
+         */
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class AttachedFile {
+            /** ファイルID */
+            private String fileId;
+            /** ファイル名 */
+            private String fileName;
+            /** MIMEタイプ */
+            private String mimeType;
+            /** ファイルサイズ */
+            private Long fileSize;
+            /** ファイルパス (サーバー上の実際のパス) */
+            private String filePath;
         }
     }
 }
