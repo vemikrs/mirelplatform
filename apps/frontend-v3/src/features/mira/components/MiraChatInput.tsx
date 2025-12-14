@@ -3,8 +3,8 @@
  * 
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch } from '@mirel/ui';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
+import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch, toast } from '@mirel/ui';
 import { 
   Send, 
   Loader2, 
@@ -154,6 +154,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         setAvailableModels(models);
       } catch (error) {
         console.error('Failed to load available models:', error);
+        toast({
+          title: 'モデル読み込みエラー',
+          description: '利用可能なモデルの読み込みに失敗しました',
+          variant: 'destructive',
+        });
       }
     };
     loadModels();
@@ -168,6 +173,17 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   const menuRef = useRef<HTMLDivElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null); // Phase 4
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // モデルソート・フィルタリングロジックを共通化
+  const sortedActiveModels = useMemo(() => {
+    return availableModels
+      .filter(m => m.isActive)
+      .sort((a, b) => {
+        if (a.isRecommended && !b.isRecommended) return -1;
+        if (!a.isRecommended && b.isRecommended) return 1;
+        return a.displayName.localeCompare(b.displayName);
+      });
+  }, [availableModels]);
   
   // ファイルアップロードMutation
   const uploadMutation = useFileUpload();
@@ -325,11 +341,12 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           // 並列アップロード
           const uploadPromises = attachedFiles.map(async (attachedFile) => {
             const result = await uploadMutation.mutateAsync(attachedFile.file);
-            // result.data は FileUploadResult { uuid, fileName, paths } 形式
-            if (result.data && result.data.uuid && result.data.fileName) {
+            // result.data は FileUploadResult[] 形式: [{ fileId, name }]
+            const uploadedFile = result.data?.[0];
+            if (uploadedFile?.fileId && uploadedFile?.name) {
               return {
-                fileId: result.data.uuid,
-                fileName: result.data.fileName,
+                fileId: uploadedFile.fileId,
+                fileName: uploadedFile.name,
                 mimeType: attachedFile.file.type,
                 fileSize: attachedFile.file.size,
               } as AttachedFileInfo;
@@ -341,7 +358,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           uploadedFileInfos = results.filter((r): r is AttachedFileInfo => r !== null);
         } catch (error) {
           console.error('File upload failed:', error);
-          // アップロード失敗時もメッセージは送信
+          toast({
+            title: 'ファイルアップロードエラー',
+            description: 'ファイルのアップロードに失敗しました。メッセージのみ送信されます。',
+            variant: 'destructive',
+          });
         } finally {
           setIsUploading(false);
         }
@@ -636,14 +657,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                           className="w-full px-2 py-1.5 text-sm border rounded-md bg-background"
                         >
                           <option value="">自動選択 (推奨)</option>
-                          {availableModels
-                            .filter(m => m.isActive)
-                            .sort((a, b) => {
-                              if (a.isRecommended && !b.isRecommended) return -1;
-                              if (!a.isRecommended && b.isRecommended) return 1;
-                              return a.displayName.localeCompare(b.displayName);
-                            })
-                            .map((model) => (
+                          {sortedActiveModels.map((model) => (
                               <option key={model.id} value={model.modelName}>
                                 {model.displayName}
                                 {model.isRecommended && ' ⭐'}
@@ -761,14 +775,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
                         利用可能なモデル
                       </p>
-                      {availableModels
-                        .filter(m => m.isActive)
-                        .sort((a, b) => {
-                          if (a.isRecommended && !b.isRecommended) return -1;
-                          if (!a.isRecommended && b.isRecommended) return 1;
-                          return a.displayName.localeCompare(b.displayName);
-                        })
-                        .map((model) => (
+                      {sortedActiveModels.map((model) => (
                           <button
                             key={model.id}
                             onClick={() => {

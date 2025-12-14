@@ -39,6 +39,9 @@ import lombok.Setter;
 @Builder
 public class MiraModelRegistry {
 
+    /** JSON シリアライズ/デシリアライズ用の共有ObjectMapper */
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     /** モデルID (例: vertex-ai-gemini:gemini-2.5-flash) */
     @Id
     @Column(length = 255, nullable = false)
@@ -123,8 +126,7 @@ public class MiraModelRegistry {
             return Collections.emptyList();
         }
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(capabilities, new TypeReference<List<String>>() {
+            return OBJECT_MAPPER.readValue(capabilities, new TypeReference<List<String>>() {
             });
         } catch (Exception e) {
             return Collections.emptyList();
@@ -144,8 +146,7 @@ public class MiraModelRegistry {
             return;
         }
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            this.capabilities = mapper.writeValueAsString(list);
+            this.capabilities = OBJECT_MAPPER.writeValueAsString(list);
         } catch (Exception e) {
             this.capabilities = "[]";
         }

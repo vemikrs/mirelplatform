@@ -255,7 +255,7 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 log.error("Failed to load file: {}", attachedFile.getFileId(), e);
                 return null;
             }
-        }).filter(mediaItem -> mediaItem != null).toList();
+        }).filter(java.util.Objects::nonNull).toList();
 
         return UserMessage.builder()
                 .text(msg.getContent())
