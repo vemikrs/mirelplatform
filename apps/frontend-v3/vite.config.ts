@@ -69,10 +69,5 @@ function createProxyConfig() {
         });
       },
     },
-    '/mipla2': {
-      target: `${backendUrl}/mipla2`,
-      changeOrigin: true,
-      rewrite: (path: string) => path.replace(/^\/mipla2/, ''),
-    },
   };
 }
