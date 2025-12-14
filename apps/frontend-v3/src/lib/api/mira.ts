@@ -559,10 +559,10 @@ export interface ProviderInfo {
  * プロバイダ一覧取得（管理者向け）
  */
 export async function getProviders(): Promise<ProviderInfo[]> {
-  const response = await apiClient.get<{ data: ProviderInfo[] }>(
+  const response = await apiClient.get<ProviderInfo[]>(
     '/apps/mira/api/admin/providers'
   );
-  return response.data.data || [];
+  return response.data || [];
 }
 
 /**
@@ -570,11 +570,11 @@ export async function getProviders(): Promise<ProviderInfo[]> {
  */
 export async function getModels(provider?: string): Promise<ModelInfo[]> {
   const params = provider ? { provider } : {};
-  const response = await apiClient.get<{ data: ModelInfo[] }>(
+  const response = await apiClient.get<ModelInfo[]>(
     '/apps/mira/api/admin/models',
     { params }
   );
-  return response.data.data || [];
+  return response.data || [];
 }
 
 /**
