@@ -10,9 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@mirel/ui': path.resolve(__dirname, '../../packages/ui/src'),
     },
+    // React重複インスタンスを防ぐため、単一インスタンスに統一
+    dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
     exclude: ['@mirel/ui'],
+    // Reactを事前バンドルに含めることで、@mirel/uiとの整合性を保つ
+    include: ['react', 'react-dom'],
   },
   build: {
     rollupOptions: {
