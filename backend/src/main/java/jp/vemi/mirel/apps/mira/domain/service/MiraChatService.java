@@ -625,11 +625,22 @@ public class MiraChatService {
         if (conversationId != null && !conversationId.isEmpty()) {
             Optional<MiraConversation> existing = conversationRepository.findById(conversationId);
 
-            if (existing.isPresent()
-                    && existing.get().getTenantId().equals(tenantId)
-                    && existing.get().getUserId().equals(userId)
-                    && MiraConversation.ConversationStatus.ACTIVE.equals(existing.get().getStatus())) {
-                return existing.get();
+            if (existing.isPresent()) {
+                // 所有者チェック
+                if (existing.get().getTenantId().equals(tenantId)
+                        && existing.get().getUserId().equals(userId)) {
+                    // 自分自身のものであれば返す
+                    if (MiraConversation.ConversationStatus.ACTIVE.equals(existing.get().getStatus())) {
+                        return existing.get();
+                    }
+                } else {
+                    // 他人の会話IDが指定された場合は、IDを無視して新規作成する（セキュリティ対策）
+                    // 以前はここで何も返さず下流で save してしまい、所有者が上書きされていた可能性がある
+                    log.warn(
+                            "Conversation ownership mismatch or invalid status. Creating new conversation instead of using requestedId={}. user={}, tenant={}",
+                            conversationId, userId, tenantId);
+                    return createConversation(tenantId, userId, mode, null);
+                }
             }
         }
 
