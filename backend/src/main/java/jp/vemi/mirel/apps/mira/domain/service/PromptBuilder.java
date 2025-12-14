@@ -147,7 +147,25 @@ public class PromptBuilder {
         // ユーザーメッセージを追加
         // XML Sandboxing: ユーザー入力をタグで囲んでプロンプトインジェクションを防ぐ
         String sandboxedContent = "<user_input>\n" + request.getMessage().getContent() + "\n</user_input>";
-        messages.add(AiRequest.Message.user(sandboxedContent));
+        
+        // ファイル添付情報を変換
+        List<AiRequest.Message.AttachedFile> aiAttachedFiles = null;
+        if (request.getMessage().getAttachedFiles() != null && !request.getMessage().getAttachedFiles().isEmpty()) {
+            aiAttachedFiles = request.getMessage().getAttachedFiles().stream()
+                    .map(f -> AiRequest.Message.AttachedFile.builder()
+                            .fileId(f.getFileId())
+                            .fileName(f.getFileName())
+                            .mimeType(f.getMimeType())
+                            .fileSize(f.getFileSize())
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        
+        messages.add(AiRequest.Message.builder()
+                .role("user")
+                .content(sandboxedContent)
+                .attachedFiles(aiAttachedFiles)
+                .build());
 
         return AiRequest.builder()
                 .messages(messages)
