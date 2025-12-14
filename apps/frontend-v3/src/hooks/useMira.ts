@@ -372,11 +372,14 @@ export function useMira() {
     resendEditedMessage,
   } = useMiraStore();
   
+  // conversationオブジェクトから必要なプロパティを分割代入
+  const { hasMore, currentPage, fetchConversations } = conversation;
+  
   const loadMoreConversations = useCallback(async () => {
-    if (conversation.hasMore) {
-      await conversation.fetchConversations(conversation.currentPage + 1);
+    if (hasMore) {
+      await fetchConversations(currentPage + 1);
     }
-  }, [conversation.hasMore, conversation.currentPage, conversation.fetchConversations]);
+  }, [hasMore, currentPage, fetchConversations]);
 
   return {
     // パネル
