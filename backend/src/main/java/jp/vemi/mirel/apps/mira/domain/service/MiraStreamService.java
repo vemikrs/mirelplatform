@@ -21,6 +21,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -45,6 +46,7 @@ public class MiraStreamService {
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
     private final ModelCapabilityValidator modelCapabilityValidator;
+    private final AdminSystemSettingsService adminSystemSettingsService;
 
     /**
      * ストリームチャット実行.
@@ -100,8 +102,19 @@ public class MiraStreamService {
                 request, mode, history, finalContext);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
+        // Web検索の有効化判定 (MiraChatServiceと同様のロジック)
+        boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
+                adminSystemSettingsService.getSystemSettings().getOrDefault(
+                        AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
+        boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
+        boolean isWebSearchActive = isSystemWebSearchEnabled && isRequestWebSearchEnabled;
+
+        if (isWebSearchActive) {
+            aiRequest.setGoogleSearchRetrieval(true);
+        }
+
         List<org.springframework.ai.tool.ToolCallback> tools = chatService.resolveTools(tenantId, userId,
-                request.getWebSearchEnabled());
+                isWebSearchActive);
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING
@@ -141,7 +154,19 @@ public class MiraStreamService {
         // ArrayList is fine if we are careful.
         List<AiRequest.Message.ToolCall> accumulatedToolCalls = new ArrayList<>();
 
-        return client.stream(aiRequest)
+        // Google Search Grounding (Vertex AI) が有効な場合は、ストリーミングで空応答になる問題があるため
+        // ブロッキングChat呼び出しを行い、単一のチャンクとしてストリームをシミュレートする (Best Practice/Workaround)
+        Flux<AiResponse> responseStream;
+        if (Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval())) {
+            log.info("Google Search Grounding enabled. Switching to blocking chat for reliability.");
+            responseStream = Mono.fromCallable(() -> client.chat(aiRequest))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .flux();
+        } else {
+            responseStream = client.stream(aiRequest);
+        }
+
+        return responseStream
                 .map(aiResponse -> {
                     if (aiResponse.hasError()) {
                         return MiraStreamResponse.error("AI_ERROR", aiResponse.getErrorMessage());
