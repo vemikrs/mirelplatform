@@ -198,11 +198,6 @@ public class AuthenticationController {
             String refreshToken = request != null ? request.getRefreshToken() : null;
             authenticationService.logout(refreshToken);
 
-            // Invalidate session
-            if (httpRequest.getSession(false) != null) {
-                httpRequest.getSession(false).invalidate();
-            }
-
             // Clear cookies
             clearTokenCookies(httpResponse);
 
