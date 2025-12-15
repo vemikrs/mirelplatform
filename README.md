@@ -2,27 +2,23 @@
 
 [![Build Status](https://dev.azure.com/vemicho/mir/_apis/build/status/vemic.promarker?branchName=master)](https://dev.azure.com/vemicho/mir/_build/latest?definitionId=2&branchName=azure-pipelines)
 
-**mirelplatform** は、ビジネスアプリケーション開発のための包括的な統合プラットフォームです。
-独自の技術フレームワーク上に構築されており、コード生成による開発効率化と、No-Code/Low-Code による柔軟なアプリケーション構築の両方を提供します。
+**mirelplatform** は、ビジネスアプリケーション開発のための包括的な統合プラットフォームです。  
+SpringBootベースで構築されており、一般的なエンタープライズプラットフォームに加え、コード生成による開発効率化と、No-Code/Low-Code による柔軟なアプリケーション構築の両方を提供します。
 
-## 🌟 主な製品ラインナップ
+## 🌟 主な機能
 
-### 1. ProMarker
+### 1. 基本機能
 
-**定型ソースコード生成プラットフォーム**
-
-開発プロジェクトのテンプレートや機能スケルトンを自動生成するアプリケーションです。
-定型的なディレクトリ構成やソースコード、初期データを独自技術で自動生成し、開発の高速化や品質の平準化に貢献します。
-
-- **テンプレート管理**: FreeMarker を使用した高度なテンプレートエンジン
-- **アセット管理**: プロジェクト資産のセキュアな管理
-- **Web自動化**: Selenide を統合したブラウザ自動化基盤
+- **Mira AI(mirel Assistant):** 生成AIチャットボット
+- JWT＆HttpOnly Cookies認証によるセキュアな認証管理
+- RBAC(Role-Based Access Control)
+- 柔軟なシステム管理、テナント管理、組織管理、ユーザ管理等
 
 ### 2. mirel Studio
 
 **No-Code / Low-Code 統合開発環境 (IDE)**
 
-ビジネスアプリケーションを視覚的に構築・運用するための統合環境です。
+モデル駆動でビジネスアプリケーションを視覚的に構築・運用するための統合環境です。  
 データモデル、画面、ロジックをノーコードで定義し、即座に実行可能なアプリケーションとしてデプロイできます。
 
 - **Modeler**: 業務データモデルの設計・定義
@@ -30,6 +26,16 @@
 - **Flow Designer**: ビジネスロジックのフロー定義
 - **Data Browser**: データの閲覧・管理
 - **Release Center**: アプリケーションのバージョン管理とリリース
+
+### 3. ProMarker
+
+**定型ソースコード生成プラットフォーム**
+
+開発プロジェクトのテンプレートや機能スケルトンを自動生成するアプリケーションです。
+定型的なディレクトリ構成やソースコード、初期データを独自技術で自動生成し、開発の高速化や品質の平準化に貢献します。
+
+- **テンプレート管理**: FreeMarker を拡張した高度なテンプレートエンジン
+- **アセット管理**: プロジェクト資産のセキュアな管理
 
 ---
 
@@ -41,7 +47,7 @@
 
 - **Framework**: Spring Boot 3.3.0
 - **Language**: Java 21 (Microsoft JVM)
-- **Database**: H2 / MySQL
+- **Database**: PostgreSQL
 - **Features**: JWT/OAuth2 認証, バッチ処理, テンプレートエンジン (Freemarker)
 
 ### フロントエンド (Frontend)
@@ -60,14 +66,37 @@
 
 ## 🚀 セットアップガイド
 
-### 前提条件
+### Docker環境
 
-- Java 21 (Microsoft JVM 推奨)
+#### 前提条件
+
+- Docker / Docker compose
+
+#### 環境構築
+
+1. Docker環境のpull
+    ```bash
+    docker pull ghcr.io/vemikrs/mirelplatform:latest
+    ```
+2. サービス起動
+    ```bash
+    docker-compose up -d
+    ```
+
+#### Docker-composeでの追加設定
+
+準備中
+
+### ローカル環境
+
+#### 前提条件
+
+- Java 21 (Microsoft JVM 推奨
 - Node.js 22.x
 - Gradle 8.4+
 - Docker (オプション: DBや環境分離用)
 
-### 環境構築 (DevContainer / Codespaces)
+#### 環境構築 (DevContainer / Codespaces)
 
 1. **リポジトリのクローン**:
 
