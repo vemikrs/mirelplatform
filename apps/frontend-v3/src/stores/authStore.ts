@@ -54,6 +54,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   otpState: null,
 
       login: async (request: LoginRequest) => {
+        // セキュリティのため、ログイン時に機密性の高いローカルストレージをクリア
+        // (以前のユーザーのデータが残存するのを防ぐ)
+        clearClientStorage();
+
         const response = await authApi.login(request);
         set({
           user: response.user,
@@ -66,6 +70,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       },
 
       signup: async (request: SignupRequest) => {
+        // セキュリティのため、サインアップ時にもローカルストレージをクリア
+        clearClientStorage();
+
         const response = await authApi.register(request);
         set({
           user: response.user,
@@ -236,4 +243,29 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       },
     })
 );
+
+/**
+ * 機密性の高いローカルストレージデータをクリアするヘルパー
+ * 
+ * ログアウト時だけでなく、ログイン/サインアップ時にも実行することで、
+ * 共有端末などでのデータ残留リスク（Session Fixationの一種）を防ぐ。
+ * 
+ * 注意: MiraStoreは永続化されているが、サーバー同期されるためクリアしても復元可能。
+ */
+const clearClientStorage = () => {
+  try {
+    console.log('[Auth] Clearing sensitive client storage...');
+    
+    // 1. Mira(AIチャット)の永続化ストアをクリア
+    // Zustand persist middleware のキー
+    localStorage.removeItem('mira-store');
+    
+    // 2. Mira入力履歴をクリア
+    localStorage.removeItem('mira-input-history');
+    
+    console.log('[Auth] Client storage cleared successfully');
+  } catch (error) {
+    console.warn('[Auth] Failed to clear client storage', error);
+  }
+};
 
