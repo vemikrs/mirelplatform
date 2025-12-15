@@ -48,8 +48,6 @@ public class AuthenticationController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
-            // Invalidate existing session to prevent fixation
-            invalidateSession(httpRequest);
 
             // IP と UserAgent を注入
             request.setIpAddress(getClientIp(httpRequest));
@@ -78,8 +76,6 @@ public class AuthenticationController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
-            // Invalidate existing session to prevent fixation
-            invalidateSession(httpRequest);
 
             AuthenticationResponse response = authenticationService.signup(request);
 
@@ -104,8 +100,6 @@ public class AuthenticationController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
-            // Invalidate existing session to prevent fixation
-            invalidateSession(httpRequest);
 
             // 認証済み（SystemUserとして）であることを確認
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -145,8 +139,6 @@ public class AuthenticationController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
-            // Invalidate existing session to prevent fixation
-            invalidateSession(httpRequest);
 
             AuthenticationResponse response = authenticationService.signupWithOtp(request);
 
@@ -489,34 +481,5 @@ public class AuthenticationController {
             ip = ip.split(",")[0].trim();
         }
         return ip;
-    }
-
-    /**
-     * Invalidate existing session if it exists.
-     * This prevents session fixation attacks and ensures a clean state for new
-     * logins.
-     * Note: We use changeSessionId() and manual attribute clearing instead of
-     * invalidate()
-     * to avoid "Session was invalidated" IllegalStateException issues with Spring
-     * Session Redis
-     * when the session is accessed/committed later in the filter chain.
-     */
-    private void invalidateSession(HttpServletRequest request) {
-        jakarta.servlet.http.HttpSession session = request.getSession(false);
-        if (session != null) {
-            logger.debug("Rotating existing session ID and clearing attributes before authentication");
-            // Change the session ID to protect against session fixation
-            request.changeSessionId();
-
-            // Clear all attributes to ensure a clean state (effectively invalidating the
-            // data)
-            java.util.Enumeration<String> attributeNames = session.getAttributeNames();
-            while (attributeNames.hasMoreElements()) {
-                session.removeAttribute(attributeNames.nextElement());
-            }
-        } else {
-            // Create a new session if none exists
-            request.getSession(true);
-        }
     }
 }
