@@ -47,7 +47,7 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
     private final MiraAiProperties properties;
     private final VertexAiGeminiChatModel chatModel;
-    
+
     @Autowired(required = false)
     private jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository fileManagementRepository;
 
@@ -102,12 +102,22 @@ public class VertexAiGeminiClient implements AiProviderClient {
                     .map(this::mapMessage)
                     .collect(Collectors.toList());
 
+            // マルチモーダル入力がある場合はGoogle Search Groundingを無効化 (API制約/安定性のため)
+            boolean hasMedia = request.getMessages().stream()
+                    .anyMatch(m -> m.getAttachedFiles() != null && !m.getAttachedFiles().isEmpty());
+
+            boolean enableGrounding = request.isGoogleSearchRetrieval();
+            if (hasMedia && enableGrounding) {
+                log.warn("Disabling Google Search Grounding because multimodal input is present.");
+                enableGrounding = false;
+            }
+
             // オプション生成 (リクエスト単位で上書き)
             VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
                     .model(properties.getVertexAi().getModel())
                     .temperature(request.getTemperature() != null ? request.getTemperature()
                             : properties.getVertexAi().getTemperature())
-                    .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                    .googleSearchRetrieval(enableGrounding)
                     .build();
 
             Prompt prompt = new Prompt(messages, options);
@@ -158,12 +168,22 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .map(this::mapMessage)
                 .collect(Collectors.toList());
 
+        // マルチモーダル入力がある場合はGoogle Search Groundingを無効化
+        boolean hasMedia = request.getMessages().stream()
+                .anyMatch(m -> m.getAttachedFiles() != null && !m.getAttachedFiles().isEmpty());
+
+        boolean enableGrounding = request.isGoogleSearchRetrieval();
+        if (hasMedia && enableGrounding) {
+            log.warn("Disabling Google Search Grounding because multimodal input is present.");
+            enableGrounding = false;
+        }
+
         // オプション生成
         VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
                 .model(properties.getVertexAi().getModel())
                 .temperature(request.getTemperature() != null ? request.getTemperature()
                         : properties.getVertexAi().getTemperature())
-                .googleSearchRetrieval(request.isGoogleSearchRetrieval())
+                .googleSearchRetrieval(enableGrounding)
                 .build();
 
         Prompt prompt = new Prompt(messages, options);
@@ -189,7 +209,8 @@ public class VertexAiGeminiClient implements AiProviderClient {
             content = response.getResult().getOutput().getText();
         } else {
             String finishReason = "unknown";
-            if (response.getResult().getMetadata() != null && response.getResult().getMetadata().getFinishReason() != null) {
+            if (response.getResult().getMetadata() != null
+                    && response.getResult().getMetadata().getFinishReason() != null) {
                 finishReason = response.getResult().getMetadata().getFinishReason();
             }
             log.warn("[VertexAiGemini] Stream response text is null. FinishReason: {}", finishReason);
@@ -221,11 +242,12 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 return new UserMessage(msg.getContent());
         }
     }
-    
+
     /**
      * マルチモーダルユーザーメッセージを作成.
      * 
-     * @param msg AIリクエストメッセージ
+     * @param msg
+     *            AIリクエストメッセージ
      * @return マルチモーダルUserMessage
      */
     private UserMessage createMultimodalUserMessage(AiRequest.Message msg) {
@@ -236,31 +258,32 @@ public class VertexAiGeminiClient implements AiProviderClient {
             final List<Media> media = msg.getAttachedFiles().stream().map(attachedFile -> {
 
                 try {
-                log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(), attachedFile.getMimeType());
-                String filePath = getFilePathFromFileId(attachedFile.getFileId());
-                if (filePath == null) {
-                    log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                    log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(),
+                            attachedFile.getMimeType());
+                    String filePath = getFilePathFromFileId(attachedFile.getFileId());
+                    if (filePath == null) {
+                        log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                        return null;
+                    }
+                    FileSystemResource resource = new FileSystemResource(filePath);
+                    if (!resource.exists()) {
+                        log.warn("File does not exist: {}", filePath);
+                        return null;
+                    }
+                    log.debug("File loaded successfully: {}", filePath);
+
+                    return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
+
+                } catch (Exception e) {
+                    log.error("Failed to load file: {}", attachedFile.getFileId(), e);
                     return null;
                 }
-                FileSystemResource resource = new FileSystemResource(filePath);
-                if (!resource.exists()) {
-                    log.warn("File does not exist: {}", filePath);
-                    return null;
-                }
-                log.debug("File loaded successfully: {}", filePath);
+            }).filter(java.util.Objects::nonNull).toList();
 
-                return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
-
-            } catch (Exception e) {
-                log.error("Failed to load file: {}", attachedFile.getFileId(), e);
-                return null;
-            }
-        }).filter(java.util.Objects::nonNull).toList();
-
-        return UserMessage.builder()
-                .text(msg.getContent())
-                .media(media)
-                .build();
+            return UserMessage.builder()
+                    .text(msg.getContent())
+                    .media(media)
+                    .build();
 
         } catch (Exception e) {
             log.error("Failed to create multimodal user message", e);
@@ -269,11 +292,12 @@ public class VertexAiGeminiClient implements AiProviderClient {
             return new UserMessage(msg.getContent());
         }
     }
-    
+
     /**
      * FileIDからファイルパスを取得.
      * 
-     * @param fileId ファイルID
+     * @param fileId
+     *            ファイルID
      * @return ファイルパス
      */
     private String getFilePathFromFileId(String fileId) {
@@ -281,12 +305,12 @@ public class VertexAiGeminiClient implements AiProviderClient {
             log.warn("FileManagementRepository is not available");
             return null;
         }
-        
+
         return fileManagementRepository.findById(fileId)
                 .map(fm -> fm.getFilePath())
                 .orElse(null);
     }
-    
+
     @Override
     public boolean isAvailable() {
         return this.chatModel != null;

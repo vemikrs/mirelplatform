@@ -90,7 +90,7 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                           file.mimeType.includes('pdf') ? 'document' :
                           ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
                     fileId: file.fileId,
-                    previewUrl: file.mimeType.startsWith('image/') ? `/apps/mira/api/files/${file.fileId}` : undefined
+                    previewUrl: file.mimeType.startsWith('image/') ? `/mapi/apps/mira/api/files/${file.fileId}` : undefined
                   }}
                   readonly={true}
                   compact={compact}
@@ -187,7 +187,7 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                                       file.mimeType.includes('pdf') ? 'document' :
                                       ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
                                 fileId: file.fileId,
-                                previewUrl: file.mimeType.startsWith('image/') ? `/apps/mira/api/files/${file.fileId}` : undefined
+                                previewUrl: file.mimeType.startsWith('image/') ? `/mapi/apps/mira/api/files/${file.fileId}` : undefined
                             }}
                             readonly={true}
                             compact={compact}
