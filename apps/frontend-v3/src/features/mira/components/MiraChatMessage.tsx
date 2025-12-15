@@ -74,6 +74,31 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
               {message.content}
             </p>
           </div>
+          
+          {/* 添付ファイル表示 (User) */}
+          {message.attachedFiles && message.attachedFiles.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 justify-end">
+              {message.attachedFiles.map((file) => (
+                <AttachmentPreview 
+                  key={file.fileId} 
+                  item={{
+                    id: file.fileId,
+                    name: file.fileName,
+                    size: file.fileSize,
+                    type: file.mimeType.startsWith('image/') ? 'image' : 
+                          file.mimeType.startsWith('text/') ? 'text' :
+                          file.mimeType.includes('pdf') ? 'document' :
+                          ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
+                    fileId: file.fileId,
+                    previewUrl: file.mimeType.startsWith('image/') ? `/apps/mira/api/files/${file.fileId}` : undefined
+                  }}
+                  readonly={true}
+                  compact={compact}
+                />
+              ))}
+            </div>
+          )}
+
 
           {/* ユーザーアクション（左側に表示 = flex-row-reverseの末尾） */}
           <div className="flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity px-1">

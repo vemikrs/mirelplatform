@@ -3,30 +3,23 @@
  * 
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch, toast } from '@mirel/ui';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
+import { Button, cn, Switch, toast } from '@mirel/ui';
 import { 
-  Send, 
-  Loader2, 
-  ChevronDown, 
-  HelpCircle, 
-  AlertTriangle, 
-  Paintbrush2, 
-  Workflow, 
   MessageSquare,
   Paperclip,
-  X,
-  FileText,
-  Image,
-  FileCode,
-  File,
   Upload,
-  Eye,
-  Download,
-  Maximize2,
   Settings,
   Menu,
   Globe,
   Sparkles,
+  ChevronDown,
+  HelpCircle,
+  AlertTriangle,
+  Paintbrush2,
+  Workflow,
+  Loader2,
+  Send
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
@@ -173,8 +166,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   // モデルソート・フィルタリングロジックを共通化
   const sortedActiveModels = useMemo(() => {
     return availableModels
-      .filter(m => m.isActive)
-      .sort((a, b) => {
+      .filter((m: ModelInfo) => m.isActive)
+      .sort((a: ModelInfo, b: ModelInfo) => {
         if (a.isRecommended && !b.isRecommended) return -1;
         if (!a.isRecommended && b.isRecommended) return 1;
         return a.displayName.localeCompare(b.displayName);
@@ -275,17 +268,17 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       }));
     
-    setAttachedFiles(prev => [...prev, ...newFiles]);
+    setAttachedFiles((prev: AttachmentItem[]) => [...prev, ...newFiles]);
   };
   
   // ファイル削除処理
   const handleRemoveFile = (id: string) => {
-    setAttachedFiles(prev => {
-      const file = prev.find(f => f.id === id);
+    setAttachedFiles((prev: AttachmentItem[]) => {
+      const file = prev.find((f: AttachmentItem) => f.id === id);
       if (file?.previewUrl) {
         URL.revokeObjectURL(file.previewUrl);
       }
-      return prev.filter(f => f.id !== id);
+      return prev.filter((f: AttachmentItem) => f.id !== id);
     });
   };
   
@@ -307,7 +300,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     e.stopPropagation();
     setIsDragging(false);
     
-    if (e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
       handleAddFiles(e.dataTransfer.files);
     }
   };
@@ -325,8 +318,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     if ((trimmed || attachedFiles.length > 0) && !isLoading && !disabled && !isUploading) {
       // 履歴に追加（重複は除く）
       if (trimmed) {
-        setInputHistory((prev) => {
-          const filtered = prev.filter((h) => h !== trimmed);
+        setInputHistory((prev: string[]) => {
+          const filtered = prev.filter((h: string) => h !== trimmed);
           return [trimmed, ...filtered].slice(0, MAX_HISTORY);
         });
       }
@@ -337,7 +330,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         setIsUploading(true);
         try {
           // 並列アップロード
-          const uploadPromises = attachedFiles.map(async (attachedFile) => {
+          const uploadPromises = attachedFiles.map(async (attachedFile: AttachmentItem) => {
+            if (!attachedFile.file) return null;
             const result = await uploadMutation.mutateAsync(attachedFile.file);
             // result.data は FileUploadResult { uuid, fileName, paths } 形式
             if (result.data && result.data.uuid && result.data.fileName) {
@@ -352,7 +346,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           });
           
           const results = await Promise.all(uploadPromises);
-          uploadedFileInfos = results.filter((r): r is AttachedFileInfo => r !== null);
+          uploadedFileInfos = results.filter((r: AttachedFileInfo | null): r is AttachedFileInfo => r !== null);
         } catch (error) {
           console.error('File upload failed:', error);
           toast({
@@ -374,7 +368,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       setTempMessage('');
       setSelectedModel(undefined); // Reset model selection
       // 添付ファイルをクリア
-      attachedFiles.forEach(f => {
+      attachedFiles.forEach((f: AttachmentItem) => {
         if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
       });
       setAttachedFiles([]);
@@ -462,7 +456,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   
   // モードボタンクリック時のトグル動作
   const handleModeButtonClick = () => {
-    setShowModeMenu((prev) => !prev);
+    setShowModeMenu((prev: boolean) => !prev);
   };
   
   const currentModeConfig = MODES.find(m => m.mode === selectedMode) ?? MODES[0]!;
@@ -471,9 +465,9 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   return (
     <div 
       className={cn('', className)}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDragOver={handleDragOver as any}
+      onDragLeave={handleDragLeave as any}
+      onDrop={handleDrop as any}
     >
       {/* 隠しファイル入力 */}
       <input
@@ -566,7 +560,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         {/* 添付ファイルプレビュー */}
         {attachedFiles.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
-            {attachedFiles.map((file) => (
+            {attachedFiles.map((file: AttachmentItem) => (
               <AttachmentPreview
                 key={file.id}
                 item={file}
@@ -654,7 +648,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                           className="w-full px-2 py-1.5 text-sm border rounded-md bg-background"
                         >
                           <option value="">自動選択 (推奨)</option>
-                          {sortedActiveModels.map((model) => (
+                          {sortedActiveModels.map((model: ModelInfo) => (
                               <option key={model.id} value={model.modelName}>
                                 {model.displayName}
                                 {model.isRecommended && ' ⭐'}
@@ -744,7 +738,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {selectedModel ? (
-                      <span className="max-w-[80px] truncate">{availableModels.find(m => m.modelName === selectedModel)?.displayName || selectedModel}</span>
+                      <span className="max-w-[80px] truncate">{availableModels.find((m: ModelInfo) => m.modelName === selectedModel)?.displayName || selectedModel}</span>
                     ) : (
                       <span>Auto</span>
                     )}
@@ -772,7 +766,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
                         利用可能なモデル
                       </p>
-                      {sortedActiveModels.map((model) => (
+                      {sortedActiveModels.map((model: ModelInfo) => (
                           <button
                             key={model.id}
                             onClick={() => {

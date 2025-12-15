@@ -11,7 +11,8 @@ import {
   regenerateConversationTitle,
   type ChatResponse, 
   type MiraMode, 
-  type ChatContext 
+  type ChatContext,
+  type AttachedFileInfo
 } from '@/lib/api/mira';
 
 // ========================================
