@@ -4,30 +4,22 @@
  * メッセージ入力フォーム + @メンション風モード選択 + 入力履歴 + ファイル添付
  */
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, type KeyboardEvent, type ChangeEvent, type DragEvent } from 'react';
-import { Button, cn, Dialog, DialogContent, DialogHeader, DialogTitle, Switch, toast } from '@mirel/ui';
+import { Button, cn, Switch, toast } from '@mirel/ui';
 import { 
-  Send, 
-  Loader2, 
-  ChevronDown, 
-  HelpCircle, 
-  AlertTriangle, 
-  Paintbrush2, 
-  Workflow, 
   MessageSquare,
   Paperclip,
-  X,
-  FileText,
-  Image,
-  FileCode,
-  File,
   Upload,
-  Eye,
-  Download,
-  Maximize2,
   Settings,
   Menu,
   Globe,
   Sparkles,
+  ChevronDown,
+  HelpCircle,
+  AlertTriangle,
+  Paintbrush2,
+  Workflow,
+  Loader2,
+  Send
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
@@ -61,13 +53,10 @@ const ALLOWED_FILE_TYPES = [
   '.md', '.tsx', '.ts', '.jsx', '.js', '.py', '.java', '.xml', '.yaml', '.yml', '.sql', '.sh', '.css', '.scss', '.html',
 ];
 
-/** 添付ファイル型 */
-export interface AttachedFile {
-  id: string;
-  file: File;
-  preview?: string;
-  type: 'image' | 'code' | 'text' | 'document' | 'other';
-}
+import { AttachmentPreview, type AttachmentItem, type AttachmentType } from './AttachmentPreview';
+
+/** 添付ファイル型（旧定義互換のためエイリアスまたは削除） */
+// export interface AttachedFile extends AttachmentItem {}
 
 interface MiraChatInputProps {
   onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: AttachedFileInfo[]) => void;
@@ -165,7 +154,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   }, []);
   
   // 添付ファイル管理
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<AttachmentItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -177,8 +166,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   // モデルソート・フィルタリングロジックを共通化
   const sortedActiveModels = useMemo(() => {
     return availableModels
-      .filter(m => m.isActive)
-      .sort((a, b) => {
+      .filter((m: ModelInfo) => m.isActive)
+      .sort((a: ModelInfo, b: ModelInfo) => {
         if (a.isRecommended && !b.isRecommended) return -1;
         if (!a.isRecommended && b.isRecommended) return 1;
         return a.displayName.localeCompare(b.displayName);
@@ -253,7 +242,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   }, [editingMessageId, editingMessageContent]);
   
   // ファイルタイプを判定
-  const getFileType = (file: File): AttachedFile['type'] => {
+  const getFileType = (file: File): AttachmentType => {
     const mime = file.type;
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     
@@ -268,26 +257,28 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   const handleAddFiles = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     
-    const newFiles: AttachedFile[] = fileArray
+    const newFiles: AttachmentItem[] = fileArray
       .filter(file => file.size <= MAX_FILE_SIZE)
       .map(file => ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         file,
+        name: file.name,
+        size: file.size,
         type: getFileType(file),
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       }));
     
-    setAttachedFiles(prev => [...prev, ...newFiles]);
+    setAttachedFiles((prev: AttachmentItem[]) => [...prev, ...newFiles]);
   };
   
   // ファイル削除処理
   const handleRemoveFile = (id: string) => {
-    setAttachedFiles(prev => {
-      const file = prev.find(f => f.id === id);
-      if (file?.preview) {
-        URL.revokeObjectURL(file.preview);
+    setAttachedFiles((prev: AttachmentItem[]) => {
+      const file = prev.find((f: AttachmentItem) => f.id === id);
+      if (file?.previewUrl) {
+        URL.revokeObjectURL(file.previewUrl);
       }
-      return prev.filter(f => f.id !== id);
+      return prev.filter((f: AttachmentItem) => f.id !== id);
     });
   };
   
@@ -309,7 +300,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     e.stopPropagation();
     setIsDragging(false);
     
-    if (e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
       handleAddFiles(e.dataTransfer.files);
     }
   };
@@ -327,8 +318,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     if ((trimmed || attachedFiles.length > 0) && !isLoading && !disabled && !isUploading) {
       // 履歴に追加（重複は除く）
       if (trimmed) {
-        setInputHistory((prev) => {
-          const filtered = prev.filter((h) => h !== trimmed);
+        setInputHistory((prev: string[]) => {
+          const filtered = prev.filter((h: string) => h !== trimmed);
           return [trimmed, ...filtered].slice(0, MAX_HISTORY);
         });
       }
@@ -339,23 +330,23 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         setIsUploading(true);
         try {
           // 並列アップロード
-          const uploadPromises = attachedFiles.map(async (attachedFile) => {
+          const uploadPromises = attachedFiles.map(async (attachedFile: AttachmentItem) => {
+            if (!attachedFile.file) return null;
             const result = await uploadMutation.mutateAsync(attachedFile.file);
-            // result.data は FileUploadResult[] 形式: [{ fileId, name }]
-            const uploadedFile = result.data?.[0];
-            if (uploadedFile?.fileId && uploadedFile?.name) {
+            // result.data は FileUploadResult { uuid, fileName, paths } 形式
+            if (result.data && result.data.uuid && result.data.fileName) {
               return {
-                fileId: uploadedFile.fileId,
-                fileName: uploadedFile.name,
-                mimeType: attachedFile.file.type,
-                fileSize: attachedFile.file.size,
+                fileId: result.data.uuid,
+                fileName: result.data.fileName,
+                mimeType: attachedFile.file!.type,
+                fileSize: attachedFile.file!.size,
               } as AttachedFileInfo;
             }
             return null;
           });
           
           const results = await Promise.all(uploadPromises);
-          uploadedFileInfos = results.filter((r): r is AttachedFileInfo => r !== null);
+          uploadedFileInfos = results.filter((r: AttachedFileInfo | null): r is AttachedFileInfo => r !== null);
         } catch (error) {
           console.error('File upload failed:', error);
           toast({
@@ -377,8 +368,8 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       setTempMessage('');
       setSelectedModel(undefined); // Reset model selection
       // 添付ファイルをクリア
-      attachedFiles.forEach(f => {
-        if (f.preview) URL.revokeObjectURL(f.preview);
+      attachedFiles.forEach((f: AttachmentItem) => {
+        if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
       });
       setAttachedFiles([]);
     }
@@ -465,7 +456,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   
   // モードボタンクリック時のトグル動作
   const handleModeButtonClick = () => {
-    setShowModeMenu((prev) => !prev);
+    setShowModeMenu((prev: boolean) => !prev);
   };
   
   const currentModeConfig = MODES.find(m => m.mode === selectedMode) ?? MODES[0]!;
@@ -474,9 +465,9 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   return (
     <div 
       className={cn('', className)}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDragOver={handleDragOver as any}
+      onDragLeave={handleDragLeave as any}
+      onDrop={handleDrop as any}
     >
       {/* 隠しファイル入力 */}
       <input
@@ -569,11 +560,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
         {/* 添付ファイルプレビュー */}
         {attachedFiles.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
-            {attachedFiles.map((file) => (
+            {attachedFiles.map((file: AttachmentItem) => (
               <AttachmentPreview
                 key={file.id}
-                file={file}
-                onRemove={() => handleRemoveFile(file.id)}
+                item={file}
+                onRemove={handleRemoveFile}
               />
             ))}
           </div>
@@ -657,7 +648,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                           className="w-full px-2 py-1.5 text-sm border rounded-md bg-background"
                         >
                           <option value="">自動選択 (推奨)</option>
-                          {sortedActiveModels.map((model) => (
+                          {sortedActiveModels.map((model: ModelInfo) => (
                               <option key={model.id} value={model.modelName}>
                                 {model.displayName}
                                 {model.isRecommended && ' ⭐'}
@@ -747,7 +738,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {selectedModel ? (
-                      <span className="max-w-[80px] truncate">{availableModels.find(m => m.modelName === selectedModel)?.displayName || selectedModel}</span>
+                      <span className="max-w-[80px] truncate">{availableModels.find((m: ModelInfo) => m.modelName === selectedModel)?.displayName || selectedModel}</span>
                     ) : (
                       <span>Auto</span>
                     )}
@@ -775,7 +766,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
                         利用可能なモデル
                       </p>
-                      {sortedActiveModels.map((model) => (
+                      {sortedActiveModels.map((model: ModelInfo) => (
                           <button
                             key={model.id}
                             onClick={() => {
@@ -879,249 +870,3 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
     </div>
   );
 });
-
-/** ファイルタイプに応じたアイコンマップ */
-const FILE_ICON_MAP = {
-  image: Image,
-  code: FileCode,
-  text: FileText,
-  document: FileText,
-  other: File,
-} as const;
-
-/** ファイルサイズをフォーマット */
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/** 添付ファイルプレビューコンポーネント */
-function AttachmentPreview({ 
-  file, 
-  onRemove 
-}: { 
-  file: AttachedFile; 
-  onRemove: () => void;
-}) {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [textContent, setTextContent] = useState<string | null>(null);
-  const IconComponent = FILE_ICON_MAP[file.type];
-  
-  // テキスト/コードファイルの内容を読み込み
-  useEffect(() => {
-    if (file.type === 'text' || file.type === 'code') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setTextContent(e.target?.result as string);
-      };
-      reader.readAsText(file.file);
-    }
-  }, [file]);
-  
-  // 画像の場合はサムネイルプレビュー
-  if (file.type === 'image' && file.preview) {
-    return (
-      <>
-        <div className="group relative">
-          <button
-            onClick={() => setIsPreviewOpen(true)}
-            className="relative w-16 h-16 rounded-lg overflow-hidden border bg-muted cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-          >
-            <img 
-              src={file.preview} 
-              alt={file.file.name}
-              className="w-full h-full object-cover"
-            />
-            {/* ホバー時のオーバーレイ */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Maximize2 className="w-4 h-4 text-white" />
-            </div>
-          </button>
-          {/* 削除ボタン */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-          >
-            <X className="w-3 h-3" />
-          </button>
-          {/* ファイル名ツールチップ風 */}
-          <p className="mt-0.5 text-[9px] text-muted-foreground truncate max-w-16 text-center">
-            {file.file.name.length > 10 
-              ? file.file.name.substring(0, 7) + '...' 
-              : file.file.name}
-          </p>
-        </div>
-        
-        {/* 画像プレビューダイアログ */}
-        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-            <DialogHeader className="px-4 py-3 border-b bg-muted/30">
-              <DialogTitle className="flex items-center gap-2 text-sm font-medium">
-                <Image className="w-4 h-4 text-primary" />
-                {file.file.name}
-                <span className="text-muted-foreground font-normal">
-                  ({formatFileSize(file.file.size)})
-                </span>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="p-4 flex items-center justify-center bg-muted/20 min-h-[300px] max-h-[70vh] overflow-auto">
-              <img 
-                src={file.preview} 
-                alt={file.file.name}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                クリックで拡大 • Escで閉じる
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = file.preview!;
-                  link.download = file.file.name;
-                  link.click();
-                }}
-              >
-                <Download className="w-3.5 h-3.5 mr-1.5" />
-                ダウンロード
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
-  }
-  
-  // テキスト/コードファイルの場合
-  if ((file.type === 'text' || file.type === 'code') && textContent !== null) {
-    return (
-      <>
-        <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors max-w-[200px] cursor-pointer hover:ring-2 hover:ring-primary/50"
-          onClick={() => setIsPreviewOpen(true)}
-        >
-          {/* ファイルアイコン */}
-          <div className={cn(
-            "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
-            file.type === 'code' && "bg-blue-500/10 text-blue-500",
-            file.type === 'text' && "bg-green-500/10 text-green-500",
-          )}>
-            <IconComponent className="w-4 h-4" />
-          </div>
-          
-          {/* ファイル情報 */}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium truncate" title={file.file.name}>
-              {file.file.name}
-            </p>
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-              {formatFileSize(file.file.size)}
-              <Eye className="w-3 h-3 opacity-60" />
-            </p>
-          </div>
-          
-          {/* 削除ボタン */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className={cn(
-              "p-1 rounded-full shrink-0",
-              "opacity-0 group-hover:opacity-100 transition-opacity",
-              "hover:bg-destructive/10 text-destructive"
-            )}
-            title="削除"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        
-        {/* テキスト/コードプレビューダイアログ */}
-        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-            <DialogHeader className="px-4 py-3 border-b bg-muted/30">
-              <DialogTitle className="flex items-center gap-2 text-sm font-medium">
-                <IconComponent className={cn(
-                  "w-4 h-4",
-                  file.type === 'code' ? "text-blue-500" : "text-green-500"
-                )} />
-                {file.file.name}
-                <span className="text-muted-foreground font-normal">
-                  ({formatFileSize(file.file.size)})
-                </span>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="overflow-auto max-h-[60vh] bg-muted/10">
-              <pre className={cn(
-                "p-4 text-xs font-mono leading-relaxed whitespace-pre-wrap break-all",
-                file.type === 'code' && "bg-slate-950 text-slate-50"
-              )}>
-                <code>{textContent}</code>
-              </pre>
-            </div>
-            <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                {textContent.split('\n').length} 行 • Escで閉じる
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(textContent);
-                  }}
-                >
-                  コピー
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
-  }
-  
-  // その他のファイルはアイコン + 情報表示（プレビュー不可）
-  return (
-    <div className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors max-w-[200px]">
-      {/* ファイルアイコン */}
-      <div className={cn(
-        "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
-        file.type === 'document' && "bg-orange-500/10 text-orange-500",
-        file.type === 'other' && "bg-gray-500/10 text-gray-500",
-      )}>
-        <IconComponent className="w-4 h-4" />
-      </div>
-      
-      {/* ファイル情報 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium truncate" title={file.file.name}>
-          {file.file.name}
-        </p>
-        <p className="text-[10px] text-muted-foreground">
-          {formatFileSize(file.file.size)}
-        </p>
-      </div>
-      
-      {/* 削除ボタン */}
-      <button
-        onClick={onRemove}
-        className={cn(
-          "p-1 rounded-full shrink-0",
-          "opacity-0 group-hover:opacity-100 transition-opacity",
-          "hover:bg-destructive/10 text-destructive"
-        )}
-        title="削除"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-}

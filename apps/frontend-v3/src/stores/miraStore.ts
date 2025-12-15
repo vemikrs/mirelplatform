@@ -11,7 +11,8 @@ import {
   regenerateConversationTitle,
   type ChatResponse, 
   type MiraMode, 
-  type ChatContext 
+  type ChatContext,
+  type AttachedFileInfo
 } from '@/lib/api/mira';
 
 // ========================================
@@ -33,6 +34,7 @@ export interface MiraMessage {
     latencyMs?: number;
     status?: string; // Streaming status
   };
+  attachedFiles?: AttachedFileInfo[];
 }
 
 /**
@@ -89,7 +91,7 @@ interface MiraState {
   setActiveConversation: (conversationId: string | null) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
   regenerateTitle: (conversationId: string) => Promise<void>;
-  addUserMessage: (conversationId: string, content: string) => void;
+  addUserMessage: (conversationId: string, content: string, attachedFiles?: AttachedFileInfo[]) => void;
   addAssistantMessage: (conversationId: string, response: ChatResponse) => void;
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
   clearConversation: (conversationId: string) => void;
@@ -211,6 +213,7 @@ export const useMiraStore = create<MiraState>()(
               content: m.content,
               contentType: m.contentType as 'text' | 'markdown' | 'html',
               timestamp: new Date(m.createdAt),
+              attachedFiles: m.attachedFiles,
             }));
 
             const updatedConversation: MiraConversation = {
@@ -326,13 +329,14 @@ export const useMiraStore = create<MiraState>()(
       },
       
       
-      addUserMessage: (conversationId, content) => {
+      addUserMessage: (conversationId, content, attachedFiles) => {
         const message: MiraMessage = {
           id: crypto.randomUUID(),
           role: 'user',
           content,
           contentType: 'text',
           timestamp: new Date(),
+          attachedFiles,
         };
         
         set((state) => {
@@ -360,6 +364,7 @@ export const useMiraStore = create<MiraState>()(
           contentType: response.assistantMessage.contentType,
           timestamp: new Date(),
           metadata: response.metadata,
+          attachedFiles: response.assistantMessage.attachedFiles,
         };
         
         set((state) => {

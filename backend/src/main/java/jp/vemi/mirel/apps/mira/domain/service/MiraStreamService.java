@@ -55,11 +55,11 @@ public class MiraStreamService {
     @Transactional
     public Flux<MiraStreamResponse> streamChat(ChatRequest request, String tenantId, String userId) {
         log.info("StreamChat called. ConversationID: {}, Mode: {}", request.getConversationId(), request.getMode());
-        log.info("ChatRequest.message: content={}, attachedFiles={}", 
-            request.getMessage() != null ? request.getMessage().getContent() : "null",
-            request.getMessage() != null && request.getMessage().getAttachedFiles() != null 
-                ? request.getMessage().getAttachedFiles().size() + " files" 
-                : "null");
+        log.info("ChatRequest.message: content={}, attachedFiles={}",
+                request.getMessage() != null ? request.getMessage().getContent() : "null",
+                request.getMessage() != null && request.getMessage().getAttachedFiles() != null
+                        ? request.getMessage().getAttachedFiles().size() + " files"
+                        : "null");
         long startTime = System.currentTimeMillis();
 
         // 0. Pre-flight Checks (Rate Limit, Quota)
@@ -96,7 +96,8 @@ public class MiraStreamService {
                 request.getConversationId(), tenantId, userId, mode);
 
         // Save User Message
-        chatService.saveUserMessage(conversation, request.getMessage().getContent());
+        chatService.saveUserMessage(conversation, request.getMessage().getContent(),
+                request.getMessage().getAttachedFiles());
 
         // Load History & Build Context (Transactional)
         MessageConfig msgConfig = request.getContext() != null ? request.getContext().getMessageConfig() : null;
@@ -112,7 +113,8 @@ public class MiraStreamService {
         String selectedModel = modelSelectionService.resolveModel(
                 tenantId, userId, snapshotId, request.getForceModel());
         aiRequest.setModel(selectedModel);
-        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId, snapshotId);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId,
+                snapshotId);
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
         // Web検索の有効化判定 (MiraChatService の共通メソッドを使用)
@@ -164,23 +166,23 @@ public class MiraStreamService {
         List<AiRequest.Message.ToolCall> accumulatedToolCalls = new ArrayList<>();
 
         // Google Search Grounding (Vertex AI) が有効な場合のワークアラウンド:
-        // 
+        //
         // 【問題】
         // - Vertex AI の Google Search Grounding を有効にした場合、ストリーミングモードで空応答が返される
         // - これは Spring AI 1.0.0-M6 と Vertex AI API の組み合わせにおける既知の問題
-        // 
+        //
         // 【対策】
         // - ブロッキング chat() 呼び出しを使用し、単一チャンクとしてストリームをシミュレート
         // - Schedulers.boundedElastic() で非同期実行し、メインスレッドをブロックしない
-        // 
+        //
         // 【影響】
         // - レスポンスタイム: ブロッキング呼び出しにより最初のトークンまでの時間が増加
         // - ユーザー体験: ストリーミング表示ではなく一括表示になる
-        // 
+        //
         // 【解決確認方法】
         // - Spring AI または Vertex AI SDK の更新時に stream() でテストし、正常動作を確認
         // - 問題が解決されていればこのワークアラウンドを削除可能
-        // 
+        //
         // 関連: Spring AI Issue (検討中)
         Flux<AiResponse> responseStream;
         if (Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval())) {

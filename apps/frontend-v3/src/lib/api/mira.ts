@@ -82,6 +82,8 @@ export interface ChatResponse {
   assistantMessage: {
     content: string;
     contentType: 'markdown' | 'text' | 'html';
+    /** 添付ファイルリスト */
+    attachedFiles?: AttachedFileInfo[];
   };
   metadata?: {
     provider?: string;
@@ -277,6 +279,8 @@ export interface ConversationDetailResponse {
     content: string;
     contentType: string;
     createdAt: string;
+    /** 添付ファイルリスト */
+    attachedFiles?: AttachedFileInfo[];
   }>;
 }
 

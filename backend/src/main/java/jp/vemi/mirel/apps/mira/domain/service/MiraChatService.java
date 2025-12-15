@@ -142,7 +142,8 @@ public class MiraChatService {
                         m.getSenderType() == MiraMessage.SenderType.USER ? "user" : "assistant",
                         m.getContent(),
                         m.getContentType().name().toLowerCase(),
-                        m.getCreatedAt()))
+                        m.getCreatedAt(),
+                        deserializeAttachedFiles(m.getAttachedFiles())))
                 .toList();
 
         return new jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse(
@@ -210,7 +211,7 @@ public class MiraChatService {
                 conversation.getId(), msgConfig);
 
         // 4. ユーザーメッセージ保存
-        saveUserMessage(conversation, request.getMessage().getContent());
+        saveUserMessage(conversation, request.getMessage().getContent(), request.getMessage().getAttachedFiles());
 
         // 6. プロンプト構築（コンテキストレイヤーを反映）
         String finalContext = contextMergeService.buildFinalContextPrompt(
@@ -220,13 +221,14 @@ public class MiraChatService {
                 request, mode, history, finalContext);
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
-        
+
         // Phase 4: Model selection (5-step priority)
         String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
         String selectedModel = modelSelectionService.resolveModel(
                 tenantId, userId, snapshotId, request.getForceModel());
         aiRequest.setModel(selectedModel);
-        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId, snapshotId);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId,
+                snapshotId);
 
         // 7. ツール解決 & セット
         // Web検索の有効化判定 (共通メソッド使用)
@@ -619,6 +621,22 @@ public class MiraChatService {
     // Private Methods
     // ========================================
 
+    private List<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.AttachedFile> deserializeAttachedFiles(
+            String json) {
+        if (json == null || json.isEmpty()) {
+            return List.of();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(json,
+                    new com.fasterxml.jackson.core.type.TypeReference<List<jp.vemi.mirel.apps.mira.domain.dto.response.ConversationDetailResponse.AttachedFile>>() {
+                    });
+        } catch (Exception e) {
+            log.warn("Failed to deserialize attached files", e);
+            return List.of();
+        }
+    }
+
     public MiraMode resolveMode(ChatRequest request) {
         return modeResolver.resolve(request);
     }
@@ -679,13 +697,25 @@ public class MiraChatService {
         };
     }
 
-    public void saveUserMessage(MiraConversation conversation, String content) {
+    public void saveUserMessage(MiraConversation conversation, String content,
+            java.util.List<ChatRequest.AttachedFile> attachedFiles) {
+        String attachedFilesJson = null;
+        if (attachedFiles != null && !attachedFiles.isEmpty()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                attachedFilesJson = mapper.writeValueAsString(attachedFiles);
+            } catch (Exception e) {
+                log.warn("Failed to serialize attached files", e);
+            }
+        }
+
         MiraMessage message = MiraMessage.builder()
                 .id(UUID.randomUUID().toString())
                 .conversationId(conversation.getId())
                 .senderType(MiraMessage.SenderType.USER)
                 .content(content)
                 .contentType(MiraMessage.ContentType.PLAIN)
+                .attachedFiles(attachedFilesJson)
                 .build();
 
         messageRepository.save(message);
@@ -941,9 +971,9 @@ public class MiraChatService {
         boolean isSystemWebSearchEnabled = "true".equalsIgnoreCase(
                 adminSystemSettingsService.getSystemSettings().getOrDefault(
                         AdminSystemSettingsService.WEB_SEARCH_ENABLED_KEY, "false"));
-        
+
         boolean isRequestWebSearchEnabled = Boolean.TRUE.equals(request.getWebSearchEnabled());
-        
+
         return isSystemWebSearchEnabled && isRequestWebSearchEnabled;
     }
 

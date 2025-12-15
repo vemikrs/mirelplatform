@@ -37,17 +37,14 @@ export function FileUploadButton({
         return
       }
 
-      if (result.data && result.data.length > 0) {
-        const uploadedFile = result.data[0]
-        if (uploadedFile) {
-          const { fileId, name } = uploadedFile
-          onFileUploaded(parameterId, fileId, name)
+      if (result.data) {
+        const { uuid, fileName } = result.data
+        onFileUploaded(parameterId, uuid, fileName)
 
-          toast({
-            ...toastMessages.fileUploadSuccess,
-            description: `ファイル "${name}" をアップロードしました`,
-          })
-        }
+        toast({
+          ...toastMessages.fileUploadSuccess,
+          description: `ファイル "${fileName}" をアップロードしました`,
+        })
       }
     } catch (error) {
       toast({

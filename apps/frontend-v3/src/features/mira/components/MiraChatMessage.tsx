@@ -8,6 +8,7 @@ import { cn, Button } from '@mirel/ui';
 import { Bot, User, Copy, Check, Edit } from 'lucide-react';
 import type { MiraMessage } from '@/stores/miraStore';
 import { MiraMarkdown } from './MiraMarkdown';
+import { AttachmentPreview } from './AttachmentPreview';
 
 interface MiraChatMessageProps {
   message: MiraMessage;
@@ -60,12 +61,12 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
       
       {/* コンテンツエリア */}
       {isUser ? (
-        <>
+        <div className="flex flex-col items-end max-w-[80%]">
           {/* ユーザーフキダシ */}
           <div
             className={cn(
               'rounded-lg relative',
-              compact ? 'max-w-[85%] p-2 text-sm' : 'max-w-[80%] p-3',
+              compact ? 'p-2 text-sm' : 'p-3',
               'bg-primary text-primary-foreground'
             )}
           >
@@ -73,6 +74,31 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
               {message.content}
             </p>
           </div>
+          
+          {/* 添付ファイル表示 (User) */}
+          {message.attachedFiles && message.attachedFiles.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 justify-end">
+              {message.attachedFiles.map((file) => (
+                <AttachmentPreview 
+                  key={file.fileId} 
+                  item={{
+                    id: file.fileId,
+                    name: file.fileName,
+                    size: file.fileSize,
+                    type: file.mimeType.startsWith('image/') ? 'image' : 
+                          file.mimeType.startsWith('text/') ? 'text' :
+                          file.mimeType.includes('pdf') ? 'document' :
+                          ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
+                    fileId: file.fileId,
+                    previewUrl: file.mimeType.startsWith('image/') ? `/mapi/apps/mira/api/files/${file.fileId}` : undefined
+                  }}
+                  readonly={true}
+                  compact={compact}
+                />
+              ))}
+            </div>
+          )}
+
 
           {/* ユーザーアクション（左側に表示 = flex-row-reverseの末尾） */}
           <div className="flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity px-1">
@@ -99,7 +125,7 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                </Button>
              </div>
           </div>
-        </>
+        </div>
       ) : (
         /* AIレスポンス（全幅 + アクション下部） */
         <div className="flex flex-col flex-1 min-w-0">
@@ -144,6 +170,30 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                  <div className="text-xs text-primary animate-pulse">
                     {message.metadata.status}
                  </div>
+            )}
+
+            {/* 添付ファイル表示 */}
+            {message.attachedFiles && message.attachedFiles.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {message.attachedFiles.map((file) => (
+                        <AttachmentPreview 
+                            key={file.fileId} 
+                            item={{
+                                id: file.fileId,
+                                name: file.fileName,
+                                size: file.fileSize,
+                                type: file.mimeType.startsWith('image/') ? 'image' : 
+                                      file.mimeType.startsWith('text/') ? 'text' :
+                                      file.mimeType.includes('pdf') ? 'document' :
+                                      ['application/json', 'application/javascript'].includes(file.mimeType) ? 'code' : 'other',
+                                fileId: file.fileId,
+                                previewUrl: file.mimeType.startsWith('image/') ? `/mapi/apps/mira/api/files/${file.fileId}` : undefined
+                            }}
+                            readonly={true}
+                            compact={compact}
+                        />
+                    ))}
+                </div>
             )}
           </div>
 
