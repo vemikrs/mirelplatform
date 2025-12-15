@@ -48,10 +48,13 @@ public class AuthenticationController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // Invalidate existing session to prevent fixation
+            invalidateSession(httpRequest);
+
             // IP と UserAgent を注入
             request.setIpAddress(getClientIp(httpRequest));
             request.setUserAgent(httpRequest.getHeader("User-Agent"));
-            
+
             AuthenticationResponse response = authenticationService.login(request);
 
             // Set access token in HttpOnly cookie
@@ -72,8 +75,12 @@ public class AuthenticationController {
     @PostMapping("/signup")
     public ResponseEntity<AuthenticationResponse> signup(
             @Valid @RequestBody SignupRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // Invalidate existing session to prevent fixation
+            invalidateSession(httpRequest);
+
             AuthenticationResponse response = authenticationService.signup(request);
 
             // Set access token in HttpOnly cookie
@@ -94,8 +101,12 @@ public class AuthenticationController {
     @PostMapping("/signup/oauth2")
     public ResponseEntity<AuthenticationResponse> signupOAuth2(
             @Valid @RequestBody OAuth2SignupRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // Invalidate existing session to prevent fixation
+            invalidateSession(httpRequest);
+
             // 認証済み（SystemUserとして）であることを確認
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
@@ -124,14 +135,19 @@ public class AuthenticationController {
      */
     /**
      * OTPベースサインアップ
+     * 
      * @deprecated Use /auth/otp/signup-verify instead for better security
      */
     @Deprecated
     @PostMapping("/signup/otp")
     public ResponseEntity<AuthenticationResponse> signupOtp(
             @Valid @RequestBody jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         try {
+            // Invalidate existing session to prevent fixation
+            invalidateSession(httpRequest);
+
             AuthenticationResponse response = authenticationService.signupWithOtp(request);
 
             // Set access token in HttpOnly cookie
@@ -142,16 +158,16 @@ public class AuthenticationController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             logger.error("OTP signup failed: {}", e.getMessage());
-            
+
             // エラーメッセージに応じた適切なHTTPステータスコードを返す
             String errorMessage = e.getMessage();
             if (errorMessage != null) {
-                if (errorMessage.contains("Username already exists") || 
-                    errorMessage.contains("Email already exists")) {
+                if (errorMessage.contains("Username already exists") ||
+                        errorMessage.contains("Email already exists")) {
                     return ResponseEntity.status(409).build(); // Conflict
                 }
             }
-            
+
             return ResponseEntity.badRequest().build();
         }
     }
@@ -291,11 +307,11 @@ public class AuthenticationController {
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid setup token: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "INVALID_TOKEN", "message", "無効なセットアップトークンです"));
+                    .body(Map.of("error", "INVALID_TOKEN", "message", "無効なセットアップトークンです"));
         } catch (RuntimeException e) {
             logger.error("Setup token verification failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "VERIFICATION_FAILED", "message", "トークンの検証に失敗しました"));
+                    .body(Map.of("error", "VERIFICATION_FAILED", "message", "トークンの検証に失敗しました"));
         }
     }
 
@@ -307,19 +323,19 @@ public class AuthenticationController {
     public ResponseEntity<?> setupAccount(@Valid @RequestBody ApiRequest<SetupAccountRequest> apiRequest) {
         try {
             SetupAccountRequest request = apiRequest.getModel();
-            logger.info("Setup account request: passwordLength={}", 
-                request.getNewPassword() != null ? request.getNewPassword().length() : 0);
+            logger.info("Setup account request: passwordLength={}",
+                    request.getNewPassword() != null ? request.getNewPassword().length() : 0);
             authenticationService.setupAccount(request.getToken(), request.getNewPassword());
             logger.info("Account setup completed successfully");
             return ResponseEntity.ok(Map.of("message", "アカウントのセットアップが完了しました"));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid setup request: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "INVALID_REQUEST", "message", "リクエストが無効です"));
+                    .body(Map.of("error", "INVALID_REQUEST", "message", "リクエストが無効です"));
         } catch (RuntimeException e) {
             logger.error("Account setup failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "SETUP_FAILED", "message", "アカウントのセットアップに失敗しました"));
+                    .body(Map.of("error", "SETUP_FAILED", "message", "アカウントのセットアップに失敗しました"));
         }
     }
 
@@ -331,25 +347,23 @@ public class AuthenticationController {
     public ResponseEntity<Map<String, String>> resendVerification(
             @Valid @RequestBody ResendVerificationRequest request,
             HttpServletRequest httpRequest) {
-        
+
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
-        
+
         try {
             authenticationService.resendVerificationEmail(
-                request.getEmail(), 
-                ipAddress, 
-                userAgent
-            );
+                    request.getEmail(),
+                    ipAddress,
+                    userAgent);
         } catch (Exception e) {
             logger.warn("Verification email resend error: {}", request.getEmail(), e);
             // エラー詳細を返さない（セキュリティ）
         }
-        
+
         // セキュリティ: 成功/失敗に関わらず同じレスポンス
         return ResponseEntity.ok(
-            Map.of("message", "検証メールを送信しました。受信ボックスを確認してください。")
-        );
+                Map.of("message", "検証メールを送信しました。受信ボックスを確認してください。"));
     }
 
     /**
@@ -475,5 +489,20 @@ public class AuthenticationController {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    /**
+     * Invalidate existing session if it exists.
+     * This prevents session fixation attacks and ensures a clean state for new
+     * logins.
+     */
+    private void invalidateSession(HttpServletRequest request) {
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            logger.debug("Invalidating existing session before authentication");
+            session.invalidate();
+        }
+        // Create a new session to ensure we have one (useful for CSRF tokens etc)
+        request.getSession(true);
     }
 }
