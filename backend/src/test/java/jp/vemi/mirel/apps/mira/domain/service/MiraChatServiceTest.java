@@ -40,6 +40,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
 import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
+import jp.vemi.mirel.apps.mira.domain.service.ModelCapabilityValidator;
 
 /**
  * MiraChatService のユニットテスト.

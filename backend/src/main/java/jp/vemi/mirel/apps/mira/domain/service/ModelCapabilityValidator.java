@@ -26,9 +26,9 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * 疎結合設計:
  * <ul>
- *   <li>{@link ModelCapabilityRegistry} でモデル情報を管理</li>
- *   <li>このサービスはバリデーションロジックのみに集中</li>
- *   <li>新しいモデルや機能の追加はレジストリ側で対応</li>
+ * <li>{@link ModelCapabilityRegistry} でモデル情報を管理</li>
+ * <li>このサービスはバリデーションロジックのみに集中</li>
+ * <li>新しいモデルや機能の追加はレジストリ側で対応</li>
  * </ul>
  * </p>
  */
@@ -36,57 +36,65 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class ModelCapabilityValidator {
-    
+
     private final ModelCapabilityRegistry capabilityRegistry;
     private final MiraAiProperties aiProperties;
-    
+
     /**
      * チャットリクエストとモデルの互換性を検証（デフォルトモデル使用）.
      * 
-     * @param request チャットリクエスト
+     * @param request
+     *            チャットリクエスト
      * @return バリデーション結果
      */
     public ModelCapabilityValidation validate(ChatRequest request) {
+        // デフォルトモデル解決（非推奨: validateWithModel を使用推奨）
         String modelName = resolveModelName();
         return validateWithModel(request, modelName);
     }
-    
+
     /**
      * チャットリクエストと指定モデルの互換性を検証.
      * 
-     * @param request チャットリクエスト
-     * @param modelName モデル名
+     * @param request
+     *            チャットリクエスト
+     * @param modelName
+     *            モデル名
      * @return バリデーション結果
      */
     public ModelCapabilityValidation validateWithModel(ChatRequest request, String modelName) {
         List<String> errors = new ArrayList<>();
-        
-        // 1. Web検索 (ツール呼び出し) のバリデーション
+
+        // 1. Web検索 のバリデーション
         if (Boolean.TRUE.equals(request.getWebSearchEnabled())) {
-            if (!capabilityRegistry.supportsToolCalling(modelName)) {
-                errors.add(buildCapabilityError(
-                    modelName, 
-                    ModelCapability.TOOL_CALLING,
-                    "Web検索機能",
-                    "Web検索を利用するには、GPT-4o-mini などのツール呼び出し対応モデルに切り替えてください。"
-                ));
+            if (!capabilityRegistry.supports(modelName, ModelCapability.WEB_SEARCH)) {
+
+                // ツール呼び出しでの代用が可能かチェック (OpenAI系など)
+                boolean supportsTools = capabilityRegistry.supportsToolCalling(modelName);
+
+                if (!supportsTools) {
+                    errors.add(buildCapabilityError(
+                            modelName,
+                            ModelCapability.WEB_SEARCH,
+                            "Web検索機能",
+                            "Web検索を利用するには、Web検索またはツール呼び出しに対応したモデルに切り替えてください。"));
+                }
             }
         }
-        
+
         // 2. マルチモーダル入力のバリデーション (将来実装)
         // 現在は ChatRequest にマルチモーダルフラグがないため、
         // メッセージ内容から画像/音声を検出する場合に拡張予定
         if (hasMultimodalContent(request)) {
             if (!capabilityRegistry.supportsMultimodal(modelName)) {
                 errors.add(buildCapabilityError(
-                    modelName,
-                    ModelCapability.MULTIMODAL_INPUT,
-                    "画像・音声入力",
-                    "マルチモーダル機能を利用するには、GPT-4o などの対応モデルに切り替えてください。"
-                ));
+                        modelName,
+                        ModelCapability.MULTIMODAL_INPUT,
+                        "画像・音声入力",
+                        "マルチモーダル機能を利用するには、GPT-4o などの対応モデルに切り替えてください。"));
             }
         }
-        
+
         // 結果を返す
         if (errors.isEmpty()) {
             return ModelCapabilityValidation.success();
@@ -95,7 +103,7 @@ public class ModelCapabilityValidator {
             return ModelCapabilityValidation.failure(errors);
         }
     }
-    
+
     /**
      * 使用されるモデル名を解決.
      * <p>
@@ -109,11 +117,11 @@ public class ModelCapabilityValidator {
         if (githubModels != null && githubModels.getModel() != null) {
             return githubModels.getModel();
         }
-        
+
         // フォールバック
         return "unknown";
     }
-    
+
     /**
      * マルチモーダルコンテンツが含まれているか検出.
      * <p>
@@ -124,40 +132,39 @@ public class ModelCapabilityValidator {
         if (request.getMessage() == null || request.getMessage().getContent() == null) {
             return false;
         }
-        
+
         String content = request.getMessage().getContent();
-        
+
         // Base64 画像データの簡易検出
         if (content.contains("data:image/") || content.contains("data:audio/")) {
             return true;
         }
-        
+
         // 画像URLパターンの簡易検出 (将来拡張)
         // if (content.matches(".*\\.(jpg|jpeg|png|gif|webp).*")) {
-        //     return true;
+        // return true;
         // }
-        
+
         return false;
     }
-    
+
     /**
      * 機能エラーメッセージを構築.
      */
     private String buildCapabilityError(
-            String modelName, 
+            String modelName,
             ModelCapability capability,
             String featureName,
             String suggestion) {
-        
+
         return String.format(
-            "現在のモデル「%s」は%s（%s）をサポートしていません。%s",
-            getDisplayModelName(modelName),
-            featureName,
-            capability.getDisplayName(),
-            suggestion
-        );
+                "現在のモデル「%s」は%s（%s）をサポートしていません。%s",
+                getDisplayModelName(modelName),
+                featureName,
+                capability.getDisplayName(),
+                suggestion);
     }
-    
+
     /**
      * モデル名を表示用にフォーマット.
      */
@@ -165,16 +172,16 @@ public class ModelCapabilityValidator {
         if (modelName == null) {
             return "不明なモデル";
         }
-        
+
         // "meta/llama-3.3-70b-instruct" -> "Llama 3.3 70B"
         // "openai/gpt-4o-mini" -> "GPT-4o-mini"
         String name = modelName;
-        
+
         // プレフィックス除去
         if (name.contains("/")) {
             name = name.substring(name.lastIndexOf("/") + 1);
         }
-        
+
         return name;
     }
 }

@@ -11,7 +11,7 @@ package jp.vemi.mirel.apps.mira.domain.model;
  * </p>
  */
 public enum ModelCapability {
-    
+
     /**
      * ツール呼び出し (Function Calling).
      * <p>
@@ -19,7 +19,7 @@ public enum ModelCapability {
      * </p>
      */
     TOOL_CALLING("ツール呼び出し"),
-    
+
     /**
      * マルチモーダル入力 (画像/音声).
      * <p>
@@ -27,28 +27,33 @@ public enum ModelCapability {
      * </p>
      */
     MULTIMODAL_INPUT("マルチモーダル入力"),
-    
+
     /**
      * ストリーミング出力.
      */
     STREAMING("ストリーミング"),
-    
+
     /**
      * JSON モード (Structured Output).
      */
     JSON_MODE("JSONモード"),
-    
+
     /**
      * 長文コンテキスト (128K+).
      */
-    LONG_CONTEXT("長文コンテキスト");
-    
+    LONG_CONTEXT("長文コンテキスト"),
+
+    /**
+     * Web検索 (Grounding).
+     */
+    WEB_SEARCH("Web検索");
+
     private final String displayName;
-    
+
     ModelCapability(String displayName) {
         this.displayName = displayName;
     }
-    
+
     public String getDisplayName() {
         return displayName;
     }
