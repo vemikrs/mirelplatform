@@ -495,14 +495,28 @@ public class AuthenticationController {
      * Invalidate existing session if it exists.
      * This prevents session fixation attacks and ensures a clean state for new
      * logins.
+     * Note: We use changeSessionId() and manual attribute clearing instead of
+     * invalidate()
+     * to avoid "Session was invalidated" IllegalStateException issues with Spring
+     * Session Redis
+     * when the session is accessed/committed later in the filter chain.
      */
     private void invalidateSession(HttpServletRequest request) {
         jakarta.servlet.http.HttpSession session = request.getSession(false);
         if (session != null) {
-            logger.debug("Invalidating existing session before authentication");
-            session.invalidate();
+            logger.debug("Rotating existing session ID and clearing attributes before authentication");
+            // Change the session ID to protect against session fixation
+            request.changeSessionId();
+
+            // Clear all attributes to ensure a clean state (effectively invalidating the
+            // data)
+            java.util.Enumeration<String> attributeNames = session.getAttributeNames();
+            while (attributeNames.hasMoreElements()) {
+                session.removeAttribute(attributeNames.nextElement());
+            }
+        } else {
+            // Create a new session if none exists
+            request.getSession(true);
         }
-        // Create a new session to ensure we have one (useful for CSRF tokens etc)
-        request.getSession(true);
     }
 }
