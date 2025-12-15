@@ -61,12 +61,12 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
       
       {/* コンテンツエリア */}
       {isUser ? (
-        <>
+        <div className="flex flex-col items-end max-w-[80%]">
           {/* ユーザーフキダシ */}
           <div
             className={cn(
               'rounded-lg relative',
-              compact ? 'max-w-[85%] p-2 text-sm' : 'max-w-[80%] p-3',
+              compact ? 'p-2 text-sm' : 'p-3',
               'bg-primary text-primary-foreground'
             )}
           >
@@ -125,7 +125,7 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
                </Button>
              </div>
           </div>
-        </>
+        </div>
       ) : (
         /* AIレスポンス（全幅 + アクション下部） */
         <div className="flex flex-col flex-1 min-w-0">
