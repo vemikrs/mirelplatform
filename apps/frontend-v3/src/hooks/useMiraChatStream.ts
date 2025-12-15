@@ -48,7 +48,7 @@ export function useMiraChatStream() {
     }
     
     // 2. Add User Message
-    addUserMessage(conversationId, content);
+    addUserMessage(conversationId, content, options?.attachedFiles);
     
     // 3. Prepare Streaming Assistant Message
     const messageId = crypto.randomUUID();

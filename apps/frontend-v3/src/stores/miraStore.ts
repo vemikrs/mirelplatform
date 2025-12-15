@@ -91,7 +91,7 @@ interface MiraState {
   setActiveConversation: (conversationId: string | null) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
   regenerateTitle: (conversationId: string) => Promise<void>;
-  addUserMessage: (conversationId: string, content: string) => void;
+  addUserMessage: (conversationId: string, content: string, attachedFiles?: AttachedFileInfo[]) => void;
   addAssistantMessage: (conversationId: string, response: ChatResponse) => void;
   updateConversationContext: (conversationId: string, context: ChatContext) => void;
   clearConversation: (conversationId: string) => void;
@@ -329,13 +329,14 @@ export const useMiraStore = create<MiraState>()(
       },
       
       
-      addUserMessage: (conversationId, content) => {
+      addUserMessage: (conversationId, content, attachedFiles) => {
         const message: MiraMessage = {
           id: crypto.randomUUID(),
           role: 'user',
           content,
           contentType: 'text',
           timestamp: new Date(),
+          attachedFiles,
         };
         
         set((state) => {
