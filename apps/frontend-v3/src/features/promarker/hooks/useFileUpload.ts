@@ -43,9 +43,7 @@ export function useFileUpload() {
         '/commons/upload',
         formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          // headers: { 'Content-Type': 'multipart/form-data' }, // Let browser set this with boundary
         }
       )
       
