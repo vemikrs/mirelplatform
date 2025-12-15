@@ -71,11 +71,7 @@ public class MiraStreamService {
             return Flux.just(MiraStreamResponse.error("PREFLIGHT_ERROR", e.getMessage()));
         }
 
-        // 0.5. モデル機能バリデーション (Web検索・マルチモーダル等)
-        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validate(request);
-        if (!capabilityValidation.isValid()) {
-            return Flux.just(MiraStreamResponse.error("CAPABILITY_ERROR", capabilityValidation.getErrorMessage()));
-        }
+        // 0.5. モデル機能バリデーション -> Moved to after model selection
 
         // 1. Policy & Mode
         PolicyEnforcer.ValidationResult validation = policyEnforcer.validateRequest(request);
@@ -115,6 +111,19 @@ public class MiraStreamService {
         aiRequest.setModel(selectedModel);
         log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId,
                 snapshotId);
+
+        // 0.5. Turn back to Validation (Now we have the selected model)
+        ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validateWithModel(request,
+                selectedModel);
+        if (!capabilityValidation.isValid()) {
+            // Transaction rollback is not automatic here for Flux return, but since we
+            // haven't modified heavy state yet (except conversation creation)
+            // Ideally we should do this before DB writes, but model selection depends on
+            // tenant params.
+            // Given the constraints, we return error here. The empty conversation created
+            // is harmless or reusable.
+            return Flux.just(MiraStreamResponse.error("CAPABILITY_ERROR", capabilityValidation.getErrorMessage()));
+        }
 
         // 2a. Resolve Tools (webSearchEnabledを参照)
         // Web検索の有効化判定 (MiraChatService の共通メソッドを使用)
