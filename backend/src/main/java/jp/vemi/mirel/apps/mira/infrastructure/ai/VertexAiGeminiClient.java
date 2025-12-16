@@ -194,7 +194,12 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .map(this::mapStreamResponse)
                 .onErrorResume(e -> {
                     log.error("[VertexAiGemini] Stream failed", e);
-                    return Flux.just(AiResponse.error("STREAM_ERROR", "Stream error: " + e.getMessage()));
+                    if (e instanceof io.grpc.StatusRuntimeException) {
+                        return Flux.error(new jp.vemi.framework.exeption.MirelSystemException(
+                                "Google AI API error: " + e.getMessage(), e));
+                    }
+                    return Flux.error(
+                            new jp.vemi.framework.exeption.MirelSystemException("Stream error: " + e.getMessage(), e));
                 });
     }
 
