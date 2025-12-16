@@ -41,6 +41,17 @@ public class MirelSystemException extends MessagingException {
     }
 
     /**
+     * メッセージから生成します。
+     *
+     * @param message
+     *            メッセージ
+     */
+    public MirelSystemException(String message) {
+        super(message);
+        level = MessageLevel.NONE;
+    }
+
+    /**
      * 他の例外インスタンスから生成します。
      *
      * @param e
@@ -57,6 +68,7 @@ public class MirelSystemException extends MessagingException {
     public MirelSystemException(List<String> msgs) {
         super(msgs);
     }
+
     /**
      * levelの取得
      *
