@@ -469,7 +469,7 @@ public class MiraStreamService {
                 }));
 
         if (isBlockingSearch) {
-            return Flux.concat(Flux.just(MiraStreamResponse.status("ウェブ検索を実行中...")), mainStream);
+            return Flux.concat(Flux.just(MiraStreamResponse.status("思考中...")), mainStream);
         }
         return mainStream;
     }
