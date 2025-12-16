@@ -101,7 +101,7 @@ public class ModelCapabilityRegistry {
 
         // Meta Llama 3.2 Vision 系 (マルチモーダル対応)
         MODEL_CAPABILITIES.put(
-                Pattern.compile("(?i)^(meta/)?llama-3\\.2.*vision.*"),
+                Pattern.compile("(?i)^(meta/)?llama-3\\.2(?:(?!vision).)*vision.*"),
                 EnumSet.of(
                         ModelCapability.MULTIMODAL_INPUT,
                         ModelCapability.STREAMING));
