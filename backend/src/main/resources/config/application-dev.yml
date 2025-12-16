@@ -27,7 +27,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: update # データは保持されます。create-dropにすると起動時に消えます。
+    # 起動時の data.sql などの実行を抑制
+    sql:
+      init:
+        mode: never
     properties:
       hibernate:
         jdbc:
@@ -75,7 +79,7 @@ mirel:
     auto-deploy-samples: true
   apps:
     mste:
-      # 開発環境: 起動時に必ずステンシルマスタをリロード
+      # 開発環境: 起動時にステンシルマスタをリロード（Upsertロジックに変更済み）
       # クラスパス変更・ファイル更新を即座に反映
       auto-reload-stencil-on-startup: true
 
