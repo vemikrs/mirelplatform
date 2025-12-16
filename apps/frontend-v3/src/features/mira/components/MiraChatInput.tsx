@@ -19,7 +19,8 @@ import {
   Paintbrush2,
   Workflow,
   Loader2,
-  Send
+  Send,
+  Square
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
@@ -75,6 +76,8 @@ interface MiraChatInputProps {
   editingMessageContent?: string;
   /** 編集キャンセルコールバック */
   onCancelEdit?: () => void;
+  /** 送信キャンセルコールバック */
+  onCancel?: () => void;
 }
 
 export type MiraChatInputHandle = {
@@ -94,6 +97,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   editingMessageId,
   editingMessageContent,
   onCancelEdit,
+  onCancel,
 }, ref) => {
   const [message, setMessage] = useState('');
   const [selectedMode, setSelectedMode] = useState<MiraMode>(initialMode);
@@ -838,14 +842,26 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
           
           {/* 送信ボタン */}
           <Button
-            onClick={handleSend}
-            disabled={(!message.trim() && attachedFiles.length === 0) || isLoading || disabled || isUploading}
+            onClick={() => {
+              if (isLoading && onCancel) {
+                onCancel();
+              } else {
+                handleSend();
+              }
+            }}
+            disabled={(!message.trim() && attachedFiles.length === 0 && !isLoading) || disabled || isUploading}
             size="icon"
-            className="shrink-0"
-            title={isUploading ? 'ファイルをアップロード中...' : '送信'}
+            className={cn("shrink-0", isLoading && onCancel ? "bg-red-500 hover:bg-red-600 text-white" : "")}
+            title={isLoading ? '停止' : (isUploading ? 'ファイルをアップロード中...' : '送信')}
           >
-            {isLoading || isUploading ? (
+            {isUploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isLoading ? (
+              onCancel ? (
+              <Square className="w-4 h-4 fill-current" />
+              ) : (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )
             ) : (
               <Send className="w-4 h-4" />
             )}
