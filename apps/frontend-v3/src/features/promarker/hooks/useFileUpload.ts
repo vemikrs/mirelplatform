@@ -57,7 +57,7 @@ export function useFileUpload() {
       }
 
       const formData = new FormData()
-      formData.append('file', uploadFile)
+      formData.append('file', uploadFile, file.name)
       
       const response = await apiClient.post<ApiResponse<FileUploadResult>>(
         '/commons/upload',
