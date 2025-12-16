@@ -63,7 +63,9 @@ export function useFileUpload() {
         '/commons/upload',
         formData,
         {
-          // headers: { 'Content-Type': 'multipart/form-data' }, // Let browser set this with boundary
+          headers: {
+            'Content-Type': undefined as unknown as string, // Remove default application/json to let browser set multipart/form-data with boundary
+          },
         }
       )
       
