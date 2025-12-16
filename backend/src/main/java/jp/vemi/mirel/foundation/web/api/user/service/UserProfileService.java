@@ -78,7 +78,7 @@ public class UserProfileService {
         logger.info("Getting user profile: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         Tenant currentTenant = null;
         if (user.getTenantId() != null) {
@@ -118,7 +118,7 @@ public class UserProfileService {
                         ? java.util.Arrays.asList(user.getRoles().split("\\|"))
                         : java.util.Collections.emptyList())
                 .oauth2Provider(systemUser != null ? systemUser.getOauth2Provider() : null)
-                .hasPassword(systemUser != null && systemUser.getPasswordHash() != null 
+                .hasPassword(systemUser != null && systemUser.getPasswordHash() != null
                         && !systemUser.getPasswordHash().isEmpty()
                         && !systemUser.getPasswordHash().startsWith("$OAUTH2$"))
                 .build();
@@ -132,7 +132,7 @@ public class UserProfileService {
         logger.info("Updating user profile: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         // ユーザー名の変更
         if (request.getUsername() != null && !request.getUsername().isEmpty()) {
@@ -142,7 +142,7 @@ public class UserProfileService {
                 throw new IllegalArgumentException("このユーザー名は既に使用されています");
             }
             user.setUsername(request.getUsername());
-            
+
             // SystemUserも更新
             if (user.getSystemUserId() != null) {
                 systemUserRepository.findById(user.getSystemUserId()).ifPresent(su -> {
@@ -193,11 +193,11 @@ public class UserProfileService {
         logger.info("Updating password for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         // SystemUser取得
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found"));
 
         // 現在のパスワード検証
         if (!passwordEncoder.matches(request.getCurrentPassword(), systemUser.getPasswordHash())) {
@@ -272,7 +272,7 @@ public class UserProfileService {
         logger.info("Updating email for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         // 重複チェック
         Optional<User> existingUser = userRepository.findByEmail(newEmail);
@@ -305,14 +305,14 @@ public class UserProfileService {
         logger.info("Uploading avatar for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (user.getSystemUserId() == null) {
-            throw new RuntimeException("SystemUser not found");
+            throw new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found");
         }
 
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found"));
 
         // ファイルサイズチェック（5MB）
         if (file.getSize() > 5 * 1024 * 1024) {
@@ -327,7 +327,7 @@ public class UserProfileService {
 
         // アバターを保存
         byte[] imageBytes = file.getBytes();
-        String avatarUrl = avatarService.saveAvatarFromBytes(imageBytes, systemUser.getId(), 
+        String avatarUrl = avatarService.saveAvatarFromBytes(imageBytes, systemUser.getId(),
                 getExtensionFromContentType(contentType));
 
         if (avatarUrl != null) {
@@ -347,7 +347,7 @@ public class UserProfileService {
         logger.info("Deleting avatar for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (user.getSystemUserId() == null) {
             return;
@@ -374,14 +374,14 @@ public class UserProfileService {
         logger.info("Unlinking GitHub for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (user.getSystemUserId() == null) {
-            throw new RuntimeException("SystemUser not found");
+            throw new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found");
         }
 
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found"));
 
         // パスワードが設定されていない場合は連携解除不可
         if (systemUser.getPasswordHash() == null || systemUser.getPasswordHash().isEmpty()
@@ -404,14 +404,14 @@ public class UserProfileService {
         logger.info("Enabling passwordless login for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (user.getSystemUserId() == null) {
-            throw new RuntimeException("SystemUser not found");
+            throw new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found");
         }
 
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found"));
 
         // メールが検証済みでない場合は不可
         if (!Boolean.TRUE.equals(systemUser.getEmailVerified())) {
@@ -433,14 +433,14 @@ public class UserProfileService {
         logger.info("Setting password for user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (user.getSystemUserId() == null) {
-            throw new RuntimeException("SystemUser not found");
+            throw new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found");
         }
 
         SystemUser systemUser = systemUserRepository.findById(user.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("SystemUser not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("SystemUser not found"));
 
         String newPasswordHash = passwordEncoder.encode(newPassword);
         systemUser.setPasswordHash(newPasswordHash);
@@ -457,7 +457,8 @@ public class UserProfileService {
             return new HashMap<>();
         }
         try {
-            return objectMapper.readValue(attributesJson, new TypeReference<Map<String, String>>() {});
+            return objectMapper.readValue(attributesJson, new TypeReference<Map<String, String>>() {
+            });
         } catch (JsonProcessingException e) {
             logger.warn("Failed to parse attributes JSON", e);
             return new HashMap<>();

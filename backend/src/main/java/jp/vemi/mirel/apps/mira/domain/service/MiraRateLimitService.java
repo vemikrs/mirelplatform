@@ -50,14 +50,16 @@ public class MiraRateLimitService {
         UserRateLimit limitMin = rpmLimits.computeIfAbsent(userId, k -> new UserRateLimit());
         limitMin.cleanUp(60);
         if (limitMin.getCount() >= rpmLimit) {
-            throw new RuntimeException("Rate limit exceeded (RPM). Please try again later.");
+            throw new jp.vemi.framework.exeption.MirelQuotaExceededException(
+                    "Rate limit exceeded (RPM). Please try again later.");
         }
 
         // RPH Check (1 hour = 3600 seconds)
         UserRateLimit limitHour = rphLimits.computeIfAbsent(userId, k -> new UserRateLimit());
         limitHour.cleanUp(3600);
         if (limitHour.getCount() >= rphLimit) {
-            throw new RuntimeException("Rate limit exceeded (RPH). You have reached your hourly limit.");
+            throw new jp.vemi.framework.exeption.MirelQuotaExceededException(
+                    "Rate limit exceeded (RPH). You have reached your hourly limit.");
         }
 
         // Add request to both counters

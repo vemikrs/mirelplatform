@@ -139,7 +139,7 @@ public class AdminUserService {
         logger.info("Update user: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
 
         if (request.getDisplayName() != null) {
             user.setDisplayName(request.getDisplayName());
@@ -219,20 +219,20 @@ public class AdminUserService {
 
         // 既存ユーザーチェック（User）
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Username already exists");
         }
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Email already exists");
         }
 
         // 既存ユーザーチェック（SystemUser）
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists in SystemUser");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Username already exists in SystemUser");
         }
 
         if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists in SystemUser");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Email already exists in SystemUser");
         }
 
         // 1. SystemUser作成
@@ -312,7 +312,7 @@ public class AdminUserService {
         logger.info("Delete user: {}", userId);
 
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found");
+            throw new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found");
         }
 
         userRepository.deleteById(userId);
@@ -341,14 +341,15 @@ public class AdminUserService {
                 .filter(UserTenantAssignmentRequest.TenantAssignment::getIsDefault)
                 .count();
         if (defaultCount != 1) {
-            throw new RuntimeException("Exactly one default tenant is required");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Exactly one default tenant is required");
         }
 
         // 新しいテナント割り当てを作成
         for (UserTenantAssignmentRequest.TenantAssignment assignment : request.getTenants()) {
             // テナントの存在確認
             if (!tenantRepository.existsById(assignment.getTenantId())) {
-                throw new RuntimeException("Tenant not found: " + assignment.getTenantId());
+                throw new jp.vemi.framework.exeption.MirelResourceNotFoundException(
+                        "Tenant not found: " + assignment.getTenantId());
             }
 
             UserTenant userTenant = new UserTenant();

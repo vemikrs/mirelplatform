@@ -50,7 +50,7 @@ public class TokenQuotaService {
         if (usedToday + estimatedTokens > dailyLimit) {
             log.warn("Token quota exceeded for tenant: {}. Used: {}, Limit: {}, Estimated: {}",
                     tenantId, usedToday, dailyLimit, estimatedTokens);
-            throw new RuntimeException("Daily token quota exceeded");
+            throw new jp.vemi.framework.exeption.MirelQuotaExceededException("Daily token quota exceeded");
         }
     }
 
