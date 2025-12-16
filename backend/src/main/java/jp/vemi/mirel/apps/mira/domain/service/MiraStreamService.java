@@ -436,39 +436,43 @@ public class MiraStreamService {
                         log.debug("Entering Finalize Branch. No tool calls.");
                         String finalContent = contentBuffer.get().toString();
 
-                        if (!finalContent.isEmpty()) {
-                            AiResponse dummyResponse = AiResponse.success(finalContent,
-                                    AiResponse.Metadata.builder()
-                                            .model("streaming-model")
-                                            .completionTokens(tokenCounter.count(finalContent, "gpt-4o"))
-                                            .latencyMs(System.currentTimeMillis() - startTime)
-                                            .build());
+                        if (finalContent.isEmpty()) {
+                            return Flux.just(MiraStreamResponse.error("EMPTY_RESPONSE", "応答がありませんでした。もう一度お試しください。"));
+                        }
 
-                            try {
-                                // Policy Filtering
-                                String filteredContent = policyEnforcer.filterResponse(finalContent, systemRole);
+                        AiResponse dummyResponse = AiResponse.success(finalContent,
+                                AiResponse.Metadata.builder()
+                                        .model("streaming-model")
+                                        .completionTokens(tokenCounter.count(finalContent, "gpt-4o"))
+                                        .latencyMs(System.currentTimeMillis() - startTime)
+                                        .build());
 
-                                chatService.saveAssistantMessage(conversation, dummyResponse, filteredContent);
-                                auditService.logChatResponse(tenantId, userId, conversation.getId(),
-                                        mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
-                                        0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
+                        try {
+                            // Policy Filtering
+                            String filteredContent = policyEnforcer.filterResponse(finalContent, systemRole);
 
-                                // Auto Title (Async)
-                                if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
-                                        || "新しい会話".equals(conversation.getTitle())) {
-                                    Mono.fromRunnable(() -> chatService.autoGenerateTitle(conversation, tenantId))
-                                            .subscribeOn(Schedulers.boundedElastic())
-                                            .subscribe();
-                                }
-                            } catch (Exception e) {
-                                log.error("Post-stream processing failed", e);
+                            chatService.saveAssistantMessage(conversation, dummyResponse, filteredContent);
+                            auditService.logChatResponse(tenantId, userId, conversation.getId(),
+                                    mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
+                                    0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
+
+                            // Auto Title (Async)
+                            if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
+                                    || "新しい会話".equals(conversation.getTitle())) {
+                                Mono.fromRunnable(() -> chatService.autoGenerateTitle(conversation, tenantId))
+                                        .subscribeOn(Schedulers.boundedElastic())
+                                        .subscribe();
                             }
+                        } catch (Exception e) {
+                            log.error("Post-stream processing failed", e);
                         }
                         return Flux.just(MiraStreamResponse.done(conversation.getId()));
                     }
                 }));
 
-        if (isBlockingSearch) {
+        if (isBlockingSearch)
+
+        {
             return Flux.concat(Flux.just(MiraStreamResponse.status("思考中...")), mainStream);
         }
         return mainStream;
