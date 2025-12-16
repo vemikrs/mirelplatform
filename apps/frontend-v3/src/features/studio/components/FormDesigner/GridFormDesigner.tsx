@@ -19,9 +19,9 @@ export const GridFormDesigner: React.FC = () => {
     h: w.h,
   }));
 
-  const onLayoutChange = (newLayout: GridLayout.Layout[]) => {
+  const onLayoutChange = (newLayout: any) => {
     const updatedWidgets = widgets.map((w) => {
-      const l = newLayout.find((nl) => nl.i === w.id);
+      const l = newLayout.find((nl: any) => nl.i === w.id);
       if (l) {
         return {
           ...w,
@@ -42,6 +42,7 @@ export const GridFormDesigner: React.FC = () => {
         <GridLayout
           className="layout"
           layout={layout}
+          // @ts-ignore
           cols={12}
           rowHeight={30}
           width={800}

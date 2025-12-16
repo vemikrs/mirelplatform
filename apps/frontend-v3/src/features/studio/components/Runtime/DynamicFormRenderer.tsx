@@ -108,6 +108,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ widget
       <GridLayout
         className="layout"
         layout={layout}
+        // @ts-ignore
         cols={12}
         rowHeight={30}
         width={800}
