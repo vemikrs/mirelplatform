@@ -32,102 +32,135 @@ import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
 @Transactional
 public class FileRegisterServiceImpl implements FileRegisterService {
 
-  @Autowired
-  protected FileManagementRepository fileManagementRepository;
+    @Autowired
+    protected FileManagementRepository fileManagementRepository;
 
-  protected static final String ATCH_FILE_NAME = "__file";
+    protected static final String ATCH_FILE_NAME = "__file";
 
-  @Override
-  public Pair<String, String> register(MultipartFile multipartFile) {
-    String temporaryUuid = UUID.randomUUID().toString();
-    File temporary = new File(System.getProperty("java.io.tmpdir") + "/ProMarker/" + temporaryUuid);
-    FileUtil.transfer(multipartFile, temporary, ATCH_FILE_NAME);
-    return register(temporary, false, multipartFile.getOriginalFilename());
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Pair<String, String> register(File srcFile, boolean isZip) {
-    return register(srcFile, isZip, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   * 新しいトランザクションで実行して楽観ロック競合を回避
-   */
-  @Override
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Pair<String, String> register(File srcFile, boolean isZip, String fileName) {
-
-    String uuid = UUID.randomUUID().toString();
-
-    String dest = getSaveDir(uuid);
-    File destFile = new File(dest);
-
-    if (destFile.exists()) {
-      // error... files exists already...
+    @Override
+    public Pair<String, String> register(MultipartFile multipartFile) {
+        String temporaryUuid = UUID.randomUUID().toString();
+        File temporary = new File(System.getProperty("java.io.tmpdir") + "/ProMarker/" + temporaryUuid);
+        FileUtil.transfer(multipartFile, temporary, ATCH_FILE_NAME);
+        return register(temporary, false, multipartFile.getOriginalFilename());
     }
 
-    if (isZip) {
-      if (false == FileUtil.zip(srcFile, dest, ATCH_FILE_NAME)) {
-        // error... failed archive file...
-      }
-      fileName = srcFile.getName() + ".zip";
-    } else {
-      FileUtil.copy(srcFile, destFile);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Pair<String, String> register(File srcFile, boolean isZip) {
+        return register(srcFile, isZip, null);
     }
 
-    if (StringUtils.isEmpty(fileName)) {
-      fileName = ATCH_FILE_NAME;
+    /**
+     * {@inheritDoc}
+     * 新しいトランザクションで実行して楽観ロック競合を回避
+     */
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Pair<String, String> register(File srcFile, boolean isZip, String fileName) {
+
+        String uuid = UUID.randomUUID().toString();
+
+        String dest = getSaveDir(uuid);
+        File destFile = new File(dest);
+
+        if (destFile.exists()) {
+            // error... files exists already...
+        }
+
+        if (isZip) {
+            if (false == FileUtil.zip(srcFile, dest, ATCH_FILE_NAME)) {
+                // error... failed archive file...
+            }
+            fileName = srcFile.getName() + ".zip";
+        } else {
+            FileUtil.copy(srcFile, destFile);
+        }
+
+        if (StringUtils.isEmpty(fileName)) {
+            fileName = ATCH_FILE_NAME;
+        }
+
+        // create entity.
+        FileManagement fileManagement = new FileManagement();
+        fileManagement.fileId = uuid;
+        fileManagement.fileName = fileName;
+        Path destPath = Paths.get(dest).resolve(ATCH_FILE_NAME);
+        fileManagement.filePath = destPath.toString();
+        fileManagement.expireDate = DateUtils.addDays(new Date(), defaultExpireTerms());
+
+        // @Versionフィールドはnullのままにして、JPA/Hibernateの自動管理に委ねる
+        // 手動初期化はHibernateの新規/既存判別を混乱させる
+
+        // 画像圧縮処理
+        // ファイル名から拡張子を取得し、画像かどうかを簡易判定
+        if (isImageFile(fileName) && destFile.length() > 2 * 1024 * 1024) { // 2MB以上の場合
+            try {
+                // 一時ファイルとして圧縮
+                File compressed = new File(dest + ".compressed");
+                net.coobird.thumbnailator.Thumbnails.of(destFile)
+                        .scale(1.0) // サイズ変更なし（必要に応じて .size(1920, 1920) 等）
+                        .outputQuality(0.8) // 品質 0.8
+                        .toFile(compressed);
+
+                // 圧縮後の方が小さければ採用
+                if (compressed.length() < destFile.length()) {
+                    if (destFile.delete()) {
+                        compressed.renameTo(destFile);
+                    }
+                } else {
+                    compressed.delete();
+                }
+            } catch (Exception e) {
+                // 圧縮失敗時はログを出して元ファイルを維持
+                // log.warn("Image compression failed", e);
+                e.printStackTrace();
+            }
+        }
+
+        FileManagement saved = fileManagementRepository.save(fileManagement);
+        if (null == saved) {
+            throw new RuntimeException("Failed to save FileManagement entity");
+        }
+        return Pair.of(uuid, fileName);
     }
 
-    // create entity.
-    FileManagement fileManagement = new FileManagement();
-    fileManagement.fileId = uuid;
-    fileManagement.fileName = fileName;
-    Path destPath = Paths.get(dest).resolve(ATCH_FILE_NAME);
-    fileManagement.filePath = destPath.toString();
-    fileManagement.expireDate = DateUtils.addDays(new Date(), defaultExpireTerms());
-    
-    // @Versionフィールドはnullのままにして、JPA/Hibernateの自動管理に委ねる
-    // 手動初期化はHibernateの新規/既存判別を混乱させる
-    
-    FileManagement saved = fileManagementRepository.save(fileManagement);
-    if (null == saved) {
-        throw new RuntimeException("Failed to save FileManagement entity");
+    private boolean isImageFile(String fileName) {
+        if (fileName == null)
+            return false;
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".bmp");
     }
-    return Pair.of(uuid, fileName);
-  }
 
-  /**
-   * save
-   */
-  protected String getSaveDir(String uuid) {
+    /**
+     * save
+     */
+    protected String getSaveDir(String uuid) {
 
-    // validate.
-    Assert.notNull(uuid, "uuid must not be null.");
+        // validate.
+        Assert.notNull(uuid, "uuid must not be null.");
 
-    // y&m
-    Date date = new Date();
-    String y = DateUtil.toString(date, "yy");
-    String m = DateUtil.toString(date, "MM");
+        // y&m
+        Date date = new Date();
+        String y = DateUtil.toString(date, "yy");
+        String m = DateUtil.toString(date, "MM");
 
-    // concatenate.
-    Path basePath = Paths.get(StorageUtil.getBaseDir());
-    Path fullPath = basePath.resolve(defaultAppDir()).resolve(y).resolve(m).resolve(uuid);
-    return fullPath.toString();
+        // concatenate.
+        Path basePath = Paths.get(StorageUtil.getBaseDir());
+        Path fullPath = basePath.resolve(defaultAppDir()).resolve(y).resolve(m).resolve(uuid);
+        return fullPath.toString();
 
-  }
+    }
 
-  // TODO: Config化
-  protected String defaultAppDir() {
-    return "foundation/filemanagement";
-  }
+    // TODO: Config化
+    protected String defaultAppDir() {
+        return "foundation/filemanagement";
+    }
 
-  // TODO: Config化
-  protected int defaultExpireTerms() {
-    return 3;
-  }
+    // TODO: Config化
+    protected int defaultExpireTerms() {
+        return 3;
+    }
 }

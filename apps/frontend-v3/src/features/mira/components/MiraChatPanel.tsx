@@ -55,6 +55,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
     startEditMessage,
     cancelEditMessage,
     resendEditedMessage,
+    abort,
   } = useMira();
   
   const { isOpen, close: closePanel } = useMiraPanel();
@@ -300,6 +301,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
           isLoading={isLoading}
           placeholder="質問を入力..."
           compact
+          onCancel={abort}
         />
       ) : (
         <>
@@ -348,6 +350,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
             editingMessageId={editingMessageId || undefined}
             editingMessageContent={editingMessageContent || undefined}
             onCancelEdit={cancelEditMessage}
+            onCancel={abort}
           />
         </>
       )}

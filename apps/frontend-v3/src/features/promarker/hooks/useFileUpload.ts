@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import type { ApiResponse } from '@/lib/api/types'
 import { handleApiError } from '@/lib/utils/error'
+import imageCompression from 'browser-image-compression'
 
 /**
  * File upload response structure
@@ -36,14 +37,35 @@ interface FileUploadResult {
 export function useFileUpload() {
   return useMutation({
     mutationFn: async (file: File) => {
+      let uploadFile = file
+
+      // 画像の場合は圧縮
+      if (file.type.startsWith('image/')) {
+        try {
+          console.log(`Original size: ${file.size / 1024 / 1024} MB`)
+          const options = {
+            maxSizeMB: 2,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          }
+          uploadFile = await imageCompression(file, options)
+          console.log(`Compressed size: ${uploadFile.size / 1024 / 1024} MB`)
+        } catch (error) {
+          console.error('Image compression failed:', error)
+          // 圧縮失敗時は元ファイルを使用
+        }
+      }
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', uploadFile, file.name)
       
       const response = await apiClient.post<ApiResponse<FileUploadResult>>(
         '/commons/upload',
         formData,
         {
-          // headers: { 'Content-Type': 'multipart/form-data' }, // Let browser set this with boundary
+          headers: {
+            'Content-Type': undefined as unknown as string, // Remove default application/json to let browser set multipart/form-data with boundary
+          },
         }
       )
       

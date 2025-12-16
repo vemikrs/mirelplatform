@@ -34,19 +34,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(
             MethodArgumentNotValidException ex, WebRequest request) {
-        
+
         log.warn("Validation error on {}: {}", request.getDescription(false), ex.getMessage());
-        
+
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
                 .collect(Collectors.toList());
-        
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(errors)
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
@@ -56,18 +56,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
             ConstraintViolationException ex, WebRequest request) {
-        
+
         log.warn("Constraint violation on {}: {}", request.getDescription(false), ex.getMessage());
-        
+
         List<String> errors = ex.getConstraintViolations()
                 .stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.toList());
-        
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(errors)
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
@@ -77,13 +77,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
             AccessDeniedException ex, WebRequest request) {
-        
+
         log.warn("Access denied on {}: {}", request.getDescription(false), ex.getMessage());
-        
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("アクセスが拒否されました"))
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
@@ -93,19 +93,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailNotVerifiedException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleEmailNotVerified(
             EmailNotVerifiedException ex, WebRequest request) {
-        
+
         log.warn("Email not verified on {}: {}", request.getDescription(false), ex.getMessage());
-        
+
         Map<String, Object> data = Map.of(
                 "email", ex.getEmail(),
-                "errorCode", "EMAIL_NOT_VERIFIED"
-        );
-        
+                "errorCode", "EMAIL_NOT_VERIFIED");
+
         ApiResponse<Map<String, Object>> response = ApiResponse.<Map<String, Object>>builder()
                 .data(data)
                 .errors(List.of(ex.getMessage()))
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
@@ -115,48 +114,127 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
             IllegalArgumentException ex, WebRequest request) {
-        
+
         log.warn("Illegal argument on {}: {}", request.getDescription(false), ex.getMessage());
-        
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage() != null ? ex.getMessage() : "不正なリクエストです"))
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     /**
-     * RuntimeException (ビジネスロジックエラー)
+     * リソースが見つからないエラー (404 Not Found)
+     */
+    @ExceptionHandler(jp.vemi.framework.exeption.MirelResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+            jp.vemi.framework.exeption.MirelResourceNotFoundException ex, WebRequest request) {
+
+        log.warn("Resource not found on {}: {}", request.getDescription(false), ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .errors(List.of(ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    /**
+     * クォータ超過/レート制限エラー (429 Too Many Requests)
+     */
+    @ExceptionHandler(jp.vemi.framework.exeption.MirelQuotaExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleQuotaExceededException(
+            jp.vemi.framework.exeption.MirelQuotaExceededException ex, WebRequest request) {
+
+        log.warn("Quota exceeded on {}: {}", request.getDescription(false), ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .errors(List.of(ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+    }
+
+    /**
+     * バリデーションエラー/業務ルール違反 (400 Bad Request)
+     */
+    @ExceptionHandler(jp.vemi.framework.exeption.MirelValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMirelValidationException(
+            jp.vemi.framework.exeption.MirelValidationException ex, WebRequest request) {
+
+        log.warn("Business validation error on {}: {}", request.getDescription(false), ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .errors(List.of(ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * その他のアプリケーション例外 (400 Bad Request)
+     */
+    @ExceptionHandler(jp.vemi.framework.exeption.MirelApplicationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMirelApplicationException(
+            jp.vemi.framework.exeption.MirelApplicationException ex, WebRequest request) {
+
+        log.warn("Application error on {}: {}", request.getDescription(false), ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .errors(List.of(ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * システム固有例外 (500 Internal Server Error)
+     * クライアントには詳細を隠蔽します。
+     */
+    @ExceptionHandler(jp.vemi.framework.exeption.MirelSystemException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMirelSystemException(
+            jp.vemi.framework.exeption.MirelSystemException ex, WebRequest request) {
+
+        log.error("System exception on {}: {}", request.getDescription(false), ex.getMessage(), ex);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    /**
+     * RuntimeException (予期せぬエラーとみなす)
+     * 以前は400を返していましたが、今後はシステムエラーとして500を返し、詳細は隠蔽します。
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(
             RuntimeException ex, WebRequest request) {
-        
-        log.error("Runtime exception on {}: {}", request.getDescription(false), ex.getMessage(), ex);
-        
-        // RuntimeExceptionのメッセージは業務エラーとみなし、クライアントに返す
+
+        log.error("Unexpected runtime exception on {}: {}", request.getDescription(false), ex.getMessage(), ex);
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .errors(List.of(ex.getMessage() != null ? ex.getMessage() : "処理中にエラーが発生しました"))
+                .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))
                 .build();
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     /**
      * その他のすべての例外 (システムエラー)
-     * システムエラーの詳細はログに記録し、クライアントには一般的なメッセージのみ返します。
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(
             Exception ex, WebRequest request) {
-        
+
         log.error("Unexpected error on {}: {}", request.getDescription(false), ex.getMessage(), ex);
-        
-        // システムエラーの詳細は隠蔽し、一般的なメッセージのみ返す
+
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

@@ -73,23 +73,25 @@ public class AuthenticationServiceImpl {
     /**
      * セットアップトークン検証の共通ロジック
      * 
-     * @param token セットアップトークン
+     * @param token
+     *            セットアップトークン
      * @return 検証済みトークンとSystemUserのペア
-     * @throws RuntimeException トークンが無効または期限切れの場合
+     * @throws RuntimeException
+     *             トークンが無効または期限切れの場合
      */
     private Pair<OtpToken, SystemUser> validateSetupToken(String token) {
         // トークン検証
         OtpToken otpToken = otpTokenRepository.findByMagicLinkTokenAndPurposeAndIsVerifiedFalse(token, "ACCOUNT_SETUP")
-                .orElseThrow(() -> new RuntimeException("無効または期限切れのセットアップリンクです"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelValidationException("無効または期限切れのセットアップリンクです"));
 
         // 有効期限チェック
         if (otpToken.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
-            throw new RuntimeException("セットアップリンクの有効期限が切れています");
+            throw new jp.vemi.framework.exeption.MirelValidationException("セットアップリンクの有効期限が切れています");
         }
 
         // SystemUser取得
         SystemUser systemUser = systemUserRepository.findById(otpToken.getSystemUserId())
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("ユーザーが見つかりません"));
 
         return Pair.of(otpToken, systemUser);
     }
@@ -97,9 +99,11 @@ public class AuthenticationServiceImpl {
     /**
      * アカウントセットアップトークンを検証
      * 
-     * @param token セットアップトークン
+     * @param token
+     *            セットアップトークン
      * @return ユーザー情報（email, username）
-     * @throws RuntimeException トークンが無効または期限切れの場合
+     * @throws RuntimeException
+     *             トークンが無効または期限切れの場合
      */
     @Transactional(readOnly = true)
     public VerifySetupTokenResponse verifyAccountSetupToken(String token) {
@@ -119,9 +123,12 @@ public class AuthenticationServiceImpl {
     /**
      * アカウントセットアップ（パスワード設定）
      * 
-     * @param token セットアップトークン
-     * @param newPassword 新しいパスワード
-     * @throws RuntimeException トークンが無効、期限切れ、またはパスワード設定に失敗した場合
+     * @param token
+     *            セットアップトークン
+     * @param newPassword
+     *            新しいパスワード
+     * @throws RuntimeException
+     *             トークンが無効、期限切れ、またはパスワード設定に失敗した場合
      */
     @Transactional
     public void setupAccount(String token, String newPassword) {
@@ -165,16 +172,17 @@ public class AuthenticationServiceImpl {
         // SystemUserでusernameまたはemailを検索
         SystemUser systemUser = systemUserRepository.findByUsername(request.getUsernameOrEmail())
                 .or(() -> systemUserRepository.findByEmail(request.getUsernameOrEmail()))
-                .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelValidationException(
+                        "Invalid username/email or password"));
 
         // アクティブチェック
         if (systemUser.getIsActive() == null || !systemUser.getIsActive()) {
-            throw new RuntimeException("User account is not active");
+            throw new jp.vemi.framework.exeption.MirelValidationException("User account is not active");
         }
 
         // アカウントロックチェック
         if (systemUser.getAccountLocked() != null && systemUser.getAccountLocked()) {
-            throw new RuntimeException("User account is locked");
+            throw new jp.vemi.framework.exeption.MirelValidationException("User account is locked");
         }
 
         // パスワード検証
@@ -193,13 +201,13 @@ public class AuthenticationServiceImpl {
             }
 
             systemUserRepository.save(systemUser);
-            throw new RuntimeException("Invalid username/email or password");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Invalid username/email or password");
         }
 
         // メールアドレス検証チェック
         if (systemUser.getEmailVerified() == null || !systemUser.getEmailVerified()) {
             log.warn("Login attempt with unverified email: {}", systemUser.getEmail());
-            
+
             // 管理者作成ユーザーの場合、自動的に検証メール送信
             if (Boolean.TRUE.equals(systemUser.getCreatedByAdmin())) {
                 log.info("Auto-sending verification email for admin-created user: {}", systemUser.getEmail());
@@ -207,25 +215,22 @@ public class AuthenticationServiceImpl {
                     String ipAddress = request.getIpAddress() != null ? request.getIpAddress() : "unknown";
                     String userAgent = request.getUserAgent() != null ? request.getUserAgent() : "unknown";
                     otpService.requestOtp(
-                        systemUser.getEmail(), 
-                        "EMAIL_VERIFICATION", 
-                        ipAddress,
-                        userAgent
-                    );
+                            systemUser.getEmail(),
+                            "EMAIL_VERIFICATION",
+                            ipAddress,
+                            userAgent);
                 } catch (Exception e) {
                     log.error("Failed to send verification email: {}", systemUser.getEmail(), e);
                     // メール送信失敗でもログイン拒否（エラー詳細は記録するがユーザーには公開しない）
                 }
                 throw new EmailNotVerifiedException(
-                    "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
-                    systemUser.getEmail()
-                );
+                        "メールアドレスが未検証です。検証コードを送信しました。受信ボックスを確認してください。",
+                        systemUser.getEmail());
             } else {
                 // 通常のユーザーの場合は検証メール送信なし
                 throw new EmailNotVerifiedException(
-                    "メールアドレスが未検証です。受信ボックスを確認してください。",
-                    systemUser.getEmail()
-                );
+                        "メールアドレスが未検証です。受信ボックスを確認してください。",
+                        systemUser.getEmail());
             }
         }
 
@@ -235,7 +240,7 @@ public class AuthenticationServiceImpl {
 
         // Userエンティティを取得（ApplicationデータにアクセスするためにsystemUserIdで検索）
         User user = userRepository.findBySystemUserId(systemUser.getId())
-                .orElseThrow(() -> new RuntimeException("User profile not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("User profile not found"));
 
         // 最終ログイン時刻更新
         user.setLastLoginAt(Instant.now());
@@ -315,12 +320,12 @@ public class AuthenticationServiceImpl {
 
         // ユーザー名重複チェック
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Username already exists");
         }
 
         // メール重複チェック
         if (systemUserRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Email already exists");
         }
 
         // SystemUser作成
@@ -375,11 +380,11 @@ public class AuthenticationServiceImpl {
 
         UUID systemUserId = UUID.fromString(systemUserIdStr);
         SystemUser systemUser = systemUserRepository.findById(systemUserId)
-                .orElseThrow(() -> new RuntimeException("System user not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelValidationException("System user not found"));
 
         // ユーザー名重複チェック
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Username already exists");
         }
 
         // User作成
@@ -491,15 +496,15 @@ public class AuthenticationServiceImpl {
         // RefreshToken検証
         String tokenHash = hashToken(request.getRefreshToken());
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelValidationException("Invalid refresh token"));
 
         if (!refreshToken.isValid()) {
-            throw new RuntimeException("Refresh token is expired or revoked");
+            throw new jp.vemi.framework.exeption.MirelValidationException("Refresh token is expired or revoked");
         }
 
         // ユーザー取得
         User user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("User not found"));
 
         // テナント取得
         Tenant tenant = user.getTenantId() != null ? tenantRepository.findById(user.getTenantId()).orElse(null) : null;
@@ -544,17 +549,20 @@ public class AuthenticationServiceImpl {
     /**
      * 検証メール再送
      * 
-     * @param email メールアドレス
-     * @param ipAddress リクエスト元IPアドレス
-     * @param userAgent User-Agent
+     * @param email
+     *            メールアドレス
+     * @param ipAddress
+     *            リクエスト元IPアドレス
+     * @param userAgent
+     *            User-Agent
      */
     @Transactional
     public void resendVerificationEmail(String email, String ipAddress, String userAgent) {
         log.info("Resend verification email request: email={}", email);
-        
+
         // ユーザーが存在しなくてもエラーにしない（列挙攻撃対策）
         SystemUser systemUser = systemUserRepository.findByEmail(email).orElse(null);
-        
+
         if (systemUser != null && !Boolean.TRUE.equals(systemUser.getEmailVerified())) {
             // 既存の OTP 基盤を活用
             try {
@@ -578,7 +586,7 @@ public class AuthenticationServiceImpl {
         log.info("Tenant switch attempt: user={}, tenant={}", userId, tenantId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("User not found"));
 
         // ユーザーがテナントに所属しているか確認
         UserTenant userTenant = userTenantRepository.findByUserIdAndTenantId(userId, tenantId)
@@ -601,7 +609,7 @@ public class AuthenticationServiceImpl {
 
         // Tenant取得
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("Tenant not found"));
 
         log.info("Tenant switch successful: user={}, new tenant={}", userId, tenantId);
 
@@ -693,7 +701,7 @@ public class AuthenticationServiceImpl {
             }
             return hexString.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to hash token", e);
+            throw new jp.vemi.framework.exeption.MirelSystemException("Failed to hash token", e);
         }
     }
 
@@ -796,7 +804,7 @@ public class AuthenticationServiceImpl {
     private TokenDto generateAuthTokens(User user) {
         String accessToken;
         boolean isJwtEnabled = authProperties.getJwt().isEnabled();
-        
+
         if (isJwtEnabled && jwtService != null) {
             // ユーザーの権限を取得して使用
             List<SimpleGrantedAuthority> authorities = buildAuthoritiesFromUser(user);
@@ -809,12 +817,12 @@ public class AuthenticationServiceImpl {
         }
 
         RefreshToken refreshToken = createRefreshToken(user);
-        
+
         TokenDto tokens = new TokenDto();
         tokens.setAccessToken(accessToken);
         tokens.setRefreshToken(refreshToken.getTokenHash()); // 実際はtokenValue
         tokens.setExpiresIn(3600L); // 1 hour (Long type)
-        
+
         return tokens;
     }
 }

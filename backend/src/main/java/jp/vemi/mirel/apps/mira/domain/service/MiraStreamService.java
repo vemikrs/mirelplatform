@@ -194,7 +194,9 @@ public class MiraStreamService {
         //
         // 関連: Spring AI Issue (検討中)
         Flux<AiResponse> responseStream;
-        if (Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval())) {
+        boolean isBlockingSearch = Boolean.TRUE.equals(aiRequest.isGoogleSearchRetrieval());
+
+        if (isBlockingSearch) {
             log.info("Google Search Grounding enabled. Switching to blocking chat for reliability.");
             responseStream = Mono.fromCallable(() -> client.chat(aiRequest))
                     .subscribeOn(Schedulers.boundedElastic())
@@ -203,7 +205,8 @@ public class MiraStreamService {
             responseStream = client.stream(aiRequest);
         }
 
-        return responseStream
+        Flux<MiraStreamResponse> mainStream = responseStream
+
                 .map(aiResponse -> {
                     if (aiResponse.hasError()) {
                         return MiraStreamResponse.error("AI_ERROR", aiResponse.getErrorMessage());
@@ -239,7 +242,13 @@ public class MiraStreamService {
                 })
                 .onErrorResume(e -> {
                     log.error("Stream Loop Error: {}", e.getMessage(), e);
-                    return Flux.just(MiraStreamResponse.error("SYSTEM_ERROR", "AI Service Error: " + e.getMessage()));
+
+                    if (e instanceof jp.vemi.framework.exeption.MirelApplicationException) {
+                        return Flux.just(MiraStreamResponse.error("USER_ERROR", e.getMessage()));
+                    }
+
+                    // Mask technical details for other exceptions
+                    return Flux.just(MiraStreamResponse.error("SYSTEM_ERROR", "システムエラーが発生しました。再試行してください。"));
                 })
                 .filter(resp -> resp.getContent() != null && !resp.getContent().isEmpty()) // Filter empty
                 .concatWith(Flux.defer(() -> {
@@ -458,6 +467,11 @@ public class MiraStreamService {
                         return Flux.just(MiraStreamResponse.done(conversation.getId()));
                     }
                 }));
+
+        if (isBlockingSearch) {
+            return Flux.concat(Flux.just(MiraStreamResponse.status("ウェブ検索を実行中...")), mainStream);
+        }
+        return mainStream;
     }
 
     @lombok.Data

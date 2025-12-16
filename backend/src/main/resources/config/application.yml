@@ -2,6 +2,9 @@ server:
   port: ${SERVER_PORT:3000}
   servlet:
     context-path: /mipla2
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 
 spring:
   profiles:
