@@ -48,9 +48,9 @@ export function KnowledgeManagementDialog({
       const formData = new FormData();
       formData.append('file', selectedFile);
       
+      // Override default Content-Type to let axios auto-detect FormData and set correct boundary
       const uploadRes = await apiClient.post('/files/register', formData, {
         headers: {
-          // Let browser set Content-Type with boundary for multipart/form-data
           'Content-Type': undefined as unknown as string,
         },
       });
