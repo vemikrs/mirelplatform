@@ -15,6 +15,7 @@ import {
   useToast,
 } from '@mirel/ui';
 import { FileText, Loader2, Database } from 'lucide-react';
+import { apiClient } from '@/lib/api/client';
 
 interface KnowledgeManagementDialogProps {
   open: boolean;
@@ -47,29 +48,17 @@ export function KnowledgeManagementDialog({
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      // TODO: Use actual API client
-      const uploadRes = await fetch('/api/files/register', {
-        method: 'POST',
+      const uploadRes = await apiClient.post('/files/register', formData, {
         headers: {
-            // Content-Type header should be handled by browser for FormData
-             'Authorization': `Bearer ${localStorage.getItem('token')}` // simple assumption
+          // Let browser set Content-Type with boundary for multipart/form-data
+          'Content-Type': undefined as unknown as string,
         },
-        body: formData
       });
       
-      if (!uploadRes.ok) throw new Error('File upload failed');
-      const uploadData = await uploadRes.json();
-      const fileId = uploadData.fileId; // Adjust based on actual response
+      const fileId = uploadRes.data.fileId; // Adjust based on actual response
 
       // 2. Index File to Knowledge Base
-      const indexRes = await fetch(`/api/mira/knowledge/index/${fileId}?scope=${scope}`, {
-        method: 'POST',
-         headers: {
-             'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-      });
-
-      if (!indexRes.ok) throw new Error('Indexing failed');
+      await apiClient.post(`/apps/mira/knowledge/index/${fileId}?scope=${scope}`);
 
       toast({
         title: '登録完了',

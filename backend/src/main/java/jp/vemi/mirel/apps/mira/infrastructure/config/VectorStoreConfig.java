@@ -32,44 +32,17 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 public class VectorStoreConfig {
 
-    // Manual configuration removed.
-    // pgvector extension is now enabled via schema.sql and
-    // spring.sql.init.mode=always
-
-    // Manual configuration removed to rely on Spring AI Starters
-    // (AutoConfiguration)
-    /*
-     * @Bean
-     * public EmbeddingModel embeddingModel() {
-     * // Vertex AI Embedding Model の構築
-     * // TODO: AIProviderFactory と連携して他プロバイダ対応を行う（現在はVertex AI固定）
-     * var config = miraAiProperties.getVertexAi();
-     * 
-     * if (config.getProjectId() == null || config.getProjectId().isEmpty()) {
-     * log.warn("Vertex AI Project ID is missing. EmbeddingModel will not work.");
-     * // ダミーまたは例外送出するモデルを返すのが望ましいが、一旦null取扱注意
-     * return null;
-     * }
-     * 
-     * VertexAI vertexAi = new VertexAI(config.getProjectId(),
-     * config.getLocation());
-     * 
-     * VertexAiGeminiEmbeddingOptions options =
-     * VertexAiGeminiEmbeddingOptions.builder()
-     * .withModel("text-embedding-004") // or specific model from properties
-     * .build();
-     * 
-     * return new VertexAiGeminiEmbeddingModel(vertexAi, options);
-     * }
-     * 
-     * @Bean
-     * public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel
-     * embeddingModel) {
-     * if (embeddingModel == null) {
-     * log.warn("EmbeddingModel is null. VectorStore will not be initialized.");
-     * return null;
-     * }
-     * return new PgVectorStore(jdbcTemplate, embeddingModel);
-     * }
+    /**
+     * Vector Store Configuration.
+     * <p>
+     * This configuration class relies on Spring AI AutoConfiguration for setting up
+     * EmbeddingModel and VectorStore beans. Manual bean definitions have been removed
+     * in favor of Spring Boot's automatic configuration based on properties.
+     * </p>
+     * <p>
+     * Migration note: Previously, beans were manually defined here. Now they are
+     * automatically configured via Spring AI Starter dependencies and application properties.
+     * The pgvector extension is enabled via schema.sql with spring.sql.init.mode=always.
+     * </p>
      */
 }

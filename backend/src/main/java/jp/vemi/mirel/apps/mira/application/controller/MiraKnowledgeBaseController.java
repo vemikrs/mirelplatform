@@ -37,7 +37,9 @@ public class MiraKnowledgeBaseController {
             tenantId = "default"; // Fallback
         String userId = jwt.getSubject();
 
-        // Scope validation
+        // Scope validation for SYSTEM access
+        // SYSTEM scope requires ADMIN role - this is a security critical check
+        // that prevents unauthorized users from adding documents to the global knowledge base
         if (scope == MiraVectorStore.Scope.SYSTEM) {
             java.util.Map<String, Object> realmAccess = jwt.getClaim("realm_access");
             @SuppressWarnings("unchecked")

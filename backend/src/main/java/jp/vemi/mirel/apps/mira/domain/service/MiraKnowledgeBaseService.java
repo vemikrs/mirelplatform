@@ -114,10 +114,14 @@ public class MiraKnowledgeBaseService {
      * @return 関連ドキュメントリスト
      */
     public List<Document> search(String query, String tenantId, String userId) {
-        // フィルタ式構築: (scope == 'SYSTEM') OR (scope == 'TENANT' && tenantId == '...') OR
-        // (scope == 'USER' && userId == '...')
-        // Spring AI 1.x Filter Expression Syntax:
-        // metadata key access might differ. Assuming portable syntax.
+        // Filter Expression Construction using Spring AI's FilterExpressionBuilder
+        // This approach is safe as it uses parameterized queries through the builder API
+        // (b.eq method) rather than string concatenation, preventing injection vulnerabilities.
+        // 
+        // The filter allows documents from:
+        // - SYSTEM scope (accessible to all)
+        // - TENANT scope matching the user's tenant
+        // - USER scope matching the specific user
 
         org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
         org.springframework.ai.vectorstore.filter.Filter.Expression expression = b.or(
