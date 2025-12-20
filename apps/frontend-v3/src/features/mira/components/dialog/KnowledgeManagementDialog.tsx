@@ -59,7 +59,7 @@ export function KnowledgeManagementDialog({
       const fileId = uploadRes.data.fileId; // Adjust based on actual response
 
       // 2. Index File to Knowledge Base
-      await apiClient.post(`/apps/mira/knowledge/index/${fileId}?scope=${scope}`);
+      await apiClient.post(`/api/mira/knowledge/index/${fileId}?scope=${scope}`);
 
       toast({
         title: '登録完了',

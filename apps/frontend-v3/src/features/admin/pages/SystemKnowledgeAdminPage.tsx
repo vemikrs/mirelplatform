@@ -1,30 +1,6 @@
-import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  Button,
-  Input,
-  Label,
-  useToast,
-  Badge,
-} from '@mirel/ui';
-import { FileText, Loader2, ShieldAlert, Upload } from 'lucide-react';
-import { KnowledgeDocumentList } from '@/features/mira/components/KnowledgeDocumentList';
+import { apiClient } from '@/lib/api/client';
 
-export default function SystemKnowledgeAdminPage() {
-  const { toast } = useToast();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
+// ...
 
   const handleUpload = async () => {
     if (!selectedFile) return;
@@ -32,32 +8,20 @@ export default function SystemKnowledgeAdminPage() {
     try {
       setIsUploading(true);
 
-      // 1. Upload File (simulated API call for now, same as user dialog)
+      // 1. Upload File
       const formData = new FormData();
       formData.append('file', selectedFile);
-      // Explicitly unsetting Content-Type is handled by browser for FormData, 
-      // but some frontend setups need care. Here standard fetch handles it.
       
-      const uploadRes = await fetch('/api/files/register', {
-        method: 'POST',
+      const uploadRes = await apiClient.post('/files/register', formData, {
         headers: {
-             'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
+            'Content-Type': undefined as unknown as string,
+        }
       });
       
-      if (!uploadRes.ok) throw new Error('File upload failed');
-      const uploadData = await uploadRes.json();
-      const fileId = uploadData.fileId;
+      const fileId = uploadRes.data.fileId;
 
       // 2. Index File to SYSTEM Scope
-      // Note: Backend should enforce ADMIN role for scope=SYSTEM
-      const indexRes = await fetch(`/api/mira/knowledge/index/${fileId}?scope=SYSTEM`, {
-        method: 'POST',
-        headers: {
-             'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-      });
+      await apiClient.post(`/api/mira/knowledge/index/${fileId}?scope=SYSTEM`);
 
       if (!indexRes.ok) throw new Error('Indexing failed');
 
