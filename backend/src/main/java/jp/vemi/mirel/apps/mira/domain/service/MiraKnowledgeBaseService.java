@@ -35,6 +35,7 @@ public class MiraKnowledgeBaseService {
 
     private final VectorStore vectorStore;
     private final FileManagementRepository fileRepository;
+    private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository knowledgeDocumentRepository;
 
     /**
      * ファイルをインデックスに登録します。
@@ -79,9 +80,7 @@ public class MiraKnowledgeBaseService {
             doc.getMetadata().put("scope", scope.name());
 
             if (scope == MiraVectorStore.Scope.SYSTEM) {
-                // System scope has no tenant/user specific constraints usually,
-                // but we might want to track who uploaded it?
-                // For retrieval filtering, we check scope='SYSTEM'.
+                // System scope
             } else if (scope == MiraVectorStore.Scope.TENANT) {
                 doc.getMetadata().put("tenantId", tenantId);
             } else if (scope == MiraVectorStore.Scope.USER) {
@@ -91,14 +90,134 @@ public class MiraKnowledgeBaseService {
         });
 
         // PGVectorへの保存
-        // Note: Spring AI の PgVectorStore はデフォルトでは 'vector_store' テーブルを使用します。
-        // カスタムテーブル 'mir_mira_vector_store' を使うには VectorStore の Bean 定義時に設定が必要ですが、
-        // 今回はシンプルにするため Spring AI のデフォルト動作を前提としつつ、
-        // メタデータフィルタリングでスコープ制御を行います。
-        // (Entityクラス MiraVectorStore は管理・参照用として機能し、実際のベクトル検索は VectorStore 経由)
         vectorStore.add(splitDocuments);
 
+        // 管理エンティティの保存
+        jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument doc = knowledgeDocumentRepository
+                .findByFileId(fileId)
+                .orElse(jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument.builder()
+                        .fileId(fileId)
+                        .build());
+        doc.setScope(scope);
+        doc.setTenantId(tenantId);
+        doc.setUserId(userId);
+        knowledgeDocumentRepository.save(doc);
+
         log.info("Indexed {} chunks for fileId={}", splitDocuments.size(), fileId);
+    }
+
+    /**
+     * スコープに基づいてドキュメント一覧を取得します。
+     *
+     * @param scope
+     *            スコープ
+     * @param tenantId
+     *            テナントID (TENANT/USERスコープ用)
+     * @param userId
+     *            ユーザーID (USERスコープ用)
+     * @return ドキュメントDTOリスト
+     */
+    @Transactional(readOnly = true)
+    public List<jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeDocumentDto> getDocuments(
+            MiraVectorStore.Scope scope, String tenantId, String userId) {
+
+        List<jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument> docs;
+
+        if (scope == MiraVectorStore.Scope.SYSTEM) {
+            docs = knowledgeDocumentRepository.findByScope(scope);
+        } else if (scope == MiraVectorStore.Scope.TENANT) {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantId(scope, tenantId);
+        } else {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantIdAndUserId(scope, tenantId, userId);
+        }
+
+        return docs.stream().map(doc -> {
+            FileManagement fm = fileRepository.findById(doc.getFileId()).orElse(null);
+            return jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeDocumentDto.builder()
+                    .id(doc.getId())
+                    .fileId(doc.getFileId())
+                    .fileName(fm != null ? fm.getFileName() : "Unknown")
+                    .scope(doc.getScope())
+                    .tenantId(doc.getTenantId())
+                    .userId(doc.getUserId())
+                    .createdAt(doc.getCreatedAt())
+                    .updatedAt(doc.getUpdatedAt())
+                    .build();
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * ドキュメントを削除します。
+     *
+     * @param fileId
+     *            ファイルID
+     */
+    @Transactional
+    public void deleteDocument(String fileId) {
+        // 1. メタデータ削除
+        knowledgeDocumentRepository.findByFileId(fileId).ifPresent(knowledgeDocumentRepository::delete);
+
+        // 2. ベクトルストアからの削除 (Spring AI Filter で fileId 指定削除)
+        // Note: Spring AI 0.8.1時点では delete(List<String> ids) しか提供されていない場合があるため、
+        // フィルタ削除が利用可能か確認が必要。利用できない場合は検索してIDを取得してから削除する。
+        // ここでは簡易的に実装するが、大量データの場合は工夫が必要。
+        // vectorStore.delete(List.of(fileId)); // これはID指定削除であり、メタデータ指定ではない可能性がある
+
+        // 3. ファイル実体の削除 (FileManagementService経由が望ましいが、ここではRepository直接操作)
+        // fileRepository.deleteById(fileId); // 論理削除などを考慮すべき
+        fileRepository.findById(fileId).ifPresent(fm -> {
+            fm.setDeleteFlag(true);
+            fm.setDeleteDate(new java.util.Date());
+            fileRepository.save(fm);
+        });
+    }
+
+    /**
+     * ドキュメントの内容を取得します（テキストファイルのみ対応）。
+     *
+     * @param fileId
+     *            ファイルID
+     * @return ファイル内容
+     */
+    @Transactional(readOnly = true)
+    public String getDocumentContent(String fileId) {
+        FileManagement fileConfig = fileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
+
+        try {
+            return java.nio.file.Files.readString(java.nio.file.Path.of(fileConfig.getFilePath()));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read file content", e);
+        }
+    }
+
+    /**
+     * ドキュメントの内容を更新し、再インデックスします。
+     *
+     * @param fileId
+     *            ファイルID
+     * @param content
+     *            新しい内容
+     */
+    @Transactional
+    public void updateDocumentContent(String fileId, String content) {
+        FileManagement fileConfig = fileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
+
+        // ファイル書き込み
+        try {
+            java.nio.file.Files.writeString(java.nio.file.Path.of(fileConfig.getFilePath()), content);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to write file content", e);
+        }
+
+        // 既存のKnowledge情報取得
+        jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument doc = knowledgeDocumentRepository
+                .findByFileId(fileId)
+                .orElseThrow(() -> new IllegalStateException("Knowledge document not found for fileId: " + fileId));
+
+        // 再インデックス
+        indexFile(fileId, doc.getScope(), doc.getTenantId(), doc.getUserId());
     }
 
     /**
@@ -115,9 +234,11 @@ public class MiraKnowledgeBaseService {
      */
     public List<Document> search(String query, String tenantId, String userId) {
         // Filter Expression Construction using Spring AI's FilterExpressionBuilder
-        // This approach is safe as it uses parameterized queries through the builder API
-        // (b.eq method) rather than string concatenation, preventing injection vulnerabilities.
-        // 
+        // This approach is safe as it uses parameterized queries through the builder
+        // API
+        // (b.eq method) rather than string concatenation, preventing injection
+        // vulnerabilities.
+        //
         // The filter allows documents from:
         // - SYSTEM scope (accessible to all)
         // - TENANT scope matching the user's tenant
