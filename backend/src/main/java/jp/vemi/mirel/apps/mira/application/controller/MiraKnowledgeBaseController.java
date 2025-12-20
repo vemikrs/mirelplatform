@@ -39,7 +39,14 @@ public class MiraKnowledgeBaseController {
 
         // Scope validation
         if (scope == MiraVectorStore.Scope.SYSTEM) {
-            // TODO: Admin check
+            java.util.Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+            @SuppressWarnings("unchecked")
+            java.util.List<String> roles = (realmAccess != null) ? (java.util.List<String>) realmAccess.get("roles")
+                    : null;
+            if (roles == null || !roles.contains("ADMIN")) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.FORBIDDEN, "SYSTEM scope requires ADMIN role");
+            }
         }
 
         knowledgeBaseService.indexFile(fileId, scope, tenantId, userId);

@@ -4,7 +4,7 @@
 
 services:
   postgres-e2e:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     container_name: mirelplatform-postgres-e2e
     environment:
       POSTGRES_DB: mirelplatform_e2e

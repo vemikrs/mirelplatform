@@ -470,12 +470,9 @@ public class MiraStreamService {
                     }
                 }));
 
-        if (isBlockingSearch)
-
-        {
-            return Flux.concat(Flux.just(MiraStreamResponse.status("思考中...")), mainStream);
-        }
-        return mainStream;
+        return isBlockingSearch
+                ? Flux.concat(Flux.just(MiraStreamResponse.status("思考中...")), mainStream)
+                : mainStream;
     }
 
     @lombok.Data

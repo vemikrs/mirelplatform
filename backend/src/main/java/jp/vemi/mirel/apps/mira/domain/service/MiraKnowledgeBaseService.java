@@ -4,17 +4,13 @@
 package jp.vemi.mirel.apps.mira.domain.service;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,14 +119,18 @@ public class MiraKnowledgeBaseService {
         // Spring AI 1.x Filter Expression Syntax:
         // metadata key access might differ. Assuming portable syntax.
 
-        String filterExpression = String.format(
-                "(scope == 'SYSTEM') || (scope == 'TENANT' && tenantId == '%s') || (scope == 'USER' && userId == '%s')",
-                tenantId, userId);
+        org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
+        org.springframework.ai.vectorstore.filter.Filter.Expression expression = b.or(
+                b.eq("scope", "SYSTEM"),
+                b.or(
+                        b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)),
+                        b.and(b.eq("scope", "USER"), b.eq("userId", userId))))
+                .build();
 
         SearchRequest request = SearchRequest.builder()
                 .query(query)
                 .topK(5)
-                .filterExpression(filterExpression)
+                .filterExpression(expression)
                 .build();
 
         return vectorStore.similaritySearch(request);
