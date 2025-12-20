@@ -115,7 +115,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // 環境変数からカンマ区切りで許可オリジンを取得
         String[] origins = allowedOrigins.split(",");
         for (int i = 0; i < origins.length; i++) {
@@ -196,9 +196,11 @@ public class WebSecurityConfig {
      * 認可設定を行います。
      * securityPropertiesの設定に応じてAPIエンドポイントの認可要否を制御します。
      * 
-     * <p><b>設計方針:</b> 未認証アクセスはデフォルトで401エラーを返す。
+     * <p>
+     * <b>設計方針:</b> 未認証アクセスはデフォルトで401エラーを返す。
      * OAuth2 (GitHub) は /oauth2/authorization/github への明示的アクセスのみ有効。
-     * 認証不要エンドポイントは明示的に permitAll() に追加する。</p>
+     * 認証不要エンドポイントは明示的に permitAll() に追加する。
+     * </p>
      *
      * @param http
      *            セキュリティ設定
@@ -212,8 +214,8 @@ public class WebSecurityConfig {
                     "/auth/login",
                     "/auth/signup",
                     "/auth/otp/**",
-                    "/auth/verify-setup-token",  // アカウントセットアップトークン検証 (Issue #57)
-                    "/auth/setup-account",       // アカウントセットアップ（パスワード設定） (Issue #57)
+                    "/auth/verify-setup-token", // アカウントセットアップトークン検証 (Issue #57)
+                    "/auth/setup-account", // アカウントセットアップ（パスワード設定） (Issue #57)
                     "/auth/health",
                     "/auth/logout",
                     "/auth/check").permitAll()
@@ -228,7 +230,8 @@ public class WebSecurityConfig {
                     // OAuth2関連エンドポイント（Spring Securityが処理）
                     .requestMatchers(
                             "/login/oauth2/code/**", // OAuth2コールバック
-                            "/oauth2/**" // OAuth2認証フロー
+                            "/oauth2/**", // OAuth2認証フロー
+                            "/api/users/*/avatar" // アバター画像（公開）
             ).permitAll()
 
                     .requestMatchers("/actuator/**").permitAll() // Actuator endpoints for health checks
