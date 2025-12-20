@@ -24,6 +24,7 @@ import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage';
 import { LogoutPage } from '@/features/auth/pages/LogoutPage';
 import { AdminFeaturesPage } from '@/features/admin';
 import { MiraAdminPage } from '@/features/admin/pages/MiraAdminPage'; // Add import
+import SystemKnowledgeAdminPage from '@/features/admin/pages/SystemKnowledgeAdminPage';
 import { MenuManagementPage } from '@/features/admin/pages/MenuManagementPage';
 import { UserManagementPage } from '@/features/admin/pages/UserManagementPage';
 import { LicenseManagementPage } from '@/features/admin/pages/LicenseManagementPage';
@@ -283,6 +284,11 @@ export const router = createBrowserRouter([
             path: 'admin/mira',
             element: <MiraAdminPage />,
             handle: { title: '管理 - Mira AI 設定' },
+          },
+          {
+            path: 'admin/mira/knowledge',
+            element: <SystemKnowledgeAdminPage />,
+            handle: { title: '管理 - システムナレッジ' },
           },
           // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
           {

@@ -27,7 +27,8 @@ import {
     Save,   // Restored
     Plus,   // Restored 
     Trash2, // Restored
-    Plug    // Added
+    Plug,   // Added
+    Book    // Added
 } from 'lucide-react';
 
 import {
@@ -199,6 +200,12 @@ const SettingsTab = () => {
             </Button>
             <Button variant={activeCategory === 'integration' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('integration')}>
                 <Plug className="mr-2 h-4 w-4" /> 連携 (Integration)
+            </Button>
+            
+            <div className="my-2 border-t" />
+            
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => window.location.href = '/admin/mira/knowledge'}>
+                <Book className="mr-2 h-4 w-4" /> システムナレッジ
             </Button>
         </div>
     );
