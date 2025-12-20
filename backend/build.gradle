@@ -85,7 +85,14 @@ dependencies {
 
     // Spring AI - Google Vertex AI (Gemini)
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
+    implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-embedding' // Added for Embedding (legacy naming?)
     implementation 'com.google.cloud:google-cloud-vertexai:1.40.0' // Explicit dependency to resolve class lookup
+
+    // Spring AI - PGVector Store
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    // Spring AI - Tika Document Reader (PDF, Office, etc.)
+    implementation 'org.springframework.ai:spring-ai-tika-document-reader'
 
     // JTokkit for Token Counting
     implementation 'com.knuddels:jtokkit:1.1.0'

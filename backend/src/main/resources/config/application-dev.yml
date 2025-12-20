@@ -14,8 +14,8 @@ spring:
     vertex:
       ai:
         gemini:
-          project-id: ${GEMINI_PROJECT_ID}
-          location: ${GEMINI_LOCATION}
+          project-id: dev-dummy-project
+          location: us-central1
           chat:
             options:
               model: ${GEMINI_MODEL}
