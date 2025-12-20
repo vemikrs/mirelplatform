@@ -30,7 +30,8 @@ public class MiraKnowledgeBaseController {
     public void indexFile(
             @PathVariable String fileId,
             @RequestParam(defaultValue = "USER") MiraVectorStore.Scope scope,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            org.springframework.security.core.Authentication authentication) {
 
         String tenantId = jwt.getClaimAsString("tenant_id"); // Assuming standard claims, adjust if needed
         if (tenantId == null)
@@ -42,11 +43,9 @@ public class MiraKnowledgeBaseController {
         // that prevents unauthorized users from adding documents to the global
         // knowledge base
         if (scope == MiraVectorStore.Scope.SYSTEM) {
-            java.util.Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-            @SuppressWarnings("unchecked")
-            java.util.List<String> roles = (realmAccess != null) ? (java.util.List<String>) realmAccess.get("roles")
-                    : null;
-            if (roles == null || !roles.contains("ADMIN")) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin) {
                 throw new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.FORBIDDEN, "SYSTEM scope requires ADMIN role");
             }
