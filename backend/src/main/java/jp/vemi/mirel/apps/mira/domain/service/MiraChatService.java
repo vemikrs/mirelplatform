@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors; // Added
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchProvider;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchTools;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
+import org.springframework.ai.document.Document; // Added
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -75,6 +77,7 @@ public class MiraChatService {
     private final AdminSystemSettingsService adminSystemSettingsService;
     private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties; // To check provider
     private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
+    private final MiraKnowledgeBaseService knowledgeBaseService; // RAG Integration
 
     /**
      * 会話一覧取得.
@@ -216,6 +219,24 @@ public class MiraChatService {
         // 6. プロンプト構築（コンテキストレイヤーを反映）
         String finalContext = contextMergeService.buildFinalContextPrompt(
                 tenantId, null, userId, msgConfig);
+
+        // RAG: Retrieve related documents
+        // TODO: Add refined control via ChatRequest
+        try {
+            List<Document> ragDocs = knowledgeBaseService.search(
+                    request.getMessage().getContent(), tenantId, userId);
+
+            if (!ragDocs.isEmpty()) {
+                String ragContext = ragDocs.stream()
+                        .map(doc -> doc.getText())
+                        .collect(Collectors.joining("\n\n"));
+
+                finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
+                log.debug("Attached {} RAG documents to context.", ragDocs.size());
+            }
+        } catch (Exception e) {
+            log.warn("RAG retrieval failed, proceeding without docs", e);
+        }
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
