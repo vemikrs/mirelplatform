@@ -37,13 +37,14 @@ export default function SystemKnowledgeAdminPage() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      const uploadRes = await apiClient.post('/files/register', formData, {
+      const uploadRes = await apiClient.post('/commons/upload', formData, {
         headers: {
             'Content-Type': undefined as unknown as string,
         }
       });
       
-      const fileId = uploadRes.data.fileId;
+      // UploadController returns ApiResponse<FileUploadResult> where FileUploadResult has uuid
+      const fileId = uploadRes.data.data.uuid; 
 
       // 2. Index File to SYSTEM Scope
       // Note: Backend should enforce ADMIN role for scope=SYSTEM

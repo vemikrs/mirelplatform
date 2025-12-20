@@ -50,13 +50,13 @@ export function KnowledgeManagementDialog({
       formData.append('file', selectedFile);
       
       // Override default Content-Type to let axios auto-detect FormData and set correct boundary
-      const uploadRes = await apiClient.post('/files/register', formData, {
+      const uploadRes = await apiClient.post('/commons/upload', formData, {
         headers: {
           'Content-Type': undefined as unknown as string,
         },
       });
       
-      const fileId = uploadRes.data.fileId; // Adjust based on actual response
+      const fileId = uploadRes.data.data.uuid; // UploadController returns data.uuid
 
       // 2. Index File to Knowledge Base
       await apiClient.post(`/api/mira/knowledge/index/${fileId}?scope=${scope}`);
