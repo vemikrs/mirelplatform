@@ -1,6 +1,31 @@
+import { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Input,
+  Label,
+  useToast,
+  Badge,
+} from '@mirel/ui';
+import { FileText, Loader2, ShieldAlert, Upload } from 'lucide-react';
+import { KnowledgeDocumentList } from '@/features/mira/components/KnowledgeDocumentList';
 import { apiClient } from '@/lib/api/client';
 
-// ...
+export default function SystemKnowledgeAdminPage() {
+  const { toast } = useToast();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
 
   const handleUpload = async () => {
     if (!selectedFile) return;
@@ -21,9 +46,8 @@ import { apiClient } from '@/lib/api/client';
       const fileId = uploadRes.data.fileId;
 
       // 2. Index File to SYSTEM Scope
+      // Note: Backend should enforce ADMIN role for scope=SYSTEM
       await apiClient.post(`/api/mira/knowledge/index/${fileId}?scope=SYSTEM`);
-
-      if (!indexRes.ok) throw new Error('Indexing failed');
 
       toast({
         title: 'システムナレッジ登録完了',
