@@ -438,35 +438,35 @@ public class MiraStreamService {
 
                         if (finalContent.isEmpty()) {
                             return Flux.just(MiraStreamResponse.error("EMPTY_RESPONSE", "応答がありませんでした。もう一度お試しください。"));
-                        }
+                        } else {
+                            AiResponse dummyResponse = AiResponse.success(finalContent,
+                                    AiResponse.Metadata.builder()
+                                            .model("streaming-model")
+                                            .completionTokens(tokenCounter.count(finalContent, "gpt-4o"))
+                                            .latencyMs(System.currentTimeMillis() - startTime)
+                                            .build());
 
-                        AiResponse dummyResponse = AiResponse.success(finalContent,
-                                AiResponse.Metadata.builder()
-                                        .model("streaming-model")
-                                        .completionTokens(tokenCounter.count(finalContent, "gpt-4o"))
-                                        .latencyMs(System.currentTimeMillis() - startTime)
-                                        .build());
+                            try {
+                                // Policy Filtering
+                                String filteredContent = policyEnforcer.filterResponse(finalContent, systemRole);
 
-                        try {
-                            // Policy Filtering
-                            String filteredContent = policyEnforcer.filterResponse(finalContent, systemRole);
+                                chatService.saveAssistantMessage(conversation, dummyResponse, filteredContent);
+                                auditService.logChatResponse(tenantId, userId, conversation.getId(),
+                                        mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
+                                        0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
 
-                            chatService.saveAssistantMessage(conversation, dummyResponse, filteredContent);
-                            auditService.logChatResponse(tenantId, userId, conversation.getId(),
-                                    mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
-                                    0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
-
-                            // Auto Title (Async)
-                            if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
-                                    || "新しい会話".equals(conversation.getTitle())) {
-                                Mono.fromRunnable(() -> chatService.autoGenerateTitle(conversation, tenantId))
-                                        .subscribeOn(Schedulers.boundedElastic())
-                                        .subscribe();
+                                // Auto Title (Async)
+                                if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
+                                        || "新しい会話".equals(conversation.getTitle())) {
+                                    Mono.fromRunnable(() -> chatService.autoGenerateTitle(conversation, tenantId))
+                                            .subscribeOn(Schedulers.boundedElastic())
+                                            .subscribe();
+                                }
+                            } catch (Exception e) {
+                                log.error("Post-stream processing failed", e);
                             }
-                        } catch (Exception e) {
-                            log.error("Post-stream processing failed", e);
+                            return Flux.just(MiraStreamResponse.done(conversation.getId()));
                         }
-                        return Flux.just(MiraStreamResponse.done(conversation.getId()));
                     }
                 }));
 
