@@ -83,7 +83,7 @@ public class AvatarService {
             log.info("Saved avatar image: {} ({} bytes)", filePath, imageBytes.length);
 
             // APIエンドポイントURLを返却
-            return contextPath + "/api/users/" + userId + "/avatar";
+            return "/api/users/" + userId + "/avatar";
 
         } catch (IOException e) {
             log.error("Failed to save avatar image for user: {}", userId, e);
@@ -189,7 +189,7 @@ public class AvatarService {
             log.info("Saved avatar image: {} ({} bytes)", filePath, imageBytes.length);
 
             // APIエンドポイントURLを返却
-            return contextPath + "/api/users/" + userId + "/avatar";
+            return "/api/users/" + userId + "/avatar";
 
         } catch (IOException e) {
             log.error("Failed to save avatar image for user: {}", userId, e);
@@ -232,6 +232,6 @@ public class AvatarService {
      * @return デフォルトアバターのURL
      */
     public String getDefaultAvatarUrl() {
-        return contextPath + "/assets/default-avatar.png";
+        return "/assets/default-avatar.png";
     }
 }
