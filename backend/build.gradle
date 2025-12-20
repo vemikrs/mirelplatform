@@ -60,7 +60,7 @@ dependencies {
     implementation('org.apache.poi:poi-ooxml:5.2.3') {
         exclude group: 'stax', module: 'stax-api'
     }
-    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.16.1'
     implementation 'org.freemarker:freemarker:2.3.31'
     implementation 'com.codeborne:selenide:7.5.1'
     implementation 'org.hibernate.orm:hibernate-core:6.6.1.Final'
