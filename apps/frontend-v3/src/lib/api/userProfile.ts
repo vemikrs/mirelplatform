@@ -69,9 +69,17 @@ export interface LicenseInfo {
  */
 function transformAvatarUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  // Avatar URLs use /mipla2 for static file access (direct passthrough proxy)
-  // No transformation needed - backend returns /mipla2/api/files/avatars/...
-  // which is proxied directly to backend without rewrite
+
+  // 旧データ互換: /mipla2 を /mapi に置換
+  if (url.startsWith('/mipla2')) {
+    return url.replace('/mipla2', '/mapi');
+  }
+  
+  // 新仕様: /api 始まりの場合は /mapi を付与
+  if (url.startsWith('/api')) {
+    return `/mapi${url}`;
+  }
+
   return url;
 }
 
