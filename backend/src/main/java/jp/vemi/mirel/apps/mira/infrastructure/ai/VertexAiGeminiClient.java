@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.Duration; // Added
+import reactor.util.retry.Retry; // Added
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -192,8 +194,18 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .stream()
                 .chatResponse()
                 .map(this::mapStreamResponse)
+                .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
+                        .filter(throwable -> {
+                            // Retry on specific errors (e.g., timeout, network)
+                            // For now, retry on most exceptions except fatal ones if needed
+                            // Adjust filter as necessary based on observation
+                            return true;
+                        })
+                        .doBeforeRetry(
+                                retrySignal -> log.warn("[VertexAiGemini] Retrying stream request (attempt {}): {}",
+                                        retrySignal.totalRetries() + 1, retrySignal.failure().getMessage())))
                 .onErrorResume(e -> {
-                    log.error("[VertexAiGemini] Stream failed", e);
+                    log.error("[VertexAiGemini] Stream failed after retries", e);
                     if (e instanceof io.grpc.StatusRuntimeException) {
                         return Flux.error(new jp.vemi.framework.exeption.MirelSystemException(
                                 "Google AI API error: " + e.getMessage(), e));

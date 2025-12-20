@@ -1,6 +1,9 @@
 import { useCallback, useRef } from 'react';
 import { useMiraStore } from '@/stores/miraStore';
-import { type ChatRequest } from '@/lib/api/mira';
+import { 
+  type ChatRequest,
+  generateConversationTitle 
+} from '@/lib/api/mira';
 
 interface StreamEvent {
   type: 'DELTA' | 'STATUS' | 'ERROR' | 'DONE';
@@ -170,6 +173,34 @@ export function useMiraChatStream() {
                                 completeStreamingMessage(conversationId, messageId, undefined, { 
                                     model: event.model 
                                 });
+                                
+                                // Generate title for new conversations
+                                // Fire and forget to not block UI
+                                (async () => {
+                                    try {
+                                        const { conversations, updateConversationTitle } = useMiraStore.getState();
+                                        const conversation = conversations[conversationId];
+                                        
+                                        // Only generate if no title and enough messages
+                                        if (conversation && !conversation.title && conversation.messages.length >= 2) {
+                                            const messagesToUse = conversation.messages.slice(0, 4).map(m => ({
+                                                role: m.role as 'user' | 'assistant',
+                                                content: m.content,
+                                            }));
+                                            
+                                            const titleResponse = await generateConversationTitle({
+                                                conversationId,
+                                                messages: messagesToUse,
+                                            });
+                                            
+                                            if (titleResponse.success && titleResponse.title) {
+                                                updateConversationTitle(conversationId, titleResponse.title);
+                                            }
+                                        }
+                                    } catch (err) {
+                                        console.warn('Auto-title generation failed:', err);
+                                    }
+                                })();
                                 break;
                         }
                     } catch (e) {

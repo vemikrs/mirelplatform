@@ -101,17 +101,17 @@ export function useMiraChat() {
       attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]; // 添付ファイル
     }
   ) => {
-    // 会話がなければ新規作成
-    let conversationId = activeConversationId;
-    if (!conversationId) {
-      conversationId = startConversation(options?.mode, options?.context);
-    }
-
     // Use stream if option provided OR store preference is true (and option not explicitly false)
     const shouldStream = options?.useStream !== undefined ? options.useStream : storeUseStream;
 
     if (shouldStream) {
       return sendMessageStream(content, options);
+    }
+
+    // 会話がなければ新規作成
+    let conversationId = activeConversationId;
+    if (!conversationId) {
+      conversationId = startConversation(options?.mode, options?.context);
     }
     
     // ユーザーメッセージを追加
@@ -119,7 +119,7 @@ export function useMiraChat() {
     
     // APIリクエスト
     const request: ChatRequest = {
-      conversationId: conversationId !== activeConversationId ? undefined : conversationId,
+      conversationId: conversationId,
       mode: options?.mode,
       context: {
         ...options?.context,

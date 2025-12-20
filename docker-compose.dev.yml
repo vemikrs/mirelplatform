@@ -25,7 +25,7 @@ services:
       - mirel-dev-network
 
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: mirelplatform-dev-postgres
     environment:
       POSTGRES_DB: mirelplatform

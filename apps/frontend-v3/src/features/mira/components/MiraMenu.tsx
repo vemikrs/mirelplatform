@@ -17,6 +17,7 @@ import {
   Settings2,
   Trash2,
   RefreshCw,
+  Database, // Added
 } from 'lucide-react';
 
 import { useOs } from '@/lib/hooks/useOs';
@@ -28,6 +29,7 @@ interface MiraMenuProps {
   onExport: () => void;
   onClearConversation: () => void;
   onRegenerateTitle: () => void;
+  onOpenKnowledgeManagement: () => void;
   isExporting: boolean;
   hasMessages: boolean;
   className?: string;
@@ -40,6 +42,7 @@ export function MiraMenu({
   onExport,
   onClearConversation,
   onRegenerateTitle,
+  onOpenKnowledgeManagement,
   isExporting,
   hasMessages,
   className,
@@ -85,6 +88,10 @@ export function MiraMenu({
         
         <DropdownMenuGroup>
           <DropdownMenuLabel>データ</DropdownMenuLabel>
+          <DropdownMenuItem onClick={onOpenKnowledgeManagement}>
+            <Database className="mr-2 h-4 w-4" />
+            <span>ナレッジベース</span>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={onExport} disabled={isExporting}>
             <Download className="mr-2 h-4 w-4" />
             <span>エクスポート</span>

@@ -16,12 +16,6 @@ spring:
     password: ${DATABASE_PASS:}
   session:
     store-type: redis
-  # Spring AI 自動構成の無効化（Vertex AI Gemini は手動で Bean を登録するため）
-  ai:
-    vertex:
-      ai:
-        gemini:
-          enabled: false
   jpa:
     database-platform: ${DATABASE_PLATFORM:}
     hibernate:
@@ -29,11 +23,34 @@ spring:
   spring-boot:
     run:
       jvmArguments:: -Xint
+  sql:
+    init:
+      mode: always
   autoconfigure:
     exclude:
-      - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
-      - org.springframework.ai.vertexai.gemini.autoconfigure.VertexAiGeminiAutoConfiguration
-      - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+      # - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
+      # - org.springframework.ai.vertexai.gemini.autoconfigure.VertexAiGeminiAutoConfiguration
+      # - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+
+  # Spring AI Configuration for AutoConfig
+  ai:
+    vertex:
+      ai:
+        project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+        location: ${GEMINI_LOCATION:us-central1}
+        gemini:
+          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+          location: ${GEMINI_LOCATION:us-central1}
+        embedding:
+          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+          location: ${GEMINI_LOCATION:us-central1}
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        table-name: mir_mira_vector_store
+        dimensions: 768
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
   # Redis設定
   data:
     redis:

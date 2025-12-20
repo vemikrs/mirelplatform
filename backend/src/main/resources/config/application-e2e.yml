@@ -51,12 +51,16 @@ spring:
   # Spring AI 自動設定を無効化（E2E環境ではモック使用）
   ai:
     openai:
-      api-key: disabled-for-e2e # ダミー値で自動設定を抑制
+      api-key: sk-dummy-key-for-e2e-testing # Enabled for EmbeddingModel bean creation
   autoconfigure:
     exclude:
-      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
-      - org.springframework.ai.autoconfigure.openai.OpenAiChatClientAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatClientAutoConfiguration
+      # - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration # Re-enabled for E2E (uses dummy key)
       - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiTextEmbeddingAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiEmbeddingConnectionAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiMultiModalEmbeddingAutoConfiguration
 
 # E2E環境ではActuatorエンドポイントを露出（ヘルスチェック用）
 management:

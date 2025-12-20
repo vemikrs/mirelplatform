@@ -40,6 +40,7 @@ import { MiraUserContextEditor } from '../components/MiraUserContextEditor';
 import { MiraDeleteConfirmDialog } from '../components/MiraDeleteConfirmDialog';
 import { MiraMenu } from '../components/MiraMenu';
 import { useMiraShortcuts } from '../hooks/useMiraShortcuts';
+import { KnowledgeManagementDialog } from '../components/dialog/KnowledgeManagementDialog'; // Added
 
 export function MiraPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -98,6 +99,8 @@ export function MiraPage() {
 
   // コンテキストエディタの表示状態
   const [isContextEditorOpen, setIsContextEditorOpen] = useState(false);
+  // ナレッジベースダイアログの状態
+  const [isKnowledgeDialogOpen, setIsKnowledgeDialogOpen] = useState(false);
   
   // モバイル判定（リサイズにも対応）
   const [isMobile, setIsMobile] = useState(false);
@@ -381,6 +384,7 @@ export function MiraPage() {
           onExport={handleExport}
           onClearConversation={() => setShowClearConfirm(true)}
           onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
+          onOpenKnowledgeManagement={() => setIsKnowledgeDialogOpen(true)} // Added
           isExporting={isExporting}
           hasMessages={messages.length > 0}
         />
@@ -474,6 +478,7 @@ export function MiraPage() {
             onClearConversation={() => setShowClearConfirm(true)}
             onUpdateTitle={updateConversationTitle}
             onRegenerateTitle={() => activeConversation ? regenerateTitle(activeConversation.id) : Promise.resolve()}
+            onOpenKnowledgeManagement={() => setIsKnowledgeDialogOpen(true)}
             isExporting={isExporting}
             isUpdatingTitle={isUpdatingTitle}
             hasMessages={messages.length > 0}
@@ -583,6 +588,11 @@ export function MiraPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <KnowledgeManagementDialog
+        open={isKnowledgeDialogOpen}
+        onOpenChange={setIsKnowledgeDialogOpen}
+      />
     </div>
   );
 }

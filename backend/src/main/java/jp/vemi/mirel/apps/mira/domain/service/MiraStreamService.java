@@ -436,7 +436,9 @@ public class MiraStreamService {
                         log.debug("Entering Finalize Branch. No tool calls.");
                         String finalContent = contentBuffer.get().toString();
 
-                        if (!finalContent.isEmpty()) {
+                        if (finalContent.isEmpty()) {
+                            return Flux.just(MiraStreamResponse.error("EMPTY_RESPONSE", "応答がありませんでした。もう一度お試しください。"));
+                        } else {
                             AiResponse dummyResponse = AiResponse.success(finalContent,
                                     AiResponse.Metadata.builder()
                                             .model("streaming-model")
@@ -463,15 +465,14 @@ public class MiraStreamService {
                             } catch (Exception e) {
                                 log.error("Post-stream processing failed", e);
                             }
+                            return Flux.just(MiraStreamResponse.done(conversation.getId()));
                         }
-                        return Flux.just(MiraStreamResponse.done(conversation.getId()));
                     }
                 }));
 
-        if (isBlockingSearch) {
-            return Flux.concat(Flux.just(MiraStreamResponse.status("ウェブ検索を実行中...")), mainStream);
-        }
-        return mainStream;
+        return isBlockingSearch
+                ? Flux.concat(Flux.just(MiraStreamResponse.status("思考中...")), mainStream)
+                : mainStream;
     }
 
     @lombok.Data
