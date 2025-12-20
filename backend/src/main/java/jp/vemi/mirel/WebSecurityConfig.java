@@ -238,7 +238,8 @@ public class WebSecurityConfig {
                     .requestMatchers("/v3/api-docs/**").permitAll() // OpenAPI JSON endpoint
                     .requestMatchers("/api-docs/**").permitAll() // OpenAPI JSON endpoint(Legacy)
                     .requestMatchers("/swagger-ui/**").permitAll() // Swagger UI static resources
-                    .requestMatchers("/swagger-ui.html").permitAll(); // Swagger UI HTML
+                    .requestMatchers("/swagger-ui.html").permitAll() // Swagger UI HTML
+                    .requestMatchers("/apps/mira/api/health").permitAll(); // Mira Health Check
 
             // 認証必須エンドポイント
             authz.requestMatchers(
