@@ -11,6 +11,7 @@ import {
   useToast,
 } from '@mirel/ui';
 import { Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api/client';
 
 interface KnowledgeDocumentEditDialogProps {
   fileId: string;
@@ -27,57 +28,42 @@ export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave
 
   useEffect(() => {
     if (open && fileId) {
-      const fetchContent = async () => {
-        setIsLoading(true);
-        try {
-          const res = await fetch(`/api/mira/knowledge/content/${fileId}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          if (!res.ok) throw new Error('Failed to fetch content');
-          const text = await res.text();
-          setContent(text);
-        } catch (error) {
-           console.error(error);
-           toast({
-             title: '読み込みエラー',
-             description: 'ファイル内容の取得に失敗しました。',
-             variant: 'destructive',
-           });
-           onOpenChange(false);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchContent();
+      loadContent();
     }
-  }, [fileId, open]);
+  }, [open, fileId]);
+
+  const loadContent = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiClient.get<string>(`/api/mira/knowledge/content/${fileId}`);
+      setContent(res.data);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: '読み込みエラー',
+        description: 'ドキュメント内容の取得に失敗しました。',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/mira/knowledge/content/${fileId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'text/plain' // Sending raw string
-        },
-        body: content
-      });
-
-      if (!res.ok) throw new Error('Save failed');
-
+      await apiClient.put(`/api/mira/knowledge/content/${fileId}`, content);
+      
       toast({
         title: '保存完了',
-        description: 'ファイル内容を更新し、再インデックスを開始しました。',
+        description: 'ドキュメント内容を更新しました。',
       });
       onSave();
     } catch (error) {
       console.error(error);
       toast({
         title: '保存エラー',
-        description: 'ファイル内容の更新に失敗しました。',
+        description: '保存に失敗しました。',
         variant: 'destructive',
       });
     } finally {

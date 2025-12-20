@@ -17,6 +17,7 @@ import {
 } from '@mirel/ui';
 import { FileText, Trash2, Edit, Loader2 } from 'lucide-react';
 import { KnowledgeDocumentEditDialog } from './KnowledgeDocumentEditDialog';
+import { apiClient } from '@/lib/api/client';
 
 interface KnowledgeDocument {
   id: string;
@@ -44,14 +45,8 @@ export function KnowledgeDocumentList({ scope, refreshTrigger }: KnowledgeDocume
   const fetchDocuments = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/mira/knowledge/list?scope=${scope}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!res.ok) throw new Error('Failed to fetch documents');
-      const data = await res.json();
-      setDocuments(data);
+      const res = await apiClient.get<KnowledgeDocument[]>(`/api/mira/knowledge/list?scope=${scope}`);
+      setDocuments(res.data);
     } catch (error) {
       console.error(error);
       toast({
@@ -71,13 +66,7 @@ export function KnowledgeDocumentList({ scope, refreshTrigger }: KnowledgeDocume
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await fetch(`/api/mira/knowledge/delete/${deleteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!res.ok) throw new Error('Delete failed');
+      await apiClient.delete(`/api/mira/knowledge/delete/${deleteId}`);
       
       toast({
         title: '削除完了',
