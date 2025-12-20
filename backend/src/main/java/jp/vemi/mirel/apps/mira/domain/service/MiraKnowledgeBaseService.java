@@ -6,6 +6,7 @@ package jp.vemi.mirel.apps.mira.domain.service;
 import java.io.File;
 import java.util.List;
 
+import org.apache.tika.Tika;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository;
 import jp.vemi.mirel.foundation.abst.dao.entity.FileManagement;
 import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
 import lombok.RequiredArgsConstructor;
@@ -184,10 +186,22 @@ public class MiraKnowledgeBaseService {
         FileManagement fileConfig = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
 
+        File file = new File(fileConfig.getFilePath());
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Physical file not found: " + fileConfig.getFilePath());
+        }
+
         try {
-            return java.nio.file.Files.readString(java.nio.file.Path.of(fileConfig.getFilePath()));
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to read file content", e);
+            // Use Apache Tika directly to read content as text
+            Tika tika = new Tika();
+            return tika.parseToString(file);
+        } catch (Exception e) {
+            log.warn("Failed to read file content with Tika, falling back to plain text read: {}", e.getMessage());
+            try {
+                return java.nio.file.Files.readString(java.nio.file.Path.of(fileConfig.getFilePath()));
+            } catch (java.io.IOException ioe) {
+                throw new RuntimeException("Failed to read file content", ioe);
+            }
         }
     }
 
