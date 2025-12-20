@@ -36,9 +36,14 @@ spring:
   ai:
     vertex:
       ai:
+        project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+        location: ${GEMINI_LOCATION:us-central1}
         gemini:
-          project-id: dev-dummy-project
-          location: us-central1
+          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+          location: ${GEMINI_LOCATION:us-central1}
+        embedding:
+          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+          location: ${GEMINI_LOCATION:us-central1}
     vectorstore:
       pgvector:
         initialize-schema: true
