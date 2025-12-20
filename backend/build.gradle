@@ -54,7 +54,7 @@ dependencies {
     implementation 'com.h2database:h2:2.1.214'
     runtimeOnly 'org.postgresql:postgresql:42.7.3'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.apache.commons:commons-lang3:3.14.0'
+    implementation 'org.apache.commons:commons-lang3:3.17.0'
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.apache.poi:poi:5.2.3'
     implementation('org.apache.poi:poi-ooxml:5.2.3') {
