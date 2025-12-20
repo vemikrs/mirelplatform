@@ -16,6 +16,7 @@ import {
 } from '@mirel/ui';
 import { FileText, Loader2, Database } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { KnowledgeDocumentList } from '../KnowledgeDocumentList';
 
 interface KnowledgeManagementDialogProps {
   open: boolean;
@@ -148,10 +149,30 @@ export function KnowledgeManagementDialog({
             </div>
           </TabsContent>
           
-          <TabsContent value="list" className="py-4">
-             <div className="text-center text-muted-foreground py-8">
-                一覧表示機能は実装中です。
+          <TabsContent value="list" className="py-4 space-y-4">
+             <div className="flex justify-end items-center gap-2">
+                 <Label>表示対象:</Label>
+                 <div className="flex gap-2 border rounded p-1">
+                      <Button 
+                        variant={scope === 'USER' ? 'secondary' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setScope('USER')}
+                        className="h-7"
+                    >
+                        自分のみ
+                    </Button>
+                    <Button 
+                        variant={scope === 'TENANT' ? 'secondary' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setScope('TENANT')}
+                        className="h-7"
+                    >
+                        テナント共有
+                    </Button>
+                 </div>
              </div>
+             
+             <KnowledgeDocumentList scope={scope} refreshTrigger={activeTab === 'list' ? 1 : 0} />
           </TabsContent>
         </Tabs>
       </DialogContent>
