@@ -87,6 +87,7 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './comp
 export { ScrollArea, ScrollBar } from './components/ScrollArea'
 export { Spinner, type SpinnerProps } from './components/Spinner'
 export { Separator } from './components/Separator'
+export { Slider } from './components/Slider'
 
 // Utils
 export { cn } from './lib/utils'
