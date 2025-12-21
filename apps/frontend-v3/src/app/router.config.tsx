@@ -53,6 +53,7 @@ import { DataRecordPage } from '@/features/studio/data/pages/DataRecordPage';
 import { ReleasePage } from '@/features/studio/pages/ReleasePage';
 import { StudioGuard } from '@/features/studio/guards/StudioGuard';
 import { MiraPage } from '@/features/mira/pages/MiraPage';
+import { MiraPlaygroundPage } from '@/features/mira/components/pages/MiraPlaygroundPage';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -289,6 +290,11 @@ export const router = createBrowserRouter([
             path: 'admin/mira/knowledge',
             element: <SystemKnowledgeAdminPage />,
             handle: { title: '管理 - システムナレッジ' },
+          },
+          {
+            path: 'admin/mira/playground',
+            element: <MiraPlaygroundPage />,
+            handle: { title: 'Mira - AI Playground' },
           },
           // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
           {

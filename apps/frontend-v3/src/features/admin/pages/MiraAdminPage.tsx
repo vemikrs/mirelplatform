@@ -13,8 +13,8 @@ import {
   Input,
   Label,
   Combobox,
-  Textarea, // Restored
-  Badge,    // Restored
+  Textarea,
+  Badge, 
   useToast
 } from '@mirel/ui';
 import { 
@@ -24,11 +24,12 @@ import {
     CloudCog, 
     ShieldAlert, 
     Layers, 
-    Save,   // Restored
-    Plus,   // Restored 
-    Trash2, // Restored
-    Plug,   // Added
-    Book    // Added
+    Save,
+    Plus, 
+    Trash2,
+    Plug,
+    Book,
+    Play,
 } from 'lucide-react';
 
 import {
@@ -200,6 +201,12 @@ const SettingsTab = () => {
             </Button>
             <Button variant={activeCategory === 'integration' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('integration')}>
                 <Plug className="mr-2 h-4 w-4" /> 連携 (Integration)
+            </Button>
+            
+            <div className="my-2 border-t" />
+
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => window.location.href = '/admin/mira/playground'}>
+                <Play className="mr-2 h-4 w-4" /> AI Playground
             </Button>
             
             <div className="my-2 border-t" />
