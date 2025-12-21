@@ -35,6 +35,14 @@ public class AiRequest {
     @Builder.Default
     private Integer maxTokens = 4096;
 
+    /** Top P (Nucleus Sampling) for Playground */
+    @Builder.Default
+    private Double topP = 0.95;
+
+    /** Top K for Playground */
+    @Builder.Default
+    private Integer topK = 40;
+
     /** モデル指定（オプション） */
     private String model;
 

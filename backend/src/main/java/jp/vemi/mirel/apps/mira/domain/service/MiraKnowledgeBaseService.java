@@ -274,4 +274,43 @@ public class MiraKnowledgeBaseService {
 
         return vectorStore.similaritySearch(request);
     }
+
+    /**
+     * デバッグ用検索（スコア取得）.
+     *
+     * @param query
+     *            検索クエリ
+     * @param scope
+     *            スコープ
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @param topK
+     *            取得数
+     * @return ドキュメントリスト
+     */
+    public List<Document> debugSearch(String query, String scope, String tenantId, String userId, int topK) {
+        org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
+
+        // Scope filter logic (Simulating target user/tenant)
+        org.springframework.ai.vectorstore.filter.Filter.Expression expression;
+
+        if ("SYSTEM".equals(scope)) {
+            expression = b.eq("scope", "SYSTEM").build();
+        } else if ("TENANT".equals(scope)) {
+            expression = b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)).build();
+        } else {
+            expression = b.and(b.eq("scope", "USER"), b.eq("userId", userId)).build();
+        }
+
+        SearchRequest request = SearchRequest.builder()
+                .query(query)
+                .topK(topK)
+                .filterExpression(expression)
+                // .withSimilarityThreshold(0.0) // Removed as it causes compilation error
+                .build();
+
+        return vectorStore.similaritySearch(request);
+    }
 }

@@ -401,6 +401,147 @@ public class MiraChatService {
         return response;
     }
 
+    /**
+     * プレイグラウンド用チャット実行 (Admin Only).
+     */
+    @Transactional
+    public jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse executePlaygroundChat(
+            jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatRequest request,
+            String tenantId, String userId) {
+
+        long startTime = System.currentTimeMillis();
+
+        // 1. Prepare AiRequest with overrides
+        AiRequest aiRequest = new AiRequest();
+        aiRequest.setTenantId(tenantId);
+        aiRequest.setUserId(userId);
+
+        // Map messages
+        List<AiRequest.Message> messages = request.getMessages().stream()
+                .map(m -> AiRequest.Message.builder()
+                        .role(m.getRole())
+                        .content(m.getContent())
+                        .build())
+                .collect(Collectors.toList());
+
+        // System instruction override
+        if (request.getSystemInstruction() != null && !request.getSystemInstruction().isEmpty()) {
+            messages.add(0, AiRequest.Message.system(request.getSystemInstruction()));
+        }
+
+        aiRequest.setMessages(messages);
+
+        // Parameter overrides
+        if (request.getModel() != null)
+            aiRequest.setModel(request.getModel());
+        if (request.getTemperature() != null)
+            aiRequest.setTemperature(request.getTemperature());
+        if (request.getMaxTokens() != null)
+            aiRequest.setMaxTokens(request.getMaxTokens());
+        if (request.getTopP() != null)
+            aiRequest.setTopP(request.getTopP());
+        if (request.getTopK() != null)
+            aiRequest.setTopK(request.getTopK());
+
+        // 2. RAG Execution (if enabled)
+        List<jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.RagDocument> ragDocsDto = new ArrayList<>();
+        if (request.getRagSettings() != null && request.getRagSettings().isEnabled()) {
+            try {
+                // Use simulation target if provided, otherwise current user
+                String targetTenant = request.getRagSettings().getTargetTenantId() != null
+                        ? request.getRagSettings().getTargetTenantId()
+                        : tenantId;
+                String targetUser = request.getRagSettings().getTargetUserId() != null
+                        ? request.getRagSettings().getTargetUserId()
+                        : userId;
+                String scope = request.getRagSettings().getScope() != null
+                        ? request.getRagSettings().getScope()
+                        : "USER";
+                int topK = request.getRagSettings().getTopK() != null
+                        ? request.getRagSettings().getTopK()
+                        : 3;
+
+                // Use the last user message as query
+                String query = messages.stream()
+                        .filter(m -> "user".equals(m.getRole()))
+                        .reduce((first, second) -> second) // Get last
+                        .map(AiRequest.Message::getContent)
+                        .orElse("");
+
+                if (!query.isEmpty()) {
+                    List<Document> docs = knowledgeBaseService.debugSearch(query, scope, targetTenant, targetUser,
+                            topK);
+
+                    // Convert to DTO and append to context
+                    StringBuilder ragContext = new StringBuilder("\n\n[Reference Knowledge]\n");
+                    for (Document doc : docs) {
+                        ragDocsDto.add(
+                                jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.RagDocument
+                                        .builder()
+                                        .id(doc.getId())
+                                        .content(doc.getText())
+                                        .fileName((String) doc.getMetadata().get("fileName"))
+                                        .score(null) // Score might be in metadata depending on VectorStore impl
+                                        .metadata(doc.getMetadata())
+                                        .build());
+                        ragContext.append(doc.getText()).append("\n\n");
+                    }
+
+                    if (!docs.isEmpty()) {
+                        // Append context to the last user message or system message?
+                        // Usually PromptBuilder handles this, but here we do it manually for raw
+                        // control
+                        // Appending to the last user message is safest for simple chat models
+                        int lastUserIdx = -1;
+                        for (int i = messages.size() - 1; i >= 0; i--) {
+                            if ("user".equals(messages.get(i).getRole())) {
+                                lastUserIdx = i;
+                                break;
+                            }
+                        }
+                        if (lastUserIdx != -1) {
+                            AiRequest.Message lastUser = messages.get(lastUserIdx);
+                            lastUser.setContent(lastUser.getContent() + ragContext.toString());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Playground RAG failed", e);
+            }
+        }
+
+        // 3. Execute AI
+        AiProviderClient client;
+        if (request.getProvider() != null) {
+            client = aiProviderFactory.getProvider(request.getProvider())
+                    .orElseThrow(() -> new IllegalArgumentException("Provider not found: " + request.getProvider()));
+        } else {
+            client = aiProviderFactory.createClient(tenantId);
+        }
+
+        AiResponse aiResponse = client.chat(aiRequest);
+        long latency = System.currentTimeMillis() - startTime;
+
+        // 4. Build Response
+        if (!aiResponse.isSuccess()) {
+            throw new RuntimeException("AI Error: " + aiResponse.getErrorMessage());
+        }
+
+        return jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.builder()
+                .content(aiResponse.getContent())
+                .provider(aiResponse.getProvider())
+                .model(aiResponse.getModel())
+                .latencyMs(latency)
+                .usage(jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.Usage.builder()
+                        .promptTokens(aiResponse.getPromptTokens())
+                        .completionTokens(aiResponse.getCompletionTokens())
+                        .totalTokens((aiResponse.getPromptTokens() != null ? aiResponse.getPromptTokens() : 0)
+                                + (aiResponse.getCompletionTokens() != null ? aiResponse.getCompletionTokens() : 0))
+                        .build())
+                .ragDocuments(ragDocsDto)
+                .build();
+    }
+
     @Transactional
     public ContextSnapshotResponse saveContextSnapshot(
             ContextSnapshotRequest request,
