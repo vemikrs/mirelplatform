@@ -33,16 +33,36 @@ import lombok.extern.slf4j.Slf4j;
 public class VectorStoreConfig {
 
     /**
-     * Vector Store Configuration.
-     * <p>
-     * This configuration class relies on Spring AI AutoConfiguration for setting up
-     * EmbeddingModel and VectorStore beans. Manual bean definitions have been removed
-     * in favor of Spring Boot's automatic configuration based on properties.
-     * </p>
-     * <p>
-     * Migration note: Previously, beans were manually defined here. Now they are
-     * automatically configured via Spring AI Starter dependencies and application properties.
-     * The pgvector extension is enabled via schema.sql with spring.sql.init.mode=always.
-     * </p>
+     * Development/Mock EmbeddingModel to bypass Vertex AI credentials.
      */
+    @Bean
+    @org.springframework.context.annotation.Primary
+    @org.springframework.context.annotation.Profile({ "dev", "test" })
+    public EmbeddingModel mockEmbeddingModel() {
+        return new EmbeddingModel() {
+            @Override
+            public org.springframework.ai.embedding.EmbeddingResponse call(
+                    org.springframework.ai.embedding.EmbeddingRequest request) {
+                java.util.List<org.springframework.ai.embedding.Embedding> embeddings = new java.util.ArrayList<>();
+                for (int i = 0; i < request.getInstructions().size(); i++) {
+                    embeddings.add(new org.springframework.ai.embedding.Embedding(generateVector(768), i));
+                }
+                return new org.springframework.ai.embedding.EmbeddingResponse(embeddings);
+            }
+
+            @Override
+            public float[] embed(org.springframework.ai.document.Document document) {
+                return generateVector(768);
+            }
+            // Other default methods in interface might need override if not default?
+            // Spring AI 1.x EmbeddingModel has default methods for embed(String),
+            // embed(Document), call(List<String>)
+
+            private float[] generateVector(int dimension) {
+                float[] vector = new float[dimension];
+                java.util.Arrays.fill(vector, 1.0f); // Constant vector for perfect matching
+                return vector;
+            }
+        };
+    }
 }

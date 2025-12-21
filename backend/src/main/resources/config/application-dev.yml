@@ -128,15 +128,15 @@ email:
 mira:
   ai:
     enabled: true # Mira AI 機能を有効化
-    provider: ${MIRA_AI_PROVIDER:github-models} # GitHub Models REST API（Llama 3.3）を使用
+    provider: ${MIRA_AI_PROVIDER:mock} # Mock AI を使用
     mock:
-      enabled: false # GitHub Models を直接使用（true にするとモック）
+      enabled: true # Mock AI を有効化
       response-delay-ms: 300 # 応答遅延シミュレーション
       default-response: "ご質問ありがとうございます。現在開発環境のためモックで応答しています。"
 
     # Vertex AI (Gemini) 設定
     vertex-ai:
-      project-id: ${GEMINI_PROJECT_ID:}
+      project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
       location: ${GEMINI_LOCATION:us-central1}
       model: ${GEMINI_MODEL:gemini-2.5-flash}
 

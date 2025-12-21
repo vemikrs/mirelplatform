@@ -67,9 +67,43 @@ public class MiraKnowledgeBaseService {
             throw new IllegalArgumentException("Physical file not found: " + fileConfig.getFilePath());
         }
 
-        FileSystemResource resource = new FileSystemResource(file);
-        TikaDocumentReader reader = new TikaDocumentReader(resource);
-        List<Document> documents = reader.get();
+        FileSystemResource resource = new FileSystemResource(file) {
+            @Override
+            public String getFilename() {
+                return fileConfig.getFileName();
+            }
+        };
+        log.info("Creating TikaDocumentReader for file: {}, fileName: {}, resource.getFilename: {}",
+                file.getAbsolutePath(), fileConfig.getFileName(), resource.getFilename());
+        List<Document> documents;
+        String fileName = fileConfig.getFileName();
+        log.info("Checking manual read for fileName: '{}'", fileName);
+        if (fileName != null && fileName.trim().toLowerCase().endsWith(".txt")) {
+            log.info("Condition met: fileName ends with .txt");
+            try {
+                String content = java.nio.file.Files.readString(file.toPath());
+                Document doc = new Document(content);
+                doc.getMetadata().put("file_name", fileName);
+                doc.getMetadata().put("source", fileConfig.getFilePath());
+                documents = java.util.Collections.singletonList(doc);
+                log.info("Manual text reading successful for file: {}", fileName);
+            } catch (Exception e) {
+                log.error("Failed to read text file manually, falling back to Tika", e);
+                TikaDocumentReader reader = new TikaDocumentReader(resource);
+                documents = reader.get();
+            }
+        } else {
+            TikaDocumentReader reader = new TikaDocumentReader(resource);
+            documents = reader.get();
+        }
+
+        log.info("Reader read {} documents from file {}", documents.size(), fileConfig.getFilePath());
+        if (!documents.isEmpty()) {
+            log.info("First document content preview: {}",
+                    documents.get(0).getText().substring(0, Math.min(100, documents.get(0).getText().length())));
+        } else {
+            log.warn("Reader returned empty document list for file {}", fileConfig.getFilePath());
+        }
 
         // チャンク分割
         TokenTextSplitter splitter = new TokenTextSplitter();
@@ -247,32 +281,72 @@ public class MiraKnowledgeBaseService {
      * @return 関連ドキュメントリスト
      */
     public List<Document> search(String query, String tenantId, String userId) {
-        // Filter Expression Construction using Spring AI's FilterExpressionBuilder
-        // This approach is safe as it uses parameterized queries through the builder
-        // API
-        // (b.eq method) rather than string concatenation, preventing injection
-        // vulnerabilities.
-        //
-        // The filter allows documents from:
-        // - SYSTEM scope (accessible to all)
-        // - TENANT scope matching the user's tenant
-        // - USER scope matching the specific user
+        log.info("RAG Search: query='{}', tenantId={}, userId={}", query, tenantId, userId);
 
+        // Perform separate searches for each scope to ensure reliable retrieval
+        // This avoids potential issues with complex nested OR filters in the
+        // VectorStore implementation
+
+        List<Document> allDocs = new java.util.ArrayList<>();
         org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
-        org.springframework.ai.vectorstore.filter.Filter.Expression expression = b.or(
-                b.eq("scope", "SYSTEM"),
-                b.or(
-                        b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)),
-                        b.and(b.eq("scope", "USER"), b.eq("userId", userId))))
-                .build();
+        double threshold = 0.0; // Lower threshold to ensure recall, relying on Top-K to filter relevance
 
-        SearchRequest request = SearchRequest.builder()
+        // 1. System Scope (Accessible to all)
+        SearchRequest systemRequest = SearchRequest.builder()
                 .query(query)
-                .topK(5)
-                .filterExpression(expression)
+                .topK(3) // Fetch top 3 from system
+                .similarityThreshold(threshold)
+                .filterExpression(b.eq("scope", "SYSTEM").build())
                 .build();
+        List<Document> systemDocs = vectorStore.similaritySearch(systemRequest);
+        log.info("RAG Search [SYSTEM]: found {} docs. Threshold={}", systemDocs.size(), threshold);
+        allDocs.addAll(systemDocs);
 
-        return vectorStore.similaritySearch(request);
+        // 2. Tenant Scope (Accessible to tenant members)
+        if (tenantId != null) {
+            SearchRequest tenantRequest = SearchRequest.builder()
+                    .query(query)
+                    .topK(3) // Fetch top 3 from tenant
+                    .similarityThreshold(threshold)
+                    .filterExpression(b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)).build())
+                    .build();
+            List<Document> tenantDocs = vectorStore.similaritySearch(tenantRequest);
+            log.info("RAG Search [TENANT]: found {} docs. TenantId={}", tenantDocs.size(), tenantId);
+            allDocs.addAll(tenantDocs);
+        }
+
+        // 3. User Scope (Accessible to specific user)
+        if (userId != null) {
+            SearchRequest userRequest = SearchRequest.builder()
+                    .query(query)
+                    .topK(5) // Prioritize user documents (Fetch top 5)
+                    .similarityThreshold(threshold)
+                    .filterExpression(b.and(b.eq("scope", "USER"), b.eq("userId", userId)).build())
+                    .build();
+            List<Document> userDocs = vectorStore.similaritySearch(userRequest);
+            log.info("RAG Search [USER]: found {} docs for userId={}", userDocs.size(), userId);
+            allDocs.addAll(userDocs);
+        }
+
+        // Deduplicate by ID and sort by score (if available) or relevance (assumed by
+        // search order)
+        // Since we don't have direct access to score in Document object easily without
+        // metadata inspection,
+        // we'll just return the combined list capped at a reasonable total.
+        // Usually VectorStore returns documents with scores, but the Document API hides
+        // it in metadata often.
+
+        // Remove duplicates based on ID
+        java.util.Set<String> seenIds = new java.util.HashSet<>();
+        List<Document> uniqueDocs = new java.util.ArrayList<>();
+        for (Document doc : allDocs) {
+            if (seenIds.add(doc.getId())) {
+                uniqueDocs.add(doc);
+            }
+        }
+
+        // Limit total results
+        return uniqueDocs.subList(0, Math.min(uniqueDocs.size(), 8));
     }
 
     /**
