@@ -221,21 +221,24 @@ public class MiraChatService {
                 tenantId, null, userId, msgConfig);
 
         // RAG: Retrieve related documents
-        // TODO: Add refined control via ChatRequest
-        try {
-            List<Document> ragDocs = knowledgeBaseService.search(
-                    request.getMessage().getContent(), tenantId, userId);
+        // Check ragEnabled flag (default true if null)
+        boolean isRagEnabled = request.getRagEnabled() == null || request.getRagEnabled();
+        if (isRagEnabled) {
+            try {
+                List<Document> ragDocs = knowledgeBaseService.search(
+                        request.getMessage().getContent(), tenantId, userId);
 
-            if (!ragDocs.isEmpty()) {
-                String ragContext = ragDocs.stream()
-                        .map(doc -> doc.getText())
-                        .collect(Collectors.joining("\n\n"));
+                if (!ragDocs.isEmpty()) {
+                    String ragContext = ragDocs.stream()
+                            .map(doc -> doc.getText())
+                            .collect(Collectors.joining("\n\n"));
 
-                finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
-                log.debug("Attached {} RAG documents to context.", ragDocs.size());
+                    finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
+                    log.debug("Attached {} RAG documents to context.", ragDocs.size());
+                }
+            } catch (Exception e) {
+                log.warn("RAG retrieval failed, proceeding without docs", e);
             }
-        } catch (Exception e) {
-            log.warn("RAG retrieval failed, proceeding without docs", e);
         }
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(

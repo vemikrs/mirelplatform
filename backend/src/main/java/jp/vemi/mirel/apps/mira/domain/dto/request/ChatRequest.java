@@ -43,6 +43,10 @@ public class ChatRequest {
     /** Web検索を有効化 (明示的指定時) */
     private Boolean webSearchEnabled;
 
+    /** RAG(Knowledge Base)検索を有効化 (デフォルト: true) */
+    @Builder.Default
+    private Boolean ragEnabled = true;
+
     /**
      * コンテキスト情報.
      */
