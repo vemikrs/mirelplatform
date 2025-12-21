@@ -243,16 +243,17 @@ export function MiraPage() {
     config?: MessageConfig, 
     webSearchEnabled?: boolean,
     forceModel?: string, // Phase 4: Model selection
-    attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[] // Phase 6: File attachments
+    attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[], // Phase 6: File attachments
+    ragEnabled?: boolean // RAG Toggle
   ) => {
     if (editingMessageId && activeConversation?.id) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversation.id, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles, ragEnabled });
     } else {
       // 通常の送信
-      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles, ragEnabled });
     }
   }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
   

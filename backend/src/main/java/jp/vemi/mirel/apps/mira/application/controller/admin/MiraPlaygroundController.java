@@ -4,7 +4,6 @@
 package jp.vemi.mirel.apps.mira.application.controller.admin;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +18,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatRequest;
 import jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse;
+import jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundConfigResponse;
 import jp.vemi.mirel.apps.mira.domain.service.MiraChatService;
 import lombok.RequiredArgsConstructor;
 
@@ -30,13 +30,47 @@ import lombok.RequiredArgsConstructor;
 public class MiraPlaygroundController {
 
     private final MiraChatService chatService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties;
+    private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraModelRegistryRepository modelRegistryRepository;
 
     @GetMapping("/models")
     @Operation(summary = "利用可能モデル一覧取得", description = "利用可能なAIモデルの一覧を取得します。")
-    public List<String> listModels() {
-        // TODO: Retrieve from registry or config
-        return List.of("gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro", "gpt-4o", "gpt-4-turbo",
-                "claude-3-opus");
+    public List<String> getAvailableModels() {
+        return modelRegistryRepository.findByIsActiveTrue().stream()
+                .map(jp.vemi.mirel.apps.mira.domain.dao.entity.MiraModelRegistry::getModelName)
+                .toList();
+    }
+
+    @GetMapping("/config")
+    @Operation(summary = "プレイグラウンド設定取得", description = "利用可能なモデルやデフォルトパラメータ定義を取得します。")
+    public PlaygroundConfigResponse getConfig() {
+
+        List<PlaygroundConfigResponse.ModelOption> models = modelRegistryRepository.findByIsActiveTrue().stream()
+                .map(entity -> PlaygroundConfigResponse.ModelOption.builder()
+                        .id(entity.getModelName())
+                        .name(entity.getDisplayName())
+                        .provider(entity.getProvider())
+                        .build())
+                .toList();
+
+        // Setup defaults based on properties (fallback to hardcoded if not set)
+        Double defaultTemp = 0.7;
+        if (miraAiProperties.getVertexAi() != null && miraAiProperties.getVertexAi().getTemperature() != null) {
+            defaultTemp = miraAiProperties.getVertexAi().getTemperature();
+        }
+
+        return PlaygroundConfigResponse.builder()
+                .models(models)
+                .defaultParams(PlaygroundConfigResponse.DefaultParams.builder()
+                        .temperature(defaultTemp)
+                        .topP(0.95)
+                        .topK(40)
+                        .maxTokens(4096)
+                        // Retrieve default system prompt from shared definition
+                        .systemPrompt(
+                                jp.vemi.mirel.apps.mira.domain.service.PromptTemplate.GENERAL_CHAT.getSystemPrompt())
+                        .build())
+                .build();
     }
 
     @PostMapping("/chat")

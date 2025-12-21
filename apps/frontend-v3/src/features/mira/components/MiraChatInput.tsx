@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ContextSwitcherModal } from './ContextSwitcherModal';
 import { type MessageConfig, getAvailableModels, type ModelInfo, type AttachedFileInfo } from '@/lib/api/mira';
+import { Database } from 'lucide-react'; // Added icon for RAG
 import { useFileUpload } from '@/features/promarker/hooks/useFileUpload';
 
 type MiraMode = 'GENERAL_CHAT' | 'CONTEXT_HELP' | 'ERROR_ANALYZE' | 'STUDIO_AGENT' | 'WORKFLOW_AGENT';
@@ -60,7 +61,7 @@ import { AttachmentPreview, type AttachmentItem, type AttachmentType } from './A
 // export interface AttachedFile extends AttachmentItem {}
 
 interface MiraChatInputProps {
-  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: AttachedFileInfo[]) => void;
+  onSend: (message: string, mode?: MiraMode, config?: MessageConfig, webSearchEnabled?: boolean, forceModel?: string, attachedFiles?: AttachedFileInfo[], ragEnabled?: boolean) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -128,6 +129,17 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       return false;
     }
   });
+
+  // RAG検索On/Off状態（localStorageから復元）
+  const [ragEnabled, setRagEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('mira-rag-enabled');
+      // デフォルトはtrue (RAGは基本有効)
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   
   // Phase 4: Model Selection
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
@@ -138,6 +150,11 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   useEffect(() => {
     localStorage.setItem('mira-web-search-enabled', String(webSearchEnabled));
   }, [webSearchEnabled]);
+
+  // RAG状態をlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('mira-rag-enabled', String(ragEnabled));
+  }, [ragEnabled]);
   
   // Phase 4: Load available models on mount
   useEffect(() => {
@@ -364,7 +381,7 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
       }
       
       // メッセージ送信（添付ファイル情報を含む）
-      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled, selectedModel, uploadedFileInfos);
+      onSend(trimmed, selectedMode, messageConfig, webSearchEnabled, selectedModel, uploadedFileInfos, ragEnabled);
       
       setMessage('');
       setMessageConfig({}); // Reset config
@@ -542,6 +559,24 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
               />
             </button>
             <div className="border-t my-1" />
+            <button
+              onClick={() => {
+                setRagEnabled(!ragEnabled);
+              }}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
+                ragEnabled && "bg-green-50 dark:bg-green-950"
+              )}
+            >
+              <Database className={cn("w-4 h-4", ragEnabled ? "text-green-500" : "text-muted-foreground")} />
+              <span>RAG参照(知識ベース)</span>
+              <Switch 
+                checked={ragEnabled}
+                onCheckedChange={() => {}}
+                className="ml-auto scale-75 pointer-events-none"
+              />
+            </button>
+            <div className="border-t my-1" />
             <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               モードを選択
             </p>
@@ -614,6 +649,25 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
                       webSearchEnabled ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"
                     )}>
                       {webSearchEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setRagEnabled(!ragEnabled);
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2",
+                      ragEnabled && "bg-green-50 dark:bg-green-950"
+                    )}
+                  >
+                    <Database className={cn("w-4 h-4", ragEnabled ? "text-green-500" : "text-muted-foreground")} />
+                    RAG参照
+                    <span className={cn(
+                      "ml-auto text-xs px-1.5 py-0.5 rounded",
+                      ragEnabled ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                    )}>
+                      {ragEnabled ? 'ON' : 'OFF'}
                     </span>
                   </button>
                   <button
