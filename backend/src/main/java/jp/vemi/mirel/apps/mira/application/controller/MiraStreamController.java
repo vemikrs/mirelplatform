@@ -57,11 +57,13 @@ public class MiraStreamController {
         }
 
         ChatRequest chatRequest = request.getModel();
+        log.info("Stream Chat Request Received: RagEnabled={}, Mode={}", chatRequest.getRagEnabled(),
+                chatRequest.getMode());
         if (chatRequest == null) {
             log.error("ChatRequest is null in ApiRequest");
             return Flux.just(MiraStreamResponse.error("INVALID_REQUEST", "Invalid request format"));
         }
-        
+
         try {
             return streamService.streamChat(chatRequest, tenantId, userId);
         } catch (Exception e) {

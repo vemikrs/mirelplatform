@@ -21,6 +21,9 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
+import jp.vemi.mirel.apps.mira.domain.service.MiraKnowledgeBaseService;
+import java.util.stream.Collectors;
+import org.springframework.ai.document.Document;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,12 +51,14 @@ public class MiraStreamService {
     private final ModelCapabilityValidator modelCapabilityValidator;
     private final AdminSystemSettingsService adminSystemSettingsService;
     private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
+    private final MiraKnowledgeBaseService knowledgeBaseService; // RAG Integration
 
     /**
      * ストリームチャット実行.
      */
     @Transactional
     public Flux<MiraStreamResponse> streamChat(ChatRequest request, String tenantId, String userId) {
+        log.info("MiraStreamService.streamChat called. RagEnabled in Request: {}", request.getRagEnabled());
         log.info("StreamChat called. ConversationID: {}, Mode: {}", request.getConversationId(), request.getMode());
         log.info("ChatRequest.message: content={}, attachedFiles={}",
                 request.getMessage() != null ? request.getMessage().getContent() : "null",
@@ -100,6 +105,28 @@ public class MiraStreamService {
         List<AiRequest.Message> history = chatService.loadConversationHistory(conversation.getId(), msgConfig);
         String finalContext = contextMergeService.buildFinalContextPrompt(
                 tenantId, null, userId, msgConfig);
+
+        // RAG: Retrieve related documents
+        boolean isRagEnabled = request.getRagEnabled() == null || request.getRagEnabled();
+        if (isRagEnabled) {
+            try {
+                List<Document> ragDocs = knowledgeBaseService.search(
+                        request.getMessage().getContent(), tenantId, userId);
+                log.info("RAG Search - Enabled: {}, Query: {}, User: {}, Result Size: {}", isRagEnabled,
+                        request.getMessage().getContent(), userId, ragDocs.size());
+
+                if (!ragDocs.isEmpty()) {
+                    String ragContext = ragDocs.stream()
+                            .map(Document::getText)
+                            .collect(Collectors.joining("\n\n"));
+
+                    finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
+                    log.debug("Attached {} RAG documents to context (Stream).", ragDocs.size());
+                }
+            } catch (Exception e) {
+                log.warn("RAG retrieval failed (Stream), proceeding without docs", e);
+            }
+        }
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
