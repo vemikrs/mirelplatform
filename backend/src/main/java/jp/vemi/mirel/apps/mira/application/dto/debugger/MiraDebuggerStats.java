@@ -22,4 +22,5 @@ public class MiraDebuggerStats {
     private Map<String, Long> countByTenant; // Top 10 tenants
     private LocalDateTime lastIngestedAt;
     private boolean isIndexEmpty;
+    private String activeEmbeddingModel;
 }

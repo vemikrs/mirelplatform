@@ -45,7 +45,9 @@ public class MiraDebuggerAnalytics {
         private String reason; // e.g., "Score 0.45 < Threshold 0.6", "Scope mismatch: 'USER' vs 'SYSTEM'"
         private double score; // This is the RRF score
         private Integer vectorRank;
+        private Double vectorSimilarity; // New: Deep Traceability
         private Integer keywordRank;
+        private Long termFrequency; // New: Deep Traceability
         private Map<String, Object> metadata;
     }
 }
