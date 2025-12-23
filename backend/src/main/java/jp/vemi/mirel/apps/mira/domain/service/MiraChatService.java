@@ -473,18 +473,35 @@ public class MiraChatService {
 
                 if (!query.isEmpty()) {
                     List<Document> docs = knowledgeBaseService.debugSearch(query, scope, targetTenant, targetUser,
-                            topK);
+                            topK, 0.0);
 
                     // Convert to DTO and append to context
                     StringBuilder ragContext = new StringBuilder("\n\n[Reference Knowledge]\n");
                     for (Document doc : docs) {
+                        Double score = null;
+                        if (doc.getMetadata().containsKey("distance")) {
+                            Object dist = doc.getMetadata().get("distance");
+                            if (dist instanceof Number) {
+                                // Distance to Score conversion (assuming cosine distance 0..2) or similar
+                                // For now, just raw usage or 1 - distance if applicable.
+                                // Often vector stores return "distance".
+                                // Let's use it as is or try to parse
+                                score = ((Number) dist).doubleValue();
+                            }
+                        } else if (doc.getMetadata().containsKey("score")) {
+                            Object scr = doc.getMetadata().get("score");
+                            if (scr instanceof Number) {
+                                score = ((Number) scr).doubleValue();
+                            }
+                        }
+
                         ragDocsDto.add(
                                 jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.RagDocument
                                         .builder()
                                         .id(doc.getId())
                                         .content(doc.getText())
-                                        .fileName((String) doc.getMetadata().get("fileName"))
-                                        .score(null) // Score might be in metadata depending on VectorStore impl
+                                        .fileName((String) doc.getMetadata().getOrDefault("fileName", "Unknown"))
+                                        .score(score)
                                         .metadata(doc.getMetadata())
                                         .build());
                         ragContext.append(doc.getText()).append("\n\n");
@@ -531,18 +548,14 @@ public class MiraChatService {
         }
 
         return jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.builder()
-                .content(aiResponse.getContent())
-                .provider(aiResponse.getProvider())
-                .model(aiResponse.getModel())
+                .content(aiResponse.getContent()).provider(aiResponse.getProvider()).model(aiResponse.getModel())
                 .latencyMs(latency)
                 .usage(jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.Usage.builder()
-                        .promptTokens(aiResponse.getPromptTokens())
-                        .completionTokens(aiResponse.getCompletionTokens())
+                        .promptTokens(aiResponse.getPromptTokens()).completionTokens(aiResponse.getCompletionTokens())
                         .totalTokens((aiResponse.getPromptTokens() != null ? aiResponse.getPromptTokens() : 0)
                                 + (aiResponse.getCompletionTokens() != null ? aiResponse.getCompletionTokens() : 0))
                         .build())
-                .ragDocuments(ragDocsDto)
-                .build();
+                .ragDocuments(ragDocsDto).build();
     }
 
     @Transactional
