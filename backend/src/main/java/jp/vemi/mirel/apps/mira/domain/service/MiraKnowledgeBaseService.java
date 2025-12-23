@@ -38,6 +38,7 @@ public class MiraKnowledgeBaseService {
     private final VectorStore vectorStore;
     private final FileManagementRepository fileRepository;
     private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository knowledgeDocumentRepository;
+    private final MiraSettingService miraSettingService;
 
     /**
      * ファイルをインデックスに登録します。
@@ -76,26 +77,10 @@ public class MiraKnowledgeBaseService {
         log.info("Creating TikaDocumentReader for file: {}, fileName: {}, resource.getFilename: {}",
                 file.getAbsolutePath(), fileConfig.getFileName(), resource.getFilename());
         List<Document> documents;
-        String fileName = fileConfig.getFileName();
-        log.info("Checking manual read for fileName: '{}'", fileName);
-        if (fileName != null && fileName.trim().toLowerCase().endsWith(".txt")) {
-            log.info("Condition met: fileName ends with .txt");
-            try {
-                String content = java.nio.file.Files.readString(file.toPath());
-                Document doc = new Document(content);
-                doc.getMetadata().put("file_name", fileName);
-                doc.getMetadata().put("source", fileConfig.getFilePath());
-                documents = java.util.Collections.singletonList(doc);
-                log.info("Manual text reading successful for file: {}", fileName);
-            } catch (Exception e) {
-                log.error("Failed to read text file manually, falling back to Tika", e);
-                TikaDocumentReader reader = new TikaDocumentReader(resource);
-                documents = reader.get();
-            }
-        } else {
-            TikaDocumentReader reader = new TikaDocumentReader(resource);
-            documents = reader.get();
-        }
+
+        // Always use TikaDocumentReader which handles various formats including .txt
+        TikaDocumentReader reader = new TikaDocumentReader(resource);
+        documents = reader.get();
 
         log.info("Reader read {} documents from file {}", documents.size(), fileConfig.getFilePath());
         if (!documents.isEmpty()) {
@@ -289,7 +274,9 @@ public class MiraKnowledgeBaseService {
 
         List<Document> allDocs = new java.util.ArrayList<>();
         org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
-        double threshold = 0.0; // Lower threshold to ensure recall, relying on Top-K to filter relevance
+
+        // Get threshold from settings (Tenant > System > Properties)
+        double threshold = miraSettingService.getVectorSearchThreshold(tenantId);
 
         // 1. System Scope (Accessible to all)
         SearchRequest systemRequest = SearchRequest.builder()
@@ -364,7 +351,8 @@ public class MiraKnowledgeBaseService {
      *            取得数
      * @return ドキュメントリスト
      */
-    public List<Document> debugSearch(String query, String scope, String tenantId, String userId, int topK) {
+    public List<Document> debugSearch(String query, String scope, String tenantId, String userId, int topK,
+            double threshold) {
         org.springframework.ai.vectorstore.filter.FilterExpressionBuilder b = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
 
         // Scope filter logic (Simulating target user/tenant)
@@ -382,7 +370,7 @@ public class MiraKnowledgeBaseService {
                 .query(query)
                 .topK(topK)
                 .filterExpression(expression)
-                // .withSimilarityThreshold(0.0) // Removed as it causes compilation error
+                .similarityThreshold(threshold)
                 .build();
 
         return vectorStore.similaritySearch(request);
