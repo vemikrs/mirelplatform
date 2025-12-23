@@ -105,4 +105,5 @@ export {
   SheetTitle,
   SheetDescription,
 } from './components/Sheet'
+export { ThemeProvider, useTheme } from './components/ThemeProvider'
 

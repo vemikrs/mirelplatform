@@ -26,7 +26,7 @@ const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
         role="status"
         {...props}
       >
-        <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+        <span className="sr-only">
           Loading...
         </span>
       </div>
