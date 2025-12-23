@@ -103,6 +103,9 @@ dependencies {
     // Thumbnailator for Image Compression
     implementation 'net.coobird:thumbnailator:0.4.20'
     
+    // Markdown Parser for Contextual Chunking
+    implementation 'org.commonmark:commonmark:0.22.0'
+    
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     compileOnly 'org.projectlombok:lombok:1.18.30'

@@ -5,6 +5,7 @@ package jp.vemi.mirel.apps.mira.application.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.Map;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -151,26 +152,49 @@ public class MiraKnowledgeBaseController {
 
         // Convert to Response
         java.util.List<MiraKnowledgeSearchResponse.DocumentResult> results = docs.stream().map(doc -> {
+
+            Map<String, Object> meta = doc.getMetadata();
             Double score = null;
-            if (doc.getMetadata().containsKey("distance")) {
-                Object dist = doc.getMetadata().get("distance");
-                if (dist instanceof Number)
-                    score = ((Number) dist).doubleValue();
-            } else if (doc.getMetadata().containsKey("score")) {
-                Object scr = doc.getMetadata().get("score");
-                if (scr instanceof Number)
-                    score = ((Number) scr).doubleValue();
+            Double vectorScore = null;
+            Double keywordScore = null;
+
+            // Extract Scores
+            if (meta.containsKey("rrf_score")) {
+                score = convertToDouble(meta.get("rrf_score"));
+            } else if (meta.containsKey("distance")) {
+                score = convertToDouble(meta.get("distance"));
+            } else if (meta.containsKey("score")) {
+                score = convertToDouble(meta.get("score"));
             }
+
+            if (meta.containsKey("vector_rank")) {
+                vectorScore = convertToDouble(meta.get("vector_rank"));
+            }
+            if (meta.containsKey("keyword_rank")) {
+                keywordScore = convertToDouble(meta.get("keyword_rank"));
+            }
+
+            String headerPath = (String) meta.getOrDefault("header_path", null);
 
             return MiraKnowledgeSearchResponse.DocumentResult.builder()
                     .id(doc.getId())
                     .content(doc.getText())
                     .score(score)
-                    .metadata(doc.getMetadata())
-                    .fileName((String) doc.getMetadata().getOrDefault("fileName", "Unknown"))
+                    .vectorScore(vectorScore)
+                    .keywordScore(keywordScore)
+                    .headerPath(headerPath)
+                    .metadata(meta)
+                    .fileName((String) meta.getOrDefault("fileName", "Unknown"))
                     .build();
         }).collect(java.util.stream.Collectors.toList());
 
         return MiraKnowledgeSearchResponse.builder().results(results).build();
+    }
+
+    private Double convertToDouble(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        return null;
     }
 }

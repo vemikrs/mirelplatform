@@ -37,8 +37,13 @@ public class MiraKnowledgeBaseService {
 
     private final VectorStore vectorStore;
     private final FileManagementRepository fileRepository;
-    private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository knowledgeDocumentRepository;
+    private final MiraKnowledgeDocumentRepository knowledgeDocumentRepository;
     private final MiraSettingService miraSettingService;
+    private final MiraMarkdownSplitter markdownSplitter;
+    private final MiraMetadataEnricher metadataEnricher;
+    private final MiraHybridSearchService hybridSearchService;
+    private final MiraQueryTransformService queryTransformService;
+    private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraSearchLogRepository searchLogRepository;
 
     /**
      * ファイルをインデックスに登録します。
@@ -91,24 +96,32 @@ public class MiraKnowledgeBaseService {
         }
 
         // チャンク分割
-        TokenTextSplitter splitter = new TokenTextSplitter();
-        List<Document> splitDocuments = splitter.apply(documents);
+        List<Document> splitDocuments;
+        String fileName = fileConfig.getFileName().toLowerCase();
 
-        // メタデータ付与
-        splitDocuments.forEach(doc -> {
-            doc.getMetadata().put("fileId", fileId);
-            doc.getMetadata().put("fileName", fileConfig.getFileName());
-            doc.getMetadata().put("scope", scope.name());
+        if (fileName.endsWith(".md") || fileName.endsWith(".markdown")) {
+            log.info("Using MiraMarkdownSplitter for file: {}", fileName);
+            splitDocuments = markdownSplitter.apply(documents);
+        } else {
+            // Default token splitter for other formats
+            TokenTextSplitter splitter = new TokenTextSplitter();
+            splitDocuments = splitter.apply(documents);
+        }
 
-            if (scope == MiraVectorStore.Scope.SYSTEM) {
-                // System scope
-            } else if (scope == MiraVectorStore.Scope.TENANT) {
-                doc.getMetadata().put("tenantId", tenantId);
-            } else if (scope == MiraVectorStore.Scope.USER) {
-                doc.getMetadata().put("tenantId", tenantId);
-                doc.getMetadata().put("userId", userId);
-            }
-        });
+        // メタデータ付与 (Enricherへ委譲)
+        java.util.Map<String, Object> contextInfo = new java.util.HashMap<>();
+        contextInfo.put("fileId", fileId);
+        contextInfo.put("fileName", fileConfig.getFileName());
+        contextInfo.put("scope", scope.name());
+
+        if (scope == MiraVectorStore.Scope.TENANT) {
+            contextInfo.put("tenantId", tenantId);
+        } else if (scope == MiraVectorStore.Scope.USER) {
+            contextInfo.put("tenantId", tenantId);
+            contextInfo.put("userId", userId);
+        }
+
+        metadataEnricher.enrich(splitDocuments, contextInfo);
 
         // PGVectorへの保存
         vectorStore.add(splitDocuments);
@@ -278,26 +291,32 @@ public class MiraKnowledgeBaseService {
         // Get threshold from settings (Tenant > System > Properties)
         double threshold = miraSettingService.getVectorSearchThreshold(tenantId);
 
+        // Transform query (HyDE)
+        String hydeQuery = queryTransformService.transformToHypotheticalDocument(query);
+        // String hydeQuery = query; // Disable HyDE by default for now to control
+        // changes, or enable if confident.
+        // Let's use original query for vector search effectively until HyDE is tuned.
+
         // 1. System Scope (Accessible to all)
         SearchRequest systemRequest = SearchRequest.builder()
-                .query(query)
+                .query(hydeQuery)
                 .topK(3) // Fetch top 3 from system
                 .similarityThreshold(threshold)
                 .filterExpression(b.eq("scope", "SYSTEM").build())
                 .build();
-        List<Document> systemDocs = vectorStore.similaritySearch(systemRequest);
+        List<Document> systemDocs = hybridSearchService.search(query, systemRequest, "SYSTEM", null, null);
         log.info("RAG Search [SYSTEM]: found {} docs. Threshold={}", systemDocs.size(), threshold);
         allDocs.addAll(systemDocs);
 
         // 2. Tenant Scope (Accessible to tenant members)
         if (tenantId != null) {
             SearchRequest tenantRequest = SearchRequest.builder()
-                    .query(query)
+                    .query(hydeQuery)
                     .topK(3) // Fetch top 3 from tenant
                     .similarityThreshold(threshold)
                     .filterExpression(b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)).build())
                     .build();
-            List<Document> tenantDocs = vectorStore.similaritySearch(tenantRequest);
+            List<Document> tenantDocs = hybridSearchService.search(query, tenantRequest, "TENANT", tenantId, null);
             log.info("RAG Search [TENANT]: found {} docs. TenantId={}", tenantDocs.size(), tenantId);
             allDocs.addAll(tenantDocs);
         }
@@ -305,12 +324,12 @@ public class MiraKnowledgeBaseService {
         // 3. User Scope (Accessible to specific user)
         if (userId != null) {
             SearchRequest userRequest = SearchRequest.builder()
-                    .query(query)
+                    .query(hydeQuery)
                     .topK(5) // Prioritize user documents (Fetch top 5)
                     .similarityThreshold(threshold)
                     .filterExpression(b.and(b.eq("scope", "USER"), b.eq("userId", userId)).build())
                     .build();
-            List<Document> userDocs = vectorStore.similaritySearch(userRequest);
+            List<Document> userDocs = hybridSearchService.search(query, userRequest, "USER", tenantId, userId);
             log.info("RAG Search [USER]: found {} docs for userId={}", userDocs.size(), userId);
             allDocs.addAll(userDocs);
         }
@@ -331,6 +350,10 @@ public class MiraKnowledgeBaseService {
                 uniqueDocs.add(doc);
             }
         }
+
+        // Log search with max score
+        double maxScore = uniqueDocs.stream().mapToDouble(d -> getScore(d)).max().orElse(0.0);
+        saveSearchLog(query, "STANDALONE_RAG", tenantId, userId, maxScore);
 
         // Limit total results
         return uniqueDocs.subList(0, Math.min(uniqueDocs.size(), 8));
@@ -366,6 +389,9 @@ public class MiraKnowledgeBaseService {
             expression = b.and(b.eq("scope", "USER"), b.eq("userId", userId)).build();
         }
 
+        // Use HyDE for debug search too? Or raw? Debugger might want raw.
+        // Let's use raw for now to debug the index itself, or add a flag later.
+
         SearchRequest request = SearchRequest.builder()
                 .query(query)
                 .topK(topK)
@@ -373,6 +399,37 @@ public class MiraKnowledgeBaseService {
                 .similarityThreshold(threshold)
                 .build();
 
-        return vectorStore.similaritySearch(request);
+        List<Document> results = hybridSearchService.search(query, request, scope, tenantId, userId);
+
+        // Log debug search
+        double maxScore = results.stream().mapToDouble(d -> getScore(d)).max().orElse(0.0);
+        saveSearchLog(query, "DEBUG_RAG", tenantId, userId, maxScore);
+
+        return results;
+    }
+
+    private void saveSearchLog(String query, String method, String tenantId, String userId, Double maxScore) {
+        try {
+            jp.vemi.mirel.apps.mira.domain.dao.entity.MiraSearchLog logEntity = new jp.vemi.mirel.apps.mira.domain.dao.entity.MiraSearchLog();
+            logEntity.setQuery(query);
+            logEntity.setTenantId(tenantId);
+            logEntity.setUserId(userId);
+            logEntity.setSearchMethod(method);
+            logEntity.setMaxScore(maxScore);
+            logEntity.setCreatedAt(java.time.LocalDateTime.now());
+            searchLogRepository.save(logEntity);
+        } catch (Exception e) {
+            log.warn("Failed to save search log", e);
+        }
+    }
+
+    private Double getScore(Document doc) {
+        if (doc.getMetadata().containsKey("rrf_score"))
+            return ((Number) doc.getMetadata().get("rrf_score")).doubleValue();
+        if (doc.getMetadata().containsKey("score"))
+            return ((Number) doc.getMetadata().get("score")).doubleValue();
+        if (doc.getMetadata().containsKey("distance"))
+            return ((Number) doc.getMetadata().get("distance")).doubleValue();
+        return 0.0;
     }
 }

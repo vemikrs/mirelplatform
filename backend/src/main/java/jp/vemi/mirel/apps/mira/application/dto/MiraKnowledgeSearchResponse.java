@@ -26,7 +26,13 @@ public class MiraKnowledgeSearchResponse {
     public static class DocumentResult {
         private String id;
         private String content;
-        private Double score;
+
+        private Double score; // RRF or Similarity Score
+        private Double vectorScore; // Vector Rank/Score from metadata
+        private Double keywordScore; // Keyword Rank/Score from metadata
+
+        private String headerPath; // Traceability info
+
         private Map<String, Object> metadata;
         private String fileName;
     }
