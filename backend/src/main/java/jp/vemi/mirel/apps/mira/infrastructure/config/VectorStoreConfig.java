@@ -37,7 +37,7 @@ public class VectorStoreConfig {
      */
     @Bean
     @org.springframework.context.annotation.Primary
-    @org.springframework.context.annotation.Profile({ "dev", "test" })
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "mira.ai.provider", havingValue = "mock")
     public EmbeddingModel mockEmbeddingModel() {
         return new EmbeddingModel() {
             @Override

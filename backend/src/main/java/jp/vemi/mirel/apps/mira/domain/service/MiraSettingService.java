@@ -42,6 +42,7 @@ public class MiraSettingService {
     public static final String KEY_LIMIT_DAILY_QUOTA = "limit.daily_quota";
     public static final String KEY_TAVILY_API_KEY = "tavily.api_key";
     public static final String KEY_VECTOR_SEARCH_THRESHOLD = "vector.search.threshold";
+    public static final String KEY_VECTOR_SEARCH_TOP_K = "vector.search.top_k";
 
     /**
      * 有効な設定値を取得します（String）.
@@ -210,6 +211,11 @@ public class MiraSettingService {
 
     public double getVectorSearchThreshold(String tenantId) {
         return getDouble(tenantId, KEY_VECTOR_SEARCH_THRESHOLD, miraAiProperties.getVector().getSearchThreshold());
+    }
+
+    public int getVectorSearchTopK(String tenantId) {
+        // Default to 5
+        return getInteger(tenantId, KEY_VECTOR_SEARCH_TOP_K, 5);
     }
 
     // ===================================================================================

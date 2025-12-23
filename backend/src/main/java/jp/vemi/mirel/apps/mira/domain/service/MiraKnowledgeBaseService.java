@@ -44,6 +44,7 @@ public class MiraKnowledgeBaseService {
     private final MiraHybridSearchService hybridSearchService;
     private final MiraQueryTransformService queryTransformService;
     private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraSearchLogRepository searchLogRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     /**
      * ファイルをインデックスに登録します。
@@ -60,6 +61,10 @@ public class MiraKnowledgeBaseService {
     @Transactional
     public void indexFile(String fileId, MiraVectorStore.Scope scope, String tenantId, String userId) {
         log.info("Indexing file: fileId={}, scope={}, tenantId={}, userId={}", fileId, scope, tenantId, userId);
+
+        // Prevent Duplicates: Delete existing vectors for this fileId before adding new
+        // ones
+        deleteVectorsByFileId(fileId);
 
         FileManagement fileConfig = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
@@ -83,9 +88,34 @@ public class MiraKnowledgeBaseService {
                 file.getAbsolutePath(), fileConfig.getFileName(), resource.getFilename());
         List<Document> documents;
 
-        // Always use TikaDocumentReader which handles various formats including .txt
-        TikaDocumentReader reader = new TikaDocumentReader(resource);
-        documents = reader.get();
+        // Use Tika directly to extract text content first, to avoid "Raw Zip/XML"
+        // issues with TikaDocumentReader defaults
+        Tika tika = new Tika();
+        String fileContent;
+        try {
+            fileContent = tika.parseToString(file);
+        } catch (Exception e) {
+            log.warn("Tika parse failed, falling back to TikaDocumentReader", e);
+            // Fallback to original logic if Tika fails (though unlikely if file exists)
+            TikaDocumentReader reader = new TikaDocumentReader(resource);
+            documents = reader.get();
+            fileContent = null;
+        }
+
+        if (fileContent != null) {
+            // Create a single document from the extracted text
+            Document doc = new Document(fileContent);
+            doc.getMetadata().put("source", fileConfig.getFileName());
+            documents = java.util.Collections.singletonList(doc);
+        } else {
+            documents = java.util.Collections.emptyList();
+        }
+
+        log.info("Extracted content length: {}", documents.isEmpty() ? 0 : documents.get(0).getText().length());
+
+        // Original logic was:
+        // TikaDocumentReader reader = new TikaDocumentReader(resource);
+        // documents = reader.get();
 
         log.info("Reader read {} documents from file {}", documents.size(), fileConfig.getFilePath());
         if (!documents.isEmpty()) {
@@ -138,6 +168,20 @@ public class MiraKnowledgeBaseService {
         knowledgeDocumentRepository.save(doc);
 
         log.info("Indexed {} chunks for fileId={}", splitDocuments.size(), fileId);
+    }
+
+    /**
+     * Delete existing vectors for a given fileId to prevent duplicates.
+     * Uses JdbcTemplate for efficient deletion based on metadata.
+     */
+    /**
+     * Delete existing vectors for a given fileId to prevent duplicates.
+     * Uses JdbcTemplate for efficient deletion based on metadata.
+     */
+    private void deleteVectorsByFileId(String fileId) {
+        String sql = "DELETE FROM mir_mira_vector_store WHERE metadata->>'fileId' = ?";
+        int deleted = jdbcTemplate.update(sql, fileId);
+        log.info("Deleted {} old vectors for fileId={}", deleted, fileId);
     }
 
     /**
@@ -267,6 +311,46 @@ public class MiraKnowledgeBaseService {
     }
 
     /**
+     * 指定されたスコープの文書を再インデックスします。
+     * 
+     * @param scope
+     *            スコープ
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @return 処理結果メッセージ
+     */
+    public String reindexScope(MiraVectorStore.Scope scope, String tenantId, String userId) {
+        List<jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument> docs;
+
+        if (scope == MiraVectorStore.Scope.SYSTEM) {
+            docs = knowledgeDocumentRepository.findByScope(scope);
+        } else if (scope == MiraVectorStore.Scope.TENANT) {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantId(scope, tenantId);
+        } else {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantIdAndUserId(scope, tenantId, userId);
+        }
+
+        log.info("Starting re-index for scope: {}, found {} documents.", scope, docs.size());
+
+        int success = 0;
+        int fail = 0;
+
+        for (jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument doc : docs) {
+            try {
+                indexFile(doc.getFileId(), doc.getScope(), doc.getTenantId(), doc.getUserId());
+                success++;
+            } catch (Exception e) {
+                log.error("Failed to re-index fileId: " + doc.getFileId(), e);
+                fail++;
+            }
+        }
+
+        return String.format("Re-index completed. Success: %d, Fail: %d", success, fail);
+    }
+
+    /**
      * ユーザーのコンテキストに基づいてドキュメントを検索します。
      * (System + Tenant + User スコープの統合検索)
      *
@@ -290,6 +374,7 @@ public class MiraKnowledgeBaseService {
 
         // Get threshold from settings (Tenant > System > Properties)
         double threshold = miraSettingService.getVectorSearchThreshold(tenantId);
+        int topK = miraSettingService.getVectorSearchTopK(tenantId); // Get configured Top K
 
         // Transform query (HyDE)
         String hydeQuery = queryTransformService.transformToHypotheticalDocument(query);
@@ -300,7 +385,7 @@ public class MiraKnowledgeBaseService {
         // 1. System Scope (Accessible to all)
         SearchRequest systemRequest = SearchRequest.builder()
                 .query(hydeQuery)
-                .topK(3) // Fetch top 3 from system
+                .topK(Math.max(3, topK / 2)) // Heuristic: Fetch fewer system docs unless topK is very small
                 .similarityThreshold(threshold)
                 .filterExpression(b.eq("scope", "SYSTEM").build())
                 .build();
@@ -312,7 +397,7 @@ public class MiraKnowledgeBaseService {
         if (tenantId != null) {
             SearchRequest tenantRequest = SearchRequest.builder()
                     .query(hydeQuery)
-                    .topK(3) // Fetch top 3 from tenant
+                    .topK(topK) // Use configured Top K
                     .similarityThreshold(threshold)
                     .filterExpression(b.and(b.eq("scope", "TENANT"), b.eq("tenantId", tenantId)).build())
                     .build();
@@ -325,7 +410,7 @@ public class MiraKnowledgeBaseService {
         if (userId != null) {
             SearchRequest userRequest = SearchRequest.builder()
                     .query(hydeQuery)
-                    .topK(5) // Prioritize user documents (Fetch top 5)
+                    .topK(topK) // Use configured Top K
                     .similarityThreshold(threshold)
                     .filterExpression(b.and(b.eq("scope", "USER"), b.eq("userId", userId)).build())
                     .build();
