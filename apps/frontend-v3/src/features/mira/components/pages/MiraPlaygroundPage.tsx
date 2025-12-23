@@ -6,6 +6,8 @@ import { apiClient } from '@/lib/api/client';
 import { PlaygroundConfigPanel } from '../parts/playground/PlaygroundConfigPanel';
 import { PlaygroundChatPanel } from '../parts/playground/PlaygroundChatPanel';
 import { PlaygroundInspectorPanel } from '../parts/playground/PlaygroundInspectorPanel';
+import { PlaygroundIndexDebuggerPanel } from '../parts/playground/PlaygroundIndexDebuggerPanel';
+import { Tabs, TabsList, TabsTrigger } from '@mirel/ui';
 
 interface Config {
   models: { id: string; name: string; provider: string }[];
@@ -37,6 +39,8 @@ export function MiraPlaygroundPage() {
     ragScope: 'SYSTEM',
     ragTopK: 3
   });
+
+  const [mode, setMode] = useState<'chat' | 'debug'>('chat');
 
   const [messages, setMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [currentInput, setCurrentInput] = useState('');
@@ -157,27 +161,42 @@ export function MiraPlaygroundPage() {
         </div>
       </header>
 
+      <div className="border-b px-4 py-2 bg-muted/20 flex justify-center">
+          <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="w-[400px]">
+              <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="chat">Chat Playground</TabsTrigger>
+                  <TabsTrigger value="debug">Index Debugger</TabsTrigger>
+              </TabsList>
+          </Tabs>
+      </div>
+
       {/* Main Content - 3 Panes */}
       <div className="flex-1 flex overflow-hidden">
         
-        <PlaygroundConfigPanel 
-          config={config} 
-          settings={settings} 
-          onSettingsChange={handleSettingsChange} 
-        />
+        {mode === 'chat' ? (
+            <>
+                <PlaygroundConfigPanel 
+                  config={config} 
+                  settings={settings} 
+                  onSettingsChange={handleSettingsChange} 
+                />
 
-        <PlaygroundChatPanel 
-          messages={messages}
-          currentInput={currentInput}
-          isLoading={isLoading}
-          onInputChange={setCurrentInput}
-          onRun={handleRun}
-          onClear={handleClear}
-        />
+                <PlaygroundChatPanel 
+                  messages={messages}
+                  currentInput={currentInput}
+                  isLoading={isLoading}
+                  onInputChange={setCurrentInput}
+                  onRun={handleRun}
+                  onClear={handleClear}
+                />
 
-        <PlaygroundInspectorPanel 
-          lastResponse={lastResponse} 
-        />
+                <PlaygroundInspectorPanel 
+                  lastResponse={lastResponse} 
+                />
+            </>
+        ) : (
+            <PlaygroundIndexDebuggerPanel />
+        )}
 
       </div>
     </div>
