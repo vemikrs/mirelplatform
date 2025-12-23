@@ -55,6 +55,8 @@ interface DebuggerAnalytics {
     fileName: string;
     reason: string;
     score: number;
+    vectorRank?: number;
+    keywordRank?: number;
     metadata: any;
   }[];
 }
@@ -347,8 +349,24 @@ export function PlaygroundIndexDebuggerPanel() {
                                 <Card key={i} className="text-sm border-green-200 dark:border-green-900 border-l-4">
                                     <CardHeader className="p-3 pb-2">
                                         <div className="flex justify-between items-start">
-                                            <div className="font-mono font-bold truncate pr-2" title={doc.metadata?.fileName}>{doc.metadata?.fileName || 'Unknown'}</div>
-                                            <Badge variant="outline" className="font-mono">{doc.score ? doc.score.toFixed(3) : 'N/A'}</Badge>
+                                            <div className="overflow-hidden">
+                                                <div className="font-mono font-bold truncate pr-2" title={doc.metadata?.fileName}>{doc.metadata?.fileName || 'Unknown'}</div>
+                                                <div className="flex gap-1 mt-1 flex-wrap">
+                                                    {doc.vectorRank ? (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-blue-50/50 text-blue-700 border-blue-200">Vec #{doc.vectorRank}</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 text-muted-foreground border-dashed">Vec -</Badge>
+                                                    )}
+                                                    {doc.keywordRank ? (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-amber-50/50 text-amber-700 border-amber-200">Key #{doc.keywordRank}</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 text-muted-foreground border-dashed">Key -</Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Badge variant="outline" className="font-mono bg-green-50 text-green-700 border-green-200">
+                                                RRF: {doc.score ? doc.score.toFixed(4) : 'N/A'}
+                                            </Badge>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-3 pt-0 space-y-2">
@@ -382,8 +400,25 @@ export function PlaygroundIndexDebuggerPanel() {
                                 <Card key={i} className="text-sm opacity-80 border-destructive/20 border-l-4">
                                     <CardHeader className="p-3 pb-2">
                                         <div className="flex justify-between items-start gap-2">
-                                            <div className="font-mono font-bold truncate text-muted-foreground" title={doc.fileName}>{doc.fileName || 'Unknown'}</div>
-                                            <Badge variant="destructive" className="font-mono text-[10px] shrink-0">REJECTED</Badge>
+                                            <div className="overflow-hidden flex-1">
+                                                <div className="font-mono font-bold truncate text-muted-foreground" title={doc.fileName}>{doc.fileName || 'Unknown'}</div>
+                                                <div className="flex gap-1 mt-1 flex-wrap">
+                                                    {doc.vectorRank ? (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-muted text-muted-foreground">Vec #{doc.vectorRank}</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 text-muted-foreground/50 border-dashed">Vec -</Badge>
+                                                    )}
+                                                    {doc.keywordRank ? (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-muted text-muted-foreground">Key #{doc.keywordRank}</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 text-muted-foreground/50 border-dashed">Key -</Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <Badge variant="destructive" className="font-mono text-[10px] shrink-0">REJECTED</Badge>
+                                                <div className="text-[10px] font-mono text-muted-foreground">RRF: {doc.score?.toFixed(4)}</div>
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-3 pt-0 space-y-2">
