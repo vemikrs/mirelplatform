@@ -15,6 +15,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore;
 import jp.vemi.mirel.apps.mira.domain.service.MiraKnowledgeBaseService;
+import jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeSearchRequest;
+import jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeSearchResponse;
+import org.springframework.ai.document.Document;
+import org.springframework.web.bind.annotation.RequestBody;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -102,5 +106,71 @@ public class MiraKnowledgeBaseController {
             @AuthenticationPrincipal Jwt jwt) {
         // TODO: Authorization check
         knowledgeBaseService.deleteDocument(fileId);
+    }
+
+    @PostMapping("/search")
+    @Operation(summary = "デバッグ用検索", description = "ナレッジベースを直接検索してスコア等の詳細情報を取得します。管理者専用機能です。")
+    public MiraKnowledgeSearchResponse search(
+            @RequestBody MiraKnowledgeSearchRequest request,
+            @AuthenticationPrincipal Jwt jwt,
+            org.springframework.security.core.Authentication authentication) {
+
+        // RBAC Check: Only ADMIN can use debug search to access arbitrary tenant/user
+        // data
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Debug search requires ADMIN role");
+        }
+
+        // Use requested param or authentication context
+        String tenantId = request.getTargetTenantId();
+        if (tenantId == null) {
+            tenantId = jwt.getClaimAsString("tenant_id");
+            if (tenantId == null)
+                tenantId = "default";
+        }
+
+        String userId = request.getTargetUserId();
+        if (userId == null) {
+            userId = jwt.getSubject();
+        }
+
+        // Execute Search
+        // Note: scope should be passed from request
+        String scopeStr = request.getScope() != null ? request.getScope().name() : "USER";
+
+        java.util.List<Document> docs = knowledgeBaseService.debugSearch(
+                request.getQuery(),
+                scopeStr,
+                tenantId,
+                userId,
+                request.getTopK() != null ? request.getTopK() : 5,
+                request.getThreshold() != null ? request.getThreshold() : 0.0);
+
+        // Convert to Response
+        java.util.List<MiraKnowledgeSearchResponse.DocumentResult> results = docs.stream().map(doc -> {
+            Double score = null;
+            if (doc.getMetadata().containsKey("distance")) {
+                Object dist = doc.getMetadata().get("distance");
+                if (dist instanceof Number)
+                    score = ((Number) dist).doubleValue();
+            } else if (doc.getMetadata().containsKey("score")) {
+                Object scr = doc.getMetadata().get("score");
+                if (scr instanceof Number)
+                    score = ((Number) scr).doubleValue();
+            }
+
+            return MiraKnowledgeSearchResponse.DocumentResult.builder()
+                    .id(doc.getId())
+                    .content(doc.getText())
+                    .score(score)
+                    .metadata(doc.getMetadata())
+                    .fileName((String) doc.getMetadata().getOrDefault("fileName", "Unknown"))
+                    .build();
+        }).collect(java.util.stream.Collectors.toList());
+
+        return MiraKnowledgeSearchResponse.builder().results(results).build();
     }
 }
