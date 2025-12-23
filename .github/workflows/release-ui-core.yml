@@ -1,0 +1,111 @@
+name: Release @mireljs/ui-core
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/ui/**"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check Version and Auto Bump
+        id: check_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd packages/ui
+
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="ui-core/v$CURRENT_VERSION"
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Checking if tag $TAG_NAME exists..."
+
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists."
+            echo "Bumping patch version..."
+            
+            # Bump patch version without creating a git tag yet
+            npm version patch --no-git-tag-version
+            
+            NEW_VERSION=$(node -p "require('./package.json').version")
+            NEW_TAG="ui-core/v$NEW_VERSION"
+            
+            echo "Bumped to: $NEW_VERSION"
+            
+            # Commit the change to package.json
+            git add package.json
+            git commit -m "chore(release): bump @mireljs/ui-core to $NEW_VERSION [skip ci]"
+            
+            # Push changes to main
+            # Note: This push relies on the specific permissions and GITHUB_TOKEN
+            git push origin main
+            
+            echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG_NAME does not exist. Proceeding with current version."
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Tag
+        run: |
+          TAG_NAME="${{ steps.check_version.outputs.tag_name }}"
+          echo "Creating tag: $TAG_NAME"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
+      - name: Build
+        run: |
+          cd packages/ui
+          pnpm build
+
+      - name: Publish to npm
+        run: |
+          cd packages/ui
+          pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.check_version.outputs.tag_name }}
+          name: mirel Design System ${{ steps.check_version.outputs.tag_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
