@@ -538,44 +538,43 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
             <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               機能設定
             </p>
-            <button
+            <div
               onClick={() => {
                 setWebSearchEnabled(!webSearchEnabled);
               }}
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
+                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer",
                 webSearchEnabled && "bg-blue-50 dark:bg-blue-950"
               )}
+              role="button"
             >
               <Globe className={cn("w-4 h-4", webSearchEnabled ? "text-blue-500" : "text-muted-foreground")} />
               <span>Web検索</span>
               <Switch 
                 checked={webSearchEnabled}
-                onCheckedChange={() => {
-                  // Switch自体のクリックイベントは親のonClickと重複するため、ここでは何もしない
-                  // 親buttonのonClickで状態を変更する
-                }}
+                onCheckedChange={() => {}} // Controlled by parent div
                 className="ml-auto scale-75 pointer-events-none"
               />
-            </button>
+            </div>
             <div className="border-t my-1" />
-            <button
+            <div
               onClick={() => {
                 setRagEnabled(!ragEnabled);
               }}
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors",
+                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer",
                 ragEnabled && "bg-green-50 dark:bg-green-950"
               )}
+              role="button"
             >
               <Database className={cn("w-4 h-4", ragEnabled ? "text-green-500" : "text-muted-foreground")} />
               <span>RAG参照(知識ベース)</span>
               <Switch 
                 checked={ragEnabled}
-                onCheckedChange={() => {}}
+                onCheckedChange={() => {}} // Controlled by parent div
                 className="ml-auto scale-75 pointer-events-none"
               />
-            </button>
+            </div>
             <div className="border-t my-1" />
             <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               モードを選択
