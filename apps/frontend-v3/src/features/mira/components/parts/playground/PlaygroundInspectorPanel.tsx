@@ -37,9 +37,9 @@ export function PlaygroundInspectorPanel({ lastResponse }: PlaygroundInspectorPa
                       {lastResponse.ragDocuments.map((doc: any, i: number) => (
                           <Card key={i} className="text-xs">
                               <CardHeader className="p-3 pb-1">
-                                  <div className="flex justify-between items-start">
+                                  <div className="flex items-center justify-between">
                                       <CardTitle className="leading-tight truncate pr-2 text-primary">{doc.fileName}</CardTitle>
-                                      {doc.score !== null && <Badge variant="outline">{doc.score.toFixed(3)}</Badge>}
+                                      {typeof doc.score === 'number' && <Badge variant="outline">{doc.score.toFixed(3)}</Badge>}
                                   </div>
                               </CardHeader>
                               <CardContent className="p-3">
