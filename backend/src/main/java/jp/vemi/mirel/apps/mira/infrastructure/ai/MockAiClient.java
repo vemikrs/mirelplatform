@@ -117,14 +117,7 @@ public class MockAiClient implements AiProviderClient {
      * コンテキストに応じたデフォルト応答を生成.
      */
     private String generateContextualResponse(String userPrompt, AiRequest request) {
-        // Debug: Check all messages for RAG context verification
-        // (Cleaned up sensitive debug code)
-
         String lowerPrompt = userPrompt.toLowerCase();
-
-        // Fallback for userPrompt based check if keywords not found in allContent
-        // (though above covers it)
-        // Only trigger echo if found.
 
         if (lowerPrompt.contains("この画面") || lowerPrompt.contains("説明")) {
             return "この画面では、選択したアイテムの編集や設定を行うことができます。\n\n" +

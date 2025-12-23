@@ -54,9 +54,19 @@ public class VectorStoreConfig {
             public float[] embed(org.springframework.ai.document.Document document) {
                 return generateVector(768);
             }
-            // Other default methods in interface might need override if not default?
-            // Spring AI 1.x EmbeddingModel has default methods for embed(String),
-            // embed(Document), call(List<String>)
+
+            // Implement missing default methods to avoid compilation warnings/errors if any
+            public float[] embed(String document) {
+                return generateVector(768);
+            }
+
+            public java.util.List<float[]> embed(java.util.List<String> texts) {
+                java.util.List<float[]> result = new java.util.ArrayList<>();
+                for (String text : texts) {
+                    result.add(embed(text));
+                }
+                return result;
+            }
 
             private float[] generateVector(int dimension) {
                 float[] vector = new float[dimension];
