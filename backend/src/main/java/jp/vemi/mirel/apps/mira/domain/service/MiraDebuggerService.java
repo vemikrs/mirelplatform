@@ -84,41 +84,56 @@ public class MiraDebuggerService {
         MiraDebuggerAnalytics.StepCounts.StepCountsBuilder counts = MiraDebuggerAnalytics.StepCounts.builder();
         List<MiraDebuggerAnalytics.RejectedDocument> rejected = new ArrayList<>();
 
-        // 1. Raw Vector Search (Relaxed, Top 50)
-        // We want to see what matches *content* regardless of scope.
+        // 1. Raw Vector Search (Debug Mode: Relaxed Top 50)
         SearchRequest vectorReq = SearchRequest.builder()
                 .query(query)
                 .topK(50)
-                .similarityThreshold(0.0) // No threshold initially
+                .similarityThreshold(0.0)
                 .build();
 
         List<Document> vectorDocs = vectorStore.similaritySearch(vectorReq);
         counts.vectorSearchRaw(vectorDocs.size());
 
-        // 2. Raw Keyword Search (Relaxed, Top 50)
+        // 2. Raw Keyword Search (Debug Mode: Relaxed Top 50)
         List<Document> keywordDocs = performKeywordSearch(query, 50);
         counts.keywordSearchRaw(keywordDocs.size());
 
-        // Merge Raw Docs
-        Map<String, Document> allRawDocs = new HashMap<>();
-        vectorDocs.forEach(d -> {
-            d.getMetadata().put("debug_source", "vector");
-            d.getMetadata().put("debug_raw_score", d.getMetadata().get("distance")); // Distance usually
-            allRawDocs.put(d.getId(), d);
-        });
-        keywordDocs.forEach(d -> {
-            d.getMetadata().put("debug_source", "keyword");
-            allRawDocs.putIfAbsent(d.getId(), d);
+        // --- RRF Calculation Start ---
+        // Map ID to RRF components
+        Map<String, Integer> vectorRanks = new HashMap<>();
+        for (int i = 0; i < vectorDocs.size(); i++) {
+            vectorRanks.put(vectorDocs.get(i).getId(), i + 1); // 1-based rank
+        }
+
+        Map<String, Integer> keywordRanks = new HashMap<>();
+        for (int i = 0; i < keywordDocs.size(); i++) {
+            keywordRanks.put(keywordDocs.get(i).getId(), i + 1); // 1-based rank
+        }
+
+        // Merge all unique docs
+        Map<String, Document> allDocs = new HashMap<>();
+        vectorDocs.forEach(d -> allDocs.putIfAbsent(d.getId(), d));
+        keywordDocs.forEach(d -> allDocs.putIfAbsent(d.getId(), d));
+
+        // Calculate RRF Score for each
+        int k = 60; // Standard RRF constant
+        Map<String, Double> rrfScores = new HashMap<>();
+
+        allDocs.keySet().forEach(id -> {
+            double vScore = vectorRanks.containsKey(id) ? 1.0 / (k + vectorRanks.get(id)) : 0.0;
+            double kScore = keywordRanks.containsKey(id) ? 1.0 / (k + keywordRanks.get(id)) : 0.0;
+            rrfScores.put(id, vScore + kScore);
         });
 
-        List<Document> processedDocs = new ArrayList<>(allRawDocs.values());
+        // Sort by RRF Descending
+        List<Document> sortedDocs = new ArrayList<>(allDocs.values());
+        sortedDocs.sort(Comparator.comparingDouble((Document d) -> rrfScores.get(d.getId())).reversed());
+        // --- RRF Calculation End ---
 
         // 3. Filter Simulation (Scope/Tenant/User)
-        List<Document> afterScope = new ArrayList<>();
-        List<Document> afterTenant = new ArrayList<>();
-        List<Document> afterUser = new ArrayList<>(); // Final after scope filtering
+        List<Document> afterUser = new ArrayList<>();
 
-        for (Document doc : processedDocs) {
+        for (Document doc : sortedDocs) {
             Map<String, Object> meta = doc.getMetadata();
             String docScope = (String) meta.get("scope");
             String docTenant = (String) meta.get("tenantId");
@@ -150,9 +165,9 @@ public class MiraDebuggerService {
             }
 
             if (reject) {
-                // Add to rejected list (Top 10 only)
                 if (rejected.size() < 10) {
-                    rejected.add(toRejected(doc, reason));
+                    rejected.add(toRejected(doc, reason, rrfScores.get(doc.getId()), vectorRanks.get(doc.getId()),
+                            keywordRanks.get(doc.getId())));
                 }
             } else {
                 afterUser.add(doc);
@@ -161,34 +176,15 @@ public class MiraDebuggerService {
         counts.afterScopeFilter(afterUser.size());
 
         // 4. Threshold Filter Simulation
-        // Note: Score normalization is tricky here without RRF.
-        // For debugging, we just check raw scores vs threshold if provided.
-        // But since standard search uses RRF, the threshold applies to RRF score
-        // (usually).
-        // Let's assume RRF ranking for afterUser.
-
         List<Document> finalDocs = new ArrayList<>();
-        // Apply RRF to get scores (simplified RRF for single list? No, we have
-        // vector+keyword)
-        // We need to re-rank `afterUser` list based on vector/keyword presence.
-
-        // ... (RRF Logic duplicated from HybridService mostly to assign scores) ...
-        // For simplicity in analysis, we assign raw vector score or 0.0
 
         for (Document doc : afterUser) {
-            Double score = 0.0;
-            if (doc.getMetadata().containsKey("distance")) {
-                // Spring AI distance usually 1 - similarity or euclidean.
-                // Assuming similarity here for threshold check.
-                // Actually VectorStore usually handles threshold.
-                Object dVal = doc.getMetadata().get("distance");
-                if (dVal instanceof Number)
-                    score = 1.0 - ((Number) dVal).doubleValue(); // Approx
-            }
+            double score = rrfScores.get(doc.getId());
 
             if (score < threshold) {
                 if (rejected.size() < 10) {
-                    rejected.add(toRejected(doc, String.format("Score too low: %.2f < %.2f", score, threshold)));
+                    rejected.add(toRejected(doc, String.format("Score too low: %.4f < %.2f", score, threshold), score,
+                            vectorRanks.get(doc.getId()), keywordRanks.get(doc.getId())));
                 }
             } else {
                 finalDocs.add(doc);
@@ -201,9 +197,9 @@ public class MiraDebuggerService {
             map.put("id", doc.getId());
             map.put("content", doc.getText());
             map.put("metadata", doc.getMetadata());
-            // Add scores if present
-            if (doc.getMetadata().containsKey("distance"))
-                map.put("score", 1.0 - ((Number) doc.getMetadata().get("distance")).doubleValue());
+            map.put("score", rrfScores.get(doc.getId())); // Final RRF Score
+            map.put("vectorRank", vectorRanks.get(doc.getId()));
+            map.put("keywordRank", keywordRanks.get(doc.getId()));
             return map;
         }).collect(Collectors.toList());
 
@@ -216,12 +212,16 @@ public class MiraDebuggerService {
                 .build();
     }
 
-    private MiraDebuggerAnalytics.RejectedDocument toRejected(Document doc, String reason) {
+    private MiraDebuggerAnalytics.RejectedDocument toRejected(Document doc, String reason, Double score, Integer vRank,
+            Integer kRank) {
         Object fileName = doc.getMetadata().getOrDefault("fileName", "Unknown");
         return MiraDebuggerAnalytics.RejectedDocument.builder()
                 .id(doc.getId())
                 .fileName(fileName.toString())
                 .reason(reason)
+                .score(score != null ? score : 0.0)
+                .vectorRank(vRank)
+                .keywordRank(kRank)
                 .metadata(doc.getMetadata())
                 .build();
     }
