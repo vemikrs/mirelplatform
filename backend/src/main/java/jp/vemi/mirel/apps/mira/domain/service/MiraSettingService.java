@@ -41,6 +41,7 @@ public class MiraSettingService {
     public static final String KEY_LIMIT_RPH = "limit.rph"; // Requests Per Hour
     public static final String KEY_LIMIT_DAILY_QUOTA = "limit.daily_quota";
     public static final String KEY_TAVILY_API_KEY = "tavily.api_key";
+    public static final String KEY_VECTOR_SEARCH_THRESHOLD = "vector.search.threshold";
 
     /**
      * 有効な設定値を取得します（String）.
@@ -130,7 +131,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルトモデルを取得
         String provider = getAiProvider(tenantId);
         String defaultModel;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultModel = miraAiProperties.getVertexAi().getModel();
@@ -145,7 +146,7 @@ public class MiraSettingService {
                 log.warn("Unknown provider: {}, falling back to github-models default", provider);
                 defaultModel = miraAiProperties.getGithubModels().getModel();
         }
-        
+
         return getString(tenantId, KEY_AI_MODEL, defaultModel);
     }
 
@@ -153,7 +154,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルト temperature を取得
         String provider = getAiProvider(tenantId);
         Double defaultTemp;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultTemp = miraAiProperties.getVertexAi().getTemperature();
@@ -167,7 +168,7 @@ public class MiraSettingService {
             default:
                 defaultTemp = 0.7;
         }
-        
+
         return getDouble(tenantId, KEY_AI_TEMPERATURE, defaultTemp);
     }
 
@@ -175,7 +176,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルト maxTokens を取得
         String provider = getAiProvider(tenantId);
         Integer defaultMax;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultMax = 4096; // Vertex AI のデフォルト（プロパティに未定義の場合）
@@ -189,7 +190,7 @@ public class MiraSettingService {
             default:
                 defaultMax = 4096;
         }
-        
+
         return getInteger(tenantId, KEY_AI_MAX_TOKENS, defaultMax);
     }
 
@@ -205,6 +206,10 @@ public class MiraSettingService {
 
     public long getDailyTokenQuota(String tenantId) {
         return getLong(tenantId, KEY_LIMIT_DAILY_QUOTA, miraAiProperties.getQuota().getDailyTokenLimit());
+    }
+
+    public double getVectorSearchThreshold(String tenantId) {
+        return getDouble(tenantId, KEY_VECTOR_SEARCH_THRESHOLD, miraAiProperties.getVector().getSearchThreshold());
     }
 
     // ===================================================================================

@@ -20,20 +20,22 @@ public class MiraAiProperties {
 
     /** プロバイダ名定数: Vertex AI. */
     public static final String PROVIDER_VERTEX_AI_GEMINI = "vertex-ai-gemini";
-    
+
     /** プロバイダ名定数: GitHub Models. */
     public static final String PROVIDER_GITHUB_MODELS = "github-models";
-    
+
     /** プロバイダ名定数: Azure OpenAI. */
     public static final String PROVIDER_AZURE_OPENAI = "azure-openai";
-    
+
     /** プロバイダ名定数: OpenAI. */
     public static final String PROVIDER_OPENAI = "openai";
 
     /** Mira AI 機能全体の有効化フラグ. */
     private boolean enabled = true;
 
-    /** AI プロバイダ種別 (github-models | azure-openai | vertex-ai-gemini | openai | mock). */
+    /**
+     * AI プロバイダ種別 (github-models | azure-openai | vertex-ai-gemini | openai | mock).
+     */
     private String provider = "github-models";
 
     private GitHubModelsConfig githubModels = new GitHubModelsConfig();
@@ -157,5 +159,14 @@ public class MiraAiProperties {
         private boolean detailedTiming = true;
         private long responseTimeThresholdMs = 5000;
         private double errorRateThreshold = 0.05;
+    }
+
+    /** ベクトル検索設定. */
+    private VectorConfig vector = new VectorConfig();
+
+    @Data
+    public static class VectorConfig {
+        /** 検索時の類似度閾値 (デフォルト: 0.6). */
+        private double searchThreshold = 0.6;
     }
 }

@@ -128,9 +128,13 @@ email:
 mira:
   ai:
     enabled: true # Mira AI 機能を有効化
-    provider: ${MIRA_AI_PROVIDER:mock} # Mock AI を使用
+    # 開発環境のデフォルトとしてMock AIを使用。
+    # 実際のAIを使用する場合は環境変数 MIRA_AI_PROVIDER で上書き可能 (例: export MIRA_AI_PROVIDER=vertex-ai-gemini)
+    provider: ${MIRA_AI_PROVIDER:mock}
     mock:
       enabled: true # Mock AI を有効化
+    vector:
+      search-threshold: 0.6 # ベクトル検索閾値 (0.0: 全検索, 1.0: 完全一致) - 不具合時は0.0に緩和可能
       response-delay-ms: 300 # 応答遅延シミュレーション
       default-response: "ご質問ありがとうございます。現在開発環境のためモックで応答しています。"
 
