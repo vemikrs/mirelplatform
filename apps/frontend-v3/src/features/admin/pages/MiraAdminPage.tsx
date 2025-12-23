@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -90,6 +91,7 @@ export const MiraAdminPage = () => {
 
 const SettingsTab = () => {
     const { toast } = useToast();
+    const navigate = useNavigate();
     const [activeCategory, setActiveCategory] = useState<'general' | 'parameters' | 'limits' | 'context' | 'integration'>('general');
     const [tenantId, setTenantId] = useState<string>(''); // Empty = System Default
     
@@ -205,13 +207,15 @@ const SettingsTab = () => {
             
             <div className="my-2 border-t" />
 
-            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => window.location.href = '/admin/mira/playground'}>
+            <div className="my-2 border-t" />
+            
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => navigate('/admin/mira/playground')}>
                 <Play className="mr-2 h-4 w-4" /> AI Playground
             </Button>
             
             <div className="my-2 border-t" />
             
-            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => window.location.href = '/admin/mira/knowledge'}>
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => navigate('/admin/mira/knowledge')}>
                 <Book className="mr-2 h-4 w-4" /> システムナレッジ
             </Button>
         </div>
