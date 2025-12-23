@@ -45,14 +45,17 @@ public class MiraDebuggerController {
         checkAdmin(authentication);
 
         String tenantId = request.getTargetTenantId();
-        if (tenantId == null)
+        if (tenantId == null || tenantId.isEmpty()) {
             tenantId = jwt.getClaimAsString("tenant_id");
-        if (tenantId == null)
+        }
+        if (tenantId == null) {
             tenantId = "default";
+        }
 
         String userId = request.getTargetUserId();
-        if (userId == null)
+        if (userId == null || userId.isEmpty()) {
             userId = jwt.getSubject();
+        }
 
         String scopeStr = request.getScope() != null ? request.getScope().name() : "USER";
         double threshold = request.getThreshold() != null ? request.getThreshold() : 0.0;
