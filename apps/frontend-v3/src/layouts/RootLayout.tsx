@@ -124,7 +124,7 @@ function RootLayoutInner() {
         />
         
         <div className="flex-1 flex flex-col min-w-0 min-h-dvh">
-          <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
+          <main className={`flex-1 flex flex-col bg-background ${noMargin ? '' : 'py-6'}`}>
             {noMargin ? (
               <Outlet />
             ) : (

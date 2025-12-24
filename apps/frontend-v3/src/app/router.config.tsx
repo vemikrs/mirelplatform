@@ -54,7 +54,7 @@ import { ReleasePage } from '@/features/studio/pages/ReleasePage';
 import { StudioGuard } from '@/features/studio/guards/StudioGuard';
 import { MiraPage } from '@/features/mira/pages/MiraPage';
 import { MiraPlaygroundPage } from '@/features/mira/components/pages/MiraPlaygroundPage';
-import KnowledgeDocumentViewerPage from '@/features/mira/pages/KnowledgeDocumentViewerPage';
+
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
@@ -295,13 +295,9 @@ export const router = createBrowserRouter([
           {
             path: 'admin/mira/playground',
             element: <MiraPlaygroundPage />,
-            handle: { title: 'Mira - AI Playground' },
+            handle: { title: 'Mira - AI Playground', noMargin: true },
           },
-          {
-            path: 'admin/mira/knowledge/view/:fileId',
-            element: <KnowledgeDocumentViewerPage />,
-            handle: { title: '管理 - ドキュメント詳細' },
-          },
+
           // Admin routes - Workspace/Tenant Management (requires TENANT_ADMIN role)
           {
             path: 'admin/workspace/license',
