@@ -52,6 +52,7 @@ public class MiraStreamService {
     private final AdminSystemSettingsService adminSystemSettingsService;
     private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
     private final MiraKnowledgeBaseService knowledgeBaseService; // RAG Integration
+    private final MiraRagContextBuilder ragContextBuilder; // RAG Context Builder
 
     /**
      * ストリームチャット実行.
@@ -116,11 +117,8 @@ public class MiraStreamService {
                         request.getMessage().getContent(), userId, ragDocs.size());
 
                 if (!ragDocs.isEmpty()) {
-                    String ragContext = ragDocs.stream()
-                            .map(Document::getText)
-                            .collect(Collectors.joining("\n\n"));
-
-                    finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
+                    String ragContext = ragContextBuilder.buildContextString(ragDocs);
+                    finalContext += ragContext;
                     log.debug("Attached {} RAG documents to context (Stream).", ragDocs.size());
                 }
             } catch (Exception e) {

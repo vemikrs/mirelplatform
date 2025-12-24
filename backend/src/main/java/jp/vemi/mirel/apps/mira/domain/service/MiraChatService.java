@@ -78,6 +78,7 @@ public class MiraChatService {
     private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties; // To check provider
     private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
     private final MiraKnowledgeBaseService knowledgeBaseService; // RAG Integration
+    private final MiraRagContextBuilder ragContextBuilder; // RAG Context Builder
 
     /**
      * 会話一覧取得.
@@ -229,11 +230,8 @@ public class MiraChatService {
                         request.getMessage().getContent(), tenantId, userId);
 
                 if (!ragDocs.isEmpty()) {
-                    String ragContext = ragDocs.stream()
-                            .map(doc -> doc.getText())
-                            .collect(Collectors.joining("\n\n"));
-
-                    finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
+                    String ragContext = ragContextBuilder.buildContextString(ragDocs);
+                    finalContext += ragContext;
                     log.debug("Attached {} RAG documents to context.", ragDocs.size());
                 }
             } catch (Exception e) {
@@ -475,8 +473,13 @@ public class MiraChatService {
                     List<Document> docs = knowledgeBaseService.debugSearch(query, scope, targetTenant, targetUser,
                             topK, 0.0);
 
-                    // Convert to DTO and append to context
-                    StringBuilder ragContext = new StringBuilder("\n\n[Reference Knowledge]\n");
+                    // Convert to DTO and append to context (Playground specific DTO building)
+                    // We can reuse builder string for context appended to message, but we also need
+                    // DTOs.
+                    // For consistency, let's use the builder for the string part.
+
+                    String ragContextString = ragContextBuilder.buildContextString(docs);
+
                     for (Document doc : docs) {
                         Double score = null;
                         if (doc.getMetadata().containsKey("distance")) {
@@ -504,14 +507,10 @@ public class MiraChatService {
                                         .score(score)
                                         .metadata(doc.getMetadata())
                                         .build());
-                        ragContext.append(doc.getText()).append("\n\n");
                     }
 
                     if (!docs.isEmpty()) {
-                        // Append context to the last user message or system message?
-                        // Usually PromptBuilder handles this, but here we do it manually for raw
-                        // control
-                        // Appending to the last user message is safest for simple chat models
+                        // Append context to the last user message
                         int lastUserIdx = -1;
                         for (int i = messages.size() - 1; i >= 0; i--) {
                             if ("user".equals(messages.get(i).getRole())) {
@@ -521,7 +520,7 @@ public class MiraChatService {
                         }
                         if (lastUserIdx != -1) {
                             AiRequest.Message lastUser = messages.get(lastUserIdx);
-                            lastUser.setContent(lastUser.getContent() + ragContext.toString());
+                            lastUser.setContent(lastUser.getContent() + ragContextString);
                         }
                     }
                 }
