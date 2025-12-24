@@ -147,7 +147,7 @@ export function MiraPlaygroundPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="flex-shrink-0 h-14 border-b flex items-center px-4 justify-between bg-card z-10">
         <div className="flex items-center gap-4">

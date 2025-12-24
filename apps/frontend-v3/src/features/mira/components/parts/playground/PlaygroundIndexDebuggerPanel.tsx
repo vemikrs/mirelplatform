@@ -60,6 +60,7 @@ import {
   SearchCode
 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { KnowledgeDocumentEditDialog } from '@/features/mira/components/KnowledgeDocumentEditDialog';
 
 interface DebuggerStats {
   totalDocumentCount: number;
@@ -109,6 +110,7 @@ export function PlaygroundIndexDebuggerPanel() {
   /* Document Manager State */
   const [activeTab, setActiveTab] = useState('debug');
   const [documents, setDocuments] = useState<any[]>([]);
+  const [editFileId, setEditFileId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -282,20 +284,20 @@ export function PlaygroundIndexDebuggerPanel() {
 
   const openDocument = (fileId: string) => {
       if (!fileId) return;
-      // Open in new tab or navigate
-      window.open(`/admin/mira/knowledge/view/${fileId}`, '_blank');
+      // 既存のKnowledgeDocumentEditDialogを開く
+      setEditFileId(fileId);
   };
 
   return (
     <TooltipProvider delayDuration={0}>
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full w-full bg-background flex-col">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 w-full bg-background flex-col">
       <div className="border-b px-4 bg-muted/20 flex-none h-10 flex items-center">
         <TabsList className="bg-transparent h-9 p-0 gap-4">
-             <TabsTrigger value="debug" className="data-[state=active]:bg-background data-[state=active]:shadow-sm h-8 px-3 text-xs">
+             <TabsTrigger value="debug" className="h-8 px-3 text-xs">
                  <SearchCode className="w-3.5 h-3.5 mr-2" />
                  Query Debugger
              </TabsTrigger>
-             <TabsTrigger value="documents" className="data-[state=active]:bg-background data-[state=active]:shadow-sm h-8 px-3 text-xs">
+             <TabsTrigger value="documents" className="h-8 px-3 text-xs">
                  <FileText className="w-3.5 h-3.5 mr-2" />
                  Document Manager
              </TabsTrigger>
@@ -804,7 +806,11 @@ export function PlaygroundIndexDebuggerPanel() {
                             </TableRow>
                         ) : (
                             documents.map((doc: any) => (
-                                <TableRow key={doc.fileId}>
+                                <TableRow 
+                                    key={doc.fileId}
+                                    className="cursor-pointer hover:bg-muted"
+                                    onClick={() => setEditFileId(doc.fileId)}
+                                >
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-2">
                                             <FileText className="w-4 h-4 text-blue-500" />
@@ -822,7 +828,10 @@ export function PlaygroundIndexDebuggerPanel() {
                                             variant="ghost" 
                                             size="sm" 
                                             className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            onClick={() => handleDeleteDocument(doc.fileId)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteDocument(doc.fileId);
+                                            }}
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
@@ -836,6 +845,19 @@ export function PlaygroundIndexDebuggerPanel() {
         </div>
       </TabsContent>
     </Tabs>
+
+    {editFileId && (
+        <KnowledgeDocumentEditDialog 
+            fileId={editFileId} 
+            open={!!editFileId} 
+            onOpenChange={(open) => !open && setEditFileId(null)}
+            onSave={() => {
+                setEditFileId(null);
+                fetchDocuments();
+                fetchStats();
+            }}
+        />
+    )}
     </TooltipProvider>
   );
 }
