@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import {
   Button,
+  Input,
+  Label,
   useToast,
 } from '@mirel/ui';
 import { FileText, Loader2, UploadCloud, X } from 'lucide-react';
@@ -15,6 +17,7 @@ interface KnowledgeDocumentUploadFormProps {
 export function KnowledgeDocumentUploadForm({ scope, onUploadSuccess }: KnowledgeDocumentUploadFormProps) {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,13 +63,19 @@ export function KnowledgeDocumentUploadForm({ scope, onUploadSuccess }: Knowledg
       
       const fileId = uploadRes.data.data.uuid; 
 
-      await apiClient.post(`/api/mira/knowledge/index/${fileId}?scope=${scope}`);
+      // descriptionをクエリパラメータとして送信
+      const params = new URLSearchParams({ scope });
+      if (description) {
+        params.append('description', description);
+      }
+      await apiClient.post(`/api/mira/knowledge/index/${fileId}?${params.toString()}`);
 
       toast({
         title: '登録完了',
         description: 'ドキュメントをナレッジベースに登録しました。',
       });
       setSelectedFile(null);
+      setDescription('');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
       onUploadSuccess();
@@ -147,6 +156,20 @@ export function KnowledgeDocumentUploadForm({ scope, onUploadSuccess }: Knowledg
                             {(selectedFile.size / 1024).toFixed(1)} KB
                         </p>
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="upload-description">解説文（任意）</Label>
+                    <Input
+                        id="upload-description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="ドキュメントの概要や検索キーワード..."
+                        disabled={isUploading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        検索精度を向上させるための補足情報
+                    </p>
                 </div>
 
                 <Button onClick={handleUpload} disabled={isUploading} className="w-full h-11 text-base shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
