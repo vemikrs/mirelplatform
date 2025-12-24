@@ -5,6 +5,7 @@ package jp.vemi.mirel.apps.mira.domain.service;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.tika.Tika;
 import org.springframework.ai.document.Document;
@@ -13,10 +14,14 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraIndexingProgress;
+import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraIndexingProgress.IndexingStatus;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore;
+import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraIndexingProgressRepository;
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository;
 import jp.vemi.mirel.foundation.abst.dao.entity.FileManagement;
 import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
@@ -45,6 +50,7 @@ public class MiraKnowledgeBaseService {
     private final MiraQueryTransformService queryTransformService;
     private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraSearchLogRepository searchLogRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final MiraIndexingProgressRepository indexingProgressRepository;
 
     /**
      * ファイルをインデックスに登録します。
@@ -129,13 +135,30 @@ public class MiraKnowledgeBaseService {
         List<Document> splitDocuments;
         String fileName = fileConfig.getFileName().toLowerCase();
 
+        // 既存のナレッジドキュメントからdescriptionを取得（Phase 3: 手動注釈）
+        String description = null;
+        var existingDoc = knowledgeDocumentRepository.findByFileId(fileId);
+        if (existingDoc.isPresent() && existingDoc.get().getDescription() != null) {
+            description = existingDoc.get().getDescription();
+        }
+
+        // グローバルコンテキストを構築 (Phase 2 & 3)
+        jp.vemi.mirel.apps.mira.domain.model.GlobalContext globalContext = jp.vemi.mirel.apps.mira.domain.model.GlobalContext
+                .builder()
+                .fileName(fileConfig.getFileName())
+                .category(determineCategory(fileName))
+                .description(description)
+                .build();
+
         if (fileName.endsWith(".md") || fileName.endsWith(".markdown")) {
             log.info("Using MiraMarkdownSplitter for file: {}", fileName);
-            splitDocuments = markdownSplitter.apply(documents);
+            splitDocuments = markdownSplitter.apply(documents, globalContext);
         } else {
             // Default token splitter for other formats
             TokenTextSplitter splitter = new TokenTextSplitter();
-            splitDocuments = splitter.apply(documents);
+            List<Document> tokenSplit = splitter.apply(documents);
+            // 非Markdownファイルにもグローバルプレフィックスを追加
+            splitDocuments = applyGlobalPrefixToDocuments(tokenSplit, globalContext);
         }
 
         // メタデータ付与 (Enricherへ委譲)
@@ -516,5 +539,154 @@ public class MiraKnowledgeBaseService {
         if (doc.getMetadata().containsKey("distance"))
             return ((Number) doc.getMetadata().get("distance")).doubleValue();
         return 0.0;
+    }
+
+    // ===================================================================================
+    // 非同期インデックス処理
+    // ===================================================================================
+
+    /**
+     * ファイルを非同期でインデックスに登録します。
+     *
+     * @param fileId
+     *            ファイルID
+     * @param scope
+     *            スコープ
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @return 処理結果のCompletableFuture
+     */
+    @Async("miraIndexingExecutor")
+    public CompletableFuture<String> indexFileAsync(
+            String fileId, MiraVectorStore.Scope scope, String tenantId, String userId) {
+
+        log.info("Starting async indexing for fileId={}", fileId);
+        updateProgress(fileId, IndexingStatus.PROCESSING, null);
+
+        try {
+            indexFile(fileId, scope, tenantId, userId);
+            updateProgress(fileId, IndexingStatus.COMPLETED, null);
+            log.info("Async indexing completed for fileId={}", fileId);
+            return CompletableFuture.completedFuture(fileId);
+        } catch (Exception e) {
+            log.error("Async indexing failed for fileId={}", fileId, e);
+            updateProgress(fileId, IndexingStatus.FAILED, e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    /**
+     * 指定スコープの全ドキュメントを非同期で再インデックスします。
+     *
+     * @param scope
+     *            スコープ
+     * @param tenantId
+     *            テナントID
+     * @param userId
+     *            ユーザーID
+     * @return タスクID
+     */
+    public String startBulkReindex(MiraVectorStore.Scope scope, String tenantId, String userId) {
+        String taskId = java.util.UUID.randomUUID().toString();
+        log.info("Starting bulk reindex task: taskId={}, scope={}", taskId, scope);
+
+        // 対象ドキュメント取得
+        List<jp.vemi.mirel.apps.mira.domain.dao.entity.MiraKnowledgeDocument> docs;
+        if (scope == MiraVectorStore.Scope.SYSTEM) {
+            docs = knowledgeDocumentRepository.findByScope(scope);
+        } else if (scope == MiraVectorStore.Scope.TENANT) {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantId(scope, tenantId);
+        } else {
+            docs = knowledgeDocumentRepository.findByScopeAndTenantIdAndUserId(scope, tenantId, userId);
+        }
+
+        // 各ドキュメントを非同期で再インデックス
+        for (var doc : docs) {
+            updateProgress(doc.getFileId(), IndexingStatus.PENDING, null);
+            indexFileAsync(doc.getFileId(), doc.getScope(), doc.getTenantId(), doc.getUserId());
+        }
+
+        return taskId;
+    }
+
+    /**
+     * インデックス進捗を更新します。
+     */
+    private void updateProgress(String fileId, IndexingStatus status, String errorMessage) {
+        try {
+            MiraIndexingProgress progress = indexingProgressRepository.findByFileId(fileId)
+                    .orElse(MiraIndexingProgress.builder()
+                            .fileId(fileId)
+                            .build());
+            progress.setStatus(status);
+            progress.setErrorMessage(errorMessage);
+            indexingProgressRepository.save(progress);
+        } catch (Exception e) {
+            log.warn("Failed to update indexing progress for fileId={}", fileId, e);
+        }
+    }
+
+    /**
+     * ファイルのインデックス進捗を取得します。
+     */
+    public MiraIndexingProgress getIndexingProgress(String fileId) {
+        return indexingProgressRepository.findByFileId(fileId).orElse(null);
+    }
+
+    // ===================================================================================
+    // ヘルパーメソッド
+    // ===================================================================================
+
+    /**
+     * ファイル名からカテゴリを推定します。
+     */
+    private String determineCategory(String fileName) {
+        if (fileName == null)
+            return "unknown";
+
+        String lowerName = fileName.toLowerCase();
+
+        if (lowerName.endsWith(".md") || lowerName.endsWith(".markdown")) {
+            return "documentation";
+        } else if (lowerName.endsWith(".java") || lowerName.endsWith(".kt") ||
+                lowerName.endsWith(".py") || lowerName.endsWith(".js") ||
+                lowerName.endsWith(".ts")) {
+            return "source_code";
+        } else if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls") ||
+                lowerName.endsWith(".csv")) {
+            return "spreadsheet";
+        } else if (lowerName.endsWith(".pdf")) {
+            return "document";
+        } else if (lowerName.endsWith(".txt")) {
+            return "text";
+        } else {
+            return "general";
+        }
+    }
+
+    /**
+     * 非Markdownドキュメントにグローバルプレフィックスを適用します。
+     */
+    private List<Document> applyGlobalPrefixToDocuments(
+            List<Document> documents,
+            jp.vemi.mirel.apps.mira.domain.model.GlobalContext globalContext) {
+
+        if (globalContext == null) {
+            return documents;
+        }
+
+        String prefix = globalContext.buildPrefix();
+        if (prefix.isEmpty()) {
+            return documents;
+        }
+
+        List<Document> result = new java.util.ArrayList<>();
+        for (Document doc : documents) {
+            java.util.Map<String, Object> metadata = new java.util.HashMap<>(doc.getMetadata());
+            result.add(new Document(prefix + doc.getText(), metadata));
+        }
+        return result;
     }
 }

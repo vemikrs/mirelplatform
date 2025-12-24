@@ -57,6 +57,10 @@ public class MiraKnowledgeDocument {
     @Column(name = "user_id")
     private String userId;
 
+    /** 手動注釈（解説文） - Phase 3: 管理者/ユーザーがUIで設定 */
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

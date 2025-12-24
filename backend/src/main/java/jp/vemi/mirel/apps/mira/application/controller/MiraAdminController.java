@@ -48,6 +48,7 @@ public class MiraAdminController {
     private final jp.vemi.mirel.apps.mira.domain.service.MiraSettingService settingService; // Inject SettingService
     private final jp.vemi.mirel.apps.mira.domain.service.ModelSelectionService modelSelectionService;
     private final jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory aiProviderFactory;
+    private final jp.vemi.mirel.apps.mira.domain.service.MiraKnowledgeBaseService knowledgeBaseService;
 
     // ==========================================
     // Context Management
@@ -223,6 +224,48 @@ public class MiraAdminController {
         private String tenantId;
         private LocalDate date;
         private Long totalTokens;
+    }
+
+    // ==========================================
+    // Knowledge Reindex Management
+    // ==========================================
+
+    @PostMapping("/knowledge/reindex")
+    @Operation(summary = "ナレッジ一括再インデックス", description = "指定スコープのドキュメントを非同期で再インデックスします")
+    public ResponseEntity<Map<String, Object>> reindexKnowledge(
+            @RequestParam(defaultValue = "SYSTEM") String scope,
+            @RequestParam(required = false) String tenantId,
+            @RequestParam(required = false) String userId) {
+
+        jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore.Scope scopeEnum = jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore.Scope
+                .valueOf(scope);
+
+        String taskId = knowledgeBaseService.startBulkReindex(scopeEnum, tenantId, userId);
+
+        return ResponseEntity.ok(Map.of(
+                "taskId", taskId,
+                "message", "Reindex job started",
+                "scope", scope));
+    }
+
+    @GetMapping("/knowledge/reindex/progress/{fileId}")
+    @Operation(summary = "インデックス進捗確認", description = "ファイルのインデックス処理進捗を取得します")
+    public ResponseEntity<Map<String, Object>> getReindexProgress(@PathVariable String fileId) {
+        var progress = knowledgeBaseService.getIndexingProgress(fileId);
+
+        if (progress == null) {
+            return ResponseEntity.ok(Map.of(
+                    "fileId", fileId,
+                    "status", "NOT_FOUND"));
+        }
+
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("fileId", progress.getFileId());
+        result.put("status", progress.getStatus().name());
+        result.put("errorMessage", progress.getErrorMessage());
+        result.put("updatedAt", progress.getUpdatedAt());
+
+        return ResponseEntity.ok(result);
     }
 
     // ==========================================
