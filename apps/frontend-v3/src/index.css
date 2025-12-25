@@ -79,6 +79,32 @@
   transition-duration: 500ms;
 }
 
+/**
+ * Tabs アクティブ状態のスタイル
+ * 
+ * Tailwind v4ではdata-[state=active]:*が生成されないため、
+ * state-active:*形式で手動定義。
+ */
+/* Tabs: アクティブ状態の背景 */
+.state-active\:bg-background[data-state="active"],
+[data-state="active"].state-active\:bg-background {
+  background-color: hsl(var(--background));
+}
+/* Tabs: アクティブ状態のテキスト */
+.state-active\:text-foreground[data-state="active"],
+[data-state="active"].state-active\:text-foreground {
+  color: hsl(var(--foreground));
+}
+/* Tabs: アクティブ状態のフォント */
+.state-active\:font-semibold[data-state="active"],
+[data-state="active"].state-active\:font-semibold {
+  font-weight: 600;
+}
+/* Tabs: アクティブ状態のシャドウ */
+.state-active\:shadow-sm[data-state="active"],
+[data-state="active"].state-active\:shadow-sm {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
 
 @layer base {
   body {
