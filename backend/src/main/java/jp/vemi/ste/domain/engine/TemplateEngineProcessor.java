@@ -981,6 +981,12 @@ public class TemplateEngineProcessor {
      * @return 読み込まれたStencilSettingsYml、または null
      */
     private StencilSettingsYml loadStencilSettingsFromClasspath(String resourcePath) {
+        // パストラバーサル攻撃を防ぐための検証
+        if (resourcePath == null || resourcePath.contains("..") || resourcePath.contains("\\")) {
+            logger.warn("Invalid resourcePath detected: {}", resourcePath);
+            return null;
+        }
+
         try {
             InputStream inputStream = this.getClass().getClassLoader()
                     .getResourceAsStream(resourcePath);
