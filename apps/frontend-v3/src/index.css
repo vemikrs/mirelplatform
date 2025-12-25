@@ -20,7 +20,65 @@
 
 @import "@mirel/ui/theme/index.css";
 @import "tailwindcss";
-@source "../node_modules/@mirel/ui/src";
+@source "../../packages/ui/src";
+
+/**
+ * Tailwind v4 Custom Variants
+ * 
+ * Radix UIのdata-state属性に対応するカスタムvariantを定義。
+ * これにより state-open:*, state-closed:* 等のユーティリティクラスが使用可能になります。
+ */
+@custom-variant state-open (&[data-state="open"]);
+@custom-variant state-closed (&[data-state="closed"]);
+@custom-variant state-active (&[data-state="active"]);
+@custom-variant state-inactive (&[data-state="inactive"]);
+
+/**
+ * Sheet/Dialog アニメーション
+ * 
+ * Sheetコンポーネントでstate-open:animate-*が正しく動作しない場合の
+ * フォールバック実装。直接data-state属性をターゲットにしてアニメーションを適用。
+ */
+/* 左からスライドイン/アウト */
+.state-open\:animate-slide-in-left[data-state="open"],
+[data-state="open"].state-open\:animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out forwards;
+}
+.state-closed\:animate-slide-out-left[data-state="closed"],
+[data-state="closed"].state-closed\:animate-slide-out-left {
+  animation: slide-out-left 0.3s ease-in forwards;
+}
+
+/* 右からスライドイン/アウト */
+.state-open\:animate-slide-in-right[data-state="open"],
+[data-state="open"].state-open\:animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+.state-closed\:animate-slide-out-right[data-state="closed"],
+[data-state="closed"].state-closed\:animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in forwards;
+}
+
+/* オーバーレイフェード */
+.state-open\:animate-fade-in[data-state="open"],
+[data-state="open"].state-open\:animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+.state-closed\:animate-fade-out[data-state="closed"],
+[data-state="closed"].state-closed\:animate-fade-out {
+  animation: fade-out 0.2s ease-in forwards;
+}
+
+/* Duration variants */
+.state-closed\:duration-300[data-state="closed"],
+[data-state="closed"].state-closed\:duration-300 {
+  transition-duration: 300ms;
+}
+.state-open\:duration-500[data-state="open"],
+[data-state="open"].state-open\:duration-500 {
+  transition-duration: 500ms;
+}
+
 
 @layer base {
   body {
@@ -207,4 +265,26 @@
 
 .animate-fade-out {
   animation: fade-out 0.2s ease-in forwards;
+}
+
+/**
+ * 右方向スライドアニメーション用キーフレーム
+ * (左方向はすでに上で定義済み)
+ */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }

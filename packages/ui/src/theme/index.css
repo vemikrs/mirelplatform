@@ -50,7 +50,30 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  /* === Animations === */
+  --animate-slide-in-left: slide-in-left 0.3s ease-out forwards;
+  --animate-slide-out-left: slide-out-left 0.3s ease-in forwards;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out forwards;
+  --animate-slide-out-right: slide-out-right 0.3s ease-in forwards;
+  --animate-fade-in: fade-in 0.2s ease-out forwards;
+  --animate-fade-out: fade-out 0.2s ease-in forwards;
 }
+
+/**
+ * Tailwind v4 Custom Variants
+ * 
+ * Radix UIのdata-state属性に対応するカスタムvariantを定義。
+ * これにより state-open:*, state-closed:* 等のユーティリティクラスが使用可能になります。
+ */
+@custom-variant state-open (&[data-state="open"]);
+@custom-variant state-closed (&[data-state="closed"]);
+@custom-variant state-active (&[data-state="active"]);
+@custom-variant state-inactive (&[data-state="inactive"]);
+@custom-variant state-checked (&[data-state="checked"]);
+@custom-variant state-unchecked (&[data-state="unchecked"]);
+@custom-variant state-on (&[data-state="on"]);
+@custom-variant state-off (&[data-state="off"]);
 
 /**
  * ⚠️ 以下の@layer base定義は引き続きCSS変数の定義元として機能します。
