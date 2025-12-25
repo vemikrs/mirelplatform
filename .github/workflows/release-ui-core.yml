@@ -75,8 +75,11 @@ jobs:
             git add package.json
             git commit -m "chore(release): bump @mireljs/ui-core to $NEW_VERSION [skip ci]"
             
-            # Push changes to main
-            # Note: This push relies on the specific permissions and GITHUB_TOKEN
+            # Fetch and rebase to avoid non-fast-forward on rerun
+            git fetch origin master
+            git rebase origin/master
+            
+            # Push changes to master
             git push origin master
             
             echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
