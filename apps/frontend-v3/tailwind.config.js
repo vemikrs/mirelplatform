@@ -1,14 +1,25 @@
 /**
  * Tailwind CSS v4 Configuration
  * 
- * ⚠️ 重要な制限事項:
- * - Tailwind v4では、theme.extend.colors で定義したカスタム色が
- *   ユーティリティクラス（bg-*, text-*, border-*）として自動生成されません
- * - CSS変数ベースの色を使用する場合は、apps/frontend-v3/src/index.css で
- *   明示的に .bg-background, .bg-card 等のクラスを定義する必要があります
- * - または @theme ディレクティブを使用する必要がありますが、var()の間接参照は不可
+ * ============================================================================
+ * ⚠️ 開発者向け重要ガイド（Tailwind v4 @theme統合）
+ * ============================================================================
  * 
- * 参考: https://github.com/tailwindlabs/tailwindcss/discussions/18440
+ * ■ セマンティックカラー（bg-background, text-primary等）について：
+ *   - packages/ui/src/theme/index.css の @theme ブロックで定義されています
+ *   - このファイル(tailwind.config.js)のcolorsセクションには追加しないでください
+ *   - @themeにより、全てのVariants（hover:, data-[state=active]:等）が自動生成されます
+ * 
+ * ■ 新しいセマンティックカラーを追加する場合：
+ *   1. packages/ui/src/theme/index.css の @layer base 内で CSS変数を定義
+ *   2. 同ファイルの @theme ブロックに --color-[名前]: hsl(var(--[名前])) を追加
+ * 
+ * ■ このファイルのcolorsセクションについて：
+ *   - Tailwindのデフォルト色（white, black, gray）のみ定義
+ *   - CSS変数参照（hsl(var(--xxx))）は @theme 経由で処理されるため不要
+ * 
+ * 参考: https://tailwindcss.com/docs/v4-beta
+ * ============================================================================
  * 
  * @type {import('tailwindcss').Config}
  */
@@ -43,10 +54,10 @@ export default {
         xs: "475px",          // 追加ブレークポイント（小スマートフォン対応）
       },
       colors: {
-        // ⚠️ Tailwind v4 制限: 以下のカスタム色はユーティリティクラスとして生成されません
-        // bg-background, bg-card, bg-surface 等は src/index.css で明示的に定義されています
+        // Tailwind v4: セマンティックカラーは packages/ui/src/theme/index.css の
+        // @theme ブロックで定義されているため、ここでは標準色のみ保持
         
-        // Tailwind default colors (preserve white, black, gray for utility classes)
+        // Tailwind default colors
         white: '#ffffff',
         black: '#000000',
         gray: {
@@ -61,59 +72,6 @@ export default {
           800: '#1f2937',
           900: '#111827',
           950: '#030712',
-        },
-        // Custom semantic colors
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        outline: "hsl(var(--outline))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        surface: {
-          DEFAULT: "hsl(var(--surface))",
-          subtle: "hsl(var(--surface-subtle))",
-          raised: "hsl(var(--surface-raised))",
-          overlay: "hsl(var(--surface-overlay))",
-        },
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        info: {
-          DEFAULT: "hsl(var(--info))",
-          foreground: "hsl(var(--info-foreground))",
-        },
-        success: {
-          DEFAULT: "hsl(var(--success))",
-          foreground: "hsl(var(--success-foreground))",
-        },
-        warning: {
-          DEFAULT: "hsl(var(--warning))",
-          foreground: "hsl(var(--warning-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
         },
       },
       borderRadius: {
@@ -171,8 +129,9 @@ export default {
         'liquid-slow': 'var(--liquid-duration-slow)',
       },
       zIndex: {
-        '110': '110',  // Dialog Overlay用
-        '120': '120',  // Dialog Content用
+        '60': '60',   // Sheet Overlay用
+        '110': '110', // Dialog Overlay用
+        '120': '120', // Dialog Content用
       },
       keyframes: {
         'toast-in': {
