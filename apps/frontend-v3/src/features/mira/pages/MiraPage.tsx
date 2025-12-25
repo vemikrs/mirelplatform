@@ -409,7 +409,12 @@ export function MiraPage() {
   ]);
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh-3rem)] flex relative overflow-hidden">
+    /**
+     * h-full: RootLayoutのmainから高さを継承
+     * ビューポート計算 (calc(100dvh-*)) は不要
+     * RootLayoutのmin-h-0構造により自動的に利用可能領域を埋める
+     */
+    <div className="h-full flex relative overflow-hidden">
       {/* 左サイドバー: 会話履歴（デスクトップ） */}
       {isSidebarOpen && (
         <div className="hidden md:block h-full shrink-0">
