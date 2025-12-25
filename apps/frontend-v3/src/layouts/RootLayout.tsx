@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData, useMatches } from 'react-router-dom';
-import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@mirel/ui';
+import { Button, Toaster, Sheet, SheetContent, SheetTitle, SheetDescription } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -68,7 +68,15 @@ function RootLayoutInner() {
       <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
-            {/* Mobile menu button */}
+            {/* Mobile menu button - onClickで直接制御 */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="size-5" />
+            </Button>
             <Sheet 
               open={mobileMenuOpen} 
               onOpenChange={(open) => {
@@ -80,11 +88,6 @@ function RootLayoutInner() {
               }}
               modal={true}
             >
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="size-5" />
-                </Button>
-              </SheetTrigger>
               <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20 z-60">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Main navigation menu for mobile devices</SheetDescription>
