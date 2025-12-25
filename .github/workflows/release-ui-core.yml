@@ -5,6 +5,11 @@ on:
     branches: ["main"]
     paths:
       - "packages/ui/**"
+  pull_request:
+    types: [closed]
+    branches: ["main"]
+    paths:
+      - "packages/ui/**"
 
 permissions:
   contents: write
@@ -12,6 +17,8 @@ permissions:
 
 jobs:
   release:
+    # pushイベント、またはマージされたPRの場合のみ実行
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
