@@ -152,7 +152,7 @@ function RootLayoutInner() {
         {/* コンテンツエリア: min-h-0 が重要（Flexboxで親高さに収まるため） */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* main: 各ページは h-full で利用可能領域を自動的に埋める */}
-          <main className={`flex-1 flex flex-col min-h-0 bg-background ${noMargin ? '' : 'py-6'}`}>
+          <main className={`flex-1 flex flex-col min-h-0 overflow-y-auto bg-background ${noMargin ? 'pb-0' : 'py-6 pb-16'}`}>
             {noMargin ? (
               <Outlet />
             ) : (
