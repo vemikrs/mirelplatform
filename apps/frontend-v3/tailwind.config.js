@@ -129,8 +129,9 @@ export default {
         'liquid-slow': 'var(--liquid-duration-slow)',
       },
       zIndex: {
-        '110': '110',  // Dialog Overlay用
-        '120': '120',  // Dialog Content用
+        '60': '60',   // Sheet Overlay用
+        '110': '110', // Dialog Overlay用
+        '120': '120', // Dialog Content用
       },
       keyframes: {
         'toast-in': {
