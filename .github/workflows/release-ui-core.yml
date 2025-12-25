@@ -77,7 +77,7 @@ jobs:
             
             # Push changes to main
             # Note: This push relies on the specific permissions and GITHUB_TOKEN
-            git push origin main
+            git push origin master
             
             echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
             echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
