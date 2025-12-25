@@ -8,6 +8,8 @@ import {
   DialogFooter,
   Button,
   Textarea,
+  Input,
+  Label,
   useToast,
 } from '@mirel/ui';
 import { Loader2 } from 'lucide-react';
@@ -23,6 +25,7 @@ interface KnowledgeDocumentEditDialogProps {
 export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave }: KnowledgeDocumentEditDialogProps) {
   const { toast } = useToast();
   const [content, setContent] = useState('');
+  const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -35,8 +38,9 @@ export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave
   const loadContent = async () => {
     setIsLoading(true);
     try {
-      const res = await apiClient.get<string>(`/api/mira/knowledge/content/${fileId}`);
-      setContent(res.data);
+      const res = await apiClient.get<{ content: string; description?: string }>(`/api/mira/knowledge/content/${fileId}`);
+      setContent(typeof res.data === 'string' ? res.data : res.data.content);
+      setDescription(typeof res.data === 'object' ? res.data.description || '' : '');
     } catch (error) {
       console.error(error);
       toast({
@@ -52,7 +56,7 @@ export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await apiClient.put(`/api/mira/knowledge/content/${fileId}`, content);
+      await apiClient.put(`/api/mira/knowledge/content/${fileId}`, { content, description });
       
       toast({
         title: '保存完了',
@@ -81,7 +85,22 @@ export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 py-4">
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="description">解説文（手動注釈）</Label>
+            <Input
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="このドキュメントの概要や検索キーワードを入力..."
+            />
+            <p className="text-xs text-muted-foreground">
+              各チャンクに注入され、検索精度が向上します
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0">
             {isLoading ? (
                 <div className="h-full flex justify-center items-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -108,3 +127,4 @@ export function KnowledgeDocumentEditDialog({ fileId, open, onOpenChange, onSave
     </Dialog>
   );
 }
+

@@ -41,6 +41,16 @@ public class MiraSettingService {
     public static final String KEY_LIMIT_RPH = "limit.rph"; // Requests Per Hour
     public static final String KEY_LIMIT_DAILY_QUOTA = "limit.daily_quota";
     public static final String KEY_TAVILY_API_KEY = "tavily.api_key";
+    public static final String KEY_VECTOR_SEARCH_THRESHOLD = "vector.search.threshold";
+    public static final String KEY_VECTOR_SEARCH_TOP_K = "vector.search.top_k";
+
+    // RAG拡張設定キー (Phase 4 & 5)
+    public static final String KEY_RAG_QUESTION_GENERATION_ENABLED = "rag.question_generation.enabled";
+    public static final String KEY_RAG_QUESTION_GENERATION_COUNT = "rag.question_generation.count";
+    public static final String KEY_RAG_STRUCTURED_PARSING_EXCEL_ENABLED = "rag.structured_parsing.excel.enabled";
+    public static final String KEY_RAG_STRUCTURED_PARSING_CSV_ENABLED = "rag.structured_parsing.csv.enabled";
+    public static final String KEY_RAG_STRUCTURED_PARSING_PDF_ENABLED = "rag.structured_parsing.pdf.enabled";
+    public static final String KEY_RAG_EXCEL_MAX_SIZE_MB = "rag.excel.max_size_mb";
 
     /**
      * 有効な設定値を取得します（String）.
@@ -130,7 +140,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルトモデルを取得
         String provider = getAiProvider(tenantId);
         String defaultModel;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultModel = miraAiProperties.getVertexAi().getModel();
@@ -145,7 +155,7 @@ public class MiraSettingService {
                 log.warn("Unknown provider: {}, falling back to github-models default", provider);
                 defaultModel = miraAiProperties.getGithubModels().getModel();
         }
-        
+
         return getString(tenantId, KEY_AI_MODEL, defaultModel);
     }
 
@@ -153,7 +163,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルト temperature を取得
         String provider = getAiProvider(tenantId);
         Double defaultTemp;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultTemp = miraAiProperties.getVertexAi().getTemperature();
@@ -167,7 +177,7 @@ public class MiraSettingService {
             default:
                 defaultTemp = 0.7;
         }
-        
+
         return getDouble(tenantId, KEY_AI_TEMPERATURE, defaultTemp);
     }
 
@@ -175,7 +185,7 @@ public class MiraSettingService {
         // プロバイダに応じたデフォルト maxTokens を取得
         String provider = getAiProvider(tenantId);
         Integer defaultMax;
-        
+
         switch (provider) {
             case MiraAiProperties.PROVIDER_VERTEX_AI_GEMINI:
                 defaultMax = 4096; // Vertex AI のデフォルト（プロパティに未定義の場合）
@@ -189,7 +199,7 @@ public class MiraSettingService {
             default:
                 defaultMax = 4096;
         }
-        
+
         return getInteger(tenantId, KEY_AI_MAX_TOKENS, defaultMax);
     }
 
@@ -205,6 +215,65 @@ public class MiraSettingService {
 
     public long getDailyTokenQuota(String tenantId) {
         return getLong(tenantId, KEY_LIMIT_DAILY_QUOTA, miraAiProperties.getQuota().getDailyTokenLimit());
+    }
+
+    public double getVectorSearchThreshold(String tenantId) {
+        return getDouble(tenantId, KEY_VECTOR_SEARCH_THRESHOLD, miraAiProperties.getVector().getSearchThreshold());
+    }
+
+    public int getVectorSearchTopK(String tenantId) {
+        // Default to 5
+        return getInteger(tenantId, KEY_VECTOR_SEARCH_TOP_K, 5);
+    }
+
+    // ===================================================================================
+    // RAG拡張設定 Getters
+    // ===================================================================================
+
+    /**
+     * 想定質問生成が有効かどうか.
+     */
+    public boolean isQuestionGenerationEnabled(String tenantId) {
+        return "true".equalsIgnoreCase(
+                getString(tenantId, KEY_RAG_QUESTION_GENERATION_ENABLED, "false"));
+    }
+
+    /**
+     * 生成する想定質問の数.
+     */
+    public int getQuestionGenerationCount(String tenantId) {
+        return getInteger(tenantId, KEY_RAG_QUESTION_GENERATION_COUNT, 3);
+    }
+
+    /**
+     * Excel構造解析が有効かどうか.
+     */
+    public boolean isExcelStructuredParsingEnabled(String tenantId) {
+        return "true".equalsIgnoreCase(
+                getString(tenantId, KEY_RAG_STRUCTURED_PARSING_EXCEL_ENABLED, "true"));
+    }
+
+    /**
+     * CSV構造解析が有効かどうか.
+     */
+    public boolean isCsvStructuredParsingEnabled(String tenantId) {
+        return "true".equalsIgnoreCase(
+                getString(tenantId, KEY_RAG_STRUCTURED_PARSING_CSV_ENABLED, "true"));
+    }
+
+    /**
+     * PDF表構造解析が有効かどうか.
+     */
+    public boolean isPdfStructuredParsingEnabled(String tenantId) {
+        return "true".equalsIgnoreCase(
+                getString(tenantId, KEY_RAG_STRUCTURED_PARSING_PDF_ENABLED, "false"));
+    }
+
+    /**
+     * Excel処理のファイルサイズ上限（MB）.
+     */
+    public int getExcelMaxSizeMb(String tenantId) {
+        return getInteger(tenantId, KEY_RAG_EXCEL_MAX_SIZE_MB, 10);
     }
 
     // ===================================================================================

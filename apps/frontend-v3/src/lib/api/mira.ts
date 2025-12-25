@@ -36,6 +36,8 @@ export interface ChatRequest {
   forceModel?: string;
   /** Web検索を有効化 */
   webSearchEnabled?: boolean;
+  /** RAG検索を有効化 */
+  ragEnabled?: boolean;
 }
 
 /**

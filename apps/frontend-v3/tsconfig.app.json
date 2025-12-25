@@ -28,7 +28,8 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mirel/ui": ["../../packages/ui/src"]
     }
   },
   "include": ["src"],

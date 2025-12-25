@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, Outlet, useLoaderData, useMatches } from 'react-router-dom';
-import { Button, Toaster, Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@mirel/ui';
+import { Button, Toaster, Sheet, SheetContent, SheetTitle, SheetDescription } from '@mirel/ui';
 import type { NavigationConfig, NavigationLink } from '@/app/navigation.schema';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,11 +64,42 @@ function RootLayoutInner() {
   const noMargin = (currentRoute?.handle as { noMargin?: boolean })?.noMargin ?? false;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface text-foreground">
-      <header className="sticky top-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
+    /**
+     * レイアウト構造:
+     * 
+     * ┌─ h-dvh (ビューポート固定) ─────────────────────────────┐
+     * │ ┌─ header shrink-0 (モバイルのみ、固定高さ) ─────────┐ │
+     * │ └────────────────────────────────────────────────────┘ │
+     * │ ┌─ flex-1 min-h-0 (残り領域を埋める) ────────────────┐ │
+     * │ │ ┌─ SideNav ─┐ ┌─ flex-1 min-h-0 ──────────────────┐ │ │
+     * │ │ │ (shrink-0)│ │ ┌─ main flex-1 min-h-0 ─────────┐ │ │ │
+     * │ │ │           │ │ │  <Outlet /> → 各ページは      │ │ │ │
+     * │ │ │           │ │ │  h-full だけで利用可能領域を  │ │ │ │
+     * │ │ │           │ │ │  自動的に埋める               │ │ │ │
+     * │ │ │           │ │ └────────────────────────────────┘ │ │ │
+     * │ │ │           │ │ ┌─ footer shrink-0 (デスクトップ) ┐ │ │ │
+     * │ │ │           │ │ └──────────────────────────────────┘ │ │ │
+     * │ │ └───────────┘ └──────────────────────────────────────┘ │ │
+     * │ └────────────────────────────────────────────────────────┘ │
+     * └────────────────────────────────────────────────────────────┘
+     * 
+     * 重要: min-h-0 はFlexboxで子が親の高さに収まるために必要。
+     * 各ページでビューポート計算 (calc(100dvh-*)) を行う必要はない。
+     */
+    <div className="flex h-dvh flex-col bg-surface text-foreground">
+      {/* モバイルヘッダー: shrink-0で固定高さ、md:hiddenでデスクトップ非表示 */}
+      <header className="shrink-0 z-40 border-b border-outline/20 bg-surface/70 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex flex-1 items-center gap-6">
-            {/* Mobile menu button */}
+            {/* Mobile menu button - onClickで直接制御 */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="size-5" />
+            </Button>
             <Sheet 
               open={mobileMenuOpen} 
               onOpenChange={(open) => {
@@ -80,11 +111,6 @@ function RootLayoutInner() {
               }}
               modal={true}
             >
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="size-5" />
-                </Button>
-              </SheetTrigger>
               <SheetContent side="left" className="p-0 max-w-[288px] border-r border-outline/20 z-60">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Main navigation menu for mobile devices</SheetDescription>
@@ -115,16 +141,18 @@ function RootLayoutInner() {
         </div>
       </header>
 
-      <div className="flex flex-1 items-start">
+      {/* メインコンテナ: flex-1 min-h-0 で残り領域を埋める */}
+      <div className="flex flex-1 min-h-0">
         <SideNavigation 
           items={primaryLinks}
           brand={initialNavigation.brand}
           helpAction={helpAction}
           className="hidden md:flex shrink-0" 
         />
-        
-        <div className="flex-1 flex flex-col min-w-0 min-h-dvh">
-          <main className={`flex-1 bg-background ${noMargin ? '' : 'py-6'}`}>
+        {/* コンテンツエリア: min-h-0 が重要（Flexboxで親高さに収まるため） */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          {/* main: 各ページは h-full で利用可能領域を自動的に埋める */}
+          <main className={`flex-1 flex flex-col min-h-0 overflow-y-auto bg-background ${noMargin ? 'pb-0' : 'py-6 pb-16'}`}>
             {noMargin ? (
               <Outlet />
             ) : (
@@ -134,7 +162,8 @@ function RootLayoutInner() {
             )}
           </main>
 
-          <footer className="hidden md:block border-t border-outline/40 bg-surface-subtle/60">
+          {/* フッタ: shrink-0で固定高さ、デスクトップのみ表示 */}
+          <footer className="hidden md:block shrink-0 border-t border-outline/40 bg-surface-subtle/60">
             <div className="flex flex-col gap-1 px-2 py-1 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:px-3">
               <div>
                 © 2016-2025 mirelplatform. All rights reserved.

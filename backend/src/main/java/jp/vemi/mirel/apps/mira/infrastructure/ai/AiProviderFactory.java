@@ -65,11 +65,12 @@ public class AiProviderFactory {
         // For backward compatibility or internal use without tenant context
         String providerName = properties.getProvider();
 
-        // モックが有効な場合はモックを優先
-        if (properties.getMock().isEnabled()) {
-            return getProvider("mock")
-                    .orElseThrow(() -> new IllegalStateException("Mock provider is enabled but not available"));
-        }
+        // モックが有効な場合はモックを優先するロジックを削除し、純粋に provider 設定値に従うように変更
+        // if (properties.getMock().isEnabled()) {
+        // return getProvider("mock")
+        // .orElseThrow(() -> new IllegalStateException("Mock provider is enabled but
+        // not available"));
+        // }
 
         return getProvider(providerName).orElseThrow(() -> new IllegalStateException(
                 "Requested provider '" + providerName + "' is not available. Please check your configuration."));

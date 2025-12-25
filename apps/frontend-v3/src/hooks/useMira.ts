@@ -98,6 +98,7 @@ export function useMiraChat() {
       forceModel?: string; // Phase 4: Model selection
       useStream?: boolean; // Add useStream option
       webSearchEnabled?: boolean; // Web検索を有効化
+      ragEnabled?: boolean; // RAG検索を有効化
       attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[]; // 添付ファイル
     }
   ) => {
@@ -132,6 +133,7 @@ export function useMiraChat() {
       forceProvider: options?.forceProvider,
       forceModel: options?.forceModel,
       webSearchEnabled: options?.webSearchEnabled,
+      ragEnabled: options?.ragEnabled,
     };
     
     return mutation.mutateAsync(request);

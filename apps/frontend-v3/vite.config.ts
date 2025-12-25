@@ -8,7 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@mirel/ui': path.resolve(__dirname, '../../packages/ui/src'),
+      '@mireljs/ui-core': path.resolve(__dirname, '../../packages/ui/src'),
+      '@mirel/ui': path.resolve(__dirname, '../../packages/ui/src'), // TODO: Remove this alias
     },
     // React重複インスタンスを防ぐため、単一インスタンスに統一
     // モノレポ構成でのReact解決の一貫性を保証

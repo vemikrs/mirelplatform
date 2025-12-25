@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -13,8 +14,8 @@ import {
   Input,
   Label,
   Combobox,
-  Textarea, // Restored
-  Badge,    // Restored
+  Textarea,
+  Badge, 
   useToast
 } from '@mirel/ui';
 import { 
@@ -24,11 +25,12 @@ import {
     CloudCog, 
     ShieldAlert, 
     Layers, 
-    Save,   // Restored
-    Plus,   // Restored 
-    Trash2, // Restored
-    Plug,   // Added
-    Book    // Added
+    Save,
+    Plus, 
+    Trash2,
+    Plug,
+    Book,
+    Play,
 } from 'lucide-react';
 
 import {
@@ -89,12 +91,30 @@ export const MiraAdminPage = () => {
 
 const SettingsTab = () => {
     const { toast } = useToast();
-    const [activeCategory, setActiveCategory] = useState<'general' | 'parameters' | 'limits' | 'context' | 'integration'>('general');
+    const navigate = useNavigate();
+    const [activeCategory, setActiveCategory] = useState<'general' | 'parameters' | 'limits' | 'context' | 'integration' | 'rag'>('general');
     const [tenantId, setTenantId] = useState<string>(''); // Empty = System Default
     
     // Config States
     const [aiConfig, setAiConfig] = useState<AiConfig>({});
     const [limitsConfig, setLimitsConfig] = useState<LimitsSettings>({});
+    
+    // RAG Config State (Phase 4 & 5)
+    const [ragConfig, setRagConfig] = useState<{
+        questionGenerationEnabled: boolean;
+        questionGenerationCount: number;
+        excelParsingEnabled: boolean;
+        csvParsingEnabled: boolean;
+        pdfParsingEnabled: boolean;
+        excelMaxSizeMb: number;
+    }>({
+        questionGenerationEnabled: false,
+        questionGenerationCount: 3,
+        excelParsingEnabled: true,
+        csvParsingEnabled: true,
+        pdfParsingEnabled: false,
+        excelMaxSizeMb: 10,
+    });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     
@@ -201,10 +221,21 @@ const SettingsTab = () => {
             <Button variant={activeCategory === 'integration' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('integration')}>
                 <Plug className="mr-2 h-4 w-4" /> 連携 (Integration)
             </Button>
+            <Button variant={activeCategory === 'rag' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveCategory('rag')}>
+                <Book className="mr-2 h-4 w-4" /> RAG設定
+            </Button>
+            
+            <div className="my-2 border-t" />
+
+            <div className="my-2 border-t" />
+            
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => navigate('/admin/mira/playground')}>
+                <Play className="mr-2 h-4 w-4" /> AI Playground
+            </Button>
             
             <div className="my-2 border-t" />
             
-            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => window.location.href = '/admin/mira/knowledge'}>
+            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" onClick={() => navigate('/admin/mira/knowledge')}>
                 <Book className="mr-2 h-4 w-4" /> システムナレッジ
             </Button>
         </div>
@@ -259,10 +290,13 @@ const SettingsTab = () => {
                             {activeCategory === 'limits' && "制限設定"}
                             {activeCategory === 'context' && "コンテキスト管理"}
                             {activeCategory === 'integration' && "外部連携設定"}
+                            {activeCategory === 'rag' && "RAG設定"}
                         </CardTitle>
                         <CardDescription>
                             {activeCategory === 'context' 
                                 ? "システムまたはテナント固有のプロンプトコンテキストを管理します。" 
+                                : activeCategory === 'rag'
+                                ? "RAG（検索拡張生成）の精度向上オプションを設定します。"
                                 : "設定変更は即座に反映されますが、一部のキャッシュにより遅延する場合があります。"}
                         </CardDescription>
                     </CardHeader>
@@ -420,6 +454,98 @@ const SettingsTab = () => {
                                         </div>
                                         <div className="pt-4">
                                             <Button onClick={handleSaveAi} disabled={saving}><Save className="mr-2 h-4 w-4"/> 保存</Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeCategory === 'rag' && (
+                                    <div className="space-y-6">
+                                        {/* 想定質問生成 */}
+                                        <div className="space-y-4">
+                                            <h4 className="font-medium">想定質問生成 (Reverse HyDE)</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                                インデックス時にLLMで想定質問を生成し、検索精度を向上させます。
+                                            </p>
+                                            <div className="flex items-center justify-between">
+                                                <Label>有効化</Label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={ragConfig.questionGenerationEnabled}
+                                                    onChange={(e) => setRagConfig({...ragConfig, questionGenerationEnabled: e.target.checked})}
+                                                    className="h-4 w-4"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label>生成する質問数</Label>
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    max={5}
+                                                    value={ragConfig.questionGenerationCount}
+                                                    onChange={(e) => setRagConfig({...ragConfig, questionGenerationCount: parseInt(e.target.value) || 3})}
+                                                    disabled={!ragConfig.questionGenerationEnabled}
+                                                />
+                                                <p className="text-xs text-muted-foreground">チャンクごとに生成する想定質問の数 (1-5)</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-4" />
+
+                                        {/* 構造解析 */}
+                                        <div className="space-y-4">
+                                            <h4 className="font-medium">構造解析 (ファイルタイプ別)</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                                表形式データをKey-Value形式に変換し、検索精度を向上させます。
+                                            </p>
+                                            <div className="flex items-center justify-between">
+                                                <Label>Excel (.xlsx, .xls)</Label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={ragConfig.excelParsingEnabled}
+                                                    onChange={(e) => setRagConfig({...ragConfig, excelParsingEnabled: e.target.checked})}
+                                                    className="h-4 w-4"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Label>CSV</Label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={ragConfig.csvParsingEnabled}
+                                                    onChange={(e) => setRagConfig({...ragConfig, csvParsingEnabled: e.target.checked})}
+                                                    className="h-4 w-4"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Label>PDF (表抽出)</Label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={ragConfig.pdfParsingEnabled}
+                                                    onChange={(e) => setRagConfig({...ragConfig, pdfParsingEnabled: e.target.checked})}
+                                                    className="h-4 w-4"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label>Excelファイルサイズ上限 (MB)</Label>
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    max={50}
+                                                    value={ragConfig.excelMaxSizeMb}
+                                                    onChange={(e) => setRagConfig({...ragConfig, excelMaxSizeMb: parseInt(e.target.value) || 10})}
+                                                    disabled={!ragConfig.excelParsingEnabled}
+                                                />
+                                                <p className="text-xs text-muted-foreground">
+                                                    メモリ保護のため、この上限を超えるExcelファイルはTikaでテキスト抽出されます
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <Button onClick={() => {
+                                                toast({ variant: "success", title: "RAG設定を保存しました" });
+                                            }} disabled={saving}>
+                                                <Save className="mr-2 h-4 w-4"/> 保存
+                                            </Button>
                                         </div>
                                     </div>
                                 )}

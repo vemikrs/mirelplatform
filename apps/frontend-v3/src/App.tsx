@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { TooltipProvider } from '@mirel/ui'
+import { TooltipProvider, ThemeProvider } from '@mirel/ui'
 import { AppRouter } from './app/routes'
 import './App.css'
 
@@ -26,9 +26,11 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AppRouter />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="system" storageKey="mirel-theme">
+        <TooltipProvider>
+          <AppRouter />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

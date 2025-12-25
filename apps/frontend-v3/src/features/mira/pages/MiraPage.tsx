@@ -243,16 +243,17 @@ export function MiraPage() {
     config?: MessageConfig, 
     webSearchEnabled?: boolean,
     forceModel?: string, // Phase 4: Model selection
-    attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[] // Phase 6: File attachments
+    attachedFiles?: import('@/lib/api/mira').AttachedFileInfo[], // Phase 6: File attachments
+    ragEnabled?: boolean // RAG Toggle
   ) => {
     if (editingMessageId && activeConversation?.id) {
       // 編集モードでの再送信
       resendEditedMessage(activeConversation.id, editingMessageId);
       // 編集後のメッセージで新規送信
-      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles, ragEnabled });
     } else {
       // 通常の送信
-      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles });
+      sendMessage(message, { mode, messageConfig: config, webSearchEnabled, forceModel, attachedFiles, ragEnabled });
     }
   }, [sendMessage, editingMessageId, activeConversation, resendEditedMessage]);
   
@@ -396,7 +397,8 @@ export function MiraPage() {
       setMobileHeaderContent(null);
       setMobileHeaderActions(null);
     };
-    // 依存配列: プリミティブ値とID、必要な状態のみ
+    // 依存配列: プリミティブ値とIDのみ（関数はuseCallbackでメモ化されているため省略可能）
+    // 注意: 関数を追加すると無限ループの原因になるため、eslint-disableを維持
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeConversation?.id,
@@ -407,7 +409,12 @@ export function MiraPage() {
   ]);
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh-3rem)] flex relative overflow-hidden">
+    /**
+     * h-full: RootLayoutのmainから高さを継承
+     * ビューポート計算 (calc(100dvh-*)) は不要
+     * RootLayoutのmin-h-0構造により自動的に利用可能領域を埋める
+     */
+    <div className="h-full flex relative overflow-hidden">
       {/* 左サイドバー: 会話履歴（デスクトップ） */}
       {isSidebarOpen && (
         <div className="hidden md:block h-full shrink-0">

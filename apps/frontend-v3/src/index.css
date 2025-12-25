@@ -1,6 +1,110 @@
+/**
+ * ============================================================================
+ * ⚠️ 開発者向け重要ガイド（Tailwind v4 @theme統合）
+ * ============================================================================
+ * 
+ * ■ セマンティックカラー（bg-background, text-primary, border-border等）：
+ *   - packages/ui/src/theme/index.css の @theme ブロックで自動生成されます
+ *   - このファイルに手動で .bg-background 等を定義する必要はありません
+ *   - Arbitrary variants（data-[state=active]:bg-background等）も自動対応
+ * 
+ * ■ このファイルの役割：
+ *   - Tailwind v4標準色（gray等）のオーバーライド定義
+ *   - 標準色のdark mode variant定義
+ *   - カスタムアニメーション定義
+ * 
+ * ■ 新しいセマンティックカラーを追加する場合：
+ *   → packages/ui/src/theme/index.css を編集してください
+ * ============================================================================
+ */
+
 @import "@mirel/ui/theme/index.css";
 @import "tailwindcss";
-@source "../node_modules/@mirel/ui/src";
+@source "../../packages/ui/src";
+
+/**
+ * Tailwind v4 Custom Variants
+ * 
+ * Radix UIのdata-state属性に対応するカスタムvariantを定義。
+ * これにより state-open:*, state-closed:* 等のユーティリティクラスが使用可能になります。
+ */
+@custom-variant state-open (&[data-state="open"]);
+@custom-variant state-closed (&[data-state="closed"]);
+@custom-variant state-active (&[data-state="active"]);
+@custom-variant state-inactive (&[data-state="inactive"]);
+
+/**
+ * Sheet/Dialog アニメーション
+ * 
+ * Sheetコンポーネントでstate-open:animate-*が正しく動作しない場合の
+ * フォールバック実装。直接data-state属性をターゲットにしてアニメーションを適用。
+ */
+/* 左からスライドイン/アウト */
+.state-open\:animate-slide-in-left[data-state="open"],
+[data-state="open"].state-open\:animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out forwards;
+}
+.state-closed\:animate-slide-out-left[data-state="closed"],
+[data-state="closed"].state-closed\:animate-slide-out-left {
+  animation: slide-out-left 0.3s ease-in forwards;
+}
+
+/* 右からスライドイン/アウト */
+.state-open\:animate-slide-in-right[data-state="open"],
+[data-state="open"].state-open\:animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+.state-closed\:animate-slide-out-right[data-state="closed"],
+[data-state="closed"].state-closed\:animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in forwards;
+}
+
+/* オーバーレイフェード */
+.state-open\:animate-fade-in[data-state="open"],
+[data-state="open"].state-open\:animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+.state-closed\:animate-fade-out[data-state="closed"],
+[data-state="closed"].state-closed\:animate-fade-out {
+  animation: fade-out 0.2s ease-in forwards;
+}
+
+/* Duration variants */
+.state-closed\:duration-300[data-state="closed"],
+[data-state="closed"].state-closed\:duration-300 {
+  transition-duration: 300ms;
+}
+.state-open\:duration-500[data-state="open"],
+[data-state="open"].state-open\:duration-500 {
+  transition-duration: 500ms;
+}
+
+/**
+ * Tabs アクティブ状態のスタイル
+ * 
+ * Tailwind v4ではdata-[state=active]:*が生成されないため、
+ * state-active:*形式で手動定義。
+ */
+/* Tabs: アクティブ状態の背景 */
+.state-active\:bg-background[data-state="active"],
+[data-state="active"].state-active\:bg-background {
+  background-color: hsl(var(--background));
+}
+/* Tabs: アクティブ状態のテキスト */
+.state-active\:text-foreground[data-state="active"],
+[data-state="active"].state-active\:text-foreground {
+  color: hsl(var(--foreground));
+}
+/* Tabs: アクティブ状態のフォント */
+.state-active\:font-semibold[data-state="active"],
+[data-state="active"].state-active\:font-semibold {
+  font-weight: 600;
+}
+/* Tabs: アクティブ状態のシャドウ */
+.state-active\:shadow-sm[data-state="active"],
+[data-state="active"].state-active\:shadow-sm {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
 
 @layer base {
   body {
@@ -12,47 +116,10 @@
     min-height: 100%;
   }
 
-  /**
-   * ⚠️ Tailwind v4 制限への対応:
-   * 
-   * Tailwind v4では、tailwind.config.js の theme.extend.colors で定義した
-   * CSS変数ベースの色が bg-*, text-*, border-* ユーティリティとして生成されません。
-   * 
-   * 原因:
-   * - Tailwind v4はCSS-firstの設計で、@theme ディレクティブでのみテーマを定義可能
-   * - JavaScript configで 'hsl(var(--background))' のような値を定義しても無視される
-   * - @theme では var() による間接参照がサポートされていない
-   * 
-   * 解決策:
-   * - 以下のように明示的にユーティリティクラスを定義する必要がある
-   * - これらのクラスは packages/ui/src/theme/index.css で定義された
-   *   CSS変数 (--background, --card, --surface等) を参照
-   * 
-   * 参考: https://github.com/tailwindlabs/tailwindcss/discussions/18440
-   */
-  .bg-background {
-    background-color: hsl(var(--background)) !important;
-  }
-
-  .bg-card {
-    background-color: hsl(var(--card)) !important;
-  }
-
-  .bg-surface {
-    background-color: hsl(var(--surface)) !important;
-  }
-
-  .bg-popover {
-    background-color: hsl(var(--popover)) !important;
-  }
-
-  .text-popover-foreground {
-    color: hsl(var(--popover-foreground)) !important;
-  }
 
   /* Force bg-white to use standard white (Tailwind v4 oklch override) */
   .bg-white {
-    background-color: #ffffff !important;
+    background-color: #ffffff;
   }
 
   .dark .dark\:bg-gray-800 {
@@ -104,6 +171,73 @@
   .dark .dark\:text-blue-400 {
     color: #60a5fa !important;
   }
+
+  /* Missing Color Utilities for UI Components (Tailwind v4 override) */
+  /* Gray Scale */
+  .bg-gray-50 { background-color: #f9fafb !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-gray-200 { background-color: #e5e7eb !important; }
+  .bg-gray-300 { background-color: #d1d5db !important; }
+  .bg-gray-600 { background-color: #4b5563 !important; }
+  .bg-gray-700 { background-color: #374151 !important; }
+  .bg-gray-800 { background-color: #1f2937 !important; }
+  .bg-gray-900 { background-color: #111827 !important; }
+  .bg-gray-950 { background-color: #030712 !important; }
+
+  .text-gray-50 { color: #f9fafb !important; }
+  .text-gray-900 { color: #111827 !important; }
+  .text-gray-950 { color: #030712 !important; }
+
+  .border-gray-200 { border-color: #e5e7eb !important; }
+  .border-gray-700 { border-color: #374151 !important; }
+  .border-gray-800 { border-color: #1f2937 !important; }
+
+  /* Dark Mode Gray Overrides */
+  .dark .dark\:bg-gray-50 { background-color: #f9fafb !important; }
+  .dark .dark\:bg-gray-600 { background-color: #4b5563 !important; }
+  .dark .dark\:bg-gray-700 { background-color: #374151 !important; }
+  .dark .dark\:bg-gray-800 { background-color: #1f2937 !important; }
+  .dark .dark\:bg-gray-900 { background-color: #111827 !important; }
+  .dark .dark\:bg-gray-950 { background-color: #030712 !important; }
+  
+  .dark .dark\:text-gray-50 { color: #f9fafb !important; }
+  .dark .dark\:text-gray-900 { color: #111827 !important; }
+  
+  .dark .dark\:border-gray-700 { border-color: #374151 !important; }
+  .dark .dark\:border-gray-800 { border-color: #1f2937 !important; }
+
+  /* Hover States */
+  .hover\:bg-gray-100:hover { background-color: #f3f4f6 !important; }
+  .dark .dark\:hover\:bg-gray-600:hover { background-color: #4b5563 !important; }
+  .dark .dark\:hover\:bg-gray-700:hover { background-color: #374151 !important; }
+  .dark .dark\:hover\:bg-gray-800:hover { background-color: #1f2937 !important; }
+
+  /* Semantic Colors (Red, Blue, Green, Yellow) */
+  /* Light Mode */
+  .bg-red-500 { background-color: #ef4444 !important; }
+  .bg-blue-50 { background-color: #eff6ff !important; }
+  .bg-green-50 { background-color: #f0fdf4 !important; }
+  .bg-yellow-50 { background-color: #fefce8 !important; }
+  
+  .border-red-500 { border-color: #ef4444 !important; }
+  .border-blue-200 { border-color: #bfdbfe !important; }
+  .border-green-200 { border-color: #bbf7d0 !important; }
+  .border-yellow-200 { border-color: #fde68a !important; }
+
+  /* Dark Mode */
+  .dark .dark\:bg-red-900 { background-color: #7f1d1d !important; }
+  .dark .dark\:bg-blue-950 { background-color: #172554 !important; }
+  .dark .dark\:bg-green-950 { background-color: #052e16 !important; }
+  .dark .dark\:bg-yellow-950 { background-color: #451a03 !important; } /* Yellow-950 often brownish */
+
+  .dark .dark\:border-red-900 { border-color: #7f1d1d !important; }
+  .dark .dark\:border-blue-900 { border-color: #1e3a8a !important; }
+  .dark .dark\:border-green-900 { border-color: #14532d !important; }
+  .dark .dark\:border-yellow-900 { border-color: #713f12 !important; }
+  
+  .dark .dark\:text-blue-50 { color: #eff6ff !important; }
+  .dark .dark\:text-green-50 { color: #f0fdf4 !important; }
+  .dark .dark\:text-yellow-50 { color: #fefce8 !important; }
 }
 
 /* Custom Animations for Sheet (Bypassing Tailwind v4 config issues) */
@@ -157,4 +291,26 @@
 
 .animate-fade-out {
   animation: fade-out 0.2s ease-in forwards;
+}
+
+/**
+ * 右方向スライドアニメーション用キーフレーム
+ * (左方向はすでに上で定義済み)
+ */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }

@@ -78,6 +78,7 @@ public class MiraChatService {
     private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties; // To check provider
     private final ModelSelectionService modelSelectionService; // Phase 4: Model selection
     private final MiraKnowledgeBaseService knowledgeBaseService; // RAG Integration
+    private final MiraRagContextBuilder ragContextBuilder; // RAG Context Builder
 
     /**
      * 会話一覧取得.
@@ -221,21 +222,21 @@ public class MiraChatService {
                 tenantId, null, userId, msgConfig);
 
         // RAG: Retrieve related documents
-        // TODO: Add refined control via ChatRequest
-        try {
-            List<Document> ragDocs = knowledgeBaseService.search(
-                    request.getMessage().getContent(), tenantId, userId);
+        // Check ragEnabled flag (default true if null)
+        boolean isRagEnabled = request.getRagEnabled() == null || request.getRagEnabled();
+        if (isRagEnabled) {
+            try {
+                List<Document> ragDocs = knowledgeBaseService.search(
+                        request.getMessage().getContent(), tenantId, userId);
 
-            if (!ragDocs.isEmpty()) {
-                String ragContext = ragDocs.stream()
-                        .map(doc -> doc.getText())
-                        .collect(Collectors.joining("\n\n"));
-
-                finalContext += "\n\n[Reference Knowledge]\n" + ragContext;
-                log.debug("Attached {} RAG documents to context.", ragDocs.size());
+                if (!ragDocs.isEmpty()) {
+                    String ragContext = ragContextBuilder.buildContextString(ragDocs);
+                    finalContext += ragContext;
+                    log.debug("Attached {} RAG documents to context.", ragDocs.size());
+                }
+            } catch (Exception e) {
+                log.warn("RAG retrieval failed, proceeding without docs", e);
             }
-        } catch (Exception e) {
-            log.warn("RAG retrieval failed, proceeding without docs", e);
         }
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
@@ -399,6 +400,161 @@ public class MiraChatService {
         }
 
         return response;
+    }
+
+    /**
+     * プレイグラウンド用チャット実行 (Admin Only).
+     */
+    @Transactional
+    public jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse executePlaygroundChat(
+            jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatRequest request,
+            String tenantId, String userId) {
+
+        long startTime = System.currentTimeMillis();
+
+        // 1. Prepare AiRequest with overrides
+        AiRequest aiRequest = new AiRequest();
+        aiRequest.setTenantId(tenantId);
+        aiRequest.setUserId(userId);
+
+        // Map messages
+        List<AiRequest.Message> messages = request.getMessages().stream()
+                .map(m -> AiRequest.Message.builder()
+                        .role(m.getRole())
+                        .content(m.getContent())
+                        .build())
+                .collect(Collectors.toList());
+
+        // System instruction override
+        if (request.getSystemInstruction() != null && !request.getSystemInstruction().isEmpty()) {
+            messages.add(0, AiRequest.Message.system(request.getSystemInstruction()));
+        }
+
+        aiRequest.setMessages(messages);
+
+        // Parameter overrides
+        if (request.getModel() != null)
+            aiRequest.setModel(request.getModel());
+        if (request.getTemperature() != null)
+            aiRequest.setTemperature(request.getTemperature());
+        if (request.getMaxTokens() != null)
+            aiRequest.setMaxTokens(request.getMaxTokens());
+        if (request.getTopP() != null)
+            aiRequest.setTopP(request.getTopP());
+        if (request.getTopK() != null)
+            aiRequest.setTopK(request.getTopK());
+
+        // 2. RAG Execution (if enabled)
+        List<jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.RagDocument> ragDocsDto = new ArrayList<>();
+        if (request.getRagSettings() != null && request.getRagSettings().isEnabled()) {
+            try {
+                // Use simulation target if provided, otherwise current user
+                String targetTenant = request.getRagSettings().getTargetTenantId() != null
+                        ? request.getRagSettings().getTargetTenantId()
+                        : tenantId;
+                String targetUser = request.getRagSettings().getTargetUserId() != null
+                        ? request.getRagSettings().getTargetUserId()
+                        : userId;
+                String scope = request.getRagSettings().getScope() != null
+                        ? request.getRagSettings().getScope()
+                        : "USER";
+                int topK = request.getRagSettings().getTopK() != null
+                        ? request.getRagSettings().getTopK()
+                        : 3;
+
+                // Use the last user message as query
+                String query = messages.stream()
+                        .filter(m -> "user".equals(m.getRole()))
+                        .reduce((first, second) -> second) // Get last
+                        .map(AiRequest.Message::getContent)
+                        .orElse("");
+
+                if (!query.isEmpty()) {
+                    List<Document> docs = knowledgeBaseService.debugSearch(query, scope, targetTenant, targetUser,
+                            topK, 0.0);
+
+                    // Convert to DTO and append to context (Playground specific DTO building)
+                    // We can reuse builder string for context appended to message, but we also need
+                    // DTOs.
+                    // For consistency, let's use the builder for the string part.
+
+                    String ragContextString = ragContextBuilder.buildContextString(docs);
+
+                    for (Document doc : docs) {
+                        Double score = null;
+                        if (doc.getMetadata().containsKey("distance")) {
+                            Object dist = doc.getMetadata().get("distance");
+                            if (dist instanceof Number) {
+                                // Distance to Score conversion (assuming cosine distance 0..2) or similar
+                                // For now, just raw usage or 1 - distance if applicable.
+                                // Often vector stores return "distance".
+                                // Let's use it as is or try to parse
+                                score = ((Number) dist).doubleValue();
+                            }
+                        } else if (doc.getMetadata().containsKey("score")) {
+                            Object scr = doc.getMetadata().get("score");
+                            if (scr instanceof Number) {
+                                score = ((Number) scr).doubleValue();
+                            }
+                        }
+
+                        ragDocsDto.add(
+                                jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.RagDocument
+                                        .builder()
+                                        .id(doc.getId())
+                                        .content(doc.getText())
+                                        .fileName((String) doc.getMetadata().getOrDefault("fileName", "Unknown"))
+                                        .score(score)
+                                        .metadata(doc.getMetadata())
+                                        .build());
+                    }
+
+                    if (!docs.isEmpty()) {
+                        // Append context to the last user message
+                        int lastUserIdx = -1;
+                        for (int i = messages.size() - 1; i >= 0; i--) {
+                            if ("user".equals(messages.get(i).getRole())) {
+                                lastUserIdx = i;
+                                break;
+                            }
+                        }
+                        if (lastUserIdx != -1) {
+                            AiRequest.Message lastUser = messages.get(lastUserIdx);
+                            lastUser.setContent(lastUser.getContent() + ragContextString);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Playground RAG failed", e);
+            }
+        }
+
+        // 3. Execute AI
+        AiProviderClient client;
+        if (request.getProvider() != null) {
+            client = aiProviderFactory.getProvider(request.getProvider())
+                    .orElseThrow(() -> new IllegalArgumentException("Provider not found: " + request.getProvider()));
+        } else {
+            client = aiProviderFactory.createClient(tenantId);
+        }
+
+        AiResponse aiResponse = client.chat(aiRequest);
+        long latency = System.currentTimeMillis() - startTime;
+
+        // 4. Build Response
+        if (!aiResponse.isSuccess()) {
+            throw new RuntimeException("AI Error: " + aiResponse.getErrorMessage());
+        }
+
+        return jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.builder()
+                .content(aiResponse.getContent()).provider(aiResponse.getProvider()).model(aiResponse.getModel())
+                .latencyMs(latency)
+                .usage(jp.vemi.mirel.apps.mira.application.dto.playground.PlaygroundChatResponse.Usage.builder()
+                        .promptTokens(aiResponse.getPromptTokens()).completionTokens(aiResponse.getCompletionTokens())
+                        .totalTokens((aiResponse.getPromptTokens() != null ? aiResponse.getPromptTokens() : 0)
+                                + (aiResponse.getCompletionTokens() != null ? aiResponse.getCompletionTokens() : 0))
+                        .build())
+                .ragDocuments(ragDocsDto).build();
     }
 
     @Transactional

@@ -5,6 +5,7 @@ package jp.vemi.mirel.apps.mira.application.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.Map;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraVectorStore;
 import jp.vemi.mirel.apps.mira.domain.service.MiraKnowledgeBaseService;
+import jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeSearchRequest;
+import jp.vemi.mirel.apps.mira.application.dto.MiraKnowledgeSearchResponse;
+import org.springframework.ai.document.Document;
+import org.springframework.web.bind.annotation.RequestBody;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -102,5 +107,94 @@ public class MiraKnowledgeBaseController {
             @AuthenticationPrincipal Jwt jwt) {
         // TODO: Authorization check
         knowledgeBaseService.deleteDocument(fileId);
+    }
+
+    @PostMapping("/search")
+    @Operation(summary = "デバッグ用検索", description = "ナレッジベースを直接検索してスコア等の詳細情報を取得します。管理者専用機能です。")
+    public MiraKnowledgeSearchResponse search(
+            @RequestBody MiraKnowledgeSearchRequest request,
+            @AuthenticationPrincipal Jwt jwt,
+            org.springframework.security.core.Authentication authentication) {
+
+        // RBAC Check: Only ADMIN can use debug search to access arbitrary tenant/user
+        // data
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Debug search requires ADMIN role");
+        }
+
+        // Use requested param or authentication context
+        String tenantId = request.getTargetTenantId();
+        if (tenantId == null) {
+            tenantId = jwt.getClaimAsString("tenant_id");
+            if (tenantId == null)
+                tenantId = "default";
+        }
+
+        String userId = request.getTargetUserId();
+        if (userId == null) {
+            userId = jwt.getSubject();
+        }
+
+        // Execute Search
+        // Note: scope should be passed from request
+        String scopeStr = request.getScope() != null ? request.getScope().name() : "USER";
+
+        java.util.List<Document> docs = knowledgeBaseService.debugSearch(
+                request.getQuery(),
+                scopeStr,
+                tenantId,
+                userId,
+                request.getTopK() != null ? request.getTopK() : 5,
+                request.getThreshold() != null ? request.getThreshold() : 0.0);
+
+        // Convert to Response
+        java.util.List<MiraKnowledgeSearchResponse.DocumentResult> results = docs.stream().map(doc -> {
+
+            Map<String, Object> meta = doc.getMetadata();
+            Double score = null;
+            Double vectorScore = null;
+            Double keywordScore = null;
+
+            // Extract Scores
+            if (meta.containsKey("rrf_score")) {
+                score = convertToDouble(meta.get("rrf_score"));
+            } else if (meta.containsKey("distance")) {
+                score = convertToDouble(meta.get("distance"));
+            } else if (meta.containsKey("score")) {
+                score = convertToDouble(meta.get("score"));
+            }
+
+            if (meta.containsKey("vector_rank")) {
+                vectorScore = convertToDouble(meta.get("vector_rank"));
+            }
+            if (meta.containsKey("keyword_rank")) {
+                keywordScore = convertToDouble(meta.get("keyword_rank"));
+            }
+
+            String headerPath = (String) meta.getOrDefault("header_path", null);
+
+            return MiraKnowledgeSearchResponse.DocumentResult.builder()
+                    .id(doc.getId())
+                    .content(doc.getText())
+                    .score(score)
+                    .vectorScore(vectorScore)
+                    .keywordScore(keywordScore)
+                    .headerPath(headerPath)
+                    .metadata(meta)
+                    .fileName((String) meta.getOrDefault("fileName", "Unknown"))
+                    .build();
+        }).collect(java.util.stream.Collectors.toList());
+
+        return MiraKnowledgeSearchResponse.builder().results(results).build();
+    }
+
+    private Double convertToDouble(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        return null;
     }
 }

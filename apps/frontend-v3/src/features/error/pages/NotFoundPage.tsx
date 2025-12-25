@@ -19,8 +19,8 @@ export function NotFoundPage() {
   }, []);
   
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="max-w-md text-center space-y-6 px-4" role="main">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md text-center space-y-6" role="main">
         <div className="flex justify-center">
           <SearchX className="size-20 text-muted-foreground" aria-hidden="true" />
         </div>

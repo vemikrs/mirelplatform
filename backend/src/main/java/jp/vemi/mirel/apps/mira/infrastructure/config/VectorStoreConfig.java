@@ -33,16 +33,46 @@ import lombok.extern.slf4j.Slf4j;
 public class VectorStoreConfig {
 
     /**
-     * Vector Store Configuration.
-     * <p>
-     * This configuration class relies on Spring AI AutoConfiguration for setting up
-     * EmbeddingModel and VectorStore beans. Manual bean definitions have been removed
-     * in favor of Spring Boot's automatic configuration based on properties.
-     * </p>
-     * <p>
-     * Migration note: Previously, beans were manually defined here. Now they are
-     * automatically configured via Spring AI Starter dependencies and application properties.
-     * The pgvector extension is enabled via schema.sql with spring.sql.init.mode=always.
-     * </p>
+     * Development/Mock EmbeddingModel to bypass Vertex AI credentials.
      */
+    @Bean
+    @org.springframework.context.annotation.Primary
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "mira.ai.provider", havingValue = "mock")
+    public EmbeddingModel mockEmbeddingModel() {
+        return new EmbeddingModel() {
+            @Override
+            public org.springframework.ai.embedding.EmbeddingResponse call(
+                    org.springframework.ai.embedding.EmbeddingRequest request) {
+                java.util.List<org.springframework.ai.embedding.Embedding> embeddings = new java.util.ArrayList<>();
+                for (int i = 0; i < request.getInstructions().size(); i++) {
+                    embeddings.add(new org.springframework.ai.embedding.Embedding(generateVector(768), i));
+                }
+                return new org.springframework.ai.embedding.EmbeddingResponse(embeddings);
+            }
+
+            @Override
+            public float[] embed(org.springframework.ai.document.Document document) {
+                return generateVector(768);
+            }
+
+            // Implement missing default methods to avoid compilation warnings/errors if any
+            public float[] embed(String document) {
+                return generateVector(768);
+            }
+
+            public java.util.List<float[]> embed(java.util.List<String> texts) {
+                java.util.List<float[]> result = new java.util.ArrayList<>();
+                for (String text : texts) {
+                    result.add(embed(text));
+                }
+                return result;
+            }
+
+            private float[] generateVector(int dimension) {
+                float[] vector = new float[dimension];
+                java.util.Arrays.fill(vector, 1.0f); // Constant vector for perfect matching
+                return vector;
+            }
+        };
+    }
 }
