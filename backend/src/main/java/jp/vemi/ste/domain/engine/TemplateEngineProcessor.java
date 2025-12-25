@@ -938,6 +938,12 @@ public class TemplateEngineProcessor {
 
         } catch (Exception e) {
             logger.warn("classpath検索でエラーが発生: {}", classpathLocation, e);
+        }
+
+        return null;
+    }
+
+    /**
      * ユーザー入力から渡される可能性があるステンシル名をサニタイズします。
      * 
      * - 先頭のスラッシュは削除
@@ -961,16 +967,10 @@ public class TemplateEngineProcessor {
         // ディレクトリトラバーサルや不正な区切り文字を禁止
         if (trimmed.contains("..") || trimmed.contains("\\")) {
             logger.warn("Detected invalid stencilCanonicalName: {}", rawStencilName);
-            throw new MirelApplicationException("Invalid stencilCanonicalName");
+            throw new MirelApplicationException(Collections.singletonList("Invalid stencilCanonicalName"));
         }
 
         return trimmed;
-    }
-
-    /**
-        }
-
-        return null;
     }
 
     /**
