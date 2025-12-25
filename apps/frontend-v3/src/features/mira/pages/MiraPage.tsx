@@ -397,7 +397,8 @@ export function MiraPage() {
       setMobileHeaderContent(null);
       setMobileHeaderActions(null);
     };
-    // 依存配列: プリミティブ値とID、必要な状態のみ
+    // 依存配列: プリミティブ値とIDのみ（関数はuseCallbackでメモ化されているため省略可能）
+    // 注意: 関数を追加すると無限ループの原因になるため、eslint-disableを維持
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeConversation?.id,
