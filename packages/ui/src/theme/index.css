@@ -2,16 +2,59 @@
 @import "./liquid-tokens.css";
 
 /**
- * ⚠️ Tailwind v4 との互換性に関する注意:
+ * Tailwind v4 @theme Integration
  * 
- * 以下で定義されるCSS変数（--background, --card, --surface等）は、
- * Tailwind v4のJavaScript config (tailwind.config.js) では
- * ユーティリティクラスとして自動生成されません。
+ * 以下の@themeブロックにより、CSS変数ベースのセマンティックカラーから
+ * Tailwindユーティリティクラス（bg-*, text-*, border-*）と
+ * Arbitrary Variants（data-[state=active]:bg-*, hover:bg-*等）が
+ * 自動生成されます。
  * 
- * これらの変数を bg-*, text-*, border-* クラスとして使用するには、
- * apps/frontend-v3/src/index.css で明示的にクラス定義が必要です。
- * 
- * 例: .bg-card { background-color: hsl(var(--card)) !important; }
+ * CSS変数自体は@layer baseの:rootと.darkで定義されているため、
+ * ダークモード切替は従来通り動的に機能します。
+ */
+@theme {
+  /* === カラーシステム === */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* === Surface系 === */
+  --color-surface: hsl(var(--surface));
+  --color-surface-subtle: hsl(var(--surface-subtle));
+  --color-surface-raised: hsl(var(--surface-raised));
+  --color-surface-overlay: hsl(var(--surface-overlay));
+
+  /* === Border Radius === */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/**
+ * ⚠️ 以下の@layer base定義は引き続きCSS変数の定義元として機能します。
+ * @themeブロックはこれらの変数を参照してTailwindユーティリティを生成します。
  */
 
 @layer base {
