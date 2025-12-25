@@ -2,6 +2,15 @@
   "name": "@mireljs/ui-core",
   "version": "3.2.3",
   "description": "mirel Design System - shadcn/ui + Radix UI wrapper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vemikrs/mirelplatform.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/vemikrs/mirelplatform/tree/master/packages/ui#readme",
+  "bugs": {
+    "url": "https://github.com/vemikrs/mirelplatform/issues"
+  },
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -11,7 +20,9 @@
     "./theme/index.css": "./src/theme/index.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",
