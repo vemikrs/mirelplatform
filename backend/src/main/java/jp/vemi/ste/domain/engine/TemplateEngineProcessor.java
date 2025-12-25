@@ -894,11 +894,19 @@ public class TemplateEngineProcessor {
      */
     private StencilSettingsYml findStencilSettingsWithFixedPath(String classpathLocation) {
         try {
+            // ステンシル名のサニタイズと正規化
+            String rawStencilName = context.getStencilCanonicalName();
+            String safeStencilName = sanitizeStencilCanonicalName(rawStencilName);
+            if (StringUtils.isEmpty(safeStencilName)) {
+                logger.warn("Invalid or empty stencilCanonicalName: {}", rawStencilName);
+                return null;
+            }
+
             // シリアル番号が指定されている場合は直接検索
             if (!StringUtils.isEmpty(context.getSerialNo()) && !"*".equals(context.getSerialNo())) {
                 SanitizeUtil.sanitizeIdentifierAllowWildcard(context.getSerialNo());
                 String resourcePath = classpathLocation.substring("classpath:".length())
-                        + context.getStencilCanonicalName() + "/" + context.getSerialNo() + "/stencil-settings.yml";
+                        + safeStencilName + "/" + context.getSerialNo() + "/stencil-settings.yml";
 
                 // classpathリソースは先頭スラッシュを含まないため除去
                 if (resourcePath.startsWith("/")) {
@@ -912,11 +920,10 @@ public class TemplateEngineProcessor {
             }
 
             // シリアル番号が未指定の場合は利用可能なシリアル番号を動的検索
-            List<String> availableSerials = findAvailableSerialsInClasspath(classpathLocation,
-                    context.getStencilCanonicalName());
+            List<String> availableSerials = findAvailableSerialsInClasspath(classpathLocation, safeStencilName);
             for (String serial : availableSerials) {
                 String resourcePath = classpathLocation.substring("classpath:".length())
-                        + context.getStencilCanonicalName() + "/" + serial + "/stencil-settings.yml";
+                        + safeStencilName + "/" + serial + "/stencil-settings.yml";
 
                 // classpathリソースは先頭スラッシュを含まないため除去
                 if (resourcePath.startsWith("/")) {
@@ -931,6 +938,36 @@ public class TemplateEngineProcessor {
 
         } catch (Exception e) {
             logger.warn("classpath検索でエラーが発生: {}", classpathLocation, e);
+     * ユーザー入力から渡される可能性があるステンシル名をサニタイズします。
+     * 
+     * - 先頭のスラッシュは削除
+     * - 「..」やバックスラッシュを含む場合は例外
+     * 
+     * @param rawStencilName
+     *            生のステンシル名
+     * @return サニタイズ済みのステンシル名
+     */
+    private String sanitizeStencilCanonicalName(String rawStencilName) {
+        if (StringUtils.isEmpty(rawStencilName)) {
+            return "";
+        }
+
+        String trimmed = rawStencilName.trim();
+        // 先頭のスラッシュを除去（classpathパスは先頭にスラッシュを含まない）
+        while (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1);
+        }
+
+        // ディレクトリトラバーサルや不正な区切り文字を禁止
+        if (trimmed.contains("..") || trimmed.contains("\\")) {
+            logger.warn("Detected invalid stencilCanonicalName: {}", rawStencilName);
+            throw new MirelApplicationException("Invalid stencilCanonicalName");
+        }
+
+        return trimmed;
+    }
+
+    /**
         }
 
         return null;
