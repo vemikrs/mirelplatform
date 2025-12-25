@@ -1,0 +1,60 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    # Skip if triggered by github-actions bot (e.g., version bump commits)
+    if: github.actor != 'github-actions[bot]'
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["java-kotlin", "javascript-typescript"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Setup Java (for Java analysis)
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Build Java project
+        if: matrix.language == 'java-kotlin'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :backend:compileJava --no-daemon
+
+      - name: Autobuild
+        if: matrix.language != 'java-kotlin'
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
