@@ -1,3 +1,23 @@
+/**
+ * ============================================================================
+ * ⚠️ 開発者向け重要ガイド（Tailwind v4 @theme統合）
+ * ============================================================================
+ * 
+ * ■ セマンティックカラー（bg-background, text-primary, border-border等）：
+ *   - packages/ui/src/theme/index.css の @theme ブロックで自動生成されます
+ *   - このファイルに手動で .bg-background 等を定義する必要はありません
+ *   - Arbitrary variants（data-[state=active]:bg-background等）も自動対応
+ * 
+ * ■ このファイルの役割：
+ *   - Tailwind v4標準色（gray等）のオーバーライド定義
+ *   - 標準色のdark mode variant定義
+ *   - カスタムアニメーション定義
+ * 
+ * ■ 新しいセマンティックカラーを追加する場合：
+ *   → packages/ui/src/theme/index.css を編集してください
+ * ============================================================================
+ */
+
 @import "@mirel/ui/theme/index.css";
 @import "tailwindcss";
 @source "../node_modules/@mirel/ui/src";
@@ -12,31 +32,6 @@
     min-height: 100%;
   }
 
-  /**
-   * @THEME_MIGRATED - 以下のセマンティックカラー定義は
-   * packages/ui/src/theme/index.cssの@themeブロックで自動生成されるため削除可能です。
-   * Phase 3で削除予定。
-   */
-  .bg-background {
-    background-color: hsl(var(--background)) !important;
-  }
-
-  .bg-card {
-    background-color: hsl(var(--card)) !important;
-  }
-
-  .bg-surface {
-    background-color: hsl(var(--surface)) !important;
-  }
-
-  .bg-popover {
-    background-color: hsl(var(--popover)) !important;
-  }
-
-  .text-popover-foreground {
-    color: hsl(var(--popover-foreground)) !important;
-  }
-  /* @THEME_MIGRATED END */
 
   /* Force bg-white to use standard white (Tailwind v4 oklch override) */
   .bg-white {
