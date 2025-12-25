@@ -53,26 +53,32 @@ jobs:
 
           # Get current version from package.json
           CURRENT_VERSION=$(node -p "require('./package.json').version")
-          TAG_NAME="ui-core/v$CURRENT_VERSION"
 
           echo "Current version: $CURRENT_VERSION"
-          echo "Checking if tag $TAG_NAME exists..."
 
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists."
-            echo "Bumping patch version..."
+          # Loop until we find a version whose tag doesn't exist on remote
+          VERSION=$CURRENT_VERSION
+          while true; do
+            TAG_NAME="ui-core/v$VERSION"
+            echo "Checking if tag $TAG_NAME exists on remote..."
             
-            # Bump patch version without creating a git tag yet
-            npm version patch --no-git-tag-version
-            
-            NEW_VERSION=$(node -p "require('./package.json').version")
-            NEW_TAG="ui-core/v$NEW_VERSION"
-            
-            echo "Bumped to: $NEW_VERSION"
-            
-            # Commit the change to package.json
+            if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+              echo "Tag $TAG_NAME already exists. Bumping..."
+              npm version patch --no-git-tag-version
+              VERSION=$(node -p "require('./package.json').version")
+            else
+              echo "Tag $TAG_NAME does not exist. Using version $VERSION"
+              break
+            fi
+          done
+
+          FINAL_TAG="ui-core/v$VERSION"
+
+          # Only commit and push if version changed
+          if [ "$VERSION" != "$CURRENT_VERSION" ]; then
+            echo "Version bumped from $CURRENT_VERSION to $VERSION"
             git add package.json
-            git commit -m "chore(release): bump @mireljs/ui-core to $NEW_VERSION [skip ci]"
+            git commit -m "chore(release): bump @mireljs/ui-core to $VERSION [skip ci]"
             
             # Fetch and rebase to avoid non-fast-forward on rerun
             git fetch origin master
@@ -81,22 +87,26 @@ jobs:
             # Push changes to master
             git push origin master
             
-            echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "bumped=true" >> $GITHUB_OUTPUT
           else
-            echo "Tag $TAG_NAME does not exist. Proceeding with current version."
-            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "No version bump needed"
             echo "bumped=false" >> $GITHUB_OUTPUT
           fi
+
+          echo "tag_name=$FINAL_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Tag
         run: |
           TAG_NAME="${{ steps.check_version.outputs.tag_name }}"
           echo "Creating tag: $TAG_NAME"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
+          # Skip if tag already exists (idempotent)
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists on remote, skipping..."
+          else
+            git tag $TAG_NAME
+            git push origin $TAG_NAME
+          fi
 
       - name: Build
         run: |
@@ -106,7 +116,13 @@ jobs:
       - name: Publish to npm
         run: |
           cd packages/ui
-          npm publish --access public --provenance
+          VERSION="${{ steps.check_version.outputs.version }}"
+          # Check if version already exists on npm (idempotent)
+          if npm view @mireljs/ui-core@$VERSION version 2>/dev/null; then
+            echo "Version $VERSION already published, skipping..."
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
