@@ -15,9 +15,12 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./theme": "./src/theme/index.ts",
-    "./theme/index.css": "./src/theme/index.css"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/mirel-ui-core.js",
+      "require": "./dist/mirel-ui-core.umd.cjs"
+    },
+    "./theme/index.css": "./dist/style.css"
   },
   "files": [
     "dist",
@@ -28,15 +31,7 @@
     "access": "public",
     "main": "./dist/mirel-ui-core.umd.cjs",
     "module": "./dist/mirel-ui-core.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "import": "./dist/mirel-ui-core.js",
-        "require": "./dist/mirel-ui-core.umd.cjs",
-        "types": "./dist/index.d.ts"
-      },
-      "./theme/index.css": "./dist/style.css"
-    }
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
