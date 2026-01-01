@@ -243,6 +243,14 @@ mira:
       max-tokens: 4096
       timeout-seconds: 60
 
+    # セキュリティ設定
+    security:
+      prompt-injection:
+        enabled: true
+        soft-block-threshold: 3 # ソフトブロック閾値（警告表示）
+        hard-block-threshold: 5 # ハードブロック閾値（リクエスト拒否）
+        semantic-tag-sensitivity: LOW # LOW, MEDIUM, HIGH - 意味タグ検出の感度（汎用チャットボット用）
+
     audit:
       # 保存ポリシー: FULL | SUMMARY | METADATA_ONLY
       storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
