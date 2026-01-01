@@ -96,7 +96,25 @@ public class PromptInjectionDetector {
                     "bypass_attempt", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)jailbreak|DAN|developer\\s*mode", Pattern.DOTALL),
-                    "jailbreak_attempt", 3));
+                    "jailbreak_attempt", 3),
+
+            // 意味タグインジェクション検出（LLM制御タグ）
+            new InjectionPattern(
+                    Pattern.compile("<\\/?\\s*(system|assistant|user|instruction|prompt|context|role|ai)\\s*>",
+                            Pattern.CASE_INSENSITIVE),
+                    "semantic_tag_injection", 3),
+
+            // サンドボックスブレイク試行
+            new InjectionPattern(
+                    Pattern.compile("<\\/\\s*user_?input\\s*>",
+                            Pattern.CASE_INSENSITIVE),
+                    "sandbox_break_attempt", 3),
+
+            // XML構造インジェクション（HIGH感度時のみ有効）
+            new InjectionPattern(
+                    Pattern.compile("<\\s*\\w+\\s*>.*?<\\/\\s*\\w+\\s*>",
+                            Pattern.DOTALL),
+                    "xml_structure_injection", 2));
 
     /**
      * 入力をチェックしてインジェクションの可能性を検出.
