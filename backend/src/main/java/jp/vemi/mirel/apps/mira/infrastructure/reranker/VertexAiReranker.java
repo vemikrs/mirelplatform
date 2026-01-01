@@ -18,8 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.auth.oauth2.GoogleCredentials;
 
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
@@ -32,13 +32,6 @@ import lombok.extern.slf4j.Slf4j;
  * ドキュメントをクエリとの関連性で再順位付けします。
  * </p>
  * 
- * <h3>使用モデル</h3>
- * <ul>
- * <li>semantic-ranker-default@latest - 最新安定版</li>
- * <li>semantic-ranker-default-004 - 高精度（1024トークン対応）</li>
- * <li>semantic-ranker-fast-004 - 低レイテンシ</li>
- * </ul>
- * 
  * @see <a href=
  *      "https://cloud.google.com/generative-ai-app-builder/docs/ranking">Vertex
  *      AI Ranking API</a>
@@ -48,12 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "mira.ai.reranker.provider", havingValue = "vertex-ai", matchIfMissing = true)
 public class VertexAiReranker implements Reranker {
 
-    /**
-     * Ranking API エンドポイント.
-     * <p>
-     * `default_ranking_config` を使用し、モデルはリクエストボディで指定する。
-     * </p>
-     */
     private static final String DISCOVERY_ENGINE_API_URL = "https://discoveryengine.googleapis.com/v1/projects/%s/locations/%s/rankingConfigs/default_ranking_config:rank";
 
     private final MiraAiProperties properties;
@@ -61,10 +48,38 @@ public class VertexAiReranker implements Reranker {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 認証トークンのキャッシュ（高負荷時のボトルネック回避）.
-     */
+    /** 認証トークンのキャッシュ. */
     private volatile GoogleCredentials cachedCredentials;
+
+    // ===== Request/Response DTOs (型安全、可読性向上) =====
+
+    /** Ranking APIリクエストDTO. */
+    private record RankingRequest(
+            String model,
+            String query,
+            List<RankingRecord> records,
+            Integer topN) {
+    }
+
+    /** Ranking APIリクエストのレコードDTO. */
+    private record RankingRecord(
+            String id,
+            String title,
+            String content) {
+    }
+
+    /** Ranking APIレスポンスDTO. */
+    private record RankingResponse(
+            List<RankedRecord> records) {
+    }
+
+    /** Ranking APIレスポンスのレコードDTO. */
+    private record RankedRecord(
+            String id,
+            String title,
+            String content,
+            double score) {
+    }
 
     public VertexAiReranker(
             MiraAiProperties properties,
@@ -74,7 +89,6 @@ public class VertexAiReranker implements Reranker {
         this.noOpReranker = noOpReranker;
         this.objectMapper = new ObjectMapper();
 
-        // RestTemplateBuilder を使用してタイムアウト設定を適用
         int timeoutMs = properties.getReranker().getTimeoutMs();
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofMillis(timeoutMs))
@@ -91,7 +105,6 @@ public class VertexAiReranker implements Reranker {
         long startTime = System.currentTimeMillis();
 
         try {
-            // Vertex AI設定を取得
             String projectId = properties.getVertexAi().getProjectId();
             String location = properties.getVertexAi().getLocation();
             String model = properties.getReranker().getModel();
@@ -101,30 +114,11 @@ public class VertexAiReranker implements Reranker {
                 return noOpReranker.rerank(query, documents, topN);
             }
 
-            // Google認証トークンを取得（キャッシュ活用）
             String accessToken = getAccessToken();
 
-            // リクエストボディを構築
-            List<Map<String, Object>> records = new ArrayList<>();
-            for (int i = 0; i < documents.size(); i++) {
-                Document doc = documents.get(i);
-                Map<String, Object> record = new HashMap<>();
-                record.put("id", doc.getId() != null ? doc.getId() : String.valueOf(i));
-                record.put("content", doc.getText());
-
-                // ドキュメントタイトルがあれば追加（精度向上）
-                Object title = doc.getMetadata().get("title");
-                if (title != null) {
-                    record.put("title", title.toString());
-                }
-                records.add(record);
-            }
-
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", model); // モデルはボディで指定
-            requestBody.put("query", query);
-            requestBody.put("records", records);
-            requestBody.put("topN", topN);
+            // DTOを使用してリクエスト構築（型安全）
+            List<RankingRecord> records = buildRankingRecords(documents);
+            RankingRequest request = new RankingRequest(model, query, records, topN);
 
             // HTTPヘッダー設定
             HttpHeaders headers = new HttpHeaders();
@@ -132,43 +126,15 @@ public class VertexAiReranker implements Reranker {
             headers.setBearerAuth(accessToken);
             headers.set("X-Goog-User-Project", projectId);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            HttpEntity<RankingRequest> entity = new HttpEntity<>(request, headers);
 
-            // API呼び出し（default_ranking_config を使用）
+            // API呼び出し（文字列で受け取りJacksonでパース - テスト容易性のため）
             String url = String.format(DISCOVERY_ENGINE_API_URL, projectId, location);
             String responseStr = restTemplate.postForObject(url, entity, String.class);
+            RankingResponse response = objectMapper.readValue(responseStr, RankingResponse.class);
 
-            // レスポンス解析
-            JsonNode response = objectMapper.readTree(responseStr);
-            JsonNode recordsNode = response.get("records");
-
-            // ドキュメントをIDでマップ
-            Map<String, Document> docMap = new HashMap<>();
-            for (int i = 0; i < documents.size(); i++) {
-                Document doc = documents.get(i);
-                String id = doc.getId() != null ? doc.getId() : String.valueOf(i);
-                docMap.put(id, doc);
-            }
-
-            // リランク結果を構築
-            List<Document> rerankedDocs = new ArrayList<>();
-            if (recordsNode != null && recordsNode.isArray()) {
-                for (JsonNode recordNode : recordsNode) {
-                    String id = recordNode.get("id").asText();
-                    double score = recordNode.get("score").asDouble();
-
-                    Document originalDoc = docMap.get(id);
-                    if (originalDoc != null) {
-                        // メタデータにリランクスコアを追加
-                        Map<String, Object> newMetadata = new HashMap<>(originalDoc.getMetadata());
-                        newMetadata.put("rerank_score", score);
-                        newMetadata.put("rerank_provider", "vertex-ai");
-
-                        Document rerankedDoc = new Document(originalDoc.getId(), originalDoc.getText(), newMetadata);
-                        rerankedDocs.add(rerankedDoc);
-                    }
-                }
-            }
+            // レスポンスをドキュメントリストに変換
+            List<Document> rerankedDocs = buildRerankedDocuments(documents, response);
 
             long latencyMs = System.currentTimeMillis() - startTime;
             log.info("VertexAiReranker: Reranked {} -> {} documents in {}ms using model '{}'",
@@ -183,20 +149,66 @@ public class VertexAiReranker implements Reranker {
 
         } catch (Exception e) {
             long latencyMs = System.currentTimeMillis() - startTime;
-            log.warn("VertexAiReranker: Failed to rerank in {}ms, falling back to original order. Error: {}",
+            log.warn("VertexAiReranker: Failed to rerank in {}ms, falling back. Error: {}",
                     latencyMs, e.getMessage());
 
-            // フォールバック: 元の順序を維持
             return RerankerResult.fallbackWithError(documents, topN, e.getMessage());
         }
     }
 
     /**
-     * 認証トークンを取得（キャッシュ活用）.
-     * <p>
-     * 高負荷時の同期ブロックを最小化するため、有効期限内のトークンをキャッシュします。
-     * </p>
+     * ドキュメントリストからRankingRecordリストを構築.
      */
+    private List<RankingRecord> buildRankingRecords(List<Document> documents) {
+        List<RankingRecord> records = new ArrayList<>();
+        for (int i = 0; i < documents.size(); i++) {
+            Document doc = documents.get(i);
+            String id = doc.getId() != null ? doc.getId() : String.valueOf(i);
+            String title = extractTitle(doc);
+            String content = doc.getText();
+            records.add(new RankingRecord(id, title, content));
+        }
+        return records;
+    }
+
+    /**
+     * ドキュメントからタイトルを抽出.
+     */
+    private String extractTitle(Document doc) {
+        Object title = doc.getMetadata().get("title");
+        return title != null ? title.toString() : null;
+    }
+
+    /**
+     * APIレスポンスから再ランク済みドキュメントリストを構築.
+     */
+    private List<Document> buildRerankedDocuments(List<Document> originals, RankingResponse response) {
+        if (response == null || response.records() == null) {
+            return List.of();
+        }
+
+        // 元ドキュメントをIDでマップ化
+        Map<String, Document> docMap = new HashMap<>();
+        for (int i = 0; i < originals.size(); i++) {
+            Document doc = originals.get(i);
+            String id = doc.getId() != null ? doc.getId() : String.valueOf(i);
+            docMap.put(id, doc);
+        }
+
+        // スコア順にドキュメントを構築
+        List<Document> rerankedDocs = new ArrayList<>();
+        for (RankedRecord ranked : response.records()) {
+            Document original = docMap.get(ranked.id());
+            if (original != null) {
+                Map<String, Object> newMetadata = new HashMap<>(original.getMetadata());
+                newMetadata.put("rerank_score", ranked.score());
+                newMetadata.put("rerank_provider", "vertex-ai");
+                rerankedDocs.add(new Document(original.getId(), original.getText(), newMetadata));
+            }
+        }
+        return rerankedDocs;
+    }
+
     private String getAccessToken() throws Exception {
         if (cachedCredentials == null) {
             synchronized (this) {

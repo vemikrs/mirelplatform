@@ -47,20 +47,12 @@ public class RerankerService {
 
     /**
      * リランキングを実行すべきかどうかを判定.
-     *
-     * @param tenantId
-     *            テナントID
-     * @param candidateCount
-     *            候補ドキュメント数
-     * @return リランキングを実行すべき場合true
      */
     public boolean shouldRerank(String tenantId, int candidateCount) {
-        // リランカーが無効の場合
         if (!settingService.isRerankerEnabled(tenantId)) {
             return false;
         }
 
-        // 候補数が閾値未満の場合
         int minCandidates = settingService.getRerankerMinCandidates(tenantId);
         if (candidateCount < minCandidates) {
             log.debug("Skipping rerank: candidate count {} < minCandidates {}",
@@ -73,41 +65,19 @@ public class RerankerService {
 
     /**
      * リランキングを実行.
-     *
-     * @param query
-     *            検索クエリ
-     * @param documents
-     *            リランク対象ドキュメント
-     * @param tenantId
-     *            テナントID
-     * @return リランキング結果
      */
     public List<Document> rerank(String query, List<Document> documents, String tenantId) {
-        int topN = settingService.getRerankerTopN(tenantId);
         return rerankWithResult(query, documents, tenantId).getDocuments();
     }
 
     /**
      * リランキングを実行し、詳細な結果を返却.
-     *
-     * @param query
-     *            検索クエリ
-     * @param documents
-     *            リランク対象ドキュメント
-     * @param tenantId
-     *            テナントID
-     * @return リランキング結果（詳細情報付き）
      */
     public RerankerResult rerankWithResult(String query, List<Document> documents, String tenantId) {
         String provider = settingService.getRerankerProvider(tenantId);
         int topN = settingService.getRerankerTopN(tenantId);
 
-        Reranker reranker = rerankerMap.getOrDefault(provider, noOpReranker);
-
-        if (!reranker.isAvailable()) {
-            log.warn("Reranker '{}' is not available, falling back to NoOp", provider);
-            reranker = noOpReranker;
-        }
+        Reranker reranker = resolveReranker(provider);
 
         log.debug("Reranking {} documents with provider '{}', topN={}",
                 documents.size(), reranker.getProviderName(), topN);
@@ -120,18 +90,6 @@ public class RerankerService {
      * <p>
      * Playground等で設定をオーバーライドする場合に使用します。
      * </p>
-     *
-     * @param query
-     *            検索クエリ
-     * @param documents
-     *            リランク対象ドキュメント
-     * @param tenantId
-     *            テナントID
-     * @param enabledOverride
-     *            有効化オーバーライド（nullの場合はテナント設定を使用）
-     * @param topNOverride
-     *            topNオーバーライド（nullの場合はテナント設定を使用）
-     * @return リランキング結果
      */
     public RerankerResult rerankWithOverride(
             String query,
@@ -142,24 +100,36 @@ public class RerankerService {
 
         // 有効化判定
         boolean enabled = enabledOverride != null ? enabledOverride : settingService.isRerankerEnabled(tenantId);
+        int topN = topNOverride != null ? topNOverride : settingService.getRerankerTopN(tenantId);
+
         if (!enabled) {
-            int topN = topNOverride != null ? topNOverride : settingService.getRerankerTopN(tenantId);
             return RerankerResult.fallback(documents, topN);
         }
 
         String provider = settingService.getRerankerProvider(tenantId);
-        int topN = topNOverride != null ? topNOverride : settingService.getRerankerTopN(tenantId);
-
-        Reranker reranker = rerankerMap.getOrDefault(provider, noOpReranker);
-
-        if (!reranker.isAvailable()) {
-            log.warn("Reranker '{}' is not available, falling back to NoOp", provider);
-            reranker = noOpReranker;
-        }
+        Reranker reranker = resolveReranker(provider);
 
         log.info("Reranking {} documents with provider '{}', topN={} (override: enabled={}, topN={})",
                 documents.size(), reranker.getProviderName(), topN, enabledOverride, topNOverride);
 
         return reranker.rerank(query, documents, topN);
+    }
+
+    /**
+     * プロバイダー名からリランカーを解決.
+     * <p>
+     * 指定プロバイダーが存在しない場合、または利用不可の場合は
+     * NoOpRerankerにフォールバックします。
+     * </p>
+     */
+    private Reranker resolveReranker(String providerName) {
+        Reranker reranker = rerankerMap.getOrDefault(providerName, noOpReranker);
+
+        if (!reranker.isAvailable()) {
+            log.warn("Reranker '{}' is not available, falling back to NoOp", providerName);
+            return noOpReranker;
+        }
+
+        return reranker;
     }
 }
