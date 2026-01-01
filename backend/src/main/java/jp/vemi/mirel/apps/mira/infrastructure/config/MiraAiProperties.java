@@ -138,6 +138,19 @@ public class MiraAiProperties {
             private boolean enabled = true;
             private int softBlockThreshold = 3;
             private int hardBlockThreshold = 5;
+            private SemanticTagSensitivity semanticTagSensitivity = SemanticTagSensitivity.MEDIUM;
+        }
+
+        /**
+         * 意味タグ検出の感度レベル.
+         */
+        public enum SemanticTagSensitivity {
+            /** LOW: <system>, <assistant> のみ検出 - 誤検知最小、基本防御 */
+            LOW,
+            /** MEDIUM: すべてのLLM関連タグ検出 - バランス型 (推奨) */
+            MEDIUM,
+            /** HIGH: すべてのXML風タグ検出 - 最大防御、誤検知増加 */
+            HIGH
         }
 
         @Data
