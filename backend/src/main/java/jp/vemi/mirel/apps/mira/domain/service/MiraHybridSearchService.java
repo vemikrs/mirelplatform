@@ -34,6 +34,8 @@ public class MiraHybridSearchService {
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final RerankerService rerankerService;
+    private final MiraSettingService settingService;
 
     private static final int RRF_K = 60;
 
@@ -76,8 +78,18 @@ public class MiraHybridSearchService {
         keywordResults = filterInMemory(keywordResults, scope, tenantId, userId);
         log.info("Hybrid/Keyword results (after filter): {}", keywordResults.size());
 
-        // 3. Reciprocal Rank Fusion
-        return applyRRF(vectorResults, keywordResults, vectorRequest.getTopK());
+        // 3. Reciprocal Rank Fusion (候補を多めに取得)
+        int rrfTopK = Math.max(vectorRequest.getTopK(), 30);
+        List<Document> rrfResults = applyRRF(vectorResults, keywordResults, rrfTopK);
+
+        // 4. リランキング（条件付き）
+        if (rerankerService.shouldRerank(tenantId, rrfResults.size())) {
+            rrfResults = rerankerService.rerank(query, rrfResults, tenantId);
+        }
+
+        // 5. 最終カットオフ
+        int finalTopK = settingService.getRerankerTopN(tenantId);
+        return rrfResults.stream().limit(finalTopK).collect(Collectors.toList());
     }
 
     private List<Document> performKeywordSearch(String query, int limit) {
@@ -290,9 +302,21 @@ public class MiraHybridSearchService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * ハイブリッド検索結果（デバッグ用）.
+     */
     public record HybridSearchResult(
             List<Document> vectorDocs,
             List<Document> keywordDocs,
-            List<Document> rrfResults) {
+            List<Document> rrfResults,
+            List<Document> rerankedResults,
+            boolean rerankerApplied,
+            String rerankerProvider,
+            long rerankerLatencyMs) {
+
+        /** レガシーコンストラクタ（リランキングなし） */
+        public HybridSearchResult(List<Document> vectorDocs, List<Document> keywordDocs, List<Document> rrfResults) {
+            this(vectorDocs, keywordDocs, rrfResults, rrfResults, false, "none", 0);
+        }
     }
 }
