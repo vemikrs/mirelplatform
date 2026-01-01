@@ -11,7 +11,7 @@ import {
   Separator,
   Textarea
 } from '@mirel/ui';
-import { Settings2, Database } from 'lucide-react';
+import { Settings2, Database, Sparkles } from 'lucide-react';
 
 interface Config {
   models: { id: string; name: string; provider: string }[];
@@ -34,6 +34,9 @@ interface Settings {
   ragEnabled: boolean;
   ragScope: string;
   ragTopK: number;
+  // リランカー設定
+  rerankerEnabled: boolean;
+  rerankerTopN: number;
 }
 
 interface PlaygroundConfigPanelProps {
@@ -165,6 +168,35 @@ export function PlaygroundConfigPanel({ config, settings, onSettingsChange }: Pl
                     onChange={e => onSettingsChange('ragTopK', Number(e.target.value))} 
                     className="h-8" 
                   />
+               </div>
+
+               {/* リランカー設定（RAG有効時のみ表示） */}
+               <div className="pt-2 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                     <Sparkles className="w-3 h-3" />
+                     Reranker
+                  </div>
+                  <div className="flex items-center justify-between">
+                     <Label htmlFor="reranker-mode" className="cursor-pointer text-sm">Enable Reranking</Label>
+                     <Switch 
+                       id="reranker-mode" 
+                       checked={settings.rerankerEnabled} 
+                       onCheckedChange={(val) => onSettingsChange('rerankerEnabled', val)} 
+                     />
+                  </div>
+                  {settings.rerankerEnabled && (
+                     <div className="space-y-2">
+                        <div className="flex justify-between">
+                           <Label>Top N</Label>
+                           <span className="text-xs text-muted-foreground">{settings.rerankerTopN}</span>
+                        </div>
+                        <Slider 
+                          value={[settings.rerankerTopN]} 
+                          onValueChange={([v]) => { if (v !== undefined) onSettingsChange('rerankerTopN', v); }} 
+                          min={1} max={20} step={1} 
+                        />
+                     </div>
+                  )}
                </div>
             </div>
          )}
