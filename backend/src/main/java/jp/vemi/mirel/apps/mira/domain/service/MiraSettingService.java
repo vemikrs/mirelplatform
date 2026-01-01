@@ -277,6 +277,69 @@ public class MiraSettingService {
     }
 
     // ===================================================================================
+    // リランカー設定 Getters
+    // ===================================================================================
+
+    /** リランカー設定キー. */
+    public static final String KEY_RERANKER_ENABLED = "reranker.enabled";
+    public static final String KEY_RERANKER_PROVIDER = "reranker.provider";
+    public static final String KEY_RERANKER_MODEL = "reranker.model";
+    public static final String KEY_RERANKER_TOP_N = "reranker.top_n";
+    public static final String KEY_RERANKER_MIN_CANDIDATES = "reranker.min_candidates";
+    public static final String KEY_RERANKER_TIMEOUT_MS = "reranker.timeout_ms";
+
+    /**
+     * リランカーが有効かどうか（レイヤード設定対応）.
+     */
+    public boolean isRerankerEnabled(String tenantId) {
+        String value = getString(tenantId, KEY_RERANKER_ENABLED, null);
+        if (value != null) {
+            return Boolean.parseBoolean(value);
+        }
+        return miraAiProperties.getReranker().isEnabled();
+    }
+
+    /**
+     * リランカープロバイダー（レイヤード設定対応）.
+     */
+    public String getRerankerProvider(String tenantId) {
+        return getString(tenantId, KEY_RERANKER_PROVIDER,
+                miraAiProperties.getReranker().getProvider());
+    }
+
+    /**
+     * リランカーモデル名（レイヤード設定対応）.
+     */
+    public String getRerankerModel(String tenantId) {
+        return getString(tenantId, KEY_RERANKER_MODEL,
+                miraAiProperties.getReranker().getModel());
+    }
+
+    /**
+     * リランカーのtopN（レイヤード設定対応）.
+     */
+    public int getRerankerTopN(String tenantId) {
+        return getInteger(tenantId, KEY_RERANKER_TOP_N,
+                miraAiProperties.getReranker().getTopN());
+    }
+
+    /**
+     * リランキング実行の候補数閾値（レイヤード設定対応）.
+     */
+    public int getRerankerMinCandidates(String tenantId) {
+        return getInteger(tenantId, KEY_RERANKER_MIN_CANDIDATES,
+                miraAiProperties.getReranker().getMinCandidates());
+    }
+
+    /**
+     * リランカータイムアウト（ミリ秒、レイヤード設定対応）.
+     */
+    public int getRerankerTimeoutMs(String tenantId) {
+        return getInteger(tenantId, KEY_RERANKER_TIMEOUT_MS,
+                miraAiProperties.getReranker().getTimeoutMs());
+    }
+
+    // ===================================================================================
     // Setters
     // ===================================================================================
 
