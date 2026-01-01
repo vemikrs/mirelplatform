@@ -3,6 +3,7 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.reranker;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import org.springframework.ai.document.Document;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -32,27 +34,52 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * <h3>使用モデル</h3>
  * <ul>
- * <li>semantic-ranker-default-004 - 高精度（デフォルト）</li>
+ * <li>semantic-ranker-default@latest - 最新安定版</li>
+ * <li>semantic-ranker-default-004 - 高精度（1024トークン対応）</li>
  * <li>semantic-ranker-fast-004 - 低レイテンシ</li>
  * </ul>
+ * 
+ * @see <a href=
+ *      "https://cloud.google.com/generative-ai-app-builder/docs/ranking">Vertex
+ *      AI Ranking API</a>
  */
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "mira.ai.reranker.provider", havingValue = "vertex-ai", matchIfMissing = true)
 public class VertexAiReranker implements Reranker {
 
-    private static final String DISCOVERY_ENGINE_API_URL = "https://discoveryengine.googleapis.com/v1/projects/%s/locations/%s/rankingConfigs/%s:rank";
+    /**
+     * Ranking API エンドポイント.
+     * <p>
+     * `default_ranking_config` を使用し、モデルはリクエストボディで指定する。
+     * </p>
+     */
+    private static final String DISCOVERY_ENGINE_API_URL = "https://discoveryengine.googleapis.com/v1/projects/%s/locations/%s/rankingConfigs/default_ranking_config:rank";
 
     private final MiraAiProperties properties;
     private final NoOpReranker noOpReranker;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public VertexAiReranker(MiraAiProperties properties, NoOpReranker noOpReranker) {
+    /**
+     * 認証トークンのキャッシュ（高負荷時のボトルネック回避）.
+     */
+    private volatile GoogleCredentials cachedCredentials;
+
+    public VertexAiReranker(
+            MiraAiProperties properties,
+            NoOpReranker noOpReranker,
+            RestTemplateBuilder restTemplateBuilder) {
         this.properties = properties;
         this.noOpReranker = noOpReranker;
-        this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+
+        // RestTemplateBuilder を使用してタイムアウト設定を適用
+        int timeoutMs = properties.getReranker().getTimeoutMs();
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofMillis(timeoutMs))
+                .setReadTimeout(Duration.ofMillis(timeoutMs))
+                .build();
     }
 
     @Override
@@ -74,11 +101,8 @@ public class VertexAiReranker implements Reranker {
                 return noOpReranker.rerank(query, documents, topN);
             }
 
-            // Google認証トークンを取得
-            GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-                    .createScoped("https://www.googleapis.com/auth/cloud-platform");
-            credentials.refreshIfExpired();
-            String accessToken = credentials.getAccessToken().getTokenValue();
+            // Google認証トークンを取得（キャッシュ活用）
+            String accessToken = getAccessToken();
 
             // リクエストボディを構築
             List<Map<String, Object>> records = new ArrayList<>();
@@ -87,10 +111,17 @@ public class VertexAiReranker implements Reranker {
                 Map<String, Object> record = new HashMap<>();
                 record.put("id", doc.getId() != null ? doc.getId() : String.valueOf(i));
                 record.put("content", doc.getText());
+
+                // ドキュメントタイトルがあれば追加（精度向上）
+                Object title = doc.getMetadata().get("title");
+                if (title != null) {
+                    record.put("title", title.toString());
+                }
                 records.add(record);
             }
 
             Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", model); // モデルはボディで指定
             requestBody.put("query", query);
             requestBody.put("records", records);
             requestBody.put("topN", topN);
@@ -99,11 +130,12 @@ public class VertexAiReranker implements Reranker {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(accessToken);
+            headers.set("X-Goog-User-Project", projectId);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-            // API呼び出し
-            String url = String.format(DISCOVERY_ENGINE_API_URL, projectId, location, model);
+            // API呼び出し（default_ranking_config を使用）
+            String url = String.format(DISCOVERY_ENGINE_API_URL, projectId, location);
             String responseStr = restTemplate.postForObject(url, entity, String.class);
 
             // レスポンス解析
@@ -139,7 +171,8 @@ public class VertexAiReranker implements Reranker {
             }
 
             long latencyMs = System.currentTimeMillis() - startTime;
-            log.info("VertexAiReranker: Reranked {} documents in {}ms", rerankedDocs.size(), latencyMs);
+            log.info("VertexAiReranker: Reranked {} -> {} documents in {}ms using model '{}'",
+                    documents.size(), rerankedDocs.size(), latencyMs, model);
 
             return RerankerResult.builder()
                     .documents(rerankedDocs)
@@ -150,12 +183,31 @@ public class VertexAiReranker implements Reranker {
 
         } catch (Exception e) {
             long latencyMs = System.currentTimeMillis() - startTime;
-            log.warn("VertexAiReranker: Failed to rerank, falling back to original order. Error: {}",
-                    e.getMessage());
+            log.warn("VertexAiReranker: Failed to rerank in {}ms, falling back to original order. Error: {}",
+                    latencyMs, e.getMessage());
 
             // フォールバック: 元の順序を維持
             return RerankerResult.fallbackWithError(documents, topN, e.getMessage());
         }
+    }
+
+    /**
+     * 認証トークンを取得（キャッシュ活用）.
+     * <p>
+     * 高負荷時の同期ブロックを最小化するため、有効期限内のトークンをキャッシュします。
+     * </p>
+     */
+    private String getAccessToken() throws Exception {
+        if (cachedCredentials == null) {
+            synchronized (this) {
+                if (cachedCredentials == null) {
+                    cachedCredentials = GoogleCredentials.getApplicationDefault()
+                            .createScoped("https://www.googleapis.com/auth/cloud-platform");
+                }
+            }
+        }
+        cachedCredentials.refreshIfExpired();
+        return cachedCredentials.getAccessToken().getTokenValue();
     }
 
     @Override
