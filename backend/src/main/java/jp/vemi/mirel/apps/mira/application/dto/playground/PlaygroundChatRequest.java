@@ -23,6 +23,7 @@ public class PlaygroundChatRequest {
     private Integer maxTokens;
     private String systemInstruction;
     private RagSettings ragSettings;
+    private RerankerSettings rerankerSettings;
 
     @Data
     @NoArgsConstructor
@@ -43,5 +44,19 @@ public class PlaygroundChatRequest {
         private Integer topK;
         private String targetTenantId; // For simulation
         private String targetUserId; // For simulation
+    }
+
+    /**
+     * リランカー設定オーバーライド.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RerankerSettings {
+        /** リランカー有効化（nullの場合はシステム設定を使用） */
+        private Boolean enabled;
+        /** 最終採用件数（nullの場合はシステム設定を使用） */
+        private Integer topN;
     }
 }
