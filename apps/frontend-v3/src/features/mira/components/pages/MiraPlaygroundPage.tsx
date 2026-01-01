@@ -37,7 +37,10 @@ export function MiraPlaygroundPage() {
     systemPrompt: '',
     ragEnabled: false,
     ragScope: 'SYSTEM',
-    ragTopK: 3
+    ragTopK: 3,
+    // リランカー設定
+    rerankerEnabled: false,
+    rerankerTopN: 5
   });
 
   const [mode, setMode] = useState<'chat' | 'debug'>('chat');
@@ -112,6 +115,10 @@ export function MiraPlaygroundPage() {
           enabled: settings.ragEnabled,
           scope: settings.ragScope,
           topK: settings.ragTopK
+        },
+        rerankerSettings: {
+          enabled: settings.rerankerEnabled ? true : null,
+          topN: settings.rerankerEnabled ? settings.rerankerTopN : null
         }
       };
 
