@@ -59,6 +59,9 @@ public class MiraAiProperties {
     /** モニタリング設定. */
     private MonitoringConfig monitoring = new MonitoringConfig();
 
+    /** リランカー設定. */
+    private RerankerConfig reranker = new RerankerConfig();
+
     @Data
     public static class GitHubModelsConfig {
         private String apiKey;
@@ -181,5 +184,29 @@ public class MiraAiProperties {
     public static class VectorConfig {
         /** 検索時の類似度閾値 (デフォルト: 0.6). */
         private double searchThreshold = 0.6;
+    }
+
+    /**
+     * リランカー設定.
+     */
+    @Data
+    public static class RerankerConfig {
+        /** リランカー有効化フラグ. */
+        private boolean enabled = true;
+
+        /** プロバイダー: vertex-ai, cohere, none. */
+        private String provider = "vertex-ai";
+
+        /** Vertex AI モデル名. */
+        private String model = "semantic-ranker-default-004";
+
+        /** 最終採用件数. */
+        private int topN = 5;
+
+        /** リランキング実行の候補数閾値（この件数以上で実行）. */
+        private int minCandidates = 10;
+
+        /** タイムアウト（ミリ秒）. */
+        private int timeoutMs = 5000;
     }
 }
