@@ -256,6 +256,15 @@ mira:
       storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
       retention-days: 90
 
+    # リランカー設定
+    reranker:
+      enabled: false  # デフォルト無効（本番環境で有効化）
+      provider: vertex-ai  # vertex-ai, cohere, none
+      model: semantic-ranker-default-004
+      top-n: 5
+      min-candidates: 10  # 10件以上の候補がある場合のみリランク実行
+      timeout-ms: 5000
+
 # アプリケーション情報（actuator/info で公開）
 info:
   app:
