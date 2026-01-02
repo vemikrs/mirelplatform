@@ -10,14 +10,14 @@
 
 ### 1.1 エラーカテゴリ
 
-| カテゴリ | コード範囲 | 説明 | リトライ可否 |
-|---------|-----------|------|-------------|
-| **API接続エラー** | MIRA-1xxx | AI プロバイダーへの接続失敗 | ✅ 可 |
-| **認証エラー** | MIRA-2xxx | API トークン無効・期限切れ | ❌ 不可 |
-| **レート制限** | MIRA-3xxx | リクエスト制限超過 | ✅ 待機後可 |
-| **コンテキストエラー** | MIRA-4xxx | コンテキスト構築失敗 | ❌ 不可 |
-| **モデルエラー** | MIRA-5xxx | AI モデルの応答エラー | ⚠️ 条件付き |
-| **内部エラー** | MIRA-9xxx | 予期しないシステムエラー | ❌ 不可 |
+| カテゴリ               | コード範囲 | 説明                        | リトライ可否 |
+| ---------------------- | ---------- | --------------------------- | ------------ |
+| **API接続エラー**      | MIRA-1xxx  | AI プロバイダーへの接続失敗 | ✅ 可        |
+| **認証エラー**         | MIRA-2xxx  | API トークン無効・期限切れ  | ❌ 不可      |
+| **レート制限**         | MIRA-3xxx  | リクエスト制限超過          | ✅ 待機後可  |
+| **コンテキストエラー** | MIRA-4xxx  | コンテキスト構築失敗        | ❌ 不可      |
+| **モデルエラー**       | MIRA-5xxx  | AI モデルの応答エラー       | ⚠️ 条件付き  |
+| **内部エラー**         | MIRA-9xxx  | 予期しないシステムエラー    | ❌ 不可      |
 
 ### 1.2 エラーコード定義
 
@@ -131,14 +131,14 @@ public class RateLimitHandler {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Primary: Llama 3.3 70B                    │
-│                 (GitHub Models - meta/llama-3.3-70b)         │
+│                  Primary: Gemini 2.5 Flash                   │
+│             (Vertex AI - gemini-2.5-flash) 推奨              │
 └─────────────────────────────────────────────────────────────┘
                               │
                          失敗時 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  Fallback 1: Smaller Model                   │
-│                 (GitHub Models - gpt-4o-mini)                │
+│                   Fallback 1: GPT-4o                         │
+│               (Azure OpenAI / OpenAI)                        │
 └─────────────────────────────────────────────────────────────┘
                               │
                          失敗時 ▼
@@ -153,6 +153,8 @@ public class RateLimitHandler {
 │             (ユーザーフレンドリーなエラー表示)                 │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> ⚠️ **GitHub Models (Llama 3.3)** は不安定なため、フォールバックチェーンに含めていません。
 
 ### 3.2 フォールバック実装
 
@@ -200,14 +202,14 @@ public class MiraChatServiceWithFallback {
         if ("ja".equals(locale)) {
             return """
                 申し訳ございません。AI アシスタントが現在利用できません。
-                
+
                 しばらく時間をおいてから再度お試しください。
                 問題が続く場合は、システム管理者にお問い合わせください。
                 """;
         }
         return """
             Sorry, the AI assistant is currently unavailable.
-            
+
             Please try again later.
             If the problem persists, contact your system administrator.
             """;
@@ -224,21 +226,21 @@ public class StaticResponseService {
     private final Map<String, String> screenHelpResponses = Map.of(
         "studio/modeler", """
             ## Modeler 画面について
-            
+
             この画面では、エンティティ（データモデル）の設計を行います。
-            
+
             ### 主な機能
             - **エンティティ作成**: 新しいデータモデルを定義
             - **属性追加**: フィールドの追加と型の設定
             - **リレーション設定**: エンティティ間の関係を定義
-            
+
             詳細はヘルプドキュメントをご参照ください。
             """,
         "studio/form-designer", """
             ## Form Designer 画面について
-            
+
             この画面では、フォーム（入力画面）のデザインを行います。
-            
+
             ### 主な機能
             - **フィールド配置**: ドラッグ&ドロップでレイアウト
             - **バリデーション設定**: 入力チェックルールの定義
@@ -351,7 +353,7 @@ public class MiraErrorLoggingAspect {
 
 ### 5.2 Slack 通知（重大エラー用）
 
-```java
+````java
 @Component
 @ConditionalOnProperty(name = "mira.notification.slack.enabled", havingValue = "true")
 @RequiredArgsConstructor
@@ -369,7 +371,7 @@ public class SlackNotificationService {
             .channel(properties.getNotification().getSlack().getChannel())
             .username("Mira Alert")
             .iconEmoji(":warning:")
-            .text(String.format("*[CRITICAL]* Mira エラー: %s\n```%s```", 
+            .text(String.format("*[CRITICAL]* Mira エラー: %s\n```%s```",
                 errorCode.getCode(), details))
             .build();
 
@@ -384,7 +386,7 @@ public class SlackNotificationService {
         ).contains(errorCode);
     }
 }
-```
+````
 
 ---
 
@@ -415,11 +417,11 @@ public class MiraErrorResponse {
 
     private static String getSuggestion(MiraErrorCode code) {
         return switch (code) {
-            case RATE_LIMIT_EXCEEDED -> 
+            case RATE_LIMIT_EXCEEDED ->
                 "しばらく待ってから再度お試しください。";
-            case CONTEXT_TOO_LARGE -> 
+            case CONTEXT_TOO_LARGE ->
                 "質問を短くするか、会話をリセットしてください。";
-            case API_UNAVAILABLE -> 
+            case API_UNAVAILABLE ->
                 "システム管理者に連絡してください。";
             default -> null;
         };

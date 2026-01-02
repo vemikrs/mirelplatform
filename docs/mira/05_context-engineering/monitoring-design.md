@@ -10,12 +10,12 @@
 
 ### 1.1 観測対象
 
-| カテゴリ | メトリクス | 目的 |
-|---------|----------|------|
-| **パフォーマンス** | レスポンス時間、スループット | SLA 監視、ボトルネック検出 |
-| **コスト** | トークン使用量、API コール数 | 予算管理、最適化 |
-| **品質** | エラー率、フォールバック率 | サービス品質維持 |
-| **利用状況** | アクティブユーザー、モード別利用率 | 機能改善の優先度決定 |
+| カテゴリ           | メトリクス                         | 目的                       |
+| ------------------ | ---------------------------------- | -------------------------- |
+| **パフォーマンス** | レスポンス時間、スループット       | SLA 監視、ボトルネック検出 |
+| **コスト**         | トークン使用量、API コール数       | 予算管理、最適化           |
+| **品質**           | エラー率、フォールバック率         | サービス品質維持           |
+| **利用状況**       | アクティブユーザー、モード別利用率 | 機能改善の優先度決定       |
 
 ### 1.2 アーキテクチャ
 
@@ -192,7 +192,7 @@ public class MiraMetricsAspect {
 @Component
 public class TokenCounter {
 
-    // Llama 3.3 は tiktoken の cl100k_base と互換性あり
+    // Gemini / GPT-4o / Llama 等は tiktoken の cl100k_base と互換性あり
     private final Encoding encoding = Encodings.newDefaultEncodingRegistry()
         .getEncoding(EncodingType.CL100K_BASE);
 
@@ -416,9 +416,9 @@ public class MiraAuditLogger {
         "thresholds": {
           "mode": "absolute",
           "steps": [
-            {"color": "green", "value": null},
-            {"color": "yellow", "value": 1},
-            {"color": "red", "value": 5}
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 5 }
           ]
         }
       },
@@ -608,8 +608,8 @@ mira:
 
   quota:
     enabled: true
-    daily-token-limit: 1000000  # 100万トークン/日
-    warning-threshold: 0.8      # 80%で警告
+    daily-token-limit: 1000000 # 100万トークン/日
+    warning-threshold: 0.8 # 80%で警告
 
   monitoring:
     response-time-threshold-ms: 5000
@@ -617,7 +617,7 @@ mira:
 
   audit:
     enabled: true
-    log-content: false          # プライバシー: 内容はログしない
+    log-content: false # プライバシー: 内容はログしない
     retention-days: 90
 
 management:
