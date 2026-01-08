@@ -70,6 +70,9 @@ public class AuthenticationServiceImpl {
     @Autowired
     private jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository otpTokenRepository;
 
+    @Autowired
+    private jp.vemi.mirel.foundation.security.audit.AuthEventLogger authEventLogger;
+
     /**
      * セットアップトークン検証の共通ロジック
      * 
@@ -198,9 +201,12 @@ public class AuthenticationServiceImpl {
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
                 log.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
+                authEventLogger.logAccountLocked(request.getUsernameOrEmail(), request.getIpAddress());
             }
 
             systemUserRepository.save(systemUser);
+            authEventLogger.logLoginFailure(request.getUsernameOrEmail(), "Invalid password",
+                    request.getIpAddress(), request.getUserAgent());
             throw new jp.vemi.framework.exeption.MirelValidationException("Invalid username/email or password");
         }
 
@@ -270,6 +276,8 @@ public class AuthenticationServiceImpl {
                 user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
         log.info("Login successful for user: {}", user.getUserId());
+        authEventLogger.logLoginSuccess(user.getUserId(), user.getUsername(),
+                request.getIpAddress(), request.getUserAgent());
 
         return buildAuthenticationResponse(user, tenant, accessToken, refreshToken.getTokenHash(), licenses);
     }
