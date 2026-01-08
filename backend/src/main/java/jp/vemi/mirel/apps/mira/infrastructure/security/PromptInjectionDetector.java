@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
+import jp.vemi.framework.security.PatternRegistry;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.Builder;
 import lombok.Data;
@@ -34,8 +35,8 @@ public class PromptInjectionDetector {
     private static final List<InjectionPattern> INJECTION_PATTERNS = List.of(
             // 直接的なプロンプト改変
             new InjectionPattern(
-                    Pattern.compile(
-                            "(?i)(?:ignore|disregard|forget)[^\\n]{0,50}+(?:previous|above|prior)[^\\n]{0,50}+(?:instructions?|prompt)"),
+                    PatternRegistry.safe(
+                            "(?i)(?:ignore|disregard|forget)[^\\n]{0,50}(?:previous|above|prior)[^\\n]{0,50}(?:instructions?|prompt)"),
                     "direct_override", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)system\\s*prompt", Pattern.DOTALL),
@@ -60,7 +61,7 @@ public class PromptInjectionDetector {
 
             // プロンプト抽出の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)repeat\\s+(?:your|the)[^\\n]{0,50}+(?:prompt|instructions)"),
+                    PatternRegistry.safe("(?i)repeat\\s+(?:your|the)[^\\n]{0,50}(?:prompt|instructions)"),
                     "prompt_extraction_repeat", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)what\\s+(are|is)\\s+your\\s+(system\\s+)?prompt", Pattern.DOTALL),
@@ -69,7 +70,7 @@ public class PromptInjectionDetector {
                     Pattern.compile("(?i)show\\s+me\\s+(your|the)\\s+(system\\s+)?prompt", Pattern.DOTALL),
                     "prompt_extraction_show", 2),
             new InjectionPattern(
-                    Pattern.compile("(?i)print\\s+(?:your|the)[^\\n]{0,50}+(?:prompt|instructions)"),
+                    PatternRegistry.safe("(?i)print\\s+(?:your|the)[^\\n]{0,50}(?:prompt|instructions)"),
                     "prompt_extraction_print", 2),
 
             // コード実行の試み
@@ -79,7 +80,7 @@ public class PromptInjectionDetector {
 
             // 特殊トークンの挿入
             new InjectionPattern(
-                    Pattern.compile("<\\|[^|]{0,100}+\\|>"),
+                    PatternRegistry.safe("<\\|[^|]{0,100}\\|>"),
                     "special_token_angle", 3),
             new InjectionPattern(
                     Pattern.compile("\\[INST\\]|\\[/INST\\]"),
@@ -90,7 +91,7 @@ public class PromptInjectionDetector {
 
             // 制限解除の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)(?:bypass|override|disable)[^\\n]{0,50}+(?:filter|restriction|safety)"),
+                    PatternRegistry.safe("(?i)(?:bypass|override|disable)[^\\n]{0,50}(?:filter|restriction|safety)"),
                     "bypass_attempt", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)jailbreak|DAN|developer\\s*mode", Pattern.DOTALL),
