@@ -78,18 +78,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
                 // フロントエンドにリダイレクト（トークンをクエリパラメータで渡す）
                 String redirectUrl = appBaseUrl + "/auth/oauth2/success?token=" + token;
-                log.info("OAuth2 authentication success: user={}, redirecting to {}",
-                        systemUser.get().getEmail(), redirectUrl);
+                log.info("OAuth2 authentication success: user={}, redirecting to oauth2 success page",
+                        systemUser.get().getEmail());
 
                 getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
             } catch (Exception e) {
-                log.error("Failed to process OAuth2 authentication. Authentication: {}, Principal: {}",
-                        authentication, authentication.getPrincipal(), e);
+                log.error("Failed to process OAuth2 authentication: {}", e.getMessage(), e);
                 getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=oauth2");
             }
         } else {
-            log.error("Unexpected principal type: {}", authentication.getPrincipal().getClass());
+            log.error("Unexpected principal type in OAuth2 authentication");
             getRedirectStrategy().sendRedirect(request, response, appBaseUrl + "/login?error=oauth2");
         }
     }

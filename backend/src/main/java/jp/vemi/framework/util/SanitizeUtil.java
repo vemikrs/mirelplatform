@@ -17,7 +17,9 @@ public final class SanitizeUtil {
 
     /**
      * 識別子を検証し、"*" を単体で許容する。
-     * @param input 入力
+     * 
+     * @param input
+     *            入力
      * @return 入力（そのまま返却）。不正な場合は IllegalArgumentException
      */
     public static String sanitizeIdentifierAllowWildcard(String input) {
@@ -39,7 +41,9 @@ public final class SanitizeUtil {
      * - バックスラッシュ禁止
      * - 各セグメントは空不可、"." ".." 不可
      * - 各セグメントは IDENTIFIER_REGEX に適合
-     * @param canonical 入力パス
+     * 
+     * @param canonical
+     *            入力パス
      * @return 入力（そのまま返却）。不正な場合は IllegalArgumentException
      */
     public static String sanitizeCanonicalPath(String canonical) {
@@ -64,5 +68,43 @@ public final class SanitizeUtil {
             }
         }
         return canonical;
+    }
+
+    /**
+     * ログ出力用にサニタイズする（Log Injection対策）。
+     * 改行文字（CR, LF）をスペースに置換し、制御文字を除去する。
+     * 
+     * @param input
+     *            入力
+     * @return サニタイズされた文字列
+     */
+    public static String forLog(String input) {
+        if (input == null) {
+            return "null";
+        }
+        // 改行文字をスペースに置換
+        String sanitized = input.replace('\n', ' ').replace('\r', ' ');
+        // 制御文字（0x00-0x1F, 0x7F）を除去
+        StringBuilder sb = new StringBuilder(sanitized.length());
+        for (char c : sanitized.toCharArray()) {
+            if (c >= 0x20 && c != 0x7F) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * オブジェクトをログ出力用にサニタイズする（Log Injection対策）。
+     * 
+     * @param input
+     *            入力オブジェクト
+     * @return サニタイズされた文字列
+     */
+    public static String forLog(Object input) {
+        if (input == null) {
+            return "null";
+        }
+        return forLog(String.valueOf(input));
     }
 }
