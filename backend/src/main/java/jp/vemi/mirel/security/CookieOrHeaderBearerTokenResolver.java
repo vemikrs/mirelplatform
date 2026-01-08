@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.util.StringUtils;
 
+import jp.vemi.framework.util.SanitizeUtil;
+
 import java.util.Set;
 
 /**
@@ -55,7 +57,7 @@ public class CookieOrHeaderBearerTokenResolver implements BearerTokenResolver {
         final String normalizedPath = path;
         if (SKIP_JWT_PATHS.stream()
                 .anyMatch(skipPath -> normalizedPath.equals(skipPath) || normalizedPath.startsWith(skipPath))) {
-            logger.debug("Skipping JWT resolution for public path: {}", normalizedPath);
+            logger.debug("Skipping JWT resolution for public path: {}", SanitizeUtil.forLog(normalizedPath));
             return null;
         }
 

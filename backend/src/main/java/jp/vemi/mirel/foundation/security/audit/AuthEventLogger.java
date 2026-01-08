@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * 認証イベント監査ログ.
@@ -35,12 +36,12 @@ public class AuthEventLogger {
         try {
             MDC.put("event", "AUTH_LOGIN_SUCCESS");
             MDC.put("userId", userId);
-            MDC.put("username", sanitize(username));
-            MDC.put("ipAddress", sanitize(ipAddress));
-            MDC.put("userAgent", sanitize(userAgent));
+            MDC.put("username", SanitizeUtil.forLog(username));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
+            MDC.put("userAgent", SanitizeUtil.forLog(userAgent));
 
             logger.info("Login successful: userId={}, username={}, ip={}",
-                    userId, sanitize(username), sanitize(ipAddress));
+                    userId, SanitizeUtil.forLog(username), SanitizeUtil.forLog(ipAddress));
         } finally {
             clearMDC();
         }
@@ -52,13 +53,13 @@ public class AuthEventLogger {
     public void logLoginFailure(String usernameOrEmail, String reason, String ipAddress, String userAgent) {
         try {
             MDC.put("event", "AUTH_LOGIN_FAILURE");
-            MDC.put("usernameOrEmail", sanitize(usernameOrEmail));
-            MDC.put("reason", sanitize(reason));
-            MDC.put("ipAddress", sanitize(ipAddress));
-            MDC.put("userAgent", sanitize(userAgent));
+            MDC.put("usernameOrEmail", SanitizeUtil.forLog(usernameOrEmail));
+            MDC.put("reason", SanitizeUtil.forLog(reason));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
+            MDC.put("userAgent", SanitizeUtil.forLog(userAgent));
 
             logger.warn("Login failed: usernameOrEmail={}, reason={}, ip={}",
-                    sanitize(usernameOrEmail), sanitize(reason), sanitize(ipAddress));
+                    SanitizeUtil.forLog(usernameOrEmail), SanitizeUtil.forLog(reason), SanitizeUtil.forLog(ipAddress));
         } finally {
             clearMDC();
         }
@@ -70,17 +71,17 @@ public class AuthEventLogger {
     public void logOtpVerify(String email, boolean success, String purpose, String ipAddress) {
         try {
             MDC.put("event", "AUTH_OTP_VERIFY");
-            MDC.put("email", sanitize(email));
+            MDC.put("email", SanitizeUtil.forLog(email));
             MDC.put("success", String.valueOf(success));
-            MDC.put("purpose", sanitize(purpose));
-            MDC.put("ipAddress", sanitize(ipAddress));
+            MDC.put("purpose", SanitizeUtil.forLog(purpose));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
 
             if (success) {
                 logger.info("OTP verified: email={}, purpose={}, ip={}",
-                        sanitize(email), sanitize(purpose), sanitize(ipAddress));
+                        SanitizeUtil.forLog(email), SanitizeUtil.forLog(purpose), SanitizeUtil.forLog(ipAddress));
             } else {
                 logger.warn("OTP verification failed: email={}, purpose={}, ip={}",
-                        sanitize(email), sanitize(purpose), sanitize(ipAddress));
+                        SanitizeUtil.forLog(email), SanitizeUtil.forLog(purpose), SanitizeUtil.forLog(ipAddress));
             }
         } finally {
             clearMDC();
@@ -95,12 +96,12 @@ public class AuthEventLogger {
             MDC.put("event", "AUTH_REFRESH");
             MDC.put("userId", userId);
             MDC.put("success", String.valueOf(success));
-            MDC.put("ipAddress", sanitize(ipAddress));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
 
             if (success) {
-                logger.debug("Token refreshed: userId={}, ip={}", userId, sanitize(ipAddress));
+                logger.debug("Token refreshed: userId={}, ip={}", userId, SanitizeUtil.forLog(ipAddress));
             } else {
-                logger.warn("Token refresh failed: userId={}, ip={}", userId, sanitize(ipAddress));
+                logger.warn("Token refresh failed: userId={}, ip={}", userId, SanitizeUtil.forLog(ipAddress));
             }
         } finally {
             clearMDC();
@@ -114,9 +115,9 @@ public class AuthEventLogger {
         try {
             MDC.put("event", "AUTH_LOGOUT");
             MDC.put("userId", userId);
-            MDC.put("ipAddress", sanitize(ipAddress));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
 
-            logger.info("User logged out: userId={}, ip={}", userId, sanitize(ipAddress));
+            logger.info("User logged out: userId={}, ip={}", userId, SanitizeUtil.forLog(ipAddress));
         } finally {
             clearMDC();
         }
@@ -128,12 +129,12 @@ public class AuthEventLogger {
     public void logKeyRotation(String oldKeyId, String newKeyId, String reason) {
         try {
             MDC.put("event", "AUTH_KEY_ROTATION");
-            MDC.put("oldKeyId", sanitize(oldKeyId));
-            MDC.put("newKeyId", sanitize(newKeyId));
-            MDC.put("reason", sanitize(reason));
+            MDC.put("oldKeyId", SanitizeUtil.forLog(oldKeyId));
+            MDC.put("newKeyId", SanitizeUtil.forLog(newKeyId));
+            MDC.put("reason", SanitizeUtil.forLog(reason));
 
             logger.info("JWT key rotated: oldKeyId={}, newKeyId={}, reason={}",
-                    sanitize(oldKeyId), sanitize(newKeyId), sanitize(reason));
+                    SanitizeUtil.forLog(oldKeyId), SanitizeUtil.forLog(newKeyId), SanitizeUtil.forLog(reason));
         } finally {
             clearMDC();
         }
@@ -145,26 +146,14 @@ public class AuthEventLogger {
     public void logAccountLocked(String usernameOrEmail, String ipAddress) {
         try {
             MDC.put("event", "AUTH_ACCOUNT_LOCKED");
-            MDC.put("usernameOrEmail", sanitize(usernameOrEmail));
-            MDC.put("ipAddress", sanitize(ipAddress));
+            MDC.put("usernameOrEmail", SanitizeUtil.forLog(usernameOrEmail));
+            MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
 
             logger.warn("Account locked due to multiple failed attempts: usernameOrEmail={}, ip={}",
-                    sanitize(usernameOrEmail), sanitize(ipAddress));
+                    SanitizeUtil.forLog(usernameOrEmail), SanitizeUtil.forLog(ipAddress));
         } finally {
             clearMDC();
         }
-    }
-
-    /**
-     * ログインジェクション対策のためサニタイズ.
-     */
-    private String sanitize(String value) {
-        if (value == null) {
-            return "null";
-        }
-        // 改行・タブ・制御文字を除去
-        return value.replaceAll("[\\r\\n\\t]", "_")
-                .replaceAll("[\\x00-\\x1F]", "");
     }
 
     private void clearMDC() {
