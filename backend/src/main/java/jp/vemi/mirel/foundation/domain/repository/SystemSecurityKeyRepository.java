@@ -55,13 +55,15 @@ public interface SystemSecurityKeyRepository extends JpaRepository<SystemSecurit
 
     /**
      * 期限切れとしてマークすべき鍵を取得.
+     * 呼び出し側で cutoffTime を計算して渡すこと（例: Instant.now().minus(gracePeriodDays,
+     * ChronoUnit.DAYS)）
      *
      * @param usePurpose
      *            用途
-     * @param gracePeriodDays
-     *            猶予期間（日数）
+     * @param cutoffTime
+     *            この時刻より前にretiredAtがある鍵を期限切れとして返す
      * @return 期限切れ対象の鍵リスト
      */
-    @Query("SELECT k FROM SystemSecurityKey k WHERE k.usePurpose = :usePurpose AND k.status = 'VALID' AND k.retiredAt < CURRENT_TIMESTAMP - :gracePeriodDays * INTERVAL '1 day'")
-    List<SystemSecurityKey> findExpiredKeys(String usePurpose, int gracePeriodDays);
+    @Query("SELECT k FROM SystemSecurityKey k WHERE k.usePurpose = :usePurpose AND k.status = 'VALID' AND k.retiredAt < :cutoffTime")
+    List<SystemSecurityKey> findExpiredKeys(String usePurpose, java.time.Instant cutoffTime);
 }
