@@ -36,6 +36,7 @@ interface AuthState {
   
   setAuth: (user: UserProfile, tenant: TenantContextDto | null, tokens: TokenDto) => void;
   clearAuth: () => void;
+  refreshAccessToken: () => Promise<boolean>;
   updateUser: (updatedUser: Partial<UserProfile>) => void;
   
   // OTP Actions
@@ -208,6 +209,33 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           licenses: [],
           isAuthenticated: false 
         });
+      },
+
+      /**
+       * リフレッシュトークンを使用してアクセストークンを更新
+       * @returns 更新成功時true、失敗時false
+       */
+      refreshAccessToken: async () => {
+        try {
+          const { tokens } = get();
+          if (!tokens?.refreshToken) {
+            console.log('[Auth] No refresh token available');
+            return false;
+          }
+
+          console.log('[Auth] Refreshing access token...');
+          const response = await authApi.refreshToken(tokens.refreshToken);
+          // refreshTokenはTokenDtoを直接返す
+          set({
+            tokens: response,
+          });
+          
+          console.log('[Auth] Access token refreshed successfully');
+          return true;
+        } catch (error) {
+          console.error('[Auth] Failed to refresh access token', error);
+          return false;
+        }
       },
 
       updateUser: (updatedUser: Partial<UserProfile>) => {
