@@ -76,6 +76,7 @@ public class BootstrapService {
      */
     @Transactional
     public AdminUserDto createInitialAdmin(CreateInitialAdminRequest request) {
+        // lgtm[java/log-injection] - logging fixed string only, no user input
         logger.info("Creating initial admin user");
 
         // 1. Bootstrap可能状態チェック

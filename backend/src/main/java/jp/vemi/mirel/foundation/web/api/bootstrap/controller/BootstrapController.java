@@ -76,6 +76,7 @@ public class BootstrapController {
     @PostMapping("/admin")
     public ResponseEntity<AdminUserDto> createInitialAdmin(
             @Valid @RequestBody CreateInitialAdminRequest request) {
+        // lgtm[java/log-injection] - logging fixed string only, no user input
         logger.info("Creating initial admin user");
 
         AdminUserDto adminUser = bootstrapService.createInitialAdmin(request);

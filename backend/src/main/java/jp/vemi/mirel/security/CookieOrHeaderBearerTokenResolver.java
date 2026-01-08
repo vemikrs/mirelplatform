@@ -57,6 +57,7 @@ public class CookieOrHeaderBearerTokenResolver implements BearerTokenResolver {
         final String normalizedPath = path;
         if (SKIP_JWT_PATHS.stream()
                 .anyMatch(skipPath -> normalizedPath.equals(skipPath) || normalizedPath.startsWith(skipPath))) {
+            // lgtm[java/log-injection] - path is sanitized with SanitizeUtil.forLog()
             logger.debug("Skipping JWT resolution for public path: {}", SanitizeUtil.forLog(normalizedPath));
             return null;
         }

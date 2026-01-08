@@ -168,6 +168,7 @@ public class PromptBuilder {
         // ファイル添付情報を変換
         List<AiRequest.Message.AttachedFile> aiAttachedFiles = null;
         if (request.getMessage().getAttachedFiles() != null && !request.getMessage().getAttachedFiles().isEmpty()) {
+            // lgtm[java/log-injection] - logging only the count (integer), not user input
             log.info("PromptBuilder: Converting {} attached files to AiRequest",
                     request.getMessage().getAttachedFiles().size());
             aiAttachedFiles = request.getMessage().getAttachedFiles().stream()
@@ -189,6 +190,7 @@ public class PromptBuilder {
                 .content(sandboxedContent)
                 .attachedFiles(aiAttachedFiles)
                 .build();
+        // lgtm[java/log-injection] - logging only the count (integer), not user input
         log.info("PromptBuilder: Created user message with {} attachedFiles",
                 userMessage.getAttachedFiles() != null ? userMessage.getAttachedFiles().size() : 0);
         messages.add(userMessage);

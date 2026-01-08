@@ -40,6 +40,8 @@ public class AuthEventLogger {
             MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
             MDC.put("userAgent", SanitizeUtil.forLog(userAgent));
 
+            // lgtm[java/log-injection] - all user inputs are sanitized with
+            // SanitizeUtil.forLog()
             logger.info("Login successful: userId={}, username={}, ip={}",
                     userId, SanitizeUtil.forLog(username), SanitizeUtil.forLog(ipAddress));
         } finally {
@@ -58,6 +60,8 @@ public class AuthEventLogger {
             MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
             MDC.put("userAgent", SanitizeUtil.forLog(userAgent));
 
+            // lgtm[java/log-injection] - all user inputs are sanitized with
+            // SanitizeUtil.forLog()
             logger.warn("Login failed: usernameOrEmail={}, reason={}, ip={}",
                     SanitizeUtil.forLog(usernameOrEmail), SanitizeUtil.forLog(reason), SanitizeUtil.forLog(ipAddress));
         } finally {
@@ -149,6 +153,8 @@ public class AuthEventLogger {
             MDC.put("usernameOrEmail", SanitizeUtil.forLog(usernameOrEmail));
             MDC.put("ipAddress", SanitizeUtil.forLog(ipAddress));
 
+            // lgtm[java/log-injection] - all user inputs are sanitized with
+            // SanitizeUtil.forLog()
             logger.warn("Account locked due to multiple failed attempts: usernameOrEmail={}, ip={}",
                     SanitizeUtil.forLog(usernameOrEmail), SanitizeUtil.forLog(ipAddress));
         } finally {

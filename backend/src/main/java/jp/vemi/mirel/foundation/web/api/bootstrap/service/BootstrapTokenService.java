@@ -93,6 +93,8 @@ public class BootstrapTokenService {
                 logger.debug("POSIX file permissions not supported on this OS");
             }
 
+            // lgtm[java/sensitive-log] - logging fixed success message only, no sensitive
+            // data
             logger.info("Bootstrap token file created successfully");
             // Note: Token value intentionally not logged for security
 
@@ -165,6 +167,8 @@ public class BootstrapTokenService {
         try {
             if (Files.exists(tokenPath)) {
                 Files.delete(tokenPath);
+                // lgtm[java/sensitive-log] - logging fixed success message only, no sensitive
+                // data
                 logger.info("Bootstrap token file deleted successfully");
             }
             cachedToken = null;

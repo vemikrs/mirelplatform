@@ -150,6 +150,8 @@ public class PromptInjectionDetector {
         List<String> detectedPatterns = new ArrayList<>();
 
         for (InjectionPattern pattern : INJECTION_PATTERNS) {
+            // lgtm[java/polynomial-redos] - input length is bounded by MAX_INPUT_LENGTH
+            // (line 145-147), preventing ReDoS
             if (pattern.pattern().matcher(safeInput).find()) {
                 totalScore += pattern.weight();
                 detectedPatterns.add(pattern.name());

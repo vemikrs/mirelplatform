@@ -111,6 +111,8 @@ public class AesCryptoService {
             byte[] cipherText = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
 
             // IV + CipherText を連結
+            // lgtm[java/uncontrolled-arithmetic] - iv.length is fixed (12),
+            // cipherText.length <= plainText.length + 16 (GCM tag), no realistic overflow
             ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length);
             byteBuffer.put(iv);
             byteBuffer.put(cipherText);
