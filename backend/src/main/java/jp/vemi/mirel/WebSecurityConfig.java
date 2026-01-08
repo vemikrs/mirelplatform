@@ -159,6 +159,7 @@ public class WebSecurityConfig {
                         "/auth/login",
                         "/auth/refresh", // リフレッシュトークンはCSRF対象外とする場合が多いが、Cookie保存なら必要かも。ここでは一旦除外
                         "/api/auth/device/**", // デバイスフロー認証エンドポイント（CLI用）
+                        "/api/bootstrap/**", // Bootstrap API（初期セットアップ用）
                         "/login/oauth2/code/**", // OAuth2コールバックをCSRF除外
                         "/oauth2/**") // OAuth2認証エンドポイントをCSRF除外
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -218,7 +219,9 @@ public class WebSecurityConfig {
                     "/auth/setup-account", // アカウントセットアップ（パスワード設定） (Issue #57)
                     "/auth/health",
                     "/auth/logout",
-                    "/auth/check").permitAll()
+                    "/auth/check",
+                    "/api/bootstrap/**" // Bootstrap API（初期セットアップ用）
+            ).permitAll()
 
                     // デバイスフロー認証エンドポイント(CLI用)
                     .requestMatchers(
