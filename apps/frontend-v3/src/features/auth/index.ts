@@ -1,1 +1,1 @@
-export { UnifiedLoginPage, SignupPage, PasswordResetRequestPage, PasswordResetConfirmPage, SetupAccountPage } from './pages';
+export { UnifiedLoginPage, SignupPage, PasswordResetRequestPage, PasswordResetConfirmPage, SetupAccountPage, BootstrapPage } from './pages';
