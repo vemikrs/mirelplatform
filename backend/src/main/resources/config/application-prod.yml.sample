@@ -1,0 +1,62 @@
+# 本番環境設定サンプル
+# このファイルを参考に、本番環境用の設定を行ってください。
+# 実際の設定値は環境変数で提供するか、IaCリポジトリで管理してください。
+
+# ========================================
+# 必須環境変数
+# ========================================
+# DATABASE_URL=jdbc:postgresql://localhost:5432/mirelplatform
+# DATABASE_DRIVER=org.postgresql.Driver
+# DATABASE_USER=mirel
+# DATABASE_PASS=<secure-password>
+# DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+# 
+# JWT_SECRET=<32文字以上のランダム文字列>
+# 
+# REDIS_HOST=localhost
+# REDIS_PORT=6379
+# REDIS_PASSWORD=<redis-password>
+
+# ========================================
+# mirel設定
+# ========================================
+mirel:
+  database:
+    # 初期化モード
+    # - ONCE: 初回起動時のみシステムデータをシーディング（推奨）
+    # - NEVER: シーディングを一切行わない
+    # - ALWAYS: 毎起動時にシーディング（非推奨）
+    initialize-mode: ONCE
+    
+    # サンプルデータ投入
+    # 本番環境では必ずfalseに設定
+    seed-sample-data: false
+
+# ========================================
+# セキュリティ設定
+# ========================================
+mipla2:
+  security:
+    api:
+      enabled: true
+      csrf-enabled: true  # 本番ではCSRF有効化必須
+
+# ========================================
+# Mira AI設定（必要に応じて）
+# ========================================
+# mira:
+#   ai:
+#     provider: vertex-ai-gemini
+#     vertex-ai:
+#       project-id: ${GEMINI_PROJECT_ID}
+#       location: ${GEMINI_LOCATION}
+#       model: gemini-2.5-flash
+
+# ========================================
+# ログ設定
+# ========================================
+logging:
+  level:
+    jp.vemi.mirel: INFO
+    org.springframework: WARN
+    org.springframework.security: WARN
