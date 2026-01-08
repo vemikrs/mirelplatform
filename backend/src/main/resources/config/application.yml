@@ -127,6 +127,11 @@ mipla2:
 
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  database:
+    # 初期化モード: ALWAYS（毎回）, ONCE（初回のみ、デフォルト）, NEVER（実行しない）
+    initialize-mode: ${MIREL_DB_INITIALIZE_MODE:ONCE}
+    # サンプルデータ投入（本番環境ではfalse）
+    seed-sample-data: ${MIREL_DB_SEED_SAMPLE:false}
   # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
   apps:
     mste:

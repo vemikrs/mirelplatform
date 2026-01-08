@@ -71,6 +71,10 @@ logging:
 
 mirel:
   storage-dir: ./data/storage
+  database:
+    # 開発環境: 毎回シーディング実行、サンプルデータも投入
+    initialize-mode: ALWAYS
+    seed-sample-data: true
   stencil:
     layers:
       user: ${mirel.storage-dir}/apps/promarker/stencil/user
