@@ -116,6 +116,12 @@ public class PromptInjectionDetector {
                     "xml_structure_injection", 2));
 
     /**
+     * パターンマッチングの最大入力長.
+     * ReDoS攻撃を防ぐため、この長さを超える入力はトランケートされる。
+     */
+    private static final int MAX_INPUT_LENGTH = 10000;
+
+    /**
      * 入力をチェックしてインジェクションの可能性を検出.
      *
      * @param input
@@ -135,11 +141,16 @@ public class PromptInjectionDetector {
             return InjectionCheckResult.safe();
         }
 
+        // ReDoS対策: 入力長を制限
+        String safeInput = input.length() > MAX_INPUT_LENGTH
+                ? input.substring(0, MAX_INPUT_LENGTH)
+                : input;
+
         int totalScore = 0;
         List<String> detectedPatterns = new ArrayList<>();
 
         for (InjectionPattern pattern : INJECTION_PATTERNS) {
-            if (pattern.pattern().matcher(input).find()) {
+            if (pattern.pattern().matcher(safeInput).find()) {
                 totalScore += pattern.weight();
                 detectedPatterns.add(pattern.name());
 
