@@ -57,7 +57,7 @@ public class DatabaseInitializer {
     private boolean seedSampleData;
 
     @Bean
-    public ApplicationRunner databaseInitializer() {
+    public ApplicationRunner initializeDatabase() {
         return args -> {
             logger.info("Database initialization started. mode={}, seedSampleData={}",
                     initializeMode, seedSampleData);
