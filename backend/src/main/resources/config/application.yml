@@ -127,6 +127,11 @@ mipla2:
 
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  # セキュリティ設定
+  security:
+    # JWT署名鍵暗号化用マスターキー（Base64エンコード、32バイト以上）
+    # 本番環境では必ず環境変数で設定すること
+    master-key: ${MIREL_MASTER_KEY:}
   database:
     # 初期化モード: ALWAYS（毎回）, ONCE（初回のみ、デフォルト）, NEVER（実行しない）
     initialize-mode: ${MIREL_DB_INITIALIZE_MODE:ONCE}
