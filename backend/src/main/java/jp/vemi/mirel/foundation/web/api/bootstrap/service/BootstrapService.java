@@ -76,7 +76,7 @@ public class BootstrapService {
      */
     @Transactional
     public AdminUserDto createInitialAdmin(CreateInitialAdminRequest request) {
-        logger.info("Creating initial admin: username={}", request.getUsername());
+        logger.info("Creating initial admin user");
 
         // 1. Bootstrap可能状態チェック
         if (!isBootstrapAvailable()) {

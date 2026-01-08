@@ -76,7 +76,7 @@ public class BootstrapController {
     @PostMapping("/admin")
     public ResponseEntity<AdminUserDto> createInitialAdmin(
             @Valid @RequestBody CreateInitialAdminRequest request) {
-        logger.info("Creating initial admin: username={}", request.getUsername());
+        logger.info("Creating initial admin user");
 
         AdminUserDto adminUser = bootstrapService.createInitialAdmin(request);
 

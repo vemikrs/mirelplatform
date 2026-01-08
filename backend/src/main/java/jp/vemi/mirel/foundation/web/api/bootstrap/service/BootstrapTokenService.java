@@ -93,8 +93,8 @@ public class BootstrapTokenService {
                 logger.debug("POSIX file permissions not supported on this OS");
             }
 
-            logger.info("Bootstrap token file created: {}", tokenPath);
-            logger.info("=== Bootstrap token: {} ===", token);
+            logger.info("Bootstrap token file created successfully");
+            // Note: Token value intentionally not logged for security
 
             return token;
         } catch (IOException e) {
@@ -165,7 +165,7 @@ public class BootstrapTokenService {
         try {
             if (Files.exists(tokenPath)) {
                 Files.delete(tokenPath);
-                logger.info("Bootstrap token file deleted: {}", tokenPath);
+                logger.info("Bootstrap token file deleted successfully");
             }
             cachedToken = null;
         } catch (IOException e) {

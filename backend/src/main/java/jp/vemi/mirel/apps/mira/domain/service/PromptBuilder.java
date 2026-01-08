@@ -172,8 +172,6 @@ public class PromptBuilder {
                     request.getMessage().getAttachedFiles().size());
             aiAttachedFiles = request.getMessage().getAttachedFiles().stream()
                     .map(f -> {
-                        log.debug("Converting file: fileId={}, fileName={}, mimeType={}", f.getFileId(),
-                                f.getFileName(), f.getMimeType());
                         return AiRequest.Message.AttachedFile.builder()
                                 .fileId(f.getFileId())
                                 .fileName(f.getFileName())
