@@ -50,6 +50,14 @@ export function UnifiedLoginPage() {
   // GitHub OAuth未設定の判定（環境変数で制御する想定）
   const isGitHubOAuthEnabled = true; // TODO: 実際の環境変数から取得
 
+  // ログインページ表示時に古いJWT Cookieをクリア
+  // 無効なJWTが残っていると認証リクエストが失敗するため
+  useEffect(() => {
+    // accessToken Cookieを削除（古いJWTをクリア）
+    document.cookie = 'accessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+  }, []);
+
   // returnUrlパラメータがある場合のメッセージ表示
   useEffect(() => {
     const returnUrl = searchParams.get('returnUrl');
