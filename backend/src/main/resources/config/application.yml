@@ -28,29 +28,39 @@ spring:
       mode: always
   autoconfigure:
     exclude:
-      # - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
-      # - org.springframework.ai.vertexai.gemini.autoconfigure.VertexAiGeminiAutoConfiguration
-      # - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+      # Spring AI AutoConfigure を全て無効化
+      # Chat / Embedding / VectorStore は Mira 独自の VectorStoreConfig で手動構成
+      # --- PgVectorStore ---
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+      # --- Vertex AI (両パッケージ) ---
+      - org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
+      - org.springframework.ai.autoconfigure.vertexai.embedding.VertexAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiEmbeddingConnectionAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiTextEmbeddingAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiMultiModalEmbeddingAutoConfiguration
+      # --- OpenAI (両パッケージ) ---
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
 
-  # Spring AI Configuration for AutoConfig
-  ai:
-    vertex:
-      ai:
-        project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
-        location: ${GEMINI_LOCATION:us-central1}
-        gemini:
-          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
-          location: ${GEMINI_LOCATION:us-central1}
-        embedding:
-          project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
-          location: ${GEMINI_LOCATION:us-central1}
-    vectorstore:
-      pgvector:
-        initialize-schema: true
-        table-name: mir_mira_vector_store
-        dimensions: 768
-        index-type: HNSW
-        distance-type: COSINE_DISTANCE
+  # MVC非同期処理設定（Mira ストリーミング応答用）
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 100
+      thread-name-prefix: MiraAsync-
+  mvc:
+    async:
+      request-timeout: 120000  # 2分タイムアウト
+
   # Redis設定
   data:
     redis:
