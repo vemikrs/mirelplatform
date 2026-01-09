@@ -285,6 +285,19 @@ mira:
       min-candidates: 10  # 10件以上の候補がある場合のみリランク実行
       timeout-ms: 5000
 
+    # VectorStore 設定 (PgVector)
+    vector-store:
+      table-name: mir_mira_vector_store
+      dimensions: 768
+      distance-type: COSINE_DISTANCE
+      index-type: HNSW
+      initialize-schema: true
+
+    # トークンクォータ設定
+    quota:
+      enabled: false  # デフォルト無効
+      daily-token-limit: 1000000
+
 # アプリケーション情報（actuator/info で公開）
 info:
   app:
