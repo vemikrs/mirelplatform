@@ -195,12 +195,15 @@ public class PromptBuilder {
                 userMessage.getAttachedFiles() != null ? userMessage.getAttachedFiles().size() : 0);
         messages.add(userMessage);
 
+        // 注意: tenantId/userId/conversationId は呼び出し元 (MiraChatService/MiraStreamService)
+        // で設定必須
+        // MetricsWrappedAiClient がこれらを使用してメトリクスとトークン使用量を記録する
         return AiRequest.builder()
                 .messages(messages)
                 .temperature(getTemperatureForMode(mode))
                 .maxTokens(getMaxTokensForMode(mode))
-                .tenantId(null) // 呼び出し元で設定
-                .userId(null) // 呼び出し元で設定
+                .tenantId(null) // 呼び出し元で必ず設定すること
+                .userId(null) // 呼び出し元で必ず設定すること
                 .build();
     }
 

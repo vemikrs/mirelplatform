@@ -23,6 +23,7 @@ interface MiraChatMessageProps {
 
 export function MiraChatMessage({ message, className, compact = false, onEdit, userAvatarUrl }: MiraChatMessageProps) {
   const [copied, setCopied] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const isUser = message.role === 'user';
   
   const handleCopy = async () => {
@@ -49,14 +50,20 @@ export function MiraChatMessage({ message, className, compact = false, onEdit, u
         className={cn(
           'shrink-0 rounded-full flex items-center justify-center overflow-hidden',
           compact ? 'w-6 h-6' : 'w-8 h-8',
+          // bg-secondary: ダークモードでの視認性改善のため bg-primary から変更
           isUser 
             ? 'bg-secondary text-secondary-foreground' 
             : 'bg-muted text-muted-foreground'
         )}
       >
         {isUser ? (
-          userAvatarUrl ? (
-            <img src={userAvatarUrl} alt="User" className="w-full h-full object-cover" />
+          userAvatarUrl && !avatarError ? (
+            <img 
+              src={userAvatarUrl} 
+              alt="User" 
+              className="w-full h-full object-cover" 
+              onError={() => setAvatarError(true)}
+            />
           ) : (
             <User className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
           )

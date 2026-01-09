@@ -102,7 +102,11 @@ public class MetricsWrappedAiClient implements AiProviderClient {
     }
 
     private int getTokensOrZero(Integer tokens) {
-        return tokens != null ? tokens : 0;
+        if (tokens == null) {
+            log.debug("[MetricsWrappedAiClient] Token count unavailable, defaulting to 0");
+            return 0;
+        }
+        return tokens;
     }
 
     /**

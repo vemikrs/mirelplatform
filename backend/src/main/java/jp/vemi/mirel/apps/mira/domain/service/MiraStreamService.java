@@ -270,7 +270,8 @@ public class MiraStreamService {
 
                     // Workaround: Spring AI 1.1.x ストリームリトライ時の内部状態不整合
                     // "No StreamAdvisors available to execute" は Advisor チェーン状態破損時に発生
-                    // → バージョン更新時に修正確認を推奨
+                    // TODO(Spring AI 1.2.0+): この workaround が不要かどうか確認し、不要なら削除する
+                    // 現在のバージョン: Spring AI 1.1.2 (2026-01時点)
                     if (e.getMessage() != null && e.getMessage().contains("StreamAdvisors")) {
                         return Flux.just(MiraStreamResponse.error("AI_FRAMEWORK_ERROR",
                                 "AI サービスで一時的な問題が発生しました。再度お試しください。"));
