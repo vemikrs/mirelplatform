@@ -137,7 +137,7 @@ AI Model Layer → Orchestration Layer：
 
 ### 4.2 技術選定: Spring AI 1.1 GA + Mira 独自構成
 
-> **⚠️ 重要 (2026年1月時点)**: Mira はマルチプロバイダー環境で Spring AI を使用しています。
+> **⚠️ 重要 (Spring AI 1.1.x 使用時)**: Mira はマルチプロバイダー環境で Spring AI を使用しています。
 > **Spring AI autoconfigure は全て無効化**し、Mira 独自の `VectorStoreConfig` で Bean を手動構成しています。
 > これにより、Beanコンフリクトを回避しつつベンダー非依存の設計を実現しています。
 
