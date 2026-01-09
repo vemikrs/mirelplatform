@@ -73,7 +73,12 @@ mirel:
   storage-dir: ./data/storage
   database:
     # 開発環境: 毎回シーディング実行、サンプルデータも投入
+    # initialize-mode: ALWAYS
+    #   - アプリ起動ごとに DB 初期化ロジックを実行します（テーブル定義の再作成やマイグレーション適用など）
+    #   - 既存データが削除／上書きされる想定のため、ローカル開発専用です（本番/検証環境では NEVER 等を利用）
+    #   - 下記 seed-sample-data が true の場合、初期データに加えてサンプルデータも毎回投入されます
     initialize-mode: ALWAYS
+    # true: 初期データに加え、サンプルデータも毎回投入（画面動作確認用）
     seed-sample-data: true
   stencil:
     layers:
