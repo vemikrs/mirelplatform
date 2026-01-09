@@ -36,6 +36,7 @@ public class MiraHybridSearchService {
     private final ObjectMapper objectMapper;
     private final RerankerService rerankerService;
     private final MiraSettingService settingService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties aiProperties;
 
     private static final int RRF_K = 60;
 
@@ -129,7 +130,8 @@ public class MiraHybridSearchService {
 
         // Build LIKE clauses for each term
         StringBuilder sqlBuilder = new StringBuilder();
-        sqlBuilder.append("SELECT id, content, metadata FROM vector_store WHERE ");
+        String tableName = aiProperties.getVectorStore().getTableName();
+        sqlBuilder.append("SELECT id, content, metadata FROM ").append(tableName).append(" WHERE ");
 
         List<String> likeClauses = new ArrayList<>();
         List<String> params = new ArrayList<>();
