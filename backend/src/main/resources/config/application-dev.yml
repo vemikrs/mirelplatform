@@ -1,24 +1,6 @@
 # application-dev.yml - Development Environment Configuration
 # PostgreSQL (docker-compose.dev.yml) を使用
 spring:
-  # Spring AI autoconfigure を無効化（Mira独自の設定で制御）
-  ai:
-    model:
-      chat: none
-      embedding: none
-      image: none
-      moderation: none
-      audio:
-        speech: none
-        transcription: none
-    vertex:
-      ai:
-        gemini:
-          project-id: dev-dummy-project
-          location: us-central1
-          chat:
-            options:
-              model: ${GEMINI_MODEL}
   datasource:
     url: jdbc:postgresql://localhost:5432/mirelplatform
     driver-class-name: org.postgresql.Driver
