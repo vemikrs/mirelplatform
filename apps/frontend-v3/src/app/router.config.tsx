@@ -13,6 +13,7 @@ import {
   PasswordResetRequestPage, 
   PasswordResetConfirmPage,
   SetupAccountPage,
+  BootstrapPage,
 } from '@/features/auth';
 import { UnifiedLoginPage } from '@/features/auth/pages/UnifiedLoginPage';
 import { OtpVerifyPage } from '@/features/auth/pages/OtpVerifyPage';
@@ -175,6 +176,12 @@ export const router = createBrowserRouter([
   {
     path: '/auth/setup-account',
     element: <SetupAccountPage />,
+  },
+  // Bootstrap (initial setup)
+  {
+    path: '/bootstrap',
+    element: <BootstrapPage />,
+    handle: { title: '初期セットアップ' },
   },
   // OAuth2 Callback Route
   {

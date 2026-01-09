@@ -22,9 +22,9 @@ Mira は単体のアプリケーションではなく、mirelplatform の **Unif
 
 Mira のアーキテクチャは、次の 4 レイヤで構成する。
 
-1. **Interaction Layer（インタラクションレイヤ）**  
-2. **Orchestration Layer（オーケストレーションレイヤ）**  
-3. **AI Model Layer（AI モデルレイヤ）**  
+1. **Interaction Layer（インタラクションレイヤ）**
+2. **Orchestration Layer（オーケストレーションレイヤ）**
+3. **AI Model Layer（AI モデルレイヤ）**
 4. **Platform Integration Layer（プラットフォーム統合レイヤ）**
 
 ### 2.1 Interaction Layer
@@ -47,9 +47,14 @@ Mira のアーキテクチャは、次の 4 レイヤで構成する。
 
 ### 2.3 AI Model Layer
 
-- LLM 推論の実行
-- モデル切替（fast / standard / high-precision など）
-- プロンプトバージョン管理
+- **LLM 推論の実行**
+  - マルチプロバイダー対応: Vertex AI Gemini（推奨）, Azure OpenAI, OpenAI
+  - モデル切替（fast / standard / high-precision など）
+  - プロンプトバージョン管理
+- **RAG パイプライン**
+  - ハイブリッド検索（ベクトル検索 + キーワード検索）
+  - Reciprocal Rank Fusion (RRF) による統合ランキング
+  - **Reranker**: Vertex AI Discovery Engine による二次リランキング
 - 生成結果のポストプロセス（要約、構造化、箇条書き変換など）
 
 ### 2.4 Platform Integration Layer
@@ -68,11 +73,11 @@ Mira のアーキテクチャは、次の 4 レイヤで構成する。
 
 Mira の API は mirelplatform の標準パス規約に従う。
 
-| エンドポイント | 用途 |
-|---------------|------|
-| `POST /apps/mira/api/chat` | チャットメッセージ送受信 |
-| `POST /apps/mira/api/context-snapshot` | 画面コンテキスト登録 |
-| `POST /apps/mira/api/error-report` | エラー情報登録 |
+| エンドポイント                         | 用途                     |
+| -------------------------------------- | ------------------------ |
+| `POST /apps/mira/api/chat`             | チャットメッセージ送受信 |
+| `POST /apps/mira/api/context-snapshot` | 画面コンテキスト登録     |
+| `POST /apps/mira/api/error-report`     | エラー情報登録           |
 | `GET /apps/mira/api/conversation/{id}` | 会話履歴取得（将来拡張） |
 
 > **注**: フロントエンドからは Vite プロキシ経由で `/mapi/apps/mira/api/*` でアクセス。詳細は [api-spec.md](../03_functional/api-spec.md) を参照。
@@ -104,10 +109,10 @@ Mira の API は mirelplatform の標準パス規約に従う。
 
 Mira は内部的に「モード」を持ち、Orchestration Layer が切り替える。
 
-- `general_chat`  
-- `context_help`  
-- `error_analyze`  
-- `studio_agent`  
+- `general_chat`
+- `context_help`
+- `error_analyze`
+- `studio_agent`
 - `workflow_agent`
 
 各モードごとに：

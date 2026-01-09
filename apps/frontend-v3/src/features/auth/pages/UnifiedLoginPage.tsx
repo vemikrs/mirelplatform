@@ -26,6 +26,7 @@ export function UnifiedLoginPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Store & Hooks
   const setOtpState = useAuthStore((state) => state.setOtpState);
@@ -49,6 +50,10 @@ export function UnifiedLoginPage() {
 
   // GitHub OAuth未設定の判定（環境変数で制御する想定）
   const isGitHubOAuthEnabled = true; // TODO: 実際の環境変数から取得
+
+  // NOTE: 古いJWT Cookieのクリアはバックエンドで対応
+  // HttpOnly CookieはJavaScriptから削除できないため、
+  // CookieOrHeaderBearerTokenResolverで認証不要パスではJWT解決をスキップする
 
   // returnUrlパラメータがある場合のメッセージ表示
   useEffect(() => {
@@ -87,7 +92,7 @@ export function UnifiedLoginPage() {
     setPasswordLoading(true);
 
     try {
-      await login({ usernameOrEmail, password });
+      await login({ usernameOrEmail, password, rememberMe });
       
       // returnUrlパラメータがあればそこへ、なければホームへ
       const returnUrl = searchParams.get('returnUrl');
@@ -246,6 +251,20 @@ export function UnifiedLoginPage() {
                     )}
                   </div>
                 )}
+
+                {/* Remember Me チェックボックス */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="rememberMe" className="text-sm text-muted-foreground">
+                    ログイン状態を保持する（90日間）
+                  </label>
+                </div>
 
                 <Button
                   type="submit"

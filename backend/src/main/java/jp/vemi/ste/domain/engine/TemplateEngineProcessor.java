@@ -648,7 +648,7 @@ public class TemplateEngineProcessor {
             File candidateDir = constructSecurePath(layerDir, sanitizedCanonicalName);
 
             if (candidateDir.exists() && candidateDir.isDirectory()) {
-                logger.debug("Found stencil directory in layer: {}", candidateDir.getAbsolutePath());
+                logger.debug("Found stencil directory in layer: {}", SanitizeUtil.forLog(candidateDir.getAbsolutePath()));
                 return candidateDir.getAbsolutePath();
             }
         }
@@ -725,7 +725,7 @@ public class TemplateEngineProcessor {
 
     public StencilSettingsYml getStencilSettings() {
         logger.debug("[GET_SETTINGS] Called with stencilCanonicalName={}, serialNo={}",
-                context.getStencilCanonicalName(), context.getSerialNo());
+                SanitizeUtil.forLog(context.getStencilCanonicalName()), SanitizeUtil.forLog(context.getSerialNo()));
 
         // レイヤード検索: ユーザー → 標準 → サンプル の順で検索
         StencilSettingsYml settings = findStencilSettingsInLayers();
@@ -757,7 +757,7 @@ public class TemplateEngineProcessor {
      */
     private StencilSettingsYml findStencilSettingsInLayers() {
         logger.debug("=== DEBUG findStencilSettingsInLayers ===");
-        logger.debug("context.getStencilCanonicalName(): {}", context.getStencilCanonicalName());
+        logger.debug("context.getStencilCanonicalName(): {}", SanitizeUtil.forLog(context.getStencilCanonicalName()));
         logger.debug("resourcePatternResolver: {}", resourcePatternResolver);
 
         // 優先度順にレイヤーを検索: ユーザー → 標準 → サンプル
@@ -847,11 +847,11 @@ public class TemplateEngineProcessor {
         try {
             // 指定されたstencilCanonicalNameに対応するstencil-settings.ymlを検索
             String searchPattern = classpathLocation + context.getStencilCanonicalName() + "/**/stencil-settings.yml";
-            logger.debug("Searching for stencil settings with pattern: {}", searchPattern);
+            logger.debug("Searching for stencil settings with pattern: {}", SanitizeUtil.forLog(searchPattern));
 
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
             logger.debug("Found {} stencil-settings.yml resources for {}", resources.length,
-                    context.getStencilCanonicalName());
+                    SanitizeUtil.forLog(context.getStencilCanonicalName()));
 
             // 見つかったリソースから最初の有効なものを使用
             for (Resource resource : resources) {
@@ -898,7 +898,7 @@ public class TemplateEngineProcessor {
             String rawStencilName = context.getStencilCanonicalName();
             String safeStencilName = sanitizeStencilCanonicalName(rawStencilName);
             if (StringUtils.isEmpty(safeStencilName)) {
-                logger.warn("Invalid or empty stencilCanonicalName: {}", rawStencilName);
+                logger.warn("Invalid or empty stencilCanonicalName: {}", SanitizeUtil.forLog(rawStencilName));
                 return null;
             }
 
@@ -937,7 +937,7 @@ public class TemplateEngineProcessor {
             }
 
         } catch (Exception e) {
-            logger.warn("classpath検索でエラーが発生: {}", classpathLocation, e);
+            logger.warn("classpath検索でエラーが発生: {}", SanitizeUtil.forLog(classpathLocation), e);
         }
 
         return null;
@@ -966,7 +966,7 @@ public class TemplateEngineProcessor {
 
         // ディレクトリトラバーサルや不正な区切り文字を禁止
         if (trimmed.contains("..") || trimmed.contains("\\")) {
-            logger.warn("Detected invalid stencilCanonicalName: {}", rawStencilName);
+            logger.warn("Detected invalid stencilCanonicalName: {}", SanitizeUtil.forLog(rawStencilName));
             throw new MirelApplicationException(Collections.singletonList("Invalid stencilCanonicalName"));
         }
 
@@ -983,7 +983,7 @@ public class TemplateEngineProcessor {
     private StencilSettingsYml loadStencilSettingsFromClasspath(String resourcePath) {
         // パストラバーサル攻撃を防ぐための検証
         if (resourcePath == null || resourcePath.contains("..") || resourcePath.contains("\\")) {
-            logger.warn("Invalid resourcePath detected: {}", resourcePath);
+            logger.warn("Invalid resourcePath detected: {}", SanitizeUtil.forLog(resourcePath));
             return null;
         }
 
@@ -1001,7 +1001,7 @@ public class TemplateEngineProcessor {
                 }
             }
         } catch (Exception e) {
-            logger.debug("classpathリソース読み込み失敗: {}", resourcePath, e);
+            logger.debug("classpathリソース読み込み失敗: {}", SanitizeUtil.forLog(resourcePath), e);
         }
         return null;
     }
@@ -1041,7 +1041,7 @@ public class TemplateEngineProcessor {
             serials.sort(Collections.reverseOrder());
 
         } catch (Exception e) {
-            logger.debug("シリアル番号検索でエラー: {}", classpathLocation, e);
+            logger.debug("シリアル番号検索でエラー: {}", SanitizeUtil.forLog(classpathLocation), e);
         }
 
         return serials;
@@ -1057,8 +1057,8 @@ public class TemplateEngineProcessor {
     private StencilSettingsYml findStencilSettingsInFileSystem(String layerDir) {
         try {
             logger.debug("=== DEBUG findStencilSettingsInFileSystem ===");
-            logger.debug("layerDir: {}", layerDir);
-            logger.debug("stencilCanonicalName: {}", context.getStencilCanonicalName());
+            logger.debug("layerDir: {}", SanitizeUtil.forLog(layerDir));
+            logger.debug("stencilCanonicalName: {}", SanitizeUtil.forLog(context.getStencilCanonicalName()));
 
             // パス構築の改善 - constructSecurePath()でパストラバーサル攻撃を防ぐ
             String relativePath = context.getStencilCanonicalName().replaceFirst("^/", "");
@@ -1073,7 +1073,7 @@ public class TemplateEngineProcessor {
 
             // constructSecurePath()でパス検証を実施
             File settingsFile = constructSecurePath(layerDir, relativePath);
-            logger.debug("Searching settings file: {}", settingsFile.getAbsolutePath());
+            logger.debug("Searching settings file: {}", SanitizeUtil.forLog(settingsFile.getAbsolutePath()));
 
             if (settingsFile.exists() && settingsFile.isFile()) {
                 logger.debug("Found stencil-settings.yml: {}", settingsFile.getAbsolutePath());
@@ -1109,7 +1109,7 @@ public class TemplateEngineProcessor {
             return;
         }
 
-        logger.debug("[MERGE_UNIFIED] Starting parent merge for: {}", stencilCanonicalName);
+        logger.debug("[MERGE_UNIFIED] Starting parent merge for: {}", SanitizeUtil.forLog(stencilCanonicalName));
 
         // パス分解: /user/project/module_service → ["user", "project", "module_service"]
         String[] pathSegments = stencilCanonicalName.split("/");
@@ -1120,7 +1120,7 @@ public class TemplateEngineProcessor {
             }
         }
 
-        logger.debug("[MERGE_UNIFIED] Path segments: {}", segments);
+        logger.debug("[MERGE_UNIFIED] Path segments: {}", SanitizeUtil.forLog(segments));
 
         // 親階層を下から上へ検索（module_service → project → user）
         for (int i = segments.size() - 1; i >= 1; i--) {
@@ -1331,7 +1331,7 @@ public class TemplateEngineProcessor {
             // パターン:
             // classpath:/promarker/stencil/samples/samples/hello-world/*/stencil-settings.yml
             String searchPattern = classpathLocation + stencilCanonicalName + "/*/stencil-settings.yml";
-            logger.debug("findSerialNosInClasspath: searching with pattern: {}", searchPattern);
+            logger.debug("findSerialNosInClasspath: searching with pattern: {}", SanitizeUtil.forLog(searchPattern));
 
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
             logger.debug("findSerialNosInClasspath: found {} resources", resources.length);
@@ -1477,7 +1477,7 @@ public class TemplateEngineProcessor {
             } catch (Exception e) {
                 /* ignore */ }
 
-            logger.debug("=== Layered template search for stencil: {} serial: {} ===", stencilCanonicalName, serialNo);
+            logger.debug("=== Layered template search for stencil: {} serial: {} ===", SanitizeUtil.forLog(stencilCanonicalName), SanitizeUtil.forLog(serialNo));
 
             // Layer 1: Filesystem stencils (既存の/apps/mste/stencil)
             searchFilesystemTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
@@ -1487,7 +1487,7 @@ public class TemplateEngineProcessor {
 
             logger.debug("=== Total template files found (after duplicate check): {} ===", templateFiles.size());
             for (String file : templateFiles) {
-                logger.info("Template file: " + file);
+                logger.info("Template file: {}", SanitizeUtil.forLog(file));
             }
 
         } catch (Exception e) {
@@ -1519,7 +1519,7 @@ public class TemplateEngineProcessor {
                     stencilPath = stencilPath + "/" + serialNo;
                 }
                 File serialDir = constructSecurePath(layerDir, stencilPath);
-                logger.debug("Searching filesystem layer: {}", serialDir.getAbsolutePath());
+                logger.debug("Searching filesystem layer: {}", SanitizeUtil.forLog(serialDir.getAbsolutePath()));
 
                 if (serialDir.exists() && serialDir.isDirectory()) {
                     // serialNoディレクトリ配下の全ファイルを再帰的に取得（絶対パスで）
@@ -1544,10 +1544,10 @@ public class TemplateEngineProcessor {
                             if (!foundFileNames.contains(relativePath)) {
                                 templateFiles.add(file.getCanonicalPath());
                                 foundFileNames.add(relativePath);
-                                logger.debug("FILESYSTEM found: {}", relativePath);
+                                logger.debug("FILESYSTEM found: {}", SanitizeUtil.forLog(relativePath));
                             }
                         } catch (IOException e) {
-                            logger.warn("Error processing file {}: {}", file.getAbsolutePath(), e.getMessage());
+                            logger.warn("Error processing file {}: {}", SanitizeUtil.forLog(file.getAbsolutePath()), SanitizeUtil.forLog(e.getMessage()));
                         }
                     }
 
@@ -1557,7 +1557,7 @@ public class TemplateEngineProcessor {
                         return;
                     }
                 } else {
-                    logger.debug("FILESYSTEM serial directory not found: {}", serialDir.getAbsolutePath());
+                    logger.debug("FILESYSTEM serial directory not found: {}", SanitizeUtil.forLog(serialDir.getAbsolutePath()));
                 }
             } catch (Exception e) {
                 logger.error("Error searching filesystem layer {}: {}", layerDir, e.getMessage(), e);
@@ -1576,7 +1576,7 @@ public class TemplateEngineProcessor {
             // serialNoディレクトリ配下の全ファイルを検索（**で再帰検索）
             String searchPattern = "classpath*:promarker/stencil/samples/" + stencilCanonicalName + "/" + serialNo
                     + "/**";
-            logger.info("Searching CLASSPATH layer: " + searchPattern);
+            logger.info("Searching CLASSPATH layer: {}", SanitizeUtil.forLog(searchPattern));
 
             Resource[] resources = resourcePatternResolver.getResources(searchPattern);
             logger.info("Found " + resources.length + " classpath resources");
@@ -1670,14 +1670,14 @@ public class TemplateEngineProcessor {
         // 一時ファイル名から元のテンプレートファイル名を取得
         if (tempFileToOriginalMap.containsKey(fileName)) {
             String originalFileName = tempFileToOriginalMap.get(fileName);
-            logger.debug("Mapped temp file: {} -> {}", fileName, originalFileName);
+            logger.debug("Mapped temp file: {} -> {}", SanitizeUtil.forLog(fileName), SanitizeUtil.forLog(originalFileName));
             return originalFileName;
         }
 
         // 一時ファイルの完全パスがマップにある場合（相対パス付き）
         if (tempFileToOriginalMap.containsKey(fullPath)) {
             String originalPath = tempFileToOriginalMap.get(fullPath);
-            logger.debug("Mapped temp file path: {} -> {}", fullPath, originalPath);
+            logger.debug("Mapped temp file path: {} -> {}", SanitizeUtil.forLog(fullPath), SanitizeUtil.forLog(originalPath));
             return originalPath;
         }
 
@@ -1690,7 +1690,7 @@ public class TemplateEngineProcessor {
                 String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
                 // Windowsパス区切りをUnix形式に統一
                 relativePath = relativePath.replace('\\', '/');
-                logger.info("Extracted relative path: " + relativePath + " from " + fullPath);
+                logger.info("Extracted relative path: {} from {}", SanitizeUtil.forLog(relativePath), SanitizeUtil.forLog(fullPath));
                 return relativePath;
             } catch (Exception e) {
                 logger.info("Error extracting relative path: " + e.getMessage());
@@ -1699,7 +1699,7 @@ public class TemplateEngineProcessor {
         }
 
         // クラスパスから展開された一時ファイルの場合（マッピングが見つからない場合）
-        logger.debug("Using filename only for: {}", fullPath);
+        logger.debug("Using filename only for: {}", SanitizeUtil.forLog(fullPath));
         return fileName;
     }
 }

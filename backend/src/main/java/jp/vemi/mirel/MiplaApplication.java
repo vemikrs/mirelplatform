@@ -16,10 +16,10 @@ import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiImageA
 import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAudioTranscriptionAutoConfiguration;
 
 @SpringBootApplication(exclude = {
-    AzureOpenAiChatAutoConfiguration.class,
-    AzureOpenAiEmbeddingAutoConfiguration.class,
-    AzureOpenAiImageAutoConfiguration.class,
-    AzureOpenAiAudioTranscriptionAutoConfiguration.class
+        AzureOpenAiChatAutoConfiguration.class,
+        AzureOpenAiEmbeddingAutoConfiguration.class,
+        AzureOpenAiImageAutoConfiguration.class,
+        AzureOpenAiAudioTranscriptionAutoConfiguration.class
 })
 @EnableAspectJAutoProxy
 @EnableMethodSecurity(prePostEnabled = true)
@@ -30,6 +30,7 @@ import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAudioT
         "jp.vemi.framework.config", // 要整理
         "jp.vemi.framework.security", // 要整理
         "jp.vemi.framework.web", // 要整理
+        "jp.vemi.framework.crypto", // AesCryptoService
         "jp.vemi.mirel",
         "jp.vemi.mirel.config",
         "jp.vemi.mirel.foundation.web.api",

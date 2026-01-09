@@ -70,6 +70,9 @@ public class AuthenticationServiceImpl {
     @Autowired
     private jp.vemi.mirel.foundation.abst.dao.repository.OtpTokenRepository otpTokenRepository;
 
+    @Autowired
+    private jp.vemi.mirel.foundation.security.audit.AuthEventLogger authEventLogger;
+
     /**
      * セットアップトークン検証の共通ロジック
      * 
@@ -198,9 +201,12 @@ public class AuthenticationServiceImpl {
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
                 log.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
+                authEventLogger.logAccountLocked(request.getUsernameOrEmail(), request.getIpAddress());
             }
 
             systemUserRepository.save(systemUser);
+            authEventLogger.logLoginFailure(request.getUsernameOrEmail(), "Invalid password",
+                    request.getIpAddress(), request.getUserAgent());
             throw new jp.vemi.framework.exeption.MirelValidationException("Invalid username/email or password");
         }
 
@@ -261,14 +267,17 @@ public class AuthenticationServiceImpl {
             log.warn("JWT is disabled. Using session-based authentication placeholder.");
         }
 
-        // RefreshToken作成
-        RefreshToken refreshToken = createRefreshToken(user);
+        // RefreshToken作成（rememberMe対応）
+        boolean rememberMe = request.getRememberMe() != null && request.getRememberMe();
+        RefreshToken refreshToken = createRefreshToken(user, rememberMe);
 
         // 有効ライセンス取得
         List<ApplicationLicense> licenses = licenseRepository.findEffectiveLicenses(
                 user.getUserId(), tenant != null ? tenant.getTenantId() : null, Instant.now());
 
         log.info("Login successful for user: {}", user.getUserId());
+        authEventLogger.logLoginSuccess(user.getUserId(), user.getUsername(),
+                request.getIpAddress(), request.getUserAgent());
 
         return buildAuthenticationResponse(user, tenant, accessToken, refreshToken.getTokenHash(), licenses);
     }
@@ -668,21 +677,37 @@ public class AuthenticationServiceImpl {
 
     /**
      * RefreshToken作成
+     * 
+     * @param user
+     *            ユーザー
+     * @param rememberMe
+     *            ログイン状態を永続化するか（true: 90日, false: 1日）
      */
-    private RefreshToken createRefreshToken(User user) {
+    private RefreshToken createRefreshToken(User user, boolean rememberMe) {
         String tokenValue = UUID.randomUUID().toString();
         String tokenHash = hashToken(tokenValue);
+
+        // rememberMeに応じて有効期限を設定
+        long expirationDays = rememberMe ? 90 : 1;
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUserId(user.getUserId());
         refreshToken.setTokenHash(tokenHash);
-        refreshToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        refreshToken.setExpiresAt(Instant.now().plus(expirationDays, ChronoUnit.DAYS));
         refreshToken.setDeviceInfo("web");
         refreshTokenRepository.save(refreshToken);
 
         // tokenHashにtokenValueを一時的に保存（レスポンス用）
         refreshToken.setTokenHash(tokenValue);
         return refreshToken;
+    }
+
+    /**
+     * RefreshToken作成（デフォルト: 30日）
+     * 後方互換性のためのオーバーロード
+     */
+    private RefreshToken createRefreshToken(User user) {
+        return createRefreshToken(user, false);
     }
 
     /**

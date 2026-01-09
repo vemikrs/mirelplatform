@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
+import jp.vemi.framework.security.PatternRegistry;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.Builder;
 import lombok.Data;
@@ -34,9 +35,8 @@ public class PromptInjectionDetector {
     private static final List<InjectionPattern> INJECTION_PATTERNS = List.of(
             // 直接的なプロンプト改変
             new InjectionPattern(
-                    Pattern.compile(
-                            "(?i)(?:ignore|disregard|forget).{0,200}(?:previous|above|prior).{0,200}(?:instructions?|prompt)",
-                            Pattern.DOTALL),
+                    PatternRegistry.safe(
+                            "(?i)(?:ignore|disregard|forget)[^\\n]{0,50}(?:previous|above|prior)[^\\n]{0,50}(?:instructions?|prompt)"),
                     "direct_override", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)system\\s*prompt", Pattern.DOTALL),
@@ -61,7 +61,7 @@ public class PromptInjectionDetector {
 
             // プロンプト抽出の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)repeat\\s+(?:your|the).{0,200}(?:prompt|instructions)", Pattern.DOTALL),
+                    PatternRegistry.safe("(?i)repeat\\s+(?:your|the)[^\\n]{0,50}(?:prompt|instructions)"),
                     "prompt_extraction_repeat", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)what\\s+(are|is)\\s+your\\s+(system\\s+)?prompt", Pattern.DOTALL),
@@ -70,7 +70,7 @@ public class PromptInjectionDetector {
                     Pattern.compile("(?i)show\\s+me\\s+(your|the)\\s+(system\\s+)?prompt", Pattern.DOTALL),
                     "prompt_extraction_show", 2),
             new InjectionPattern(
-                    Pattern.compile("(?i)print\\s+(?:your|the).{0,200}(?:prompt|instructions)", Pattern.DOTALL),
+                    PatternRegistry.safe("(?i)print\\s+(?:your|the)[^\\n]{0,50}(?:prompt|instructions)"),
                     "prompt_extraction_print", 2),
 
             // コード実行の試み
@@ -80,7 +80,7 @@ public class PromptInjectionDetector {
 
             // 特殊トークンの挿入
             new InjectionPattern(
-                    Pattern.compile("<\\|.{0,1000}?\\|>"),
+                    PatternRegistry.safe("<\\|[^|]{0,100}\\|>"),
                     "special_token_angle", 3),
             new InjectionPattern(
                     Pattern.compile("\\[INST\\]|\\[/INST\\]"),
@@ -91,12 +91,35 @@ public class PromptInjectionDetector {
 
             // 制限解除の試み
             new InjectionPattern(
-                    Pattern.compile("(?i)(?:bypass|override|disable).{0,200}(?:filter|restriction|safety)",
-                            Pattern.DOTALL),
+                    PatternRegistry.safe("(?i)(?:bypass|override|disable)[^\\n]{0,50}(?:filter|restriction|safety)"),
                     "bypass_attempt", 2),
             new InjectionPattern(
                     Pattern.compile("(?i)jailbreak|DAN|developer\\s*mode", Pattern.DOTALL),
-                    "jailbreak_attempt", 3));
+                    "jailbreak_attempt", 3),
+
+            // 意味タグインジェクション検出（LLM制御タグ）
+            new InjectionPattern(
+                    Pattern.compile("<\\/?\\s*(system|assistant|user|instruction|prompt|context|role|ai)\\s*>",
+                            Pattern.CASE_INSENSITIVE),
+                    "semantic_tag_injection", 3),
+
+            // サンドボックスブレイク試行
+            new InjectionPattern(
+                    Pattern.compile("<\\/\\s*user_?input\\s*>",
+                            Pattern.CASE_INSENSITIVE),
+                    "sandbox_break_attempt", 3),
+
+            // XML構造インジェクション（HIGH感度時のみ有効）
+            new InjectionPattern(
+                    Pattern.compile("<\\s*\\w+\\s*>.*?<\\/\\s*\\w+\\s*>",
+                            Pattern.DOTALL),
+                    "xml_structure_injection", 2));
+
+    /**
+     * パターンマッチングの最大入力長.
+     * ReDoS攻撃を防ぐため、この長さを超える入力はトランケートされる。
+     */
+    private static final int MAX_INPUT_LENGTH = 10000;
 
     /**
      * 入力をチェックしてインジェクションの可能性を検出.
@@ -118,11 +141,18 @@ public class PromptInjectionDetector {
             return InjectionCheckResult.safe();
         }
 
+        // ReDoS対策: 入力長を制限
+        String safeInput = input.length() > MAX_INPUT_LENGTH
+                ? input.substring(0, MAX_INPUT_LENGTH)
+                : input;
+
         int totalScore = 0;
         List<String> detectedPatterns = new ArrayList<>();
 
         for (InjectionPattern pattern : INJECTION_PATTERNS) {
-            if (pattern.pattern().matcher(input).find()) {
+            // lgtm[java/polynomial-redos] - input length is bounded by MAX_INPUT_LENGTH
+            // (line 145-147), preventing ReDoS
+            if (pattern.pattern().matcher(safeInput).find()) {
                 totalScore += pattern.weight();
                 detectedPatterns.add(pattern.name());
 

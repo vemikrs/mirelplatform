@@ -34,6 +34,8 @@ public class MiraHybridSearchService {
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final RerankerService rerankerService;
+    private final MiraSettingService settingService;
 
     private static final int RRF_K = 60;
 
@@ -42,30 +44,61 @@ public class MiraHybridSearchService {
      *
      * @param query
      *            Search query
-     * @param similarityThreshold
-     *            Threshold for vector search
-     * @param topK
-     *            Number of results to return
-     * @param filterExpression
-     *            metadata filter expression (Spring AI format) or manually handling
-     *            for keyword search
-     *            Note: Keyword search via JdbcTemplate needs manual SQL
-     *            construction for filters if complex.
-     *            For Phase 1/2, we'll simplify scope filtering for keyword search
-     *            or assume standard metadata structure.
+     * @param vectorRequest
+     *            Vector search request
+     * @param scope
+     *            Scope filter
+     * @param tenantId
+     *            Tenant ID
+     * @param userId
+     *            User ID
      * @return List of documents sorted by RRF score
      */
     public List<Document> search(String query, SearchRequest vectorRequest, String scope, String tenantId,
             String userId) {
+        // 共通の検索パイプラインを実行
+        HybridSearchResult result = executeSearchPipeline(query, vectorRequest, scope, tenantId, userId);
+
+        // リランキング（条件付き）
+        List<Document> finalResults = result.rrfResults();
+        if (rerankerService.shouldRerank(tenantId, finalResults.size())) {
+            finalResults = rerankerService.rerank(query, finalResults, tenantId);
+        }
+
+        // 最終カットオフ
+        int finalTopK = settingService.getRerankerTopN(tenantId);
+        return finalResults.stream().limit(finalTopK).collect(Collectors.toList());
+    }
+
+    /**
+     * Performs a hybrid search with debug information.
+     */
+    public HybridSearchResult searchDebug(String query, SearchRequest vectorRequest, String scope, String tenantId,
+            String userId) {
+        return executeSearchPipeline(query, vectorRequest, scope, tenantId, userId);
+    }
+
+    /**
+     * 共通の検索パイプラインを実行.
+     * <p>
+     * Vector検索、Keyword検索、フィルタリング、RRF計算を行います。
+     * searchとsearchDebugの両方からこのメソッドを呼び出すことで
+     * ロジックの重複を排除します。
+     * </p>
+     */
+    private HybridSearchResult executeSearchPipeline(String query, SearchRequest vectorRequest,
+            String scope, String tenantId, String userId) {
+
         // 1. Vector Search
         List<Document> vectorResults = vectorStore.similaritySearch(vectorRequest);
         log.info("Hybrid/Vector results: {}", vectorResults.size());
 
         // Process Vector Results (Score prep, Map creation)
-        prepareVectorDocs(vectorResults);
+        vectorResults = prepareVectorDocs(vectorResults);
 
         // 2. Keyword Search (Native SQL)
-        List<Document> keywordResults = performKeywordSearch(query, 20); // Fetch more for re-ranking
+        int keywordLimit = Math.max(vectorRequest.getTopK(), 20);
+        List<Document> keywordResults = performKeywordSearch(query, keywordLimit);
 
         // Sort by Term Frequency DESC before filtering/ranking
         keywordResults.sort(Comparator
@@ -76,8 +109,11 @@ public class MiraHybridSearchService {
         keywordResults = filterInMemory(keywordResults, scope, tenantId, userId);
         log.info("Hybrid/Keyword results (after filter): {}", keywordResults.size());
 
-        // 3. Reciprocal Rank Fusion
-        return applyRRF(vectorResults, keywordResults, vectorRequest.getTopK());
+        // 3. Reciprocal Rank Fusion (候補を多めに取得)
+        int rrfTopK = Math.max(vectorRequest.getTopK(), 30);
+        List<Document> rrfResults = applyRRF(vectorResults, keywordResults, rrfTopK);
+
+        return new HybridSearchResult(vectorResults, keywordResults, rrfResults);
     }
 
     private List<Document> performKeywordSearch(String query, int limit) {
@@ -86,55 +122,65 @@ public class MiraHybridSearchService {
         }
 
         // Split query by whitespace (full-width or half-width)
-        String[] keywords = query.trim().split("[\\s　]+");
-
-        if (keywords.length == 0) {
+        String[] terms = query.split("[\\s　]+");
+        if (terms.length == 0) {
             return Collections.emptyList();
         }
 
-        StringBuilder sqlBuilder = new StringBuilder("""
-                    SELECT id, content, metadata
-                    FROM mir_mira_vector_store
-                    WHERE 1=1
-                """);
+        // Build LIKE clauses for each term
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("SELECT id, content, metadata FROM vector_store WHERE ");
 
-        List<Object> params = new ArrayList<>();
-        for (String keyword : keywords) {
-            sqlBuilder.append(" AND content ILIKE ?");
-            params.add("%" + keyword + "%");
+        List<String> likeClauses = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+
+        for (String term : terms) {
+            if (!term.isBlank()) {
+                likeClauses.add("content ILIKE ?");
+                params.add("%" + term.trim() + "%");
+            }
         }
 
+        if (likeClauses.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        sqlBuilder.append(likeClauses.stream().collect(Collectors.joining(" OR ")));
+
+        // Add scoring (approximate term frequency)
+        sqlBuilder.append(" ORDER BY (");
+        List<String> scoreParts = new ArrayList<>();
+        for (int i = 0; i < params.size(); i++) {
+            scoreParts.add("CASE WHEN content ILIKE ? THEN 1 ELSE 0 END");
+        }
+        sqlBuilder.append(scoreParts.stream().collect(Collectors.joining(" + ")));
+        sqlBuilder.append(") DESC");
         sqlBuilder.append(" LIMIT ?");
-        params.add(limit);
+
+        // Duplicate params for ORDER BY clause
+        List<Object> allParams = new ArrayList<>();
+        allParams.addAll(params);
+        allParams.addAll(params);
+        allParams.add(limit);
 
         try {
-            return jdbcTemplate.query(sqlBuilder.toString(), (rs, rowNum) -> {
-                String id = rs.getString("id");
-                String content = rs.getString("content");
-                String metadataJson = rs.getString("metadata");
-                Map<String, Object> metadata = parseMetadata(metadataJson);
-                // Flag as keyword result
-                metadata.put("source", "keyword");
-
-                // Calculate Term Frequency (Sum of all keyword occurrences)
-                long tf = 0;
-                if (content != null) {
-                    String lowerContent = content.toLowerCase();
-                    for (String keyword : keywords) {
-                        String lowerQuery = keyword.toLowerCase();
-                        int index = 0;
-                        while ((index = lowerContent.indexOf(lowerQuery, index)) != -1) {
-                            tf++;
-                            index += lowerQuery.length();
-                        }
-                    }
-                }
-                metadata.put("termFrequency", tf);
-
-                return new Document(id, content, metadata);
-            }, params.toArray());
+            return jdbcTemplate.query(
+                    sqlBuilder.toString(),
+                    allParams.toArray(),
+                    (rs, rowNum) -> {
+                        String id = rs.getString("id");
+                        String content = rs.getString("content");
+                        String metadataJson = rs.getString("metadata");
+                        Map<String, Object> metadata = parseMetadata(metadataJson);
+                        // Term frequency is derived from matching terms
+                        long matchCount = params.stream()
+                                .filter(term -> content.toLowerCase().contains(term.replace("%", "").toLowerCase()))
+                                .count();
+                        metadata.put("termFrequency", matchCount);
+                        return new Document(id, content, metadata);
+                    });
         } catch (Exception e) {
-            log.error("Keyword search failed", e);
+            log.warn("Keyword search failed: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -142,7 +188,7 @@ public class MiraHybridSearchService {
     private Map<String, Object> parseMetadata(String json) {
         try {
             return objectMapper.readValue(json, Map.class);
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             return new HashMap<>();
         }
     }
@@ -150,66 +196,38 @@ public class MiraHybridSearchService {
     private List<Document> filterInMemory(List<Document> docs, String scope, String tenantId, String userId) {
         return docs.stream().filter(doc -> {
             Map<String, Object> meta = doc.getMetadata();
+            String docScope = (String) meta.getOrDefault("scope", "");
 
-            // Check Scope
-            if (scope != null) {
-                String docScope = (String) meta.get("scope");
-                if (!scope.equals(docScope)) {
-                    return false;
-                }
+            // SYSTEM scope: always visible
+            // USER scope: check userid
+            // TENANT scope: check tenantid
+            if ("SYSTEM".equals(docScope)) {
+                return true;
             }
-
-            // Check Tenant (if TENANT or USER scope)
-            if ("TENANT".equals(scope) || "USER".equals(scope)) {
-                String docTenant = (String) meta.get("tenantId");
-                if (tenantId != null && !tenantId.equals(docTenant)) {
-                    return false;
-                }
+            if ("USER".equals(docScope)) {
+                String docUserId = (String) meta.getOrDefault("userid", "");
+                return docUserId.equals(userId);
             }
-
-            // Check User (if USER scope)
-            if ("USER".equals(scope)) {
-                String docUser = (String) meta.get("userId");
-                if (userId != null && !userId.equals(docUser)) {
-                    return false;
-                }
+            if ("TENANT".equals(docScope)) {
+                String docTenantId = (String) meta.getOrDefault("tenantid", "");
+                return docTenantId.equals(tenantId);
             }
-
+            // If scope is empty (migration), default to visible for now
             return true;
         }).collect(Collectors.toList());
     }
 
-    public HybridSearchResult searchDebug(String query, SearchRequest vectorRequest, String scope, String tenantId,
-            String userId) {
-        // 1. Vector Search
-        List<Document> vectorResults = vectorStore.similaritySearch(vectorRequest);
-        log.info("Hybrid/Vector results: {}", vectorResults.size());
-
-        // Process Vector Results (Score prep, Map creation)
-        prepareVectorDocs(vectorResults);
-
-        // 2. Keyword Search (Native SQL)
-        List<Document> keywordResults = performKeywordSearch(query, vectorRequest.getTopK());
-
-        // Sort by Term Frequency DESC before filtering/ranking
-        keywordResults.sort(Comparator
-                .comparingLong((Document d) -> ((Number) d.getMetadata().getOrDefault("termFrequency", 0L)).longValue())
-                .reversed());
-
-        // Apply scope filtering in memory for keyword results
-        keywordResults = filterInMemory(keywordResults, scope, tenantId, userId);
-        log.info("Hybrid/Keyword results (after filter): {}", keywordResults.size());
-
-        // 3. Reciprocal Rank Fusion
-        List<Document> rrfResults = applyRRF(vectorResults, keywordResults, vectorRequest.getTopK());
-
-        return new HybridSearchResult(vectorResults, keywordResults, rrfResults);
-    }
-
-    private void prepareVectorDocs(List<Document> vectorDocs) {
+    /**
+     * Vector検索結果を前処理.
+     * <p>
+     * メタデータを可変マップにコピーし、ランキング情報を付与します。
+     * </p>
+     */
+    private List<Document> prepareVectorDocs(List<Document> vectorDocs) {
+        List<Document> prepared = new ArrayList<>();
         for (int i = 0; i < vectorDocs.size(); i++) {
             Document doc = vectorDocs.get(i);
-            // Metadata from Spring AI might be immutable, so we create a new map
+            // 常にメタデータを可変マップにコピー（try-catch不要）
             Map<String, Object> mutableMetadata = new HashMap<>(doc.getMetadata());
             mutableMetadata.put("vector_rank", i + 1);
 
@@ -218,81 +236,81 @@ public class MiraHybridSearchService {
                 Double distance = ((Number) mutableMetadata.get("distance")).doubleValue();
                 Double score = 1.0 - distance; // Convert distance to similarity
                 mutableMetadata.put("score", score);
-                log.info("[DEBUG] Found distance: {}, converted to score: {}", distance, score);
-            } else {
-                log.info("[DEBUG] No distance found in doc ID: {}. Keys: {}", doc.getId(), mutableMetadata.keySet());
+                log.debug("Vector doc ID: {}, distance: {}, score: {}", doc.getId(), distance, score);
             }
 
-            // Debug: List all keys
-            mutableMetadata.put("_debug_keys", String.join(",", mutableMetadata.keySet()));
-
-            // Update document with mutable metadata
-            Document newDoc = new Document(doc.getId(), doc.getText(), mutableMetadata);
-            vectorDocs.set(i, newDoc);
+            prepared.add(new Document(doc.getId(), doc.getText(), mutableMetadata));
         }
+        return prepared;
     }
 
+    /**
+     * Reciprocal Rank Fusion (RRF) を適用.
+     * <p>
+     * メタデータは常に可変マップを使用し、try-catch による例外駆動を排除。
+     * </p>
+     */
     private List<Document> applyRRF(List<Document> vectorDocs, List<Document> keywordDocs, int topK) {
         Map<String, Double> scoreMap = new HashMap<>();
         Map<String, Document> docMap = new HashMap<>();
 
-        // Process Vector Results
+        // Process Vector Results (既にprepareVectorDocsで可変化済み)
         for (int i = 0; i < vectorDocs.size(); i++) {
             Document doc = vectorDocs.get(i);
             docMap.put(doc.getId(), doc);
             double score = 1.0 / (RRF_K + (i + 1));
             scoreMap.merge(doc.getId(), score, Double::sum);
-            // vector_rank is implicitly i+1
         }
 
         // Process Keyword Results
         for (int i = 0; i < keywordDocs.size(); i++) {
             Document doc = keywordDocs.get(i);
-            docMap.putIfAbsent(doc.getId(), doc);
             double score = 1.0 / (RRF_K + (i + 1));
             scoreMap.merge(doc.getId(), score, Double::sum);
 
-            // Access doc from map to handle metadata updates
-            Document storedDoc = docMap.get(doc.getId());
-            // Ensure metadata is mutable for keyword_rank
-            // Note: Keyword search results create fresh Documents with mutable maps, so
-            // this is safe for new docs
-            // For docs that came from Vector search (immutable), they might fail here if
-            // not prepared.
-            try {
-                storedDoc.getMetadata().put("keyword_rank", i + 1);
-            } catch (UnsupportedOperationException e) {
-                // Fallback: Recreate document with mutable map
-                Map<String, Object> mutable = new HashMap<>(storedDoc.getMetadata());
-                mutable.put("keyword_rank", i + 1);
-                Document newDoc = new Document(storedDoc.getId(), storedDoc.getText(), mutable);
-                docMap.put(storedDoc.getId(), newDoc);
+            // keyword_rank を付与（常に可変マップを作成）
+            Map<String, Object> metadata;
+            if (docMap.containsKey(doc.getId())) {
+                // Vector検索でも見つかったドキュメント：メタデータをマージ
+                Document existing = docMap.get(doc.getId());
+                metadata = new HashMap<>(existing.getMetadata());
+            } else {
+                // Keyword検索のみで見つかったドキュメント
+                metadata = new HashMap<>(doc.getMetadata());
             }
+            metadata.put("keyword_rank", i + 1);
+            docMap.put(doc.getId(), new Document(doc.getId(), doc.getText(), metadata));
         }
 
-        // Sort by RRF Score
+        // Sort by RRF Score and add rrf_score to metadata
         return scoreMap.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(topK)
                 .map(entry -> {
                     Document doc = docMap.get(entry.getKey());
-                    try {
-                        doc.getMetadata().put("rrf_score", entry.getValue());
-                        doc.getMetadata().put("hybrid_score", entry.getValue());
-                    } catch (UnsupportedOperationException e) {
-                        Map<String, Object> mutable = new HashMap<>(doc.getMetadata());
-                        mutable.put("rrf_score", entry.getValue());
-                        mutable.put("hybrid_score", entry.getValue());
-                        doc = new Document(doc.getId(), doc.getText(), mutable);
-                    }
-                    return doc;
+                    Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
+                    metadata.put("rrf_score", entry.getValue());
+                    metadata.put("hybrid_score", entry.getValue());
+                    return new Document(doc.getId(), doc.getText(), metadata);
                 })
                 .collect(Collectors.toList());
     }
 
+    /**
+     * ハイブリッド検索結果（デバッグ用）.
+     */
     public record HybridSearchResult(
             List<Document> vectorDocs,
             List<Document> keywordDocs,
-            List<Document> rrfResults) {
+            List<Document> rrfResults,
+            List<Document> rerankedResults,
+            boolean rerankerApplied,
+            String rerankerProvider,
+            long rerankerLatencyMs) {
+
+        /** レガシーコンストラクタ（リランキングなし） */
+        public HybridSearchResult(List<Document> vectorDocs, List<Document> keywordDocs, List<Document> rrfResults) {
+            this(vectorDocs, keywordDocs, rrfResults, rrfResults, false, "none", 0);
+        }
     }
 }

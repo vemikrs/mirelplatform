@@ -22,6 +22,23 @@ export const apiClient = axios.create({
 });
 
 /**
+ * Handle logout: clear auth state and redirect to login
+ */
+async function handleLogout() {
+  if (window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/auth/')) {
+    return; // Already on login page, don't redirect
+  }
+  
+  const { useAuthStore } = await import('@/stores/authStore');
+  const { clearAuth } = useAuthStore.getState();
+  clearAuth();
+  
+  const currentPath = window.location.pathname + window.location.search;
+  console.log('[Auth] Logging out, redirecting to login', { returnUrl: currentPath });
+  window.location.href = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+}
+
+/**
  * Request interceptor
  * - Logs all requests in development mode
  * - Adds Authorization header with JWT token if available
@@ -77,37 +94,51 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError<ApiResponse<unknown>>) => {
-    // Handle 401 Unauthorized globally
+    // Handle 401 Unauthorized with auto-refresh
     if (error.response?.status === 401) {
       // Check if redirect should be skipped (e.g. for authLoader requests)
-      // Note: error.config is the request config
       if (error.config && error.config.headers && error.config.headers['X-Mirel-Skip-Auth-Redirect']) {
         console.log('[401 Unauthorized] Skipping global redirect due to header');
         return Promise.reject(error);
       }
 
-      console.error('[401 Unauthorized]', {
-        url: error.config?.url,
-        method: error.config?.method,
-        withCredentials: error.config?.withCredentials,
-        currentPath: window.location.pathname,
-      });
-      
-      // Avoid infinite loop: don't redirect if already on login page
-      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/auth/')) {
-        // Dynamically import to avoid circular dependency
-        const { useAuthStore } = await import('@/stores/authStore');
-        const { clearAuth } = useAuthStore.getState();
-        clearAuth();
-        
-        // Redirect to login with current path as returnUrl
-        const currentPath = window.location.pathname + window.location.search;
-        console.log('[401 Redirect]', { to: `/login?returnUrl=${encodeURIComponent(currentPath)}` });
-        window.location.href = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+      // Skip auto-refresh if already retried
+      if (error.config && (error.config as any)._retry) {
+        console.log('[401 Unauthorized] Already retried, clearing auth');
+        await handleLogout();
+        return Promise.reject(error);
       }
-      
+
+      // Try to refresh token
+      console.log('[401 Unauthorized] Attempting token refresh...');
+      try {
+        const { useAuthStore } = await import('@/stores/authStore');
+        const { refreshAccessToken } = useAuthStore.getState();
+        
+        const refreshed = await refreshAccessToken();
+        
+        if (refreshed && error.config) {
+          // Mark as retried to prevent infinite loop
+          (error.config as any)._retry = true;
+          
+          // Update Authorization header with new token
+          const tokens = useAuthStore.getState().tokens;
+          if (tokens?.accessToken) {
+            error.config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+          }
+          
+          console.log('[401 Unauthorized] Token refreshed, retrying request');
+          return apiClient(error.config);
+        }
+      } catch (refreshError) {
+        console.error('[401 Unauthorized] Refresh failed:', refreshError);
+      }
+
+      // Refresh failed or not available, logout
+      await handleLogout();
       return Promise.reject(error);
     }
+
     
     // Network error or HTTP error
     if (error.response) {

@@ -127,6 +127,16 @@ mipla2:
 
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  # セキュリティ設定
+  security:
+    # JWT署名鍵暗号化用マスターキー（Base64エンコード、32バイト以上）
+    # 本番環境では必ず環境変数で設定すること
+    master-key: ${MIREL_MASTER_KEY:}
+  database:
+    # 初期化モード: ALWAYS（毎回）, ONCE（初回のみ、デフォルト）, NEVER（実行しない）
+    initialize-mode: ${MIREL_DB_INITIALIZE_MODE:ONCE}
+    # サンプルデータ投入（本番環境ではfalse）
+    seed-sample-data: ${MIREL_DB_SEED_SAMPLE:false}
   # ステンシルレイヤー設定は application-dev.yml で環境固有設定として管理
   apps:
     mste:
@@ -243,10 +253,27 @@ mira:
       max-tokens: 4096
       timeout-seconds: 60
 
+    # セキュリティ設定
+    security:
+      prompt-injection:
+        enabled: true
+        soft-block-threshold: 3 # ソフトブロック閾値（警告表示）
+        hard-block-threshold: 5 # ハードブロック閾値（リクエスト拒否）
+        semantic-tag-sensitivity: LOW # LOW, MEDIUM, HIGH - 意味タグ検出の感度（汎用チャットボット用）
+
     audit:
       # 保存ポリシー: FULL | SUMMARY | METADATA_ONLY
       storage-policy: ${MIRA_AUDIT_STORAGE_POLICY:METADATA_ONLY}
       retention-days: 90
+
+    # リランカー設定
+    reranker:
+      enabled: false  # デフォルト無効（本番環境で有効化）
+      provider: vertex-ai  # vertex-ai, cohere, none
+      model: semantic-ranker-default-004
+      top-n: 5
+      min-candidates: 10  # 10件以上の候補がある場合のみリランク実行
+      timeout-ms: 5000
 
 # アプリケーション情報（actuator/info で公開）
 info:
