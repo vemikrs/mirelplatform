@@ -61,6 +61,8 @@ spring:
       - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiTextEmbeddingAutoConfiguration
       - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiEmbeddingConnectionAutoConfiguration
       - org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiMultiModalEmbeddingAutoConfiguration
+      # VectorStoreConfig で手動定義しているため除外
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
 
 # E2E環境ではActuatorエンドポイントを露出（ヘルスチェック用）
 management:
