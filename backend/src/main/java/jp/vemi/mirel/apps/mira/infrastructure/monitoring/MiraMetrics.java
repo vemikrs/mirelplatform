@@ -125,4 +125,38 @@ public class MiraMetrics {
                 .register(registry)
                 .record(durationMs, TimeUnit.MILLISECONDS);
     }
+
+    /**
+     * チャット成功時のメトリクスを一括記録.
+     *
+     * @param model
+     *            使用したモデル
+     * @param tenantId
+     *            テナントID
+     * @param latencyMs
+     *            レイテンシ(ミリ秒)
+     * @param promptTokens
+     *            プロンプトトークン数
+     * @param completionTokens
+     *            完了トークン数
+     */
+    public void recordChatCompletion(String model, String tenantId, long latencyMs,
+            int promptTokens, int completionTokens) {
+        incrementChatRequest(model, tenantId, "success");
+        recordChatLatency(model, tenantId, latencyMs);
+        recordTokenUsage(model, tenantId, promptTokens, completionTokens);
+    }
+
+    /**
+     * チャットエラー時のメトリクスを一括記録.
+     *
+     * @param errorType
+     *            エラータイプ
+     * @param tenantId
+     *            テナントID
+     */
+    public void recordChatError(String errorType, String tenantId) {
+        incrementError(errorType, tenantId);
+        incrementChatRequest("unknown", tenantId, "error");
+    }
 }

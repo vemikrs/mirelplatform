@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useMira } from '@/hooks/useMira';
 import { useMiraStore } from '@/stores/miraStore';
+import { useAuthStore } from '@/stores/authStore';
 import { exportUserData, type MiraMode, type MessageConfig } from '@/lib/api/mira';
 import { MiraHeader } from '../components/MiraHeader';
 import { MiraChatMessage } from '../components/MiraChatMessage';
@@ -71,6 +72,7 @@ export function MiraPage() {
   const setActiveConversation = useMiraStore((state) => state.setActiveConversation);
   const deleteConversation = useMiraStore((state) => state.deleteConversation);
   const storedConversations = useMiraStore((state) => state.conversations);
+  const user = useAuthStore((state) => state.user);
   
   // サイドバーの表示状態（localStorageから復元、デフォルトは非表示）
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
@@ -517,7 +519,11 @@ export function MiraPage() {
                     }}
                     className={selectedMessageIndex === index ? 'ring-2 ring-primary/50 rounded-lg' : ''}
                   >
-                    <MiraChatMessage message={message} onEdit={handleEditMessage} />
+                    <MiraChatMessage 
+                      message={message} 
+                      onEdit={handleEditMessage}
+                      userAvatarUrl={user?.avatarUrl}
+                    />
                   </div>
                 ))}
                 <div ref={messagesEndRef} />

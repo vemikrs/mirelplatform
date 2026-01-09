@@ -12,7 +12,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import jp.vemi.mirel.apps.mira.domain.service.MiraSettingService;
+import jp.vemi.mirel.apps.mira.domain.service.TokenQuotaService;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
+import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -29,30 +31,49 @@ public class AiProviderFactory {
     private final Map<String, AiProviderClient> providers;
     private final MiraAiProperties properties;
     private final MiraSettingService settingService;
+    private final MiraMetrics metrics;
+    private final TokenQuotaService tokenQuotaService;
+    private final TokenCounter tokenCounter;
 
     public AiProviderFactory(
             List<AiProviderClient> providerList,
             MiraAiProperties properties,
-            MiraSettingService settingService) {
+            MiraSettingService settingService,
+            MiraMetrics metrics,
+            TokenQuotaService tokenQuotaService,
+            TokenCounter tokenCounter) {
 
         this.providers = providerList.stream()
                 .collect(Collectors.toMap(AiProviderClient::getProviderName, Function.identity()));
         this.properties = properties;
         this.settingService = settingService;
+        this.metrics = metrics;
+        this.tokenQuotaService = tokenQuotaService;
+        this.tokenCounter = tokenCounter;
 
         log.info("AiProviderFactory initialized with providers: {}", providers.keySet());
     }
 
+    /**
+     * テナント用AIクライアントを作成（メトリクス計測付き）.
+     *
+     * @param tenantId
+     *            テナントID
+     * @return メトリクス計測をラップしたAIクライアント
+     */
     public AiProviderClient createClient(String tenantId) {
         String providerName = settingService.getAiProvider(tenantId);
 
         log.info("Selecting AI provider: '{}' for tenant: '{}'", providerName, tenantId);
 
-        return getProvider(providerName)
+        AiProviderClient baseClient = getProvider(providerName)
                 .orElseThrow(() -> {
                     log.error("Requested provider '{}' for tenant '{}' is not available.", providerName, tenantId);
                     return new IllegalStateException("Requested provider '" + providerName + "' is not available.");
                 });
+
+        // メトリクス計測とトークン使用量記録をラップ
+        return new MetricsWrappedAiClient(baseClient, metrics, tokenQuotaService, tokenCounter, tenantId);
     }
 
     /**

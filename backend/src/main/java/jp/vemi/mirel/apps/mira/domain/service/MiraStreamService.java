@@ -20,9 +20,6 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiProviderFactory;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiRequest;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
-import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
-import jp.vemi.mirel.apps.mira.domain.service.MiraKnowledgeBaseService;
-import java.util.stream.Collectors;
 import org.springframework.ai.document.Document;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import lombok.RequiredArgsConstructor;
@@ -128,6 +125,9 @@ public class MiraStreamService {
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
+        aiRequest.setTenantId(tenantId);
+        aiRequest.setUserId(userId);
+        aiRequest.setConversationId(conversation.getId());
 
         // Phase 4: Model selection (5-step priority)
         String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
@@ -267,6 +267,15 @@ public class MiraStreamService {
                 })
                 .onErrorResume(e -> {
                     log.error("Stream Loop Error: {}", e.getMessage(), e);
+
+                    // Workaround: Spring AI 1.1.x ストリームリトライ時の内部状態不整合
+                    // "No StreamAdvisors available to execute" は Advisor チェーン状態破損時に発生
+                    // TODO(Spring AI 1.2.0+): この workaround が不要かどうか確認し、不要なら削除する
+                    // 現在のバージョン: Spring AI 1.1.2 (2026-01時点)
+                    if (e.getMessage() != null && e.getMessage().contains("StreamAdvisors")) {
+                        return Flux.just(MiraStreamResponse.error("AI_FRAMEWORK_ERROR",
+                                "AI サービスで一時的な問題が発生しました。再度お試しください。"));
+                    }
 
                     if (e instanceof jp.vemi.framework.exeption.MirelApplicationException) {
                         return Flux.just(MiraStreamResponse.error("USER_ERROR", e.getMessage()));
@@ -479,6 +488,8 @@ public class MiraStreamService {
                                 auditService.logChatResponse(tenantId, userId, conversation.getId(),
                                         mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
                                         0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
+
+                                // トークン使用量記録は MetricsWrappedAiClient で一元化済み
 
                                 // Auto Title (Async)
                                 if (conversation.getTitle() == null || conversation.getTitle().isEmpty()

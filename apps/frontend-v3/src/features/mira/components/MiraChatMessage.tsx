@@ -17,10 +17,13 @@ interface MiraChatMessageProps {
   compact?: boolean;
   /** メッセージ編集コールバック */
   onEdit?: (messageId: string) => void;
+  /** ユーザーのアバターURL */
+  userAvatarUrl?: string;
 }
 
-export function MiraChatMessage({ message, className, compact = false, onEdit }: MiraChatMessageProps) {
+export function MiraChatMessage({ message, className, compact = false, onEdit, userAvatarUrl }: MiraChatMessageProps) {
   const [copied, setCopied] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const isUser = message.role === 'user';
   
   const handleCopy = async () => {
@@ -45,15 +48,25 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
       {/* アバター */}
       <div
         className={cn(
-          'shrink-0 rounded-full flex items-center justify-center',
+          'shrink-0 rounded-full flex items-center justify-center overflow-hidden',
           compact ? 'w-6 h-6' : 'w-8 h-8',
+          // bg-secondary: ダークモードでの視認性改善のため bg-primary から変更
           isUser 
-            ? 'bg-primary text-primary-foreground' 
+            ? 'bg-secondary text-secondary-foreground' 
             : 'bg-muted text-muted-foreground'
         )}
       >
         {isUser ? (
-          <User className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
+          userAvatarUrl && !avatarError ? (
+            <img 
+              src={userAvatarUrl} 
+              alt="User" 
+              className="w-full h-full object-cover" 
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <User className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
+          )
         ) : (
           <Bot className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
         )}
@@ -67,7 +80,7 @@ export function MiraChatMessage({ message, className, compact = false, onEdit }:
             className={cn(
               'rounded-lg relative',
               compact ? 'p-2 text-sm' : 'p-3',
-              'bg-primary text-primary-foreground'
+              'bg-secondary text-secondary-foreground'
             )}
           >
             <p className={cn( 'whitespace-pre-wrap', compact ? 'text-xs' : 'text-sm' )}>

@@ -5,10 +5,10 @@
 Mira のレイヤ設計は、役割と変更頻度の異なる関心事を分離しつつ、  
 過剰な多層化を避けることを目的とする。
 
-- Interaction Layer  
-- Orchestration Layer  
-- AI Model Layer  
-- Platform Integration Layer  
+- Interaction Layer
+- Orchestration Layer
+- AI Model Layer
+- Platform Integration Layer
 
 の 4 レイヤ構成とし、それぞれの責務とインタフェースを明確化する。
 
@@ -24,15 +24,15 @@ Mira のレイヤ設計は、役割と変更頻度の異なる関心事を分離
 
 ### 2.2 主なコンポーネント
 
-- `MiraChatWidget`  
+- `MiraChatWidget`
   - 画面右下に表示されるチャットウィンドウ
   - 状態：`minimized` / `docked` / `fullscreen`
-- `MiraFullscreenView`  
+- `MiraFullscreenView`
   - 全画面用レイアウトコンポーネント
   - 複数カラム（会話 / 補助情報 / 提案アクション 等）も検討余地あり
-- `ContextCollector`  
+- `ContextCollector`
   - appId / screenId / role / tenantId / contextPayload を収集し、バックエンドへ送信
-- `PromptTemplateButtons`  
+- `PromptTemplateButtons`
   - 「この画面の説明」「エラーを説明」「設定手順を教えて」など、モード切替ショートカット
 
 ### 2.3 インタフェース
@@ -67,36 +67,31 @@ Interaction Layer → Orchestration Layer へのリクエスト例：
 
 ### 3.1 役割
 
-* 入力メッセージと画面コンテキストの統合
-* モード判定とプロンプト組み立て
-* ロールベース回答ポリシーの適用
-* AI Model Layer への問い合わせと結果の整形
+- 入力メッセージと画面コンテキストの統合
+- モード判定とプロンプト組み立て
+- ロールベース回答ポリシーの適用
+- AI Model Layer への問い合わせと結果の整形
 
 ### 3.2 主な機能
 
-* **Mode Resolver**
+- **Mode Resolver**
+  - `mode` 明示指定があれば優先
+  - なければ Intent 推定により `general_chat` 等を決定
 
-  * `mode` 明示指定があれば優先
-  * なければ Intent 推定により `general_chat` 等を決定
+- **Prompt Builder**
+  - system / context / user を組み立て
+  - 例：
+    - system: 「あなたは mirelplatform のヘルプエージェントです…」
+    - context: appId, screenId, role, ErrorReport, 設定状態 等
+    - user: ユーザ発話
 
-* **Prompt Builder**
+- **Policy Enforcer**
+  - ロールとテナント情報に応じて、回答内容を制約
+  - 管理操作説明の有無等を制御
 
-  * system / context / user を組み立て
-  * 例：
-
-    * system: 「あなたは mirelplatform のヘルプエージェントです…」
-    * context: appId, screenId, role, ErrorReport, 設定状態 等
-    * user: ユーザ発話
-
-* **Policy Enforcer**
-
-  * ロールとテナント情報に応じて、回答内容を制約
-  * 管理操作説明の有無等を制御
-
-* **Response Formatter**
-
-  * Markdown / プレーンテキスト / 構造化 JSON を整形
-  * UI 側でレンダリングしやすい形式に変換
+- **Response Formatter**
+  - Markdown / プレーンテキスト / 構造化 JSON を整形
+  - UI 側でレンダリングしやすい形式に変換
 
 ### 3.3 インタフェース
 
@@ -134,82 +129,82 @@ AI Model Layer → Orchestration Layer：
 
 ### 4.1 役割
 
-* 実際の LLM 呼び出し処理
-* プロバイダ（Azure OpenAI / OpenAI / Mock）の切り替え
-* モデルごとの設定管理
-* API エラーのラップ・再試行制御
-* テスト用モック応答の提供
+- 実際の LLM 呼び出し処理
+- プロバイダ（Vertex AI Gemini / Azure OpenAI / OpenAI / Mock）の切り替え
+- モデルごとの設定管理
+- API エラーのラップ・再試行制御（非一時的エラーのフィルタリング含む）
+- テスト用モック応答の提供
 
-### 4.2 技術選定: Spring AI 1.1 GA
+### 4.2 技術選定: Spring AI 1.1 GA + Mira 独自構成
 
-> **⚠️ 重要 (2025年12月時点)**: Azure OpenAI Java SDK (`com.azure:azure-ai-openai`) は**非推奨（Deprecated）** となりました。
-> Microsoft は openai-java コミュニティライブラリへの移行を推奨しています。
-> **Spring AI 1.1 GA を採用**することで、この問題を回避しつつ Spring Boot との完全な統合を実現します。
+> **⚠️ 重要 (Spring AI 1.1.x 使用時)**: Mira はマルチプロバイダー環境で Spring AI を使用しています。
+> **Spring AI autoconfigure は全て無効化**し、Mira 独自の `VectorStoreConfig` で Bean を手動構成しています。
+> これにより、Beanコンフリクトを回避しつつベンダー非依存の設計を実現しています。
 
-| 項目 | Spring AI 1.1 GA |
-|------|------------------|
-| リリース日 | 2025年11月12日 |
-| 総改善数 | 850以上 |
-| MCP サポート | @McpTool, @McpResource, @McpPrompt |
-| Chat Memory | MongoDB, Oracle JDBC, Azure Cosmos DB |
-| Observability | Micrometer, OpenTelemetry |
-| ストリーミング | StreamingChatModel 標準対応 |
+| 項目           | Spring AI 1.1 GA                      |
+| -------------- | ------------------------------------- |
+| リリース日     | 2025年11月12日                        |
+| 総改善数       | 850以上                               |
+| MCP サポート   | @McpTool, @McpResource, @McpPrompt    |
+| Chat Memory    | MongoDB, Oracle JDBC, Azure Cosmos DB |
+| Observability  | Micrometer, OpenTelemetry             |
+| ストリーミング | StreamingChatModel 標準対応           |
 
 ### 4.3 プロバイダ優先順位
 
-| 優先度 | プロバイダ | 用途 | 備考 |
-|--------|-----------|------|------|
-| 1 | **Azure OpenAI (via Spring AI)** | 本番・開発環境 | First Target。エンタープライズ向け SLA・コンプライアンス対応 |
-| 2 | OpenAI API (via Spring AI) | フォールバック・検証 | Azure 障害時または特定モデル利用時 |
-| 3 | Mock Provider | テスト・CI/CD | 外部 API 非依存でのテスト実行 |
-
-> **MVP では Azure OpenAI を First Target** とし、Spring AI の `spring-ai-starter-model-azure-openai` を使用。
+| 優先度 | プロバイダ           | 用途                 | 備考                                      |
+| ------ | -------------------- | -------------------- | ----------------------------------------- |
+| 1      | **Vertex AI Gemini** | 本番・開発環境       | First Target。Gemini 2.5 Flash で安定動作 |
+| 2      | Azure OpenAI         | エンタープライズ環境 | SLA・コンプライアンス要件時               |
+| 3      | OpenAI API           | フォールバック・検証 | 障害時または特定モデル利用時              |
+| 4      | Mock Provider        | テスト・CI/CD        | 外部 API 非依存でのテスト実行             |
 
 ### 4.4 主なコンポーネント
 
-* `ChatModel`（Spring AI 標準）
+- `AiProviderFactory`（Mira 独自）
+  - プロバイダに応じた `ChatClient` を動的生成
+  - `VertexAiGeminiClient`, `AzureOpenAiClient`, `GitHubModelsClient` を統一インタフェースで管理
 
-  * Spring AI が提供する統一インタフェース
-  * `AzureOpenAiChatModel` が自動構成される
+- `VectorStoreConfig`（Mira 独自）
+  - `EmbeddingModel` Bean: Vertex AI / Mock 切替
+  - `VectorStore` Bean: PgVectorStore 手動構成
 
-* `ChatMemory`（Spring AI 標準）
+- カスタムコンポーネント
+  - `MiraChatService` — ビジネスロジックを含むサービス層
+  - `MiraStreamService` — ストリーミング応答処理
+  - `MockAiClient` — テスト用モック実装
 
-  * 会話履歴の管理
-  * 複数ストレージオプション（InMemory, JDBC, MongoDB, Cosmos DB）
+### 4.5 Spring AI 設定方針
 
-* カスタムコンポーネント
-
-  * `MiraChatService` — ビジネスロジックを含むサービス層
-  * `MockChatModel` — テスト用モック実装
-
-### 4.5 Spring AI 設定（application.yml）
+> **重要**: Spring AI autoconfigure は全て無効化し、`mira.ai.*` プロパティのみで設定を完結させています。
 
 ```yaml
 spring:
-  ai:
-    azure:
-      openai:
-        endpoint: ${AZURE_OPENAI_ENDPOINT}
-        api-key: ${AZURE_OPENAI_API_KEY}
-        chat:
-          options:
-            deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-4o}
-            temperature: 0.7
-            max-tokens: 4096
-    # OpenAI フォールバック用（オプション）
-    openai:
-      api-key: ${OPENAI_API_KEY:}
-      chat:
-        options:
-          model: gpt-4o
+  autoconfigure:
+    exclude:
+      # Spring AI AutoConfigure を全て無効化
+      # Chat / Embedding / VectorStore は Mira 独自の VectorStoreConfig で手動構成
+      - org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
+      - org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+      # ... (他のautoconfigureも同様に無効化)
 
-# Mira 固有設定
+# Mira 固有設定（これがメイン）
 mira:
   ai:
-    provider: azure-openai  # azure-openai | openai | mock
+    provider: vertex-ai-gemini # vertex-ai-gemini | azure-openai | openai | mock
+    vertex-ai:
+      project-id: ${GEMINI_PROJECT_ID:dev-dummy-project}
+      location: us-central1
+      model: gemini-2.5-flash
+    vector-store:
+      table-name: mir_mira_vector_store
+      dimensions: 768
+      distance-type: COSINE_DISTANCE
+      index-type: HNSW
     mock:
-      enabled: false  # テスト時に true
-      response-delay-ms: 500
+      enabled: false # テスト時に true
 ```
 
 ### 4.6 モック機能（テスト支援）
@@ -218,17 +213,17 @@ mira:
 
 #### 4.6.1 MockChatModel
 
-* Spring AI の `ChatModel` インタフェースを実装
-* 設定ファイルまたはコードで定義されたモック応答を返却
-* レイテンシのシミュレーション機能（`response-delay-ms`）
+- Spring AI の `ChatModel` インタフェースを実装
+- 設定ファイルまたはコードで定義されたモック応答を返却
+- レイテンシのシミュレーション機能（`response-delay-ms`）
 
 #### 4.6.2 モック応答の定義方式
 
-| 方式 | 用途 | 設定方法 |
-|------|------|----------|
-| **固定応答** | 単純なスモークテスト | YAML/JSON で定義 |
-| **パターンマッチ応答** | モード別テスト | プロンプト内容に応じた応答切替 |
-| **シナリオベース応答** | E2E テスト | 会話フロー全体のシナリオ定義 |
+| 方式                   | 用途                 | 設定方法                       |
+| ---------------------- | -------------------- | ------------------------------ |
+| **固定応答**           | 単純なスモークテスト | YAML/JSON で定義               |
+| **パターンマッチ応答** | モード別テスト       | プロンプト内容に応じた応答切替 |
+| **シナリオベース応答** | E2E テスト           | 会話フロー全体のシナリオ定義   |
 
 #### 4.6.3 モック設定例
 
@@ -265,10 +260,10 @@ class MiraChatServiceTest {
 
 ### 4.6 設計ポイント
 
-* Platform Integration Layer とは疎結合を維持し、
+- Platform Integration Layer とは疎結合を維持し、
   モデル差し替え時の影響範囲を Orchestration Layer 以下に限定する。
-* 将来的なオンプレモデル（社内 LLM 等）の導入も視野に、プロバイダ抽象化を行う。
-* **テスト容易性**: モック機能により、外部 API 非依存でのユニットテスト・統合テストを実現。
+- 将来的なオンプレモデル（社内 LLM 等）の導入も視野に、プロバイダ抽象化を行う。
+- **テスト容易性**: モック機能により、外部 API 非依存でのユニットテスト・統合テストを実現。
 
 ---
 
@@ -276,40 +271,35 @@ class MiraChatServiceTest {
 
 ### 5.1 役割
 
-* mirelplatform のコアサービスとの連携
-* RBAC / テナント / ログ / エラー情報との橋渡し
-* Studio / Workflow / Admin など各アプリケーション API との連携
+- mirelplatform のコアサービスとの連携
+- RBAC / テナント / ログ / エラー情報との橋渡し
+- Studio / Workflow / Admin など各アプリケーション API との連携
 
 ### 5.2 主な機能
 
-* **RBAC Adapter**
+- **RBAC Adapter**
+  - `ExecutionContext` から `currentUser` のロール情報を取得
+  - システムロール（`ROLE_ADMIN` / `ROLE_USER`）とアプリロール（`SystemAdmin` / `Builder` 等）を解決
+  - Orchestration Layer にロール情報を提供
+  - 参照: [docs/studio/09_operations/rbac-model.md](../../studio/09_operations/rbac-model.md)
 
-  * `ExecutionContext` から `currentUser` のロール情報を取得
-  * システムロール（`ROLE_ADMIN` / `ROLE_USER`）とアプリロール（`SystemAdmin` / `Builder` 等）を解決
-  * Orchestration Layer にロール情報を提供
-  * 参照: [docs/studio/09_operations/rbac-model.md](../../studio/09_operations/rbac-model.md)
+- **TenantContext Manager**
+  - `ExecutionContext.currentTenant` からテナント設定を取得
+  - AI 利用可否、モデル上限、監査ログポリシー等の取得
+  - 料金・利用制限ポリシーの適用
 
-* **TenantContext Manager**
+- **Error / Log Connector**
+  - バックエンドのエラー情報を構造化して Orchestration Layer に渡す
+  - 必要に応じて ErrorReport を保存
 
-  * `ExecutionContext.currentTenant` からテナント設定を取得
-  * AI 利用可否、モデル上限、監査ログポリシー等の取得
-  * 料金・利用制限ポリシーの適用
+- **Audit Logger**
+  - `MiraAuditLog` への記録を担当
+  - テナント設定に応じた保存ポリシー（`FULL` / `SUMMARY` / `METADATA_ONLY`）の適用
+  - 参照: [data-model.md](./data-model.md) の「2.6 MiraAuditLog」
 
-* **Error / Log Connector**
-
-  * バックエンドのエラー情報を構造化して Orchestration Layer に渡す
-  * 必要に応じて ErrorReport を保存
-
-* **Audit Logger**
-
-  * `MiraAuditLog` への記録を担当
-  * テナント設定に応じた保存ポリシー（`FULL` / `SUMMARY` / `METADATA_ONLY`）の適用
-  * 参照: [data-model.md](./data-model.md) の「2.6 MiraAuditLog」
-
-* **App API Connector**
-
-  * Studio / Workflow などからメタ情報を取得（例：エンティティ定義、Workflow ノード情報 等）
-  * Mira の回答に利用するための軽量 API を提供
+- **App API Connector**
+  - Studio / Workflow などからメタ情報を取得（例：エンティティ定義、Workflow ノード情報 等）
+  - Mira の回答に利用するための軽量 API を提供
 
 ### 5.3 データフローの一例（エラー解析）
 
@@ -325,16 +315,16 @@ class MiraChatServiceTest {
 
 ## 6. 変更容易性と責務分離
 
-* **UI / UX の変更**
+- **UI / UX の変更**
   → Interaction Layer に閉じる（チャットウィンドウや全画面 UI の改修）
 
-* **プロンプト設計・回答ポリシーの変更**
+- **プロンプト設計・回答ポリシーの変更**
   → Orchestration Layer を中心に改修
 
-* **モデルの切り替え・増減**
+- **モデルの切り替え・増減**
   → AI Model Layer のみを改修
 
-* **mirelplatform 側仕様変更（RBAC / API 変更等）**
+- **mirelplatform 側仕様変更（RBAC / API 変更等）**
   → Platform Integration Layer のみを改修
 
 ---

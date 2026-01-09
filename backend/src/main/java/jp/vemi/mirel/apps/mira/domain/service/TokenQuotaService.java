@@ -73,10 +73,8 @@ public class TokenQuotaService {
     @Transactional
     public void consume(String tenantId, String userId, String conversationId, String model,
             int inputTokens, int outputTokens) {
-        if (!properties.getQuota().isEnabled()) {
-            return;
-        }
-
+        // 使用量記録は常に行う（インサイト表示用）
+        // 制限チェックは checkQuota() で enabled 時のみ実行
         MiraTokenUsage usage = MiraTokenUsage.builder()
                 .id(UUID.randomUUID().toString())
                 .tenantId(tenantId)
@@ -90,5 +88,6 @@ public class TokenQuotaService {
                 .build();
 
         usageRepository.save(usage);
+        log.debug("Token usage recorded: tenant={}, tokens={}", tenantId, inputTokens + outputTokens);
     }
 }

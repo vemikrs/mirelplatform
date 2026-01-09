@@ -36,8 +36,14 @@ public class MiraHybridSearchService {
     private final ObjectMapper objectMapper;
     private final RerankerService rerankerService;
     private final MiraSettingService settingService;
+    private final jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties aiProperties;
 
     private static final int RRF_K = 60;
+
+    // セキュリティ: テーブル名として許可される正規表現パターン
+    // PostgreSQLの識別子規則: 英数字とアンダースコアのみ、数字開始不可
+    private static final java.util.regex.Pattern VALID_TABLE_NAME_PATTERN = java.util.regex.Pattern
+            .compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
     /**
      * Performs a hybrid search.
@@ -129,7 +135,12 @@ public class MiraHybridSearchService {
 
         // Build LIKE clauses for each term
         StringBuilder sqlBuilder = new StringBuilder();
-        sqlBuilder.append("SELECT id, content, metadata FROM vector_store WHERE ");
+        String tableName = aiProperties.getVectorStore().getTableName();
+
+        // セキュリティ: テーブル名の検証（SQLインジェクション対策）
+        validateTableName(tableName);
+
+        sqlBuilder.append("SELECT id, content, metadata FROM ").append(tableName).append(" WHERE ");
 
         List<String> likeClauses = new ArrayList<>();
         List<String> params = new ArrayList<>();
@@ -311,6 +322,29 @@ public class MiraHybridSearchService {
         /** レガシーコンストラクタ（リランキングなし） */
         public HybridSearchResult(List<Document> vectorDocs, List<Document> keywordDocs, List<Document> rrfResults) {
             this(vectorDocs, keywordDocs, rrfResults, rrfResults, false, "none", 0);
+        }
+    }
+
+    /**
+     * テーブル名のセキュリティ検証.
+     * 
+     * <p>
+     * SQLインジェクション対策として、テーブル名がPostgreSQLの識別子規則に
+     * 従っているかを検証します。不正なテーブル名の場合は例外をスローします。
+     * </p>
+     * 
+     * @param tableName
+     *            検証するテーブル名
+     * @throws IllegalArgumentException
+     *             テーブル名が不正な場合
+     */
+    private void validateTableName(String tableName) {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("Table name cannot be null or empty");
+        }
+        if (!VALID_TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            log.error("Invalid table name detected: {}", tableName);
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
         }
     }
 }
