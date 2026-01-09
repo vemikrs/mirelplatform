@@ -128,6 +128,9 @@ public class MiraStreamService {
 
         AiRequest aiRequest = promptBuilder.buildChatRequestWithContext(
                 request, mode, history, finalContext);
+        aiRequest.setTenantId(tenantId);
+        aiRequest.setUserId(userId);
+        aiRequest.setConversationId(conversation.getId());
 
         // Phase 4: Model selection (5-step priority)
         String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
@@ -488,9 +491,7 @@ public class MiraStreamService {
                                         mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
                                         0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
 
-                                // トークン使用量を記録（インサイト表示用）
-                                tokenQuotaService.consume(tenantId, userId, conversation.getId(),
-                                        "streaming-model", 0, dummyResponse.getCompletionTokens());
+                                // トークン使用量記録は MetricsWrappedAiClient で一元化済み
 
                                 // Auto Title (Async)
                                 if (conversation.getTitle() == null || conversation.getTitle().isEmpty()

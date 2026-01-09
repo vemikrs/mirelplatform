@@ -35,14 +35,9 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig; // Import MessageConfig
 import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
-import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.TavilySearchProvider;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchProvider;
-import jp.vemi.mirel.apps.mira.infrastructure.ai.tool.WebSearchTools;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import org.springframework.ai.document.Document; // Added
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -68,7 +63,6 @@ public class MiraChatService {
     private final MiraContextMergeService contextMergeService;
     private final MiraAuditService auditService;
     private final MiraRateLimitService rateLimitService;
-    private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
     private final TokenCounter tokenCounter;
     private final MiraSettingService settingService;
@@ -243,6 +237,7 @@ public class MiraChatService {
                 request, mode, history, finalContext);
         aiRequest.setTenantId(tenantId);
         aiRequest.setUserId(userId);
+        aiRequest.setConversationId(conversation.getId());
 
         // Phase 4: Model selection (5-step priority)
         String snapshotId = request.getContext() != null ? request.getContext().getSnapshotId() : null;
@@ -368,8 +363,7 @@ public class MiraChatService {
                 mode.name(), aiResponse.getModel(), (int) latency,
                 promptTokens, completionTokens, MiraAuditLog.AuditStatus.SUCCESS);
 
-        tokenQuotaService.consume(tenantId, userId, conversation.getId(),
-                aiResponse.getModel(), promptTokens, completionTokens);
+        // トークン使用量記録は MetricsWrappedAiClient で一元化済み
 
         // 13. レスポンス構築
         ChatResponse response = ChatResponse.builder()

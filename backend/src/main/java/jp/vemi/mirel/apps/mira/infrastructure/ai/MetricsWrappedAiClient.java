@@ -3,6 +3,7 @@
  */
 package jp.vemi.mirel.apps.mira.infrastructure.ai;
 
+import jp.vemi.mirel.apps.mira.domain.service.TokenQuotaService;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,12 +11,13 @@ import reactor.core.publisher.Flux;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * メトリクス計測をラップするAIクライアントデコレーター.
+ * メトリクス計測とトークン使用量記録をラップするAIクライアントデコレーター.
  * 
  * <p>
- * 全てのAIプロバイダー呼び出しに対して透過的にメトリクスを計測します。
+ * 全てのAIプロバイダー呼び出しに対して透過的にメトリクスとトークン使用量を記録します。
  * </p>
  */
 @Slf4j
@@ -24,6 +26,7 @@ public class MetricsWrappedAiClient implements AiProviderClient {
 
     private final AiProviderClient delegate;
     private final MiraMetrics metrics;
+    private final TokenQuotaService tokenQuotaService;
     private final String tenantId;
 
     @Override
@@ -36,12 +39,15 @@ public class MetricsWrappedAiClient implements AiProviderClient {
             if (response.hasError()) {
                 metrics.recordChatError("ai_error", tenantId);
             } else {
-                metrics.recordChatCompletion(
-                        response.getModel() != null ? response.getModel() : delegate.getProviderName(),
-                        tenantId,
-                        latency,
-                        getTokensOrZero(response.getPromptTokens()),
-                        getTokensOrZero(response.getCompletionTokens()));
+                String model = response.getModel() != null ? response.getModel() : delegate.getProviderName();
+                int promptTokens = getTokensOrZero(response.getPromptTokens());
+                int completionTokens = getTokensOrZero(response.getCompletionTokens());
+
+                // Prometheus メトリクス
+                metrics.recordChatCompletion(model, tenantId, latency, promptTokens, completionTokens);
+
+                // トークン使用量をDBに記録（インサイト用）
+                recordTokenUsage(request, model, promptTokens, completionTokens);
             }
             return response;
         } catch (Exception e) {
@@ -54,23 +60,30 @@ public class MetricsWrappedAiClient implements AiProviderClient {
     public Flux<AiResponse> stream(AiRequest request) {
         AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
         AtomicInteger totalTokens = new AtomicInteger(0);
+        AtomicReference<String> modelRef = new AtomicReference<>(delegate.getProviderName() + "-streaming");
 
         return delegate.stream(request)
                 .doOnNext(response -> {
                     if (response.getCompletionTokens() != null) {
                         totalTokens.addAndGet(response.getCompletionTokens());
                     }
+                    if (response.getModel() != null) {
+                        modelRef.set(response.getModel());
+                    }
                 })
                 .doOnComplete(() -> {
                     long latency = System.currentTimeMillis() - startTime.get();
-                    metrics.recordChatCompletion(
-                            delegate.getProviderName() + "-streaming",
-                            tenantId,
-                            latency,
-                            0,
-                            totalTokens.get());
+                    String model = modelRef.get();
+                    int tokens = totalTokens.get();
+
+                    // Prometheus メトリクス
+                    metrics.recordChatCompletion(model, tenantId, latency, 0, tokens);
+
+                    // トークン使用量をDBに記録（インサイト用）
+                    recordTokenUsage(request, model, 0, tokens);
+
                     log.debug("[MetricsWrappedAiClient] Stream completed. Latency={}ms, Tokens={}",
-                            latency, totalTokens.get());
+                            latency, tokens);
                 })
                 .doOnError(e -> {
                     metrics.recordChatError("stream_error", tenantId);
@@ -90,5 +103,18 @@ public class MetricsWrappedAiClient implements AiProviderClient {
 
     private int getTokensOrZero(Integer tokens) {
         return tokens != null ? tokens : 0;
+    }
+
+    /**
+     * トークン使用量をDBに記録.
+     */
+    private void recordTokenUsage(AiRequest request, String model, int promptTokens, int completionTokens) {
+        try {
+            String userId = request.getUserId() != null ? request.getUserId() : "unknown";
+            String conversationId = request.getConversationId() != null ? request.getConversationId() : "unknown";
+            tokenQuotaService.consume(tenantId, userId, conversationId, model, promptTokens, completionTokens);
+        } catch (Exception e) {
+            log.warn("[MetricsWrappedAiClient] Failed to record token usage: {}", e.getMessage());
+        }
     }
 }

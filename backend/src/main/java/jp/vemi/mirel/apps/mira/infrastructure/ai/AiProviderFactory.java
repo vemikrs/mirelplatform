@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import jp.vemi.mirel.apps.mira.domain.service.MiraSettingService;
+import jp.vemi.mirel.apps.mira.domain.service.TokenQuotaService;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
 import lombok.extern.slf4j.Slf4j;
@@ -31,18 +32,21 @@ public class AiProviderFactory {
     private final MiraAiProperties properties;
     private final MiraSettingService settingService;
     private final MiraMetrics metrics;
+    private final TokenQuotaService tokenQuotaService;
 
     public AiProviderFactory(
             List<AiProviderClient> providerList,
             MiraAiProperties properties,
             MiraSettingService settingService,
-            MiraMetrics metrics) {
+            MiraMetrics metrics,
+            TokenQuotaService tokenQuotaService) {
 
         this.providers = providerList.stream()
                 .collect(Collectors.toMap(AiProviderClient::getProviderName, Function.identity()));
         this.properties = properties;
         this.settingService = settingService;
         this.metrics = metrics;
+        this.tokenQuotaService = tokenQuotaService;
 
         log.info("AiProviderFactory initialized with providers: {}", providers.keySet());
     }
@@ -65,8 +69,8 @@ public class AiProviderFactory {
                     return new IllegalStateException("Requested provider '" + providerName + "' is not available.");
                 });
 
-        // メトリクス計測をラップ
-        return new MetricsWrappedAiClient(baseClient, metrics, tenantId);
+        // メトリクス計測とトークン使用量記録をラップ
+        return new MetricsWrappedAiClient(baseClient, metrics, tokenQuotaService, tenantId);
     }
 
     /**

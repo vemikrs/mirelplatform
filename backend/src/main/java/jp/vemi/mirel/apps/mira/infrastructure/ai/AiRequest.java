@@ -52,6 +52,9 @@ public class AiRequest {
     /** ユーザーID（コンテキスト解決用） */
     private String userId;
 
+    /** 会話ID（トークン使用量記録用） */
+    private String conversationId;
+
     /** 追加パラメータ */
     private Map<String, Object> additionalParams;
 

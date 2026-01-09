@@ -43,7 +43,8 @@ class TokenQuotaServiceTest {
     @BeforeEach
     void setUp() {
         quotaConfig = new MiraAiProperties.Quota();
-        when(properties.getQuota()).thenReturn(quotaConfig);
+        // consume()はpropertiesを参照しないため、checkQuota()用としてlenientに設定
+        org.mockito.Mockito.lenient().when(properties.getQuota()).thenReturn(quotaConfig);
     }
 
     @Test
@@ -90,7 +91,7 @@ class TokenQuotaServiceTest {
     @DisplayName("consumeで保存される")
     void shouldSaveOnConsume() {
         // Arrange
-        quotaConfig.setEnabled(true);
+        // enabledチェックは削除されたため、設定不要
 
         // Act
         tokenQuotaService.consume("tenant1", "user1", "conv1", "gpt-4", 10, 20);

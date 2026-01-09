@@ -199,6 +199,8 @@ public class PromptBuilder {
                 .messages(messages)
                 .temperature(getTemperatureForMode(mode))
                 .maxTokens(getMaxTokensForMode(mode))
+                .tenantId(null) // 呼び出し元で設定
+                .userId(null) // 呼び出し元で設定
                 .build();
     }
 
