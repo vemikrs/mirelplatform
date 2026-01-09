@@ -180,10 +180,27 @@ public class MiraAiProperties {
     /** ベクトル検索設定. */
     private VectorConfig vector = new VectorConfig();
 
+    /** VectorStore設定. */
+    private VectorStoreDbConfig vectorStore = new VectorStoreDbConfig();
+
     @Data
     public static class VectorConfig {
         /** 検索時の類似度閾値 (デフォルト: 0.6). */
         private double searchThreshold = 0.6;
+    }
+
+    @Data
+    public static class VectorStoreDbConfig {
+        /** テーブル名. */
+        private String tableName = "mir_mira_vector_store";
+        /** ベクトル次元数. */
+        private int dimensions = 768;
+        /** 距離タイプ (COSINE_DISTANCE, EUCLIDEAN_DISTANCE, NEGATIVE_INNER_PRODUCT). */
+        private String distanceType = "COSINE_DISTANCE";
+        /** インデックスタイプ (HNSW, IVFFLAT, NONE). */
+        private String indexType = "HNSW";
+        /** スキーマ初期化フラグ. */
+        private boolean initializeSchema = true;
     }
 
     /**
