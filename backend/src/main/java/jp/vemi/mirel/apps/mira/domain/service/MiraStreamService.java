@@ -488,6 +488,10 @@ public class MiraStreamService {
                                         mode.name(), "streaming-model", (int) (System.currentTimeMillis() - startTime),
                                         0, dummyResponse.getCompletionTokens(), MiraAuditLog.AuditStatus.SUCCESS);
 
+                                // トークン使用量を記録（インサイト表示用）
+                                tokenQuotaService.consume(tenantId, userId, conversation.getId(),
+                                        "streaming-model", 0, dummyResponse.getCompletionTokens());
+
                                 // Auto Title (Async)
                                 if (conversation.getTitle() == null || conversation.getTitle().isEmpty()
                                         || "新しい会話".equals(conversation.getTitle())) {
