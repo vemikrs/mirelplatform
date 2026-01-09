@@ -103,6 +103,21 @@ class MiraChatServiceTest {
     @Mock
     private ModelCapabilityValidator modelCapabilityValidator;
 
+    @Mock
+    private jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService adminSystemSettingsService;
+
+    @Mock
+    private jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties miraAiProperties;
+
+    @Mock
+    private ModelSelectionService modelSelectionService;
+
+    @Mock
+    private MiraKnowledgeBaseService knowledgeBaseService;
+
+    @Mock
+    private MiraRagContextBuilder ragContextBuilder;
+
     @InjectMocks
     private MiraChatService miraChatService;
 
@@ -110,6 +125,10 @@ class MiraChatServiceTest {
     void globalSetUp() {
         // Setup default validation success
         lenient().when(modelCapabilityValidator.validate(any())).thenReturn(ModelCapabilityValidation.success());
+        // Setup default model selection
+        lenient().when(modelSelectionService.resolveModel(any(), any(), any(), any())).thenReturn("gpt-4o");
+        // Setup empty RAG results
+        lenient().when(knowledgeBaseService.search(any(), any(), any())).thenReturn(java.util.Collections.emptyList());
     }
 
     private static final String TENANT_ID = "tenant-001";
