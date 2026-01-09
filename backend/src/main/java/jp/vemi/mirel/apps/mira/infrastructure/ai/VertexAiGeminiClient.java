@@ -196,9 +196,17 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .map(this::mapStreamResponse)
                 .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
                         .filter(throwable -> {
-                            // Retry on specific errors (e.g., timeout, network)
-                            // For now, retry on most exceptions except fatal ones if needed
-                            // Adjust filter as necessary based on observation
+                            // 認証・権限系エラーはリトライ対象外（設定問題のため即時失敗が適切）
+                            if (throwable instanceof io.grpc.StatusRuntimeException) {
+                                io.grpc.Status.Code code = ((io.grpc.StatusRuntimeException) throwable)
+                                        .getStatus().getCode();
+                                if (code == io.grpc.Status.Code.PERMISSION_DENIED ||
+                                        code == io.grpc.Status.Code.UNAUTHENTICATED ||
+                                        code == io.grpc.Status.Code.INVALID_ARGUMENT) {
+                                    log.warn("[VertexAiGemini] Non-retryable error: {}", code);
+                                    return false;
+                                }
+                            }
                             return true;
                         })
                         .doBeforeRetry(
