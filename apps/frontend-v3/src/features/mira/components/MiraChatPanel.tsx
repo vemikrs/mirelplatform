@@ -333,6 +333,7 @@ export function MiraChatPanel({ className }: MiraChatPanelProps) {
                       message={message} 
                       compact 
                       onEdit={handleEditMessage}
+                      userAvatarUrl={user?.avatarUrl}
                     />
                   ))}
                   <div ref={messagesEndRef} />
