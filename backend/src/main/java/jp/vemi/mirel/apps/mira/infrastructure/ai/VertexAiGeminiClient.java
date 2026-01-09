@@ -195,20 +195,7 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 .chatResponse()
                 .map(this::mapStreamResponse)
                 .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
-                        .filter(throwable -> {
-                            // 認証・権限系エラーはリトライ対象外（設定問題のため即時失敗が適切）
-                            if (throwable instanceof io.grpc.StatusRuntimeException) {
-                                io.grpc.Status.Code code = ((io.grpc.StatusRuntimeException) throwable)
-                                        .getStatus().getCode();
-                                if (code == io.grpc.Status.Code.PERMISSION_DENIED ||
-                                        code == io.grpc.Status.Code.UNAUTHENTICATED ||
-                                        code == io.grpc.Status.Code.INVALID_ARGUMENT) {
-                                    log.warn("[VertexAiGemini] Non-retryable error: {}", code);
-                                    return false;
-                                }
-                            }
-                            return true;
-                        })
+                        .filter(VertexAiGeminiClient::shouldRetryException)
                         .doBeforeRetry(
                                 retrySignal -> log.warn("[VertexAiGemini] Retrying stream request (attempt {}): {}",
                                         retrySignal.totalRetries() + 1, retrySignal.failure().getMessage())))
@@ -344,5 +331,29 @@ public class VertexAiGeminiClient implements AiProviderClient {
     @Override
     public String getProviderName() {
         return PROVIDER_NAME;
+    }
+
+    /**
+     * リトライ対象かどうかを判定.
+     * 
+     * <p>
+     * 認証・権限系エラーはリトライ対象外（設定問題のため即時失敗が適切）
+     * </p>
+     * 
+     * @param throwable
+     *            例外
+     * @return true: リトライ対象, false: リトライ対象外
+     */
+    static boolean shouldRetryException(Throwable throwable) {
+        if (throwable instanceof io.grpc.StatusRuntimeException) {
+            io.grpc.Status.Code code = ((io.grpc.StatusRuntimeException) throwable).getStatus().getCode();
+            if (code == io.grpc.Status.Code.PERMISSION_DENIED ||
+                    code == io.grpc.Status.Code.UNAUTHENTICATED ||
+                    code == io.grpc.Status.Code.INVALID_ARGUMENT) {
+                log.warn("[VertexAiGemini] Non-retryable error: {}", code);
+                return false;
+            }
+        }
+        return true;
     }
 }

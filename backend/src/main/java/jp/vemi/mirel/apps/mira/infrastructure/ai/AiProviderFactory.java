@@ -33,13 +33,15 @@ public class AiProviderFactory {
     private final MiraSettingService settingService;
     private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
+    private final TokenCounter tokenCounter;
 
     public AiProviderFactory(
             List<AiProviderClient> providerList,
             MiraAiProperties properties,
             MiraSettingService settingService,
             MiraMetrics metrics,
-            TokenQuotaService tokenQuotaService) {
+            TokenQuotaService tokenQuotaService,
+            TokenCounter tokenCounter) {
 
         this.providers = providerList.stream()
                 .collect(Collectors.toMap(AiProviderClient::getProviderName, Function.identity()));
@@ -47,6 +49,7 @@ public class AiProviderFactory {
         this.settingService = settingService;
         this.metrics = metrics;
         this.tokenQuotaService = tokenQuotaService;
+        this.tokenCounter = tokenCounter;
 
         log.info("AiProviderFactory initialized with providers: {}", providers.keySet());
     }
@@ -70,7 +73,7 @@ public class AiProviderFactory {
                 });
 
         // メトリクス計測とトークン使用量記録をラップ
-        return new MetricsWrappedAiClient(baseClient, metrics, tokenQuotaService, tenantId);
+        return new MetricsWrappedAiClient(baseClient, metrics, tokenQuotaService, tokenCounter, tenantId);
     }
 
     /**

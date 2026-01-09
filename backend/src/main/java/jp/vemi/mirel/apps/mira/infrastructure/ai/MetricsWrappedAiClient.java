@@ -5,7 +5,6 @@ package jp.vemi.mirel.apps.mira.infrastructure.ai;
 
 import jp.vemi.mirel.apps.mira.domain.service.TokenQuotaService;
 import jp.vemi.mirel.apps.mira.infrastructure.monitoring.MiraMetrics;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
@@ -21,13 +20,26 @@ import java.util.concurrent.atomic.AtomicReference;
  * </p>
  */
 @Slf4j
-@RequiredArgsConstructor
 public class MetricsWrappedAiClient implements AiProviderClient {
 
     private final AiProviderClient delegate;
     private final MiraMetrics metrics;
     private final TokenQuotaService tokenQuotaService;
+    private final TokenCounter tokenCounter;
     private final String tenantId;
+
+    public MetricsWrappedAiClient(
+            AiProviderClient delegate,
+            MiraMetrics metrics,
+            TokenQuotaService tokenQuotaService,
+            TokenCounter tokenCounter,
+            String tenantId) {
+        this.delegate = delegate;
+        this.metrics = metrics;
+        this.tokenQuotaService = tokenQuotaService;
+        this.tokenCounter = tokenCounter;
+        this.tenantId = tenantId;
+    }
 
     @Override
     public AiResponse chat(AiRequest request) {
@@ -62,6 +74,9 @@ public class MetricsWrappedAiClient implements AiProviderClient {
         AtomicInteger totalTokens = new AtomicInteger(0);
         AtomicReference<String> modelRef = new AtomicReference<>(delegate.getProviderName() + "-streaming");
 
+        // プロンプトトークンを事前に推定（ストリーミングではレスポンスから取得できないため）
+        int estimatedPromptTokens = estimatePromptTokens(request);
+
         return delegate.stream(request)
                 .doOnNext(response -> {
                     if (response.getCompletionTokens() != null) {
@@ -77,13 +92,14 @@ public class MetricsWrappedAiClient implements AiProviderClient {
                     int tokens = totalTokens.get();
 
                     // Prometheus メトリクス
-                    metrics.recordChatCompletion(model, tenantId, latency, 0, tokens);
+                    metrics.recordChatCompletion(model, tenantId, latency, estimatedPromptTokens, tokens);
 
                     // トークン使用量をDBに記録（インサイト用）
-                    recordTokenUsage(request, model, 0, tokens);
+                    recordTokenUsage(request, model, estimatedPromptTokens, tokens);
 
-                    log.debug("[MetricsWrappedAiClient] Stream completed. Latency={}ms, Tokens={}",
-                            latency, tokens);
+                    log.debug(
+                            "[MetricsWrappedAiClient] Stream completed. Latency={}ms, PromptTokens={} (estimated), CompletionTokens={}",
+                            latency, estimatedPromptTokens, tokens);
                 })
                 .doOnError(e -> {
                     metrics.recordChatError("stream_error", tenantId);
@@ -120,5 +136,31 @@ public class MetricsWrappedAiClient implements AiProviderClient {
         } catch (Exception e) {
             log.warn("[MetricsWrappedAiClient] Failed to record token usage: {}", e.getMessage());
         }
+    }
+
+    /**
+     * リクエストからプロンプトトークン数を推定.
+     * 
+     * <p>
+     * ストリーミングではレスポンスからプロンプトトークンを取得できないため、
+     * TokenCounterを使用してリクエストのメッセージからトークン数を推定する。
+     * </p>
+     * 
+     * @param request
+     *            AIリクエスト
+     * @return 推定トークン数
+     */
+    private int estimatePromptTokens(AiRequest request) {
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            return 0;
+        }
+
+        int totalTokens = 0;
+        for (AiRequest.Message msg : request.getMessages()) {
+            if (msg.getContent() != null) {
+                totalTokens += tokenCounter.count(msg.getContent(), null);
+            }
+        }
+        return totalTokens;
     }
 }

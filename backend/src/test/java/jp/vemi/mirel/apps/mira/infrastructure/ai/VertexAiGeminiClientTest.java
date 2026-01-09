@@ -14,6 +14,10 @@ import io.grpc.StatusRuntimeException;
 
 /**
  * VertexAiGeminiClient のリトライロジックテスト.
+ * 
+ * <p>
+ * VertexAiGeminiClient.shouldRetryException() を直接呼び出してテスト。
+ * </p>
  */
 class VertexAiGeminiClientTest {
 
@@ -28,7 +32,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.PERMISSION_DENIED);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isFalse();
@@ -41,7 +45,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.UNAUTHENTICATED);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isFalse();
@@ -54,7 +58,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.INVALID_ARGUMENT);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isFalse();
@@ -67,7 +71,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.UNAVAILABLE);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isTrue();
@@ -80,7 +84,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.DEADLINE_EXCEEDED);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isTrue();
@@ -93,7 +97,7 @@ class VertexAiGeminiClientTest {
             StatusRuntimeException exception = new StatusRuntimeException(Status.RESOURCE_EXHAUSTED);
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isTrue();
@@ -106,27 +110,10 @@ class VertexAiGeminiClientTest {
             RuntimeException exception = new RuntimeException("Network error");
 
             // Act
-            boolean shouldRetry = shouldRetryException(exception);
+            boolean shouldRetry = VertexAiGeminiClient.shouldRetryException(exception);
 
             // Assert
             assertThat(shouldRetry).isTrue();
-        }
-
-        /**
-         * VertexAiGeminiClient のリトライフィルタリングロジックを再現.
-         * 
-         * 実際のコードと同じロジックでテスト。
-         */
-        private boolean shouldRetryException(Throwable throwable) {
-            if (throwable instanceof StatusRuntimeException) {
-                Status.Code code = ((StatusRuntimeException) throwable).getStatus().getCode();
-                if (code == Status.Code.PERMISSION_DENIED ||
-                        code == Status.Code.UNAUTHENTICATED ||
-                        code == Status.Code.INVALID_ARGUMENT) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }
