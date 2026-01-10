@@ -1,0 +1,48 @@
+# Dockerfile.backend
+# SaaS (Cloud Run) 用の軽量バックエンド専用イメージ
+
+# Stage 1: Build Environment
+FROM mcr.microsoft.com/devcontainers/java:21 AS builder
+
+WORKDIR /workspace
+
+# Gradleキャッシュ効率化
+COPY --chown=vscode:vscode gradle gradle
+COPY --chown=vscode:vscode gradlew gradlew.bat gradle.properties settings.gradle build.gradle ./
+COPY --chown=vscode:vscode lombok.config ./
+COPY --chown=vscode:vscode backend/build.gradle backend/
+
+# 依存関係ダウンロード
+RUN ./gradlew --no-daemon dependencies
+
+# ソースコードコピー（バックエンドのみ）
+COPY --chown=vscode:vscode backend/src backend/src
+# COPY --chown=vscode:vscode backend/test backend/test # テストコードは除外して軽量化
+
+# ビルド実行
+RUN ./gradlew --no-daemon :backend:build -x test
+
+# Stage 2: Runtime Environment (Alpine Linuxで軽量化)
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+# タイムゾーン設定
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
+    echo "Asia/Tokyo" > /etc/timezone
+
+WORKDIR /app
+
+# 実行ユーザー作成
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
+# ビルド成果物をコピー
+COPY --from=builder --chown=spring:spring /workspace/backend/build/libs/*.jar app.jar
+
+# 環境変数（SaaS向けデフォルト）
+ENV SERVER_PORT=8080 \
+    SPRING_PROFILES_ACTIVE=prod
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

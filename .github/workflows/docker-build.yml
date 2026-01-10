@@ -7,24 +7,35 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/workflows/**"
   workflow_dispatch:
-
-permissions:
-  contents: read
-  packages: write
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: vemikrs/mirelplatform
 
 jobs:
   build-and-push:
-    name: Build and Push Docker Image
+    name: Build and Push (${{ matrix.type }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 1. 既存のオールインワン版（変更なし）
+          - type: all-in-one
+            dockerfile: ./Dockerfile
+            image_name: vemikrs/mirelplatform
+            description: "Full stack (Backend + Frontend + Nginx)"
+          
+          # 2. 新規のSaaS用バックエンド版
+          - type: backend-only
+            dockerfile: ./Dockerfile.backend
+            image_name: vemikrs/mirelplatform-backend
+            description: "Backend only (Spring Boot optimized for Cloud Run)"
 
     steps:
       - name: Checkout repository
@@ -40,40 +51,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ matrix.image_name }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.description=${{ matrix.description }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.type }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.type }}
           platforms: linux/amd64
+          # オールインワン版に必要な引数（バックエンド版では無視されるのでそのままでOK）
           build-args: |
             NODE_VERSION=22
             NVM_VERSION=0.39.7
 
       - name: Image digest
-        run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
+        run: echo "Image [${{ matrix.type }}] pushed with digest ${{ steps.meta.outputs.digest }}"
 
       - name: Create summary
         run: |
-          echo "## Docker Build Summary 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Build Summary 🐳 (${{ matrix.type }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ matrix.image_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Description:** ${{ matrix.description }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Tags" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -82,14 +97,17 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  verify-image:
-    name: Verify Docker Image
+  verify-all-in-one:
+    name: Verify All-in-One Image
     runs-on: ubuntu-latest
     needs: build-and-push
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - name: Log in to GitHub Container Registry
@@ -102,18 +120,18 @@ jobs:
       - name: Pull and inspect image
         run: |
           echo "Pulling image..."
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker pull ${{ env.REGISTRY }}/vemikrs/mirelplatform:latest
 
           echo "Inspecting image..."
-          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker inspect ${{ env.REGISTRY }}/vemikrs/mirelplatform:latest
 
           echo "Image history..."
-          docker history ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker history ${{ env.REGISTRY }}/vemikrs/mirelplatform:latest
 
       - name: Test image startup
         run: |
           echo "Testing image startup..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest bash -c "
+          docker run --rm ${{ env.REGISTRY }}/vemikrs/mirelplatform:latest bash -c "
             echo 'Container started successfully' && 
             java -version
           "
@@ -121,7 +139,7 @@ jobs:
       - name: Verify installed components
         run: |
           echo "Verifying Java, Node.js, and pnpm..."
-          docker run --rm --entrypoint bash ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -c "
+          docker run --rm --entrypoint bash ${{ env.REGISTRY }}/vemikrs/mirelplatform:latest -c "
             export NVM_DIR='/home/vscode/.nvm' && 
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\" && 
             export PATH=\"\$NVM_DIR/versions/node/v22.20.0/bin:\$PATH\" &&
@@ -137,12 +155,59 @@ jobs:
 
       - name: Create verification summary
         run: |
-          echo "## Image Verification Summary ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## All-in-One Image Verification ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Image \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\` has been successfully verified." >> $GITHUB_STEP_SUMMARY
+          echo "Image \`${{ env.REGISTRY }}/vemikrs/mirelplatform:latest\` has been successfully verified." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The image includes:" >> $GITHUB_STEP_SUMMARY
           echo "- ☕ Java 21 (Temurin)" >> $GITHUB_STEP_SUMMARY
           echo "- 🟢 Node.js 22" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 pnpm" >> $GITHUB_STEP_SUMMARY
-          echo "- � Backend (Spring Boot) + Frontend (Vite)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Backend (Spring Boot) + Frontend (Vite) + Nginx" >> $GITHUB_STEP_SUMMARY
+
+  verify-backend:
+    name: Verify Backend Image
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and inspect image
+        run: |
+          echo "Pulling image..."
+          docker pull ${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest
+
+          echo "Inspecting image..."
+          docker inspect ${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest
+
+          echo "Image size..."
+          docker images ${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest --format "{{.Size}}"
+
+      - name: Test Java runtime
+        run: |
+          echo "Testing Java runtime..."
+          docker run --rm ${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest java -version
+
+      - name: Create verification summary
+        run: |
+          IMAGE_SIZE=$(docker images ${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest --format "{{.Size}}")
+          echo "## Backend Image Verification ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Image \`${{ env.REGISTRY }}/vemikrs/mirelplatform-backend:latest\` has been successfully verified." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Size:** $IMAGE_SIZE (optimized for Cloud Run)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The image includes:" >> $GITHUB_STEP_SUMMARY
+          echo "- ☕ Java 21 JRE (Eclipse Temurin Alpine)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Spring Boot Application" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌏 Asia/Tokyo timezone" >> $GITHUB_STEP_SUMMARY
