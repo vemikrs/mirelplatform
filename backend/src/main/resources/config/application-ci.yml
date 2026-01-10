@@ -5,7 +5,8 @@ spring:
     url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    # lgtm[js/empty-password-in-configuration-file] - H2 in-memory DB uses empty password by design
+    password: ""  # NOSONAR - intentionally empty for H2 in-memory database
   h2:
     console:
       enabled: false  # CI環境では無効

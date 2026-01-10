@@ -101,8 +101,9 @@ public class ModelCapabilityRegistry {
                 ));
 
         // Meta Llama 3.2 Vision 系 (マルチモーダル対応)
+        // ReDoS対策: possessive quantifiers を使用してバックトラッキングを防止
         MODEL_CAPABILITIES.put(
-                Pattern.compile("(?i)^(meta/)?llama-3\\.2[-a-zA-Z0-9.]*vision.*"),
+                Pattern.compile("(?i)^(meta/)?llama-3\\.2(?:[-a-zA-Z0-9.]*+)?vision(?:[-a-zA-Z0-9.]*+)?$"),
                 EnumSet.of(
                         ModelCapability.MULTIMODAL_INPUT,
                         ModelCapability.STREAMING));

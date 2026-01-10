@@ -1439,7 +1439,12 @@ public class TemplateEngineProcessor {
      * @return 一時ファイル
      */
     private File extractResourceToTempFile(Resource resource, String templateFileName) throws Exception {
-        File tempFile = File.createTempFile("template-" + templateFileName.replace(".", "-"), ".tmp");
+        // セキュリティ強化: Files.createTempFile を使用して適切なパーミッション設定
+        java.nio.file.Path tempPath = java.nio.file.Files.createTempFile(
+                "template-" + templateFileName.replace(".", "-"), ".tmp",
+                java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                        java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")));
+        File tempFile = tempPath.toFile();
         tempFile.deleteOnExit();
 
         try (InputStream inputStream = resource.getInputStream();

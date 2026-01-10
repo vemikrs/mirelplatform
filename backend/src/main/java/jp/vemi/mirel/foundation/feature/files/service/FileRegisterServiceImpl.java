@@ -40,9 +40,17 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     @Override
     public Pair<String, String> register(MultipartFile multipartFile) {
         String temporaryUuid = UUID.randomUUID().toString();
-        File temporary = new File(System.getProperty("java.io.tmpdir") + "/ProMarker/" + temporaryUuid);
-        FileUtil.transfer(multipartFile, temporary, ATCH_FILE_NAME);
-        return register(temporary, false, multipartFile.getOriginalFilename());
+        // セキュリティ強化: 適切なパーミッション設定で一時ディレクトリを作成
+        try {
+            java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("ProMarker-" + temporaryUuid,
+                    java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------")));
+            File temporary = tempDir.toFile();
+            FileUtil.transfer(multipartFile, temporary, ATCH_FILE_NAME);
+            return register(temporary, false, multipartFile.getOriginalFilename());
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to create temporary directory", e);
+        }
     }
 
     /**
