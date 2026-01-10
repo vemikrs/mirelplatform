@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -102,7 +103,8 @@ public class DeviceAuthService {
         deviceCodeByUserCode.put(userCode, deviceCode);
 
         logger.info("Device code created: deviceCode={}, userCode={}, clientId={}",
-                deviceCode, userCode, request.getClientId());
+                SanitizeUtil.forLog(deviceCode), SanitizeUtil.forLog(userCode),
+                SanitizeUtil.forLog(request.getClientId()));
 
         return DeviceCodeResponse.builder()
                 .deviceCode(deviceCode)
@@ -153,13 +155,14 @@ public class DeviceAuthService {
         DeviceAuthSession session = sessionsByDeviceCode.get(deviceCode);
 
         if (session == null) {
-            logger.warn("Device code not found: {}", deviceCode);
+            logger.warn("Device code not found: {}", SanitizeUtil.forLog(deviceCode));
             return DeviceTokenResponse.expired();
         }
 
         // クライアントID検証
         if (!session.getClientId().equals(clientId)) {
-            logger.warn("Client ID mismatch: expected={}, actual={}", session.getClientId(), clientId);
+            logger.warn("Client ID mismatch: expected={}, actual={}", SanitizeUtil.forLog(session.getClientId()),
+                    SanitizeUtil.forLog(clientId));
             return DeviceTokenResponse.builder()
                     .error("invalid_client")
                     .errorDescription("Client ID does not match")
@@ -168,7 +171,7 @@ public class DeviceAuthService {
 
         // 有効期限チェック
         if (session.isExpired()) {
-            logger.info("Device code expired: {}", deviceCode);
+            logger.info("Device code expired: {}", SanitizeUtil.forLog(deviceCode));
             removeSession(deviceCode);
             return DeviceTokenResponse.expired();
         }
@@ -178,7 +181,8 @@ public class DeviceAuthService {
         if (session.getLastPolledAt() != null) {
             Duration elapsed = Duration.between(session.getLastPolledAt(), now);
             if (elapsed.getSeconds() < MIN_POLLING_INTERVAL_SECONDS) {
-                logger.debug("Polling too fast: deviceCode={}, elapsed={}s", deviceCode, elapsed.getSeconds());
+                logger.debug("Polling too fast: deviceCode={}, elapsed={}s", SanitizeUtil.forLog(deviceCode),
+                        elapsed.getSeconds());
                 return DeviceTokenResponse.slowDown();
             }
         }
@@ -205,7 +209,8 @@ public class DeviceAuthService {
 
                 // セッションを削除（使い捨て）
                 removeSession(deviceCode);
-                logger.info("Token issued for device code: {}, userId={}", deviceCode, session.getUserId());
+                logger.info("Token issued for device code: {}, userId={}", SanitizeUtil.forLog(deviceCode),
+                        SanitizeUtil.forLog(session.getUserId()));
 
                 return response;
 
@@ -234,13 +239,13 @@ public class DeviceAuthService {
     public boolean authorize(String userCode, String userId, String userName, String userEmail) {
         String deviceCode = deviceCodeByUserCode.get(userCode);
         if (deviceCode == null) {
-            logger.warn("User code not found: {}", userCode);
+            logger.warn("User code not found: {}", SanitizeUtil.forLog(userCode));
             return false;
         }
 
         DeviceAuthSession session = sessionsByDeviceCode.get(deviceCode);
         if (session == null || session.isExpired() || session.getStatus() != DeviceAuthStatus.PENDING) {
-            logger.warn("Invalid session for user code: {}", userCode);
+            logger.warn("Invalid session for user code: {}", SanitizeUtil.forLog(userCode));
             return false;
         }
 
@@ -249,7 +254,8 @@ public class DeviceAuthService {
         session.setUserName(userName);
         session.setUserEmail(userEmail);
 
-        logger.info("User code authorized: userCode={}, userId={}", userCode, userId);
+        logger.info("User code authorized: userCode={}, userId={}", SanitizeUtil.forLog(userCode),
+                SanitizeUtil.forLog(userId));
         return true;
     }
 
@@ -263,19 +269,19 @@ public class DeviceAuthService {
     public boolean deny(String userCode) {
         String deviceCode = deviceCodeByUserCode.get(userCode);
         if (deviceCode == null) {
-            logger.warn("User code not found: {}", userCode);
+            logger.warn("User code not found: {}", SanitizeUtil.forLog(userCode));
             return false;
         }
 
         DeviceAuthSession session = sessionsByDeviceCode.get(deviceCode);
         if (session == null || session.isExpired() || session.getStatus() != DeviceAuthStatus.PENDING) {
-            logger.warn("Invalid session for user code: {}", userCode);
+            logger.warn("Invalid session for user code: {}", SanitizeUtil.forLog(userCode));
             return false;
         }
 
         session.setStatus(DeviceAuthStatus.DENIED);
 
-        logger.info("User code denied: {}", userCode);
+        logger.info("User code denied: {}", SanitizeUtil.forLog(userCode));
         return true;
     }
 

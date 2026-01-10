@@ -47,6 +47,7 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * Mira AI アシスタント API コントローラー.
@@ -255,7 +256,7 @@ public class MiraApiController {
                     "message", "会話をクリアしました"));
 
         } catch (Exception e) {
-            log.error("会話クリアエラー: conversationId={}", conversationId, e);
+            log.error("会話クリアエラー: conversationId={}", SanitizeUtil.forLog(conversationId), e);
             return ResponseEntity.internalServerError()
                     .body(Map.of(
                             "success", false,

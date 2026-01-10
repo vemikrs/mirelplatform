@@ -24,6 +24,7 @@ import org.springframework.ai.document.Document;
 import jp.vemi.mirel.foundation.web.api.admin.service.AdminSystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -57,9 +58,10 @@ public class MiraStreamService {
     @Transactional
     public Flux<MiraStreamResponse> streamChat(ChatRequest request, String tenantId, String userId) {
         log.info("MiraStreamService.streamChat called. RagEnabled in Request: {}", request.getRagEnabled());
-        log.info("StreamChat called. ConversationID: {}, Mode: {}", request.getConversationId(), request.getMode());
+        log.info("StreamChat called. ConversationID: {}, Mode: {}", SanitizeUtil.forLog(request.getConversationId()),
+                SanitizeUtil.forLog(request.getMode()));
         log.info("ChatRequest.message: content={}, attachedFiles={}",
-                request.getMessage() != null ? request.getMessage().getContent() : "null",
+                request.getMessage() != null ? SanitizeUtil.forLog(request.getMessage().getContent()) : "null",
                 request.getMessage() != null && request.getMessage().getAttachedFiles() != null
                         ? request.getMessage().getAttachedFiles().size() + " files"
                         : "null");
@@ -111,7 +113,8 @@ public class MiraStreamService {
                 List<Document> ragDocs = knowledgeBaseService.search(
                         request.getMessage().getContent(), tenantId, userId);
                 log.info("RAG Search - Enabled: {}, Query: {}, User: {}, Result Size: {}", isRagEnabled,
-                        request.getMessage().getContent(), userId, ragDocs.size());
+                        SanitizeUtil.forLog(request.getMessage().getContent()), SanitizeUtil.forLog(userId),
+                        ragDocs.size());
 
                 if (!ragDocs.isEmpty()) {
                     String ragContext = ragContextBuilder.buildContextString(ragDocs);
@@ -134,8 +137,9 @@ public class MiraStreamService {
         String selectedModel = modelSelectionService.resolveModel(
                 tenantId, userId, snapshotId, request.getForceModel());
         aiRequest.setModel(selectedModel);
-        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId,
-                snapshotId);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", SanitizeUtil.forLog(selectedModel),
+                SanitizeUtil.forLog(tenantId), SanitizeUtil.forLog(userId),
+                SanitizeUtil.forLog(snapshotId));
 
         // 0.5. Turn back to Validation (Now we have the selected model)
         ModelCapabilityValidation capabilityValidation = modelCapabilityValidator.validateWithModel(request,
@@ -163,13 +167,14 @@ public class MiraStreamService {
         aiRequest.setToolCallbacks(tools);
 
         // DEBUG LOGGING
-        log.debug("Stream Request - ConversationID: {}", conversation.getId());
+        log.debug("Stream Request - ConversationID: {}", SanitizeUtil.forLog(conversation.getId()));
         log.debug("History Size: {}", history.size());
         if (!history.isEmpty()) {
             history.forEach(m -> log.debug("History Item: [{}] {}", m.getRole(), m.getContent()));
         }
         log.debug("Final Prompt Messages Count: {}", aiRequest.getMessages().size());
-        aiRequest.getMessages().forEach(m -> log.debug("Prompt Msg: [{}] {}", m.getRole(), m.getContent()));
+        aiRequest.getMessages()
+                .forEach(m -> log.debug("Prompt Msg: [{}] {}", m.getRole(), SanitizeUtil.forLog(m.getContent())));
 
         // Request system role for policy filtering
         String systemRole = request.getContext() != null ? request.getContext().getSystemRole() : null;

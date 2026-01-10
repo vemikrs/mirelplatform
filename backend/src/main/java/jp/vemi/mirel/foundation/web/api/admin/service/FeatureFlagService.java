@@ -12,6 +12,7 @@ import jp.vemi.mirel.foundation.web.api.admin.dto.FeatureFlagListResponse;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateFeatureFlagRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,36 +42,37 @@ public class FeatureFlagService {
      */
     @Transactional(readOnly = true)
     public FeatureFlagListResponse listFeatureFlags(
-            int page, 
-            int size, 
+            int page,
+            int size,
             String applicationId,
             FeatureStatus status,
             Boolean inDevelopment,
             String searchTerm) {
-        
-        logger.info("List feature flags: page={}, size={}, applicationId={}, status={}, inDevelopment={}, searchTerm={}", 
-            page, size, applicationId, status, inDevelopment, searchTerm);
+
+        logger.info(
+                "List feature flags: page={}, size={}, applicationId={}, status={}, inDevelopment={}, searchTerm={}",
+                page, size, SanitizeUtil.forLog(applicationId), status, inDevelopment, SanitizeUtil.forLog(searchTerm));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("featureKey").ascending());
-        
+
         Page<FeatureFlag> flagPage = featureFlagRepository.findWithFilters(
-            applicationId,
-            status,
-            inDevelopment,
-            searchTerm,
-            pageable);
+                applicationId,
+                status,
+                inDevelopment,
+                searchTerm,
+                pageable);
 
         List<FeatureFlagDto> featureDtos = flagPage.getContent().stream()
-            .map(this::convertToDto)
-            .collect(Collectors.toList());
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
 
         return FeatureFlagListResponse.builder()
-            .features(featureDtos)
-            .page(page)
-            .size(size)
-            .totalElements(flagPage.getTotalElements())
-            .totalPages(flagPage.getTotalPages())
-            .build();
+                .features(featureDtos)
+                .page(page)
+                .size(size)
+                .totalElements(flagPage.getTotalElements())
+                .totalPages(flagPage.getTotalPages())
+                .build();
     }
 
     /**
@@ -78,11 +80,11 @@ public class FeatureFlagService {
      */
     @Transactional(readOnly = true)
     public FeatureFlagDto getFeatureFlagById(String id) {
-        logger.info("Get feature flag by id: {}", id);
+        logger.info("Get feature flag by id: {}", SanitizeUtil.forLog(id));
 
         FeatureFlag flag = featureFlagRepository.findById(id)
-            .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
-            .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
+                .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
+                .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
 
         return convertToDto(flag);
     }
@@ -95,7 +97,7 @@ public class FeatureFlagService {
         logger.info("Get feature flag by key: {}", featureKey);
 
         FeatureFlag flag = featureFlagRepository.findByFeatureKeyAndDeleteFlagFalse(featureKey)
-            .orElseThrow(() -> new RuntimeException("Feature flag not found: " + featureKey));
+                .orElseThrow(() -> new RuntimeException("Feature flag not found: " + featureKey));
 
         return convertToDto(flag);
     }
@@ -113,7 +115,7 @@ public class FeatureFlagService {
      */
     @Transactional
     public FeatureFlagDto createFeatureFlag(CreateFeatureFlagRequest request, String userId) {
-        logger.info("Create feature flag: featureKey={}", request.getFeatureKey());
+        logger.info("Create feature flag: featureKey={}", SanitizeUtil.forLog(request.getFeatureKey()));
 
         // 重複チェック
         if (existsByFeatureKey(request.getFeatureKey())) {
@@ -139,7 +141,8 @@ public class FeatureFlagService {
 
         flag = featureFlagRepository.save(flag);
 
-        logger.info("Feature flag created successfully: id={}, featureKey={}", flag.getId(), flag.getFeatureKey());
+        logger.info("Feature flag created successfully: id={}, featureKey={}", SanitizeUtil.forLog(flag.getId()),
+                SanitizeUtil.forLog(flag.getFeatureKey()));
 
         return convertToDto(flag);
     }
@@ -149,11 +152,11 @@ public class FeatureFlagService {
      */
     @Transactional
     public FeatureFlagDto updateFeatureFlag(String id, UpdateFeatureFlagRequest request, String userId) {
-        logger.info("Update feature flag: id={}", id);
+        logger.info("Update feature flag: id={}", SanitizeUtil.forLog(id));
 
         FeatureFlag flag = featureFlagRepository.findById(id)
-            .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
-            .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
+                .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
+                .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
 
         if (request.getFeatureName() != null) {
             flag.setFeatureName(request.getFeatureName());
@@ -195,7 +198,7 @@ public class FeatureFlagService {
 
         flag = featureFlagRepository.save(flag);
 
-        logger.info("Feature flag updated successfully: id={}", id);
+        logger.info("Feature flag updated successfully: id={}", SanitizeUtil.forLog(id));
 
         return convertToDto(flag);
     }
@@ -205,17 +208,17 @@ public class FeatureFlagService {
      */
     @Transactional
     public void deleteFeatureFlag(String id, String userId) {
-        logger.info("Delete feature flag: id={}", id);
+        logger.info("Delete feature flag: id={}", SanitizeUtil.forLog(id));
 
         FeatureFlag flag = featureFlagRepository.findById(id)
-            .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
-            .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
+                .filter(f -> !Boolean.TRUE.equals(f.getDeleteFlag()))
+                .orElseThrow(() -> new RuntimeException("Feature flag not found: " + id));
 
         flag.setDeleteFlag(true);
         flag.setUpdateUserId(userId);
         featureFlagRepository.save(flag);
 
-        logger.info("Feature flag deleted successfully: id={}", id);
+        logger.info("Feature flag deleted successfully: id={}", SanitizeUtil.forLog(id));
     }
 
     /**
@@ -228,8 +231,8 @@ public class FeatureFlagService {
         List<FeatureFlag> flags = featureFlagRepository.findEffectiveFeatures(userId, tenantId);
 
         return flags.stream()
-            .map(this::convertToDto)
-            .collect(Collectors.toList());
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -238,15 +241,15 @@ public class FeatureFlagService {
     @Transactional(readOnly = true)
     public List<FeatureFlagDto> getAvailableFeaturesForApplication(
             String applicationId, String userId, String tenantId) {
-        logger.debug("Get available features for app={}, userId={}, tenantId={}", 
-            applicationId, userId, tenantId);
+        logger.debug("Get available features for app={}, userId={}, tenantId={}",
+                SanitizeUtil.forLog(applicationId), SanitizeUtil.forLog(userId), SanitizeUtil.forLog(tenantId));
 
         List<FeatureFlag> flags = featureFlagRepository.findEffectiveFeaturesForApplication(
-            applicationId, userId, tenantId);
+                applicationId, userId, tenantId);
 
         return flags.stream()
-            .map(this::convertToDto)
-            .collect(Collectors.toList());
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -259,8 +262,8 @@ public class FeatureFlagService {
         List<FeatureFlag> flags = featureFlagRepository.findByInDevelopmentTrueAndDeleteFlagFalse();
 
         return flags.stream()
-            .map(this::convertToDto)
-            .collect(Collectors.toList());
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -268,24 +271,22 @@ public class FeatureFlagService {
      */
     private FeatureFlagDto convertToDto(FeatureFlag flag) {
         return FeatureFlagDto.builder()
-            .id(flag.getId())
-            .featureKey(flag.getFeatureKey())
-            .featureName(flag.getFeatureName())
-            .description(flag.getDescription())
-            .applicationId(flag.getApplicationId())
-            .status(flag.getStatus())
-            .inDevelopment(flag.getInDevelopment())
-            .requiredLicenseTier(flag.getRequiredLicenseTier())
-            .enabledByDefault(flag.getEnabledByDefault())
-            .enabledForUserIds(flag.getEnabledForUserIds())
-            .enabledForTenantIds(flag.getEnabledForTenantIds())
-            .rolloutPercentage(flag.getRolloutPercentage())
-            .licenseResolveStrategy(flag.getLicenseResolveStrategy())
-            .metadata(flag.getMetadata())
-            .createdAt(flag.getCreateDate() != null ? 
-                Instant.ofEpochMilli(flag.getCreateDate().getTime()) : null)
-            .updatedAt(flag.getUpdateDate() != null ? 
-                Instant.ofEpochMilli(flag.getUpdateDate().getTime()) : null)
-            .build();
+                .id(flag.getId())
+                .featureKey(flag.getFeatureKey())
+                .featureName(flag.getFeatureName())
+                .description(flag.getDescription())
+                .applicationId(flag.getApplicationId())
+                .status(flag.getStatus())
+                .inDevelopment(flag.getInDevelopment())
+                .requiredLicenseTier(flag.getRequiredLicenseTier())
+                .enabledByDefault(flag.getEnabledByDefault())
+                .enabledForUserIds(flag.getEnabledForUserIds())
+                .enabledForTenantIds(flag.getEnabledForTenantIds())
+                .rolloutPercentage(flag.getRolloutPercentage())
+                .licenseResolveStrategy(flag.getLicenseResolveStrategy())
+                .metadata(flag.getMetadata())
+                .createdAt(flag.getCreateDate() != null ? Instant.ofEpochMilli(flag.getCreateDate().getTime()) : null)
+                .updatedAt(flag.getUpdateDate() != null ? Instant.ofEpochMilli(flag.getUpdateDate().getTime()) : null)
+                .build();
     }
 }

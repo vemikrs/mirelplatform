@@ -453,8 +453,20 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     protected StencilSettingsYml loadStencilSettingsFromStream(InputStream stream) {
         StencilSettingsYml settings = null;
         try {
-            // InputStreamを一時ファイルに書き出し、readYamlメソッドを使用（既存の動作実績パターン）
-            File tempYamlFile = File.createTempFile("temp-stencil-settings-", ".yml");
+            // セキュリティ強化: Files.createTempFile を使用して適切なパーミッション設定
+            java.nio.file.Path tempPath;
+            try {
+                // POSIX対応環境では厳格なパーミッションを設定
+                tempPath = java.nio.file.Files.createTempFile(
+                        "temp-stencil-settings-", ".yml",
+                        java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")));
+            } catch (UnsupportedOperationException ex) {
+                // Windows等のPOSIX非対応環境ではパーミッション指定なしで作成
+                logger.debug("POSIX file permissions not supported, falling back to default permissions", ex);
+                tempPath = java.nio.file.Files.createTempFile("temp-stencil-settings-", ".yml");
+            }
+            File tempYamlFile = tempPath.toFile();
             tempYamlFile.deleteOnExit();
 
             try (java.io.FileOutputStream fos = new java.io.FileOutputStream(tempYamlFile)) {

@@ -10,6 +10,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.*;
 import jp.vemi.mirel.foundation.exception.EmailNotVerifiedException;
 import jp.vemi.mirel.foundation.web.api.auth.dto.*;
 import jp.vemi.mirel.security.jwt.JwtService;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -170,7 +171,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse login(LoginRequest request) {
-        log.info("Login attempt for username or email: {}", request.getUsernameOrEmail());
+        log.info("Login attempt for username or email: {}", SanitizeUtil.forLog(request.getUsernameOrEmail()));
 
         // SystemUserでusernameまたはemailを検索
         SystemUser systemUser = systemUserRepository.findByUsername(request.getUsernameOrEmail())
@@ -190,7 +191,7 @@ public class AuthenticationServiceImpl {
 
         // パスワード検証
         if (!passwordEncoder.matches(request.getPassword(), systemUser.getPasswordHash())) {
-            log.warn("Invalid password for user: {}", request.getUsernameOrEmail());
+            log.warn("Invalid password for user: {}", SanitizeUtil.forLog(request.getUsernameOrEmail()));
 
             // ログイン失敗回数をインクリメント
             Integer failedAttempts = systemUser.getFailedLoginAttempts() == null ? 0
@@ -200,13 +201,15 @@ public class AuthenticationServiceImpl {
             // 5回失敗でアカウントロック
             if (failedAttempts + 1 >= 5) {
                 systemUser.setAccountLocked(true);
-                log.warn("Account locked due to multiple failed login attempts: {}", request.getUsernameOrEmail());
-                authEventLogger.logAccountLocked(request.getUsernameOrEmail(), request.getIpAddress());
+                log.warn("Account locked due to multiple failed login attempts: {}",
+                        SanitizeUtil.forLog(request.getUsernameOrEmail()));
+                authEventLogger.logAccountLocked(SanitizeUtil.forLog(request.getUsernameOrEmail()),
+                        SanitizeUtil.forLog(request.getIpAddress()));
             }
 
             systemUserRepository.save(systemUser);
-            authEventLogger.logLoginFailure(request.getUsernameOrEmail(), "Invalid password",
-                    request.getIpAddress(), request.getUserAgent());
+            authEventLogger.logLoginFailure(SanitizeUtil.forLog(request.getUsernameOrEmail()), "Invalid password",
+                    SanitizeUtil.forLog(request.getIpAddress()), SanitizeUtil.forLog(request.getUserAgent()));
             throw new jp.vemi.framework.exeption.MirelValidationException("Invalid username/email or password");
         }
 
@@ -325,7 +328,8 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signup(SignupRequest request) {
-        log.info("Signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+        log.info("Signup attempt for username: {}, email: {}", SanitizeUtil.forLog(request.getUsername()),
+                SanitizeUtil.forLog(request.getEmail()));
 
         // ユーザー名重複チェック
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -385,7 +389,8 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signupWithOAuth2(OAuth2SignupRequest request, String systemUserIdStr) {
-        log.info("OAuth2 signup attempt for username: {}, systemUserId: {}", request.getUsername(), systemUserIdStr);
+        log.info("OAuth2 signup attempt for username: {}, systemUserId: {}", SanitizeUtil.forLog(request.getUsername()),
+                SanitizeUtil.forLog(systemUserIdStr));
 
         UUID systemUserId = UUID.fromString(systemUserIdStr);
         SystemUser systemUser = systemUserRepository.findById(systemUserId)
@@ -435,7 +440,8 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public AuthenticationResponse signupWithOtp(jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest request) {
-        log.info("OTP-based signup attempt for username: {}, email: {}", request.getUsername(), request.getEmail());
+        log.info("OTP-based signup attempt for username: {}, email: {}", SanitizeUtil.forLog(request.getUsername()),
+                SanitizeUtil.forLog(request.getEmail()));
 
         // ユーザー名重複チェック
         if (systemUserRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -567,7 +573,7 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public void resendVerificationEmail(String email, String ipAddress, String userAgent) {
-        log.info("Resend verification email request: email={}", email);
+        log.info("Resend verification email request: email={}", SanitizeUtil.forLog(email));
 
         // ユーザーが存在しなくてもエラーにしない（列挙攻撃対策）
         SystemUser systemUser = systemUserRepository.findByEmail(email).orElse(null);
@@ -576,14 +582,15 @@ public class AuthenticationServiceImpl {
             // 既存の OTP 基盤を活用
             try {
                 otpService.requestOtp(email, "EMAIL_VERIFICATION", ipAddress, userAgent);
-                log.info("Verification email sent: email={}", email);
+                log.info("Verification email sent: email={}", SanitizeUtil.forLog(email));
             } catch (Exception e) {
-                log.error("Failed to send verification email: email={}", email, e);
+                log.error("Failed to send verification email: email={}", SanitizeUtil.forLog(email), e);
                 // エラーを外部に公開しない（セキュリティ）
             }
         } else {
             // ユーザーが存在しない、または既に検証済みの場合でもログのみ
-            log.info("Verification email request ignored: email={} (not found or already verified)", email);
+            log.info("Verification email request ignored: email={} (not found or already verified)",
+                    SanitizeUtil.forLog(email));
         }
     }
 
@@ -592,7 +599,8 @@ public class AuthenticationServiceImpl {
      */
     @Transactional
     public UserContextDto switchTenant(String userId, String tenantId) {
-        log.info("Tenant switch attempt: user={}, tenant={}", userId, tenantId);
+        log.info("Tenant switch attempt: user={}, tenant={}", SanitizeUtil.forLog(userId),
+                SanitizeUtil.forLog(tenantId));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new jp.vemi.framework.exeption.MirelSystemException("User not found"));
@@ -620,7 +628,8 @@ public class AuthenticationServiceImpl {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("Tenant not found"));
 
-        log.info("Tenant switch successful: user={}, new tenant={}", userId, tenantId);
+        log.info("Tenant switch successful: user={}, new tenant={}", SanitizeUtil.forLog(userId),
+                SanitizeUtil.forLog(tenantId));
 
         return UserContextDto.builder()
                 .user(UserDto.builder()

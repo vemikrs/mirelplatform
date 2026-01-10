@@ -19,6 +19,7 @@ import jp.vemi.mirel.apps.mira.domain.dto.request.ChatRequest.MessageConfig;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * Mira コンテキストマージサービス.
@@ -95,7 +96,7 @@ public class MiraContextMergeService {
         overrides.forEach((category, override) -> {
             if (Boolean.FALSE.equals(override.getEnabled())) {
                 result.remove(category);
-                log.debug("Context category '{}' disabled by override", category);
+                log.debug("Context category '{}' disabled by override", SanitizeUtil.forLog(category));
             }
             // Priority handling (if we had multiple layers here we would re-sort,
             // but here we only have the final merged map.

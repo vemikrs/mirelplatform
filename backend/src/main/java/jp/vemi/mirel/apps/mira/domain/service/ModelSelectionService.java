@@ -14,6 +14,7 @@ import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraModelRegistryRepository
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * モデル選択サービス.
@@ -51,7 +52,8 @@ public class ModelSelectionService {
     public String resolveModel(String tenantId, String userId, String contextId, String forceModel) {
         // 1. リクエストで明示的に指定されている場合（最優先）
         if (forceModel != null && !forceModel.isEmpty()) {
-            log.info("Using force-specified model: {} (tenant={}, user={})", forceModel, tenantId, userId);
+            log.info("Using force-specified model: {} (tenant={}, user={})", SanitizeUtil.forLog(forceModel),
+                    SanitizeUtil.forLog(tenantId), SanitizeUtil.forLog(userId));
             return forceModel;
         }
 

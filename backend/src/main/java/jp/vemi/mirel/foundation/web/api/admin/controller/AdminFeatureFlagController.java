@@ -12,6 +12,7 @@ import jp.vemi.mirel.foundation.web.api.admin.dto.UpdateFeatureFlagRequest;
 import jp.vemi.mirel.foundation.web.api.admin.service.FeatureFlagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,10 +49,10 @@ public class AdminFeatureFlagController {
             @RequestParam(required = false) FeatureStatus status,
             @RequestParam(required = false) Boolean inDevelopment,
             @RequestParam(required = false) String q) {
-        
+
         try {
             FeatureFlagListResponse response = featureFlagService.listFeatureFlags(
-                page, size, applicationId, status, inDevelopment, q);
+                    page, size, applicationId, status, inDevelopment, q);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Failed to list feature flags", e);
@@ -68,10 +69,10 @@ public class AdminFeatureFlagController {
             FeatureFlagDto flag = featureFlagService.getFeatureFlagById(id);
             return ResponseEntity.ok(flag);
         } catch (RuntimeException e) {
-            logger.error("Failed to get feature flag: {}", id, e);
+            logger.error("Failed to get feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            logger.error("Failed to get feature flag: {}", id, e);
+            logger.error("Failed to get feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -85,7 +86,7 @@ public class AdminFeatureFlagController {
             boolean exists = featureFlagService.existsByFeatureKey(featureKey);
             return ResponseEntity.ok(Map.of("exists", exists));
         } catch (Exception e) {
-            logger.error("Failed to check feature key: {}", featureKey, e);
+            logger.error("Failed to check feature key: {}", SanitizeUtil.forLog(featureKey), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -100,10 +101,10 @@ public class AdminFeatureFlagController {
             FeatureFlagDto flag = featureFlagService.createFeatureFlag(request, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(flag);
         } catch (RuntimeException e) {
-            logger.error("Failed to create feature flag: {}", request.getFeatureKey(), e);
+            logger.error("Failed to create feature flag: {}", SanitizeUtil.forLog(request.getFeatureKey()), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Failed to create feature flag: {}", request.getFeatureKey(), e);
+            logger.error("Failed to create feature flag: {}", SanitizeUtil.forLog(request.getFeatureKey()), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -120,10 +121,10 @@ public class AdminFeatureFlagController {
             FeatureFlagDto flag = featureFlagService.updateFeatureFlag(id, request, userId);
             return ResponseEntity.ok(flag);
         } catch (RuntimeException e) {
-            logger.error("Failed to update feature flag: {}", id, e);
+            logger.error("Failed to update feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Failed to update feature flag: {}", id, e);
+            logger.error("Failed to update feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -138,10 +139,10 @@ public class AdminFeatureFlagController {
             featureFlagService.deleteFeatureFlag(id, userId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
-            logger.error("Failed to delete feature flag: {}", id, e);
+            logger.error("Failed to delete feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            logger.error("Failed to delete feature flag: {}", id, e);
+            logger.error("Failed to delete feature flag: {}", SanitizeUtil.forLog(id), e);
             return ResponseEntity.internalServerError().build();
         }
     }

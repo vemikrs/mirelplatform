@@ -15,6 +15,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.TenantRepository;
 import jp.vemi.mirel.foundation.abst.dao.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -58,8 +59,8 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         // ExecutionContext解決処理（エラーがあっても続行）
         resolveExecutionContext(request);
 
@@ -75,12 +76,12 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
         try {
             // Spring Securityからユーザ IDを取得
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            
-            logger.debug("ExecutionContextFilter: auth={}, isAuthenticated={}, principal={}", 
-                auth != null ? auth.getClass().getSimpleName() : "null",
-                auth != null ? auth.isAuthenticated() : "N/A",
-                auth != null ? auth.getPrincipal() : "null");
-                
+
+            logger.debug("ExecutionContextFilter: auth={}, isAuthenticated={}, principal={}",
+                    auth != null ? auth.getClass().getSimpleName() : "null",
+                    auth != null ? auth.isAuthenticated() : "N/A",
+                    auth != null ? auth.getPrincipal() : "null");
+
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 // 認証済みの場合のみExecutionContextを参照(requestスコープBean)
                 ExecutionContext context = getExecutionContextSafely();
@@ -95,9 +96,9 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                 context.setIpAddress(getClientIpAddress(request));
                 context.setUserAgent(request.getHeader("User-Agent"));
                 context.setRequestTime(Instant.now());
-                
+
                 String userId = auth.getName();
-                logger.debug("ExecutionContextFilter: Resolving context for user: {}", userId);
+                logger.debug("ExecutionContextFilter: Resolving context for user: {}", SanitizeUtil.forLog(userId));
 
                 // ユーザ情報取得
                 User user = userRepository.findById(userId).orElse(null);
@@ -106,7 +107,7 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
 
                     // カレントテナント解決
                     String tenantId = resolveTenantId(request, auth, user);
-                    logger.debug("ExecutionContextFilter: Resolved tenant: {}", tenantId);
+                    logger.debug("ExecutionContextFilter: Resolved tenant: {}", SanitizeUtil.forLog(tenantId));
 
                     if (StringUtils.hasText(tenantId)) {
                         Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
@@ -114,23 +115,23 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
 
                         // 有効ライセンス取得（USER/TENANTスコープ両方）
                         List<ApplicationLicense> licenses = licenseRepository
-                            .findEffectiveLicenses(userId, tenantId, Instant.now());
+                                .findEffectiveLicenses(userId, tenantId, Instant.now());
                         context.setEffectiveLicenses(licenses);
-                        logger.debug("ExecutionContextFilter: Found {} effective licenses", 
-                            licenses != null ? licenses.size() : 0);
-                        
+                        logger.debug("ExecutionContextFilter: Found {} effective licenses",
+                                licenses != null ? licenses.size() : 0);
+
                         // 構造化ログ (JSON形式) - ExecutionContext解決成功
                         String structuredLog = String.format(
-                            "{\"event\":\"executionContext.resolved\",\"userId\":\"%s\",\"tenantId\":\"%s\",\"requestId\":\"%s\"}",
-                            userId,
-                            tenantId,
-                            context.getRequestId()
-                        );
+                                "{\"event\":\"executionContext.resolved\",\"userId\":\"%s\",\"tenantId\":\"%s\",\"requestId\":\"%s\"}",
+                                userId,
+                                tenantId,
+                                context.getRequestId());
                         logger.info(structuredLog);
                     }
                 } else {
                     // ユーザー取得失敗時の警告ログ
-                    logger.warn("{\"event\":\"executionContext.userNotFound\",\"userId\":\"{}\"}", userId);
+                    logger.warn("{\"event\":\"executionContext.userNotFound\",\"userId\":\"{}\"}",
+                            SanitizeUtil.forLog(userId));
                 }
             }
         } catch (Exception e) {
@@ -187,17 +188,17 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
      */
     private String getClientIpAddress(HttpServletRequest request) {
         String[] headers = {
-            "X-Forwarded-For",
-            "Proxy-Client-IP",
-            "WL-Proxy-Client-IP",
-            "HTTP_X_FORWARDED_FOR",
-            "HTTP_X_FORWARDED",
-            "HTTP_X_CLUSTER_CLIENT_IP",
-            "HTTP_CLIENT_IP",
-            "HTTP_FORWARDED_FOR",
-            "HTTP_FORWARDED",
-            "HTTP_VIA",
-            "REMOTE_ADDR"
+                "X-Forwarded-For",
+                "Proxy-Client-IP",
+                "WL-Proxy-Client-IP",
+                "HTTP_X_FORWARDED_FOR",
+                "HTTP_X_FORWARDED",
+                "HTTP_X_CLUSTER_CLIENT_IP",
+                "HTTP_CLIENT_IP",
+                "HTTP_FORWARDED_FOR",
+                "HTTP_FORWARDED",
+                "HTTP_VIA",
+                "REMOTE_ADDR"
         };
 
         for (String header : headers) {

@@ -20,6 +20,7 @@ import jp.vemi.mirel.foundation.web.api.admin.dto.UserListResponse;
 import jp.vemi.mirel.foundation.web.api.admin.dto.UserTenantAssignmentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -76,7 +77,7 @@ public class AdminUserService {
     @Transactional(readOnly = true)
     public UserListResponse listUsers(int page, int size, String query, String role, Boolean active) {
         logger.info("List users: page={}, size={}, query={}, role={}, active={}",
-                page, size, query, role, active);
+                page, size, SanitizeUtil.forLog(query), SanitizeUtil.forLog(role), active);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createDate").descending());
 
@@ -123,7 +124,7 @@ public class AdminUserService {
      */
     @Transactional(readOnly = true)
     public AdminUserDto getUserById(String userId) {
-        logger.info("Get user by id: {}", userId);
+        logger.info("Get user by id: {}", SanitizeUtil.forLog(userId));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -136,7 +137,7 @@ public class AdminUserService {
      */
     @Transactional
     public AdminUserDto updateUser(String userId, UpdateUserRequest request) {
-        logger.info("Update user: {}", userId);
+        logger.info("Update user: {}", SanitizeUtil.forLog(userId));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found"));
@@ -160,7 +161,7 @@ public class AdminUserService {
 
         user = userRepository.save(user);
 
-        logger.info("User updated successfully: {}", userId);
+        logger.info("User updated successfully: {}", SanitizeUtil.forLog(userId));
 
         return convertToAdminUserDto(user);
     }
@@ -215,7 +216,7 @@ public class AdminUserService {
      */
     @Transactional
     public AdminUserDto createUser(jp.vemi.mirel.foundation.web.api.admin.dto.CreateUserRequest request) {
-        logger.info("Create user: {}", request.getUsername());
+        logger.info("Create user: {}", SanitizeUtil.forLog(request.getUsername()));
 
         // 既存ユーザーチェック（User）
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -248,7 +249,8 @@ public class AdminUserService {
         systemUser.setCreatedByAdmin(true); // 管理者作成フラグをセット
         systemUser = systemUserRepository.save(systemUser);
 
-        logger.info("SystemUser created: id={}, username={}", systemUser.getId(), systemUser.getUsername());
+        logger.info("SystemUser created: id={}, username={}", systemUser.getId(),
+                SanitizeUtil.forLog(systemUser.getUsername()));
 
         // 2. User作成（SystemUserと紐付け）
         User user = new User();
@@ -275,9 +277,9 @@ public class AdminUserService {
         try {
             String setupToken = otpService.createAccountSetupToken(systemUser.getId(), systemUser.getEmail());
             sendAccountSetupEmail(user, setupToken);
-            logger.info("Account setup email sent: email={}", user.getEmail());
+            logger.info("Account setup email sent: email={}", SanitizeUtil.forLog(user.getEmail()));
         } catch (Exception e) {
-            logger.error("Failed to send account setup email: email={}", user.getEmail(), e);
+            logger.error("Failed to send account setup email: email={}", SanitizeUtil.forLog(user.getEmail()), e);
             // メール送信失敗してもユーザー作成は成功とする
         }
 
@@ -309,7 +311,7 @@ public class AdminUserService {
      */
     @Transactional
     public void deleteUser(String userId) {
-        logger.info("Delete user: {}", userId);
+        logger.info("Delete user: {}", SanitizeUtil.forLog(userId));
 
         if (!userRepository.existsById(userId)) {
             throw new jp.vemi.framework.exeption.MirelResourceNotFoundException("User not found");
@@ -323,7 +325,8 @@ public class AdminUserService {
      */
     @Transactional
     public AdminUserDto updateUserTenants(String userId, UserTenantAssignmentRequest request) {
-        logger.info("Update user tenants: userId={}, tenants={}", userId, request.getTenants().size());
+        logger.info("Update user tenants: userId={}, tenants={}", SanitizeUtil.forLog(userId),
+                request.getTenants().size());
 
         // ユーザーの存在確認
         User user = userRepository.findById(userId)

@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * モデルごとの機能サポート状況を管理するレジストリ.
@@ -100,8 +101,9 @@ public class ModelCapabilityRegistry {
                 ));
 
         // Meta Llama 3.2 Vision 系 (マルチモーダル対応)
+        // ReDoS対策: possessive quantifiers を使用してバックトラッキングを防止
         MODEL_CAPABILITIES.put(
-                Pattern.compile("(?i)^(meta/)?llama-3\\.2[-a-zA-Z0-9.]*vision.*"),
+                Pattern.compile("(?i)^(meta/)?llama-3\\.2(?:[-a-zA-Z0-9.]*+)?vision(?:[-a-zA-Z0-9.]*+)?$"),
                 EnumSet.of(
                         ModelCapability.MULTIMODAL_INPUT,
                         ModelCapability.STREAMING));
@@ -179,7 +181,7 @@ public class ModelCapabilityRegistry {
         for (Map.Entry<Pattern, Set<ModelCapability>> entry : MODEL_CAPABILITIES.entrySet()) {
             if (entry.getKey().matcher(modelName).matches()) {
                 log.debug("Model '{}' matched pattern '{}', capabilities: {}",
-                        modelName, entry.getKey().pattern(), entry.getValue());
+                        SanitizeUtil.forLog(modelName), entry.getKey().pattern(), entry.getValue());
                 return Collections.unmodifiableSet(entry.getValue());
             }
         }

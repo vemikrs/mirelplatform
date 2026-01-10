@@ -26,6 +26,7 @@ import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -105,7 +106,8 @@ public class OtpController {
                     .build());
 
         } catch (RuntimeException e) {
-            log.error("OTPリクエスト失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            log.error("OTPリクエスト失敗: email={}, error={}", SanitizeUtil.forLog(dto.getEmail()),
+                    SanitizeUtil.forLog(e.getMessage()));
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<OtpResponseDto>builder()
                             .errors(java.util.List.of(e.getMessage()))
@@ -197,7 +199,7 @@ public class OtpController {
                     AuthenticationResponse authResponse = authenticationService.loginWithUser(applicationUser);
 
                     log.info("OTPログイン成功: JWTトークン発行 - userId={}, email={}",
-                            applicationUser.getUserId(), dto.getEmail());
+                            SanitizeUtil.forLog(applicationUser.getUserId()), SanitizeUtil.forLog(dto.getEmail()));
 
                     if (authResponse.getTokens() != null) {
                         setTokenCookies(httpResponse, authResponse.getTokens());
@@ -222,7 +224,8 @@ public class OtpController {
             }
 
         } catch (RuntimeException e) {
-            log.error("OTP検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            log.error("OTP検証失敗: email={}, error={}", SanitizeUtil.forLog(dto.getEmail()),
+                    SanitizeUtil.forLog(e.getMessage()));
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<Object>builder()
                             .data(false)
@@ -395,7 +398,8 @@ public class OtpController {
                     .build());
 
         } catch (RuntimeException e) {
-            log.error("OTP再送信失敗: email={}, error={}", dto.getEmail(), e.getMessage());
+            log.error("OTP再送信失敗: email={}, error={}", SanitizeUtil.forLog(dto.getEmail()),
+                    SanitizeUtil.forLog(e.getMessage()));
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<OtpResponseDto>builder()
                             .errors(java.util.List.of(e.getMessage()))
@@ -448,8 +452,7 @@ public class OtpController {
             }
 
             // OTP検証成功後、即座にユーザー作成
-            jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest signupRequest = 
-                new jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest();
+            jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest signupRequest = new jp.vemi.mirel.foundation.web.api.auth.dto.OtpSignupRequest();
             signupRequest.setUsername(dto.getUsername());
             signupRequest.setEmail(dto.getEmail());
             signupRequest.setDisplayName(dto.getDisplayName());
@@ -462,8 +465,8 @@ public class OtpController {
                 setTokenCookies(httpResponse, authResponse.getTokens());
             }
 
-            log.info("OTPサインアップ成功: userId={}, email={}", 
-                    authResponse.getUser().getUserId(), dto.getEmail());
+            log.info("OTPサインアップ成功: userId={}, email={}",
+                    SanitizeUtil.forLog(authResponse.getUser().getUserId()), SanitizeUtil.forLog(dto.getEmail()));
 
             return ResponseEntity.ok(ApiResponse.<AuthenticationResponse>builder()
                     .data(authResponse)
@@ -471,8 +474,9 @@ public class OtpController {
                     .build());
 
         } catch (RuntimeException e) {
-            log.error("OTPサインアップ検証失敗: email={}, error={}", dto.getEmail(), e.getMessage());
-            
+            log.error("OTPサインアップ検証失敗: email={}, error={}", SanitizeUtil.forLog(dto.getEmail()),
+                    SanitizeUtil.forLog(e.getMessage()));
+
             // エラーメッセージに応じた適切なエラーレスポンスを返す
             String errorMessage = e.getMessage();
             if (errorMessage != null) {
@@ -488,7 +492,7 @@ public class OtpController {
                                     .build());
                 }
             }
-            
+
             return ResponseEntity.badRequest()
                     .body(ApiResponse.<AuthenticationResponse>builder()
                             .errors(java.util.List.of(errorMessage != null ? errorMessage : "サインアップに失敗しました"))

@@ -27,6 +27,7 @@ import jp.vemi.mirel.foundation.abst.dao.entity.FileManagement;
 import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * Mira ナレッジベースサービス.
@@ -66,7 +67,8 @@ public class MiraKnowledgeBaseService {
      */
     @Transactional
     public void indexFile(String fileId, MiraVectorStore.Scope scope, String tenantId, String userId) {
-        log.info("Indexing file: fileId={}, scope={}, tenantId={}, userId={}", fileId, scope, tenantId, userId);
+        log.info("Indexing file: fileId={}, scope={}, tenantId={}, userId={}", SanitizeUtil.forLog(fileId), scope,
+                SanitizeUtil.forLog(tenantId), SanitizeUtil.forLog(userId));
 
         // Prevent Duplicates: Delete existing vectors for this fileId before adding new
         // ones
@@ -190,7 +192,7 @@ public class MiraKnowledgeBaseService {
         doc.setUserId(userId);
         knowledgeDocumentRepository.save(doc);
 
-        log.info("Indexed {} chunks for fileId={}", splitDocuments.size(), fileId);
+        log.info("Indexed {} chunks for fileId={}", splitDocuments.size(), SanitizeUtil.forLog(fileId));
     }
 
     /**
@@ -204,7 +206,7 @@ public class MiraKnowledgeBaseService {
     private void deleteVectorsByFileId(String fileId) {
         String sql = "DELETE FROM mir_mira_vector_store WHERE metadata->>'fileId' = ?";
         int deleted = jdbcTemplate.update(sql, fileId);
-        log.info("Deleted {} old vectors for fileId={}", deleted, fileId);
+        log.info("Deleted {} old vectors for fileId={}", deleted, SanitizeUtil.forLog(fileId));
     }
 
     /**
@@ -386,7 +388,8 @@ public class MiraKnowledgeBaseService {
      * @return 関連ドキュメントリスト
      */
     public List<Document> search(String query, String tenantId, String userId) {
-        log.info("RAG Search: query='{}', tenantId={}, userId={}", query, tenantId, userId);
+        log.info("RAG Search: query='{}', tenantId={}, userId={}", SanitizeUtil.forLog(query),
+                SanitizeUtil.forLog(tenantId), SanitizeUtil.forLog(userId));
 
         // Perform separate searches for each scope to ensure reliable retrieval
         // This avoids potential issues with complex nested OR filters in the

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 
 import jp.vemi.framework.exeption.MirelApplicationException;
 import jp.vemi.framework.util.InstanceUtil;
@@ -45,7 +46,7 @@ public abstract class SteContext extends LinkedHashMap<String, Object> {
         return InstanceUtil.newInstance(clazz);
     }
 
-    public static <T extends SteContext> SteContext standard(){
+    public static <T extends SteContext> SteContext standard() {
         SteContext ctx = of(DefaultSteContext.class);
         ctx.put("generator", TemplateEngineProcessor.class.getName());
         return ctx;
@@ -60,7 +61,8 @@ public abstract class SteContext extends LinkedHashMap<String, Object> {
     }
 
     public static SteContext standard(String stencilName, String serialNo) {
-        logger.debug("[STE_CONTEXT] Creating context: stencilName={}, serialNo={}", stencilName, serialNo);
+        logger.debug("[STE_CONTEXT] Creating context: stencilName={}, serialNo={}", SanitizeUtil.forLog(stencilName),
+                SanitizeUtil.forLog(serialNo));
 
         SteContext ctx = standard(stencilName);
         ctx.put("serialNo", serialNo);

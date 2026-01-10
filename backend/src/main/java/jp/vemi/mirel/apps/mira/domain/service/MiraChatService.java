@@ -38,6 +38,7 @@ import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.ai.TokenCounter;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import org.springframework.ai.document.Document; // Added
+import jp.vemi.framework.util.SanitizeUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -244,8 +245,9 @@ public class MiraChatService {
         String selectedModel = modelSelectionService.resolveModel(
                 tenantId, userId, snapshotId, request.getForceModel());
         aiRequest.setModel(selectedModel);
-        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", selectedModel, tenantId, userId,
-                snapshotId);
+        log.info("Selected model: {} for tenant: {}, user: {}, snapshot: {}", SanitizeUtil.forLog(selectedModel),
+                SanitizeUtil.forLog(tenantId), SanitizeUtil.forLog(userId),
+                SanitizeUtil.forLog(snapshotId));
 
         // 7. ツール解決 & セット
         // Web検索の有効化判定 (共通メソッド使用)
@@ -630,7 +632,7 @@ public class MiraChatService {
             conv.setStatus(MiraConversation.ConversationStatus.CLOSED);
             conversationRepository.save(conv);
 
-            log.info("会話をクリア: conversationId={}", conversationId);
+            log.info("会話をクリア: conversationId={}", SanitizeUtil.forLog(conversationId));
         }
     }
 
@@ -719,12 +721,12 @@ public class MiraChatService {
             }
 
             log.debug("タイトル生成完了: conversationId={}, title={}",
-                    request.getConversationId(), title);
+                    SanitizeUtil.forLog(request.getConversationId()), SanitizeUtil.forLog(title));
 
             return GenerateTitleResponse.success(request.getConversationId(), title);
 
         } catch (Exception e) {
-            log.error("タイトル生成エラー: conversationId={}", request.getConversationId(), e);
+            log.error("タイトル生成エラー: conversationId={}", SanitizeUtil.forLog(request.getConversationId()), e);
             return GenerateTitleResponse.error(request.getConversationId(),
                     "タイトル生成中にエラーが発生しました");
         }
@@ -740,7 +742,7 @@ public class MiraChatService {
             Optional<MiraConversation> conversationOpt = conversationRepository.findById(request.getConversationId());
 
             if (conversationOpt.isEmpty()) {
-                log.warn("会話が見つかりません: conversationId={}", request.getConversationId());
+                log.warn("会話が見つかりません: conversationId={}", SanitizeUtil.forLog(request.getConversationId()));
                 return UpdateTitleResponse.error(request.getConversationId(), "会話が見つかりません");
             }
 
@@ -749,7 +751,8 @@ public class MiraChatService {
             // テナント・ユーザー検証
             if (!conversation.getTenantId().equals(tenantId) || !conversation.getUserId().equals(userId)) {
                 log.warn("会話へのアクセス権限がありません: conversationId={}, tenantId={}, userId={}",
-                        request.getConversationId(), tenantId, userId);
+                        SanitizeUtil.forLog(request.getConversationId()), SanitizeUtil.forLog(tenantId),
+                        SanitizeUtil.forLog(userId));
                 return UpdateTitleResponse.error(request.getConversationId(), "会話へのアクセス権限がありません");
             }
 
@@ -758,12 +761,12 @@ public class MiraChatService {
             conversationRepository.save(conversation);
 
             log.debug("タイトル更新完了: conversationId={}, title={}",
-                    request.getConversationId(), request.getTitle());
+                    SanitizeUtil.forLog(request.getConversationId()), SanitizeUtil.forLog(request.getTitle()));
 
             return UpdateTitleResponse.success(request.getConversationId(), request.getTitle());
 
         } catch (Exception e) {
-            log.error("タイトル更新エラー: conversationId={}", request.getConversationId(), e);
+            log.error("タイトル更新エラー: conversationId={}", SanitizeUtil.forLog(request.getConversationId()), e);
             return UpdateTitleResponse.error(request.getConversationId(),
                     "タイトル更新中にエラーが発生しました");
         }
@@ -1099,7 +1102,8 @@ public class MiraChatService {
         conversation.setTitle(title);
         conversationRepository.save(conversation);
 
-        log.info("Auto title generated: conversationId={}, title={}", conversation.getId(), title);
+        log.info("Auto title generated: conversationId={}, title={}", SanitizeUtil.forLog(conversation.getId()),
+                SanitizeUtil.forLog(title));
     }
 
     public List<org.springframework.ai.tool.ToolCallback> resolveTools(String tenantId, String userId,
