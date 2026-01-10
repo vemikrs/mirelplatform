@@ -1,6 +1,6 @@
 {
   "name": "@mirelplatform/e2e",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "description": "E2E testing infrastructure for mirelplatform",
   "private": true,
   "scripts": {
@@ -17,8 +17,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
     "@playwright/test": "^1.57.0",
-    "@types/node": "^25.0.3",
-    "axe-core": "^4.11.0",
+    "@types/node": "^25.0.5",
+    "axe-core": "^4.11.1",
     "typescript": "^5.9.3"
   },
   "engines": {
