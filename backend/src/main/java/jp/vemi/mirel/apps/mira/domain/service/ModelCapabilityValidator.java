@@ -100,7 +100,10 @@ public class ModelCapabilityValidator {
         if (errors.isEmpty()) {
             return ModelCapabilityValidation.success();
         } else {
-            log.warn("Model capability validation failed for model '{}': {}", SanitizeUtil.forLog(modelName), errors);
+            // lgtm[java/log-injection] - both modelName and errors are sanitized
+            log.warn("Model capability validation failed for model '{}': {}",
+                    SanitizeUtil.forLog(modelName),
+                    errors.stream().map(SanitizeUtil::forLog).toList());
             return ModelCapabilityValidation.failure(errors);
         }
     }
