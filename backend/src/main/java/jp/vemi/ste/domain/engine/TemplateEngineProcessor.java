@@ -1440,10 +1440,19 @@ public class TemplateEngineProcessor {
      */
     private File extractResourceToTempFile(Resource resource, String templateFileName) throws Exception {
         // セキュリティ強化: Files.createTempFile を使用して適切なパーミッション設定
-        java.nio.file.Path tempPath = java.nio.file.Files.createTempFile(
-                "template-" + templateFileName.replace(".", "-"), ".tmp",
-                java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
-                        java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")));
+        java.nio.file.Path tempPath;
+        try {
+            // POSIX対応環境では厳格なパーミッションを設定
+            tempPath = java.nio.file.Files.createTempFile(
+                    "template-" + templateFileName.replace(".", "-"), ".tmp",
+                    java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                            java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")));
+        } catch (UnsupportedOperationException e) {
+            // Windows等のPOSIX非対応環境ではパーミッション指定なしで作成
+            logger.debug("POSIX file permissions not supported, falling back to default permissions");
+            tempPath = java.nio.file.Files.createTempFile(
+                    "template-" + templateFileName.replace(".", "-"), ".tmp");
+        }
         File tempFile = tempPath.toFile();
         tempFile.deleteOnExit();
 
@@ -1708,7 +1717,7 @@ public class TemplateEngineProcessor {
                         SanitizeUtil.forLog(fullPath));
                 return relativePath;
             } catch (Exception e) {
-                logger.info("Error extracting relative path: " + e.getMessage());
+                logger.info("Error extracting relative path: {}", SanitizeUtil.forLog(e.getMessage()));
                 return fileName;
             }
         }
