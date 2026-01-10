@@ -25,6 +25,8 @@ import org.springframework.util.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jp.vemi.framework.util.SanitizeUtil;
+
 import jp.vemi.mirel.apps.mste.domain.dao.entity.MsteStencil;
 import jp.vemi.mirel.apps.mste.domain.dao.repository.MsteStencilRepository;
 import jp.vemi.mirel.apps.mste.domain.dto.SuggestParameter;
@@ -70,9 +72,9 @@ public class SuggestServiceImp implements SuggestService {
     public ApiResponse<SuggestResult> invoke(ApiRequest<SuggestParameter> parameter) {
         logger.debug("[SUGGEST] === invoke() called ===");
         logger.debug("[SUGGEST] Parameter: stencilCategory={}, stencilCd={}, serialNo={}",
-                parameter.getModel().stencilCategory,
-                parameter.getModel().stencilCd,
-                parameter.getModel().serialNo);
+                SanitizeUtil.forLog(parameter.getModel().stencilCategory),
+                SanitizeUtil.forLog(parameter.getModel().stencilCd),
+                SanitizeUtil.forLog(parameter.getModel().serialNo));
 
         // FIXME: 応急処置 - ModelWrapperは型安全性を損なう hack
         // 根本的な問題: ApiResponse<T>とFrontend期待値の構造不整合
@@ -85,7 +87,7 @@ public class SuggestServiceImp implements SuggestService {
         resultModel.fltStrStencilCategory = getStencils(Const.STENCIL_ITEM_KIND_CATEGORY, p.stencilCategory);
 
         logger.debug("[SUGGEST] Category: selected={}, items={}",
-                resultModel.fltStrStencilCategory.selected,
+                SanitizeUtil.forLog(resultModel.fltStrStencilCategory.selected),
                 resultModel.fltStrStencilCategory.items.size());
 
         if (isWildcard(resultModel.fltStrStencilCategory.selected) && p.selectFirstIfWildcard) {
@@ -106,7 +108,7 @@ public class SuggestServiceImp implements SuggestService {
         resultModel.fltStrStencilCd = new ValueTextItems(convertStencilToValueTexts(stencils), p.stencilCd);
 
         logger.debug("[SUGGEST] Stencil: selected={}, items={}",
-                resultModel.fltStrStencilCd.selected,
+                SanitizeUtil.forLog(resultModel.fltStrStencilCd.selected),
                 resultModel.fltStrStencilCd.items.size());
 
         if (isWildcard(resultModel.fltStrStencilCd.selected) && p.selectFirstIfWildcard) {
@@ -126,17 +128,18 @@ public class SuggestServiceImp implements SuggestService {
         boolean serialSpecified = !isWildcard(requestedSerial);
 
         logger.debug("[SUGGEST] Serial decision: requestedSerial={}, needAutoSelectSerial={}, serialSpecified={}",
-                requestedSerial, needAutoSelectSerial, serialSpecified);
+                SanitizeUtil.forLog(requestedSerial), needAutoSelectSerial, serialSpecified);
 
         String effectiveSerial = null;
         TemplateEngineProcessor engine = null;
         if (needAutoSelectSerial || serialSpecified) {
             try {
                 logger.debug("[SUGGEST] Creating TemplateEngineProcessor:");
-                logger.debug("[SUGGEST]   stencilCd: {}", resultModel.fltStrStencilCd.selected);
-                logger.debug("[SUGGEST]   requestedSerial: {}", requestedSerial);
+                logger.debug("[SUGGEST]   stencilCd: {}", SanitizeUtil.forLog(resultModel.fltStrStencilCd.selected));
+                logger.debug("[SUGGEST]   requestedSerial: {}", SanitizeUtil.forLog(requestedSerial));
                 logger.debug("[SUGGEST]   isWildcard: {}", isWildcard(requestedSerial));
-                logger.debug("[SUGGEST]   effectiveSerial: {}", isWildcard(requestedSerial) ? "" : requestedSerial);
+                logger.debug("[SUGGEST]   effectiveSerial: {}",
+                        SanitizeUtil.forLog(isWildcard(requestedSerial) ? "" : requestedSerial));
 
                 engine = TemplateEngineProcessor.create(
                         SteContext.standard(resultModel.fltStrStencilCd.selected,
@@ -163,11 +166,12 @@ public class SuggestServiceImp implements SuggestService {
                 logger.debug("[SUGGEST] Auto-selected serial: {}", effectiveSerial);
             } else if (serialSpecified) {
                 effectiveSerial = requestedSerial;
-                logger.debug("[SUGGEST] Using requested serial: {}", effectiveSerial);
+                logger.debug("[SUGGEST] Using requested serial: {}", SanitizeUtil.forLog(effectiveSerial));
             }
             resultModel.fltStrSerialNo = new ValueTextItems(convertSerialNosToValueTexts(serials),
                     effectiveSerial == null ? "" : effectiveSerial);
-            logger.debug("[SUGGEST] fltStrSerialNo: selected='{}', items={}", resultModel.fltStrSerialNo.selected,
+            logger.debug("[SUGGEST] fltStrSerialNo: selected='{}', items={}",
+                    SanitizeUtil.forLog(resultModel.fltStrSerialNo.selected),
                     resultModel.fltStrSerialNo.items.size());
 
             if (StringUtils.isEmpty(resultModel.fltStrSerialNo.selected)) {
@@ -228,9 +232,11 @@ public class SuggestServiceImp implements SuggestService {
         }
         boolean exists = items.items.stream().anyMatch(i -> i.value.equals(items.selected));
 
-        logger.debug("[SUGGEST] validateSelectedExists: selected={}, exists={}", items.selected, exists);
+        logger.debug("[SUGGEST] validateSelectedExists: selected={}, exists={}", SanitizeUtil.forLog(items.selected),
+                exists);
         if (!exists) {
-            logger.warn("[SUGGEST] Selected value '{}' not found in items, clearing selection", items.selected);
+            logger.warn("[SUGGEST] Selected value '{}' not found in items, clearing selection",
+                    SanitizeUtil.forLog(items.selected));
             // 不正指定はクリアして上位へ早期リターン可能にする
             items.selected = "";
         }
@@ -242,7 +248,7 @@ public class SuggestServiceImp implements SuggestService {
             logger.debug("[WRAP]   model.params: {}", model.params != null ? "not null" : "NULL");
             logger.debug("[WRAP]   model.stencil: {}", model.stencil != null ? "not null" : "NULL");
             logger.debug("[WRAP]   model.fltStrSerialNo: selected='{}'",
-                    model.fltStrSerialNo != null ? model.fltStrSerialNo.selected : "NULL");
+                    model.fltStrSerialNo != null ? SanitizeUtil.forLog(model.fltStrSerialNo.selected) : "NULL");
         }
 
         class ModelWrapper {
@@ -563,8 +569,8 @@ public class SuggestServiceImp implements SuggestService {
             SuggestResult resultModel) {
         try {
             logger.info("=== FALLBACK: Creating response using database information ===");
-            logger.debug("stencilCd: {}", stencilCd);
-            logger.debug("serialNo: {}", serialNo);
+            logger.debug("stencilCd: {}", SanitizeUtil.forLog(stencilCd));
+            logger.debug("serialNo: {}", SanitizeUtil.forLog(serialNo));
 
             // 基本情報：既存のresultModelを使用（カテゴリ・ステンシル選択肢は既に設定済み）
 

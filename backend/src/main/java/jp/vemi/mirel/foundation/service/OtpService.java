@@ -14,6 +14,7 @@ import jp.vemi.mirel.foundation.abst.dao.repository.SystemUserRepository;
 import jp.vemi.mirel.foundation.config.AppProperties;
 import jp.vemi.mirel.foundation.config.OtpProperties;
 import jp.vemi.mirel.foundation.config.RateLimitProperties;
+import jp.vemi.framework.util.SanitizeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -174,7 +175,8 @@ public class OtpService {
         // メトリクス: リクエスト成功
         otpRequestSuccessCounter.increment();
 
-        log.info("OTPリクエスト成功: email={}, purpose={}, requestId={}", email, purpose, requestId);
+        log.info("OTPリクエスト成功: email={}, purpose={}, requestId={}", SanitizeUtil.forLog(email),
+                SanitizeUtil.forLog(purpose), SanitizeUtil.forLog(requestId));
         return requestId;
     }
 
@@ -211,10 +213,11 @@ public class OtpService {
         // サインアップの場合はemailベースでOTPトークンを検索（SystemUserはまだ存在しない）
         OtpToken token;
         SystemUser systemUser = null;
-        
+
         if ("EMAIL_VERIFICATION".equals(purpose)) {
-            log.info("OTP検証開始 (サインアップ): email={}, purpose={}", email, purpose);
-            
+            log.info("OTP検証開始 (サインアップ): email={}, purpose={}", SanitizeUtil.forLog(email),
+                    SanitizeUtil.forLog(purpose));
+
             // emailベースでOTPトークン取得（サインアップ用）
             token = otpTokenRepository
                     .findByEmailAndPurposeAndIsVerifiedAndExpiresAtAfter(
@@ -224,9 +227,10 @@ public class OtpService {
             // 既存ユーザーの場合はSystemUserを取得してからOTPトークン取得
             systemUser = systemUserRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
-            
-            log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", email, purpose, systemUser.getId());
-            
+
+            log.info("OTP検証開始: email={}, purpose={}, systemUserId={}", SanitizeUtil.forLog(email),
+                    SanitizeUtil.forLog(purpose), systemUser.getId());
+
             // SystemUser IDベースでOTPトークン取得
             token = otpTokenRepository
                     .findBySystemUserIdAndPurposeAndIsVerifiedAndExpiresAtAfter(
@@ -235,11 +239,11 @@ public class OtpService {
         }
 
         UUID systemUserId = systemUser != null ? systemUser.getId() : null;
-        
+
         if (token == null) {
             otpVerifyFailedCounter.increment();
             log.warn("OTP検証失敗: トークンが見つからないか期限切れ - email={}, purpose={}, systemUserId={}",
-                    email, purpose, systemUserId);
+                    SanitizeUtil.forLog(email), SanitizeUtil.forLog(purpose), systemUserId);
             logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "トークンが見つからないか期限切れ", ipAddress, userAgent, null);
             return false;
@@ -261,12 +265,14 @@ public class OtpService {
         token.incrementAttemptCount();
 
         log.info("OTPコード検証: 入力={}, 入力Hash={}, 保存Hash={}",
-                otpCode, otpHash.substring(0, 16) + "...", token.getOtpHash().substring(0, 16) + "...");
+                SanitizeUtil.forLog(otpCode), otpHash.substring(0, 16) + "...",
+                token.getOtpHash().substring(0, 16) + "...");
 
         if (!token.getOtpHash().equals(otpHash)) {
             otpTokenRepository.save(token);
             otpVerifyFailedCounter.increment();
-            log.warn("OTP検証失敗: コード不一致 - email={}, attemptCount={}", email, token.getAttemptCount());
+            log.warn("OTP検証失敗: コード不一致 - email={}, attemptCount={}", SanitizeUtil.forLog(email),
+                    token.getAttemptCount());
             logAudit(requestId, systemUserId, email, purpose, "VERIFY", false,
                     "OTPコード不一致", ipAddress, userAgent, null);
             return false;
@@ -288,7 +294,7 @@ public class OtpService {
         // メトリクス: 検証成功
         otpVerifySuccessCounter.increment();
 
-        log.info("OTP検証成功: email={}, purpose={}", email, purpose);
+        log.info("OTP検証成功: email={}, purpose={}", SanitizeUtil.forLog(email), SanitizeUtil.forLog(purpose));
         return true;
     }
 
@@ -307,7 +313,7 @@ public class OtpService {
      */
     @Transactional
     public String resendOtp(String email, String purpose, String ipAddress, String userAgent) {
-        log.info("OTP再送信リクエスト: email={}, purpose={}", email, purpose);
+        log.info("OTP再送信リクエスト: email={}, purpose={}", SanitizeUtil.forLog(email), SanitizeUtil.forLog(purpose));
         return requestOtp(email, purpose, ipAddress, userAgent);
     }
 
@@ -542,17 +548,20 @@ public class OtpService {
         int deleted = otpAuditLogRepository.deleteByCreatedAtBefore(cutoffDate);
         log.info("古い監査ログ削除: {} 件", deleted);
     }
+
     /**
      * アカウントセットアップ用のトークンを作成.
      * 管理者作成ユーザーが初回パスワード設定を行うためのワンタイムトークン
      * 
-     * @param systemUserId SystemUser ID
-     * @param email ユーザーのメールアドレス
+     * @param systemUserId
+     *            SystemUser ID
+     * @param email
+     *            ユーザーのメールアドレス
      * @return マジックリンクトークン
      */
     @Transactional
     public String createAccountSetupToken(UUID systemUserId, String email) {
-        log.info("Creating account setup token: systemUserId={}, email={}", systemUserId, email);
+        log.info("Creating account setup token: systemUserId={}, email={}", systemUserId, SanitizeUtil.forLog(email));
 
         // 既存の未検証ACCOUNT_SETUPトークンを無効化
         otpTokenRepository.findBySystemUserIdAndPurposeAndIsVerifiedFalse(systemUserId, "ACCOUNT_SETUP")
@@ -578,7 +587,7 @@ public class OtpService {
 
         otpTokenRepository.save(token);
 
-        log.info("Account setup token created: tokenId={}, expiresAt={}", 
+        log.info("Account setup token created: tokenId={}, expiresAt={}",
                 token.getId(), token.getExpiresAt());
 
         return magicLinkToken;

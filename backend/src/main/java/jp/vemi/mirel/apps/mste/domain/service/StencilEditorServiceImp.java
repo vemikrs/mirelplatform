@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -86,7 +87,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
                     // Path injection対策: ベースパス配下にあるかチェック
                     if (!candidatePath.startsWith(baseLayerPath)) {
                         logger.warn("Invalid path traversal attempt skipped: layer={}, stencilId={}, serial={}", layer,
-                                stencilId, serial);
+                                SanitizeUtil.forLog(stencilId), SanitizeUtil.forLog(serial));
                         continue;
                     }
 
@@ -294,7 +295,8 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
         // Path injection対策
         if (!categoryPath.startsWith(baseUserPath)) {
-            logger.warn("Invalid path traversal attempt in loadVersionHistory: stencilId={}", stencilId);
+            logger.warn("Invalid path traversal attempt in loadVersionHistory: stencilId={}",
+                    SanitizeUtil.forLog(stencilId));
             return new ArrayList<>();
         }
 
@@ -460,17 +462,19 @@ public class StencilEditorServiceImp implements StencilEditorService {
                     String stencilIdFromPath = extractStencilIdFromPath(filePath);
 
                     if (serialFromPath != null) {
-                        logger.debug("Extracted serial from path: {} -> {}", filePath, serialFromPath);
+                        logger.debug("Extracted serial from path: {} -> {}", SanitizeUtil.forLog(filePath),
+                                SanitizeUtil.forLog(serialFromPath));
                         config.setSerial(serialFromPath);
                     } else {
-                        logger.warn("Failed to extract serial from path: {}", filePath);
+                        logger.warn("Failed to extract serial from path: {}", SanitizeUtil.forLog(filePath));
                     }
 
                     if (stencilIdFromPath != null) {
-                        logger.debug("Extracted stencilId from path: {} -> {}", filePath, stencilIdFromPath);
+                        logger.debug("Extracted stencilId from path: {} -> {}", SanitizeUtil.forLog(filePath),
+                                SanitizeUtil.forLog(stencilIdFromPath));
                         config.setId(stencilIdFromPath);
                     } else {
-                        logger.warn("Failed to extract stencilId from path: {}", filePath);
+                        logger.warn("Failed to extract stencilId from path: {}", SanitizeUtil.forLog(filePath));
                     }
 
                     // カテゴリ情報を収集
@@ -483,7 +487,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
                     stencilMap.computeIfAbsent(stencilId, k -> new ArrayList<>()).add(config);
 
                 } catch (Exception e) {
-                    logger.warn("Failed to parse stencil settings: {}", filePath, e);
+                    logger.warn("Failed to parse stencil settings: {}", SanitizeUtil.forLog(filePath), e);
                 }
             }
 
@@ -599,7 +603,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
             return "/" + category + "/" + stencilName;
 
         } catch (Exception e) {
-            logger.warn("Failed to extract stencilId from path: {}", filePath, e);
+            logger.warn("Failed to extract stencilId from path: {}", SanitizeUtil.forLog(filePath), e);
         }
         return null;
     }
@@ -635,7 +639,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 }
             }
         } catch (Exception e) {
-            logger.warn("Failed to extract serial from path: {}", filePath, e);
+            logger.warn("Failed to extract serial from path: {}", SanitizeUtil.forLog(filePath), e);
         }
         return null;
     }
@@ -727,7 +731,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 }
             }
         } catch (Exception e) {
-            logger.warn("Failed to load stencil settings from: {}", filePath, e);
+            logger.warn("Failed to load stencil settings from: {}", SanitizeUtil.forLog(filePath), e);
         }
         return null;
     }

@@ -225,7 +225,7 @@ public class TemplateEngineProcessor {
 
             if (cname.startsWith("\\.")) {
                 //
-                logger.info("folder starts with '.': {}", cname);
+                logger.info("folder starts with '.': {}", SanitizeUtil.forLog(cname));
                 continue;
             }
             final freemarker.template.Template template = newTemplateFileSpec3(cname);
@@ -283,9 +283,10 @@ public class TemplateEngineProcessor {
             if (serialDir.exists() && serialDir.isDirectory()) {
                 FileTemplateLoader fileLoader = new FileTemplateLoader(serialDir);
                 loaders.add(fileLoader);
-                logger.debug("Added filesystem template loader: {}", serialDir.getAbsolutePath());
+                logger.debug("Added filesystem template loader: {}", SanitizeUtil.forLog(serialDir.getAbsolutePath()));
             } else {
-                logger.debug("Filesystem serial directory not found: {}", serialDir.getAbsolutePath());
+                logger.debug("Filesystem serial directory not found: {}",
+                        SanitizeUtil.forLog(serialDir.getAbsolutePath()));
             }
 
             // Layer 2: クラスパスローダー（serialNoディレクトリ全体を基準）
@@ -296,7 +297,7 @@ public class TemplateEngineProcessor {
                 ClassTemplateLoader classpathLoader = new ClassTemplateLoader(getClass().getClassLoader(),
                         classpathStencilPath);
                 loaders.add(classpathLoader);
-                logger.debug("Added classpath template loader: {}", classpathStencilPath);
+                logger.debug("Added classpath template loader: {}", SanitizeUtil.forLog(classpathStencilPath));
             }
 
             // Layer 3: 一時ファイル用テンプレートローダー
@@ -534,7 +535,7 @@ public class TemplateEngineProcessor {
     }
 
     public freemarker.template.Template newTemplateFileSpec3(final String stencilName) {
-        logger.debug("=== newTemplateFileSpec3: {} ===", stencilName);
+        logger.debug("=== newTemplateFileSpec3: {} ===", SanitizeUtil.forLog(stencilName));
 
         // Validate.
         Assert.notNull(stencilName, "stencil name must not be null");
@@ -545,7 +546,8 @@ public class TemplateEngineProcessor {
             if (entry.getValue().equals(stencilName)) {
                 // hello.ftl → template-hello-ftl*.tmp の逆引き成功
                 actualTemplateName = entry.getKey();
-                logger.info("Reverse mapping original '" + stencilName + "' to temp file '" + actualTemplateName + "'");
+                logger.info("Reverse mapping original '" + SanitizeUtil.forLog(stencilName) + "' to temp file '"
+                        + SanitizeUtil.forLog(actualTemplateName) + "'");
                 break;
             }
         }
@@ -554,10 +556,11 @@ public class TemplateEngineProcessor {
         // MultiTemplateLoaderが自動的にファイルシステムとクラスパスを検索する
         try {
             freemarker.template.Template template = cfg.getTemplate(actualTemplateName);
-            logger.debug("Successfully loaded template via MultiTemplateLoader: {}", actualTemplateName);
+            logger.debug("Successfully loaded template via MultiTemplateLoader: {}",
+                    SanitizeUtil.forLog(actualTemplateName));
             return template;
         } catch (TemplateNotFoundException e) {
-            logger.debug("Template not found: {}", actualTemplateName);
+            logger.debug("Template not found: {}", SanitizeUtil.forLog(actualTemplateName));
             // デバッグログ
             return null; // テンプレートが見つからない場合はnullを返す（スキップ対象）
         } catch (ParseException e) {
@@ -648,7 +651,8 @@ public class TemplateEngineProcessor {
             File candidateDir = constructSecurePath(layerDir, sanitizedCanonicalName);
 
             if (candidateDir.exists() && candidateDir.isDirectory()) {
-                logger.debug("Found stencil directory in layer: {}", SanitizeUtil.forLog(candidateDir.getAbsolutePath()));
+                logger.debug("Found stencil directory in layer: {}",
+                        SanitizeUtil.forLog(candidateDir.getAbsolutePath()));
                 return candidateDir.getAbsolutePath();
             }
         }
@@ -1076,11 +1080,11 @@ public class TemplateEngineProcessor {
             logger.debug("Searching settings file: {}", SanitizeUtil.forLog(settingsFile.getAbsolutePath()));
 
             if (settingsFile.exists() && settingsFile.isFile()) {
-                logger.debug("Found stencil-settings.yml: {}", settingsFile.getAbsolutePath());
+                logger.debug("Found stencil-settings.yml: {}", SanitizeUtil.forLog(settingsFile.getAbsolutePath()));
 
                 return getSsYmlRecurive(settingsFile);
             } else {
-                logger.debug("Settings file not found: {}", settingsFile.getAbsolutePath());
+                logger.debug("Settings file not found: {}", SanitizeUtil.forLog(settingsFile.getAbsolutePath()));
             }
         } catch (Exception e) {
             logger.debug("Error in filesystem search: {}", e.getMessage());
@@ -1477,7 +1481,8 @@ public class TemplateEngineProcessor {
             } catch (Exception e) {
                 /* ignore */ }
 
-            logger.debug("=== Layered template search for stencil: {} serial: {} ===", SanitizeUtil.forLog(stencilCanonicalName), SanitizeUtil.forLog(serialNo));
+            logger.debug("=== Layered template search for stencil: {} serial: {} ===",
+                    SanitizeUtil.forLog(stencilCanonicalName), SanitizeUtil.forLog(serialNo));
 
             // Layer 1: Filesystem stencils (既存の/apps/mste/stencil)
             searchFilesystemTemplates(templateFiles, foundFileNames, stencilCanonicalName, serialNo);
@@ -1547,7 +1552,8 @@ public class TemplateEngineProcessor {
                                 logger.debug("FILESYSTEM found: {}", SanitizeUtil.forLog(relativePath));
                             }
                         } catch (IOException e) {
-                            logger.warn("Error processing file {}: {}", SanitizeUtil.forLog(file.getAbsolutePath()), SanitizeUtil.forLog(e.getMessage()));
+                            logger.warn("Error processing file {}: {}", SanitizeUtil.forLog(file.getAbsolutePath()),
+                                    SanitizeUtil.forLog(e.getMessage()));
                         }
                     }
 
@@ -1557,7 +1563,8 @@ public class TemplateEngineProcessor {
                         return;
                     }
                 } else {
-                    logger.debug("FILESYSTEM serial directory not found: {}", SanitizeUtil.forLog(serialDir.getAbsolutePath()));
+                    logger.debug("FILESYSTEM serial directory not found: {}",
+                            SanitizeUtil.forLog(serialDir.getAbsolutePath()));
                 }
             } catch (Exception e) {
                 logger.error("Error searching filesystem layer {}: {}", layerDir, e.getMessage(), e);
@@ -1670,14 +1677,16 @@ public class TemplateEngineProcessor {
         // 一時ファイル名から元のテンプレートファイル名を取得
         if (tempFileToOriginalMap.containsKey(fileName)) {
             String originalFileName = tempFileToOriginalMap.get(fileName);
-            logger.debug("Mapped temp file: {} -> {}", SanitizeUtil.forLog(fileName), SanitizeUtil.forLog(originalFileName));
+            logger.debug("Mapped temp file: {} -> {}", SanitizeUtil.forLog(fileName),
+                    SanitizeUtil.forLog(originalFileName));
             return originalFileName;
         }
 
         // 一時ファイルの完全パスがマップにある場合（相対パス付き）
         if (tempFileToOriginalMap.containsKey(fullPath)) {
             String originalPath = tempFileToOriginalMap.get(fullPath);
-            logger.debug("Mapped temp file path: {} -> {}", SanitizeUtil.forLog(fullPath), SanitizeUtil.forLog(originalPath));
+            logger.debug("Mapped temp file path: {} -> {}", SanitizeUtil.forLog(fullPath),
+                    SanitizeUtil.forLog(originalPath));
             return originalPath;
         }
 
@@ -1690,7 +1699,8 @@ public class TemplateEngineProcessor {
                 String relativePath = serialDir.toPath().relativize(file.toPath()).toString();
                 // Windowsパス区切りをUnix形式に統一
                 relativePath = relativePath.replace('\\', '/');
-                logger.info("Extracted relative path: {} from {}", SanitizeUtil.forLog(relativePath), SanitizeUtil.forLog(fullPath));
+                logger.info("Extracted relative path: {} from {}", SanitizeUtil.forLog(relativePath),
+                        SanitizeUtil.forLog(fullPath));
                 return relativePath;
             } catch (Exception e) {
                 logger.info("Error extracting relative path: " + e.getMessage());

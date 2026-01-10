@@ -12,6 +12,7 @@ import jp.vemi.mirel.apps.mira.infrastructure.ai.AiResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * Mira Query Transform Service.
@@ -35,7 +36,7 @@ public class MiraQueryTransformService {
      * @return Hypothetical document text
      */
     public String transformToHypotheticalDocument(String query) {
-        log.info("Generating HyDE for query: {}", query);
+        log.info("Generating HyDE for query: {}", SanitizeUtil.forLog(query));
 
         try {
             // Use default provider (or specific tenant context if available in future)

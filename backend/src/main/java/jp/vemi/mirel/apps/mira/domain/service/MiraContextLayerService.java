@@ -21,6 +21,7 @@ import jp.vemi.mirel.apps.mira.domain.dao.entity.MiraContextLayer.ContextScope;
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraContextLayerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * Mira コンテキストレイヤーサービス.
@@ -155,7 +156,7 @@ public class MiraContextLayerService {
 
         MiraContextLayer saved = repository.save(layer);
         log.info("[MiraContextLayerService] Saved context: id={}, scope={}, category={}",
-                saved.getId(), saved.getScope(), saved.getCategory());
+                saved.getId(), saved.getScope(), SanitizeUtil.forLog(saved.getCategory()));
         return saved;
     }
 
@@ -167,7 +168,7 @@ public class MiraContextLayerService {
      */
     @Transactional
     public void deleteContext(String contextId) {
-        log.info("[MiraContextLayerService] Deleting context: id={}", contextId);
+        log.info("[MiraContextLayerService] Deleting context: id={}", SanitizeUtil.forLog(contextId));
         repository.deleteById(contextId);
     }
 

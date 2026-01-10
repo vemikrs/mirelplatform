@@ -5,6 +5,7 @@ package jp.vemi.mirel.foundation.web.exception;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jp.vemi.framework.util.SanitizeUtil;
 import jp.vemi.mirel.foundation.exception.EmailNotVerifiedException;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleValidationException(
             MethodArgumentNotValidException ex, WebRequest request) {
 
-        log.warn("Validation error on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Validation error on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
@@ -57,7 +59,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
             ConstraintViolationException ex, WebRequest request) {
 
-        log.warn("Constraint violation on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Constraint violation on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         List<String> errors = ex.getConstraintViolations()
                 .stream()
@@ -78,7 +81,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
             AccessDeniedException ex, WebRequest request) {
 
-        log.warn("Access denied on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Access denied on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("アクセスが拒否されました"))
@@ -94,7 +98,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleEmailNotVerified(
             EmailNotVerifiedException ex, WebRequest request) {
 
-        log.warn("Email not verified on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Email not verified on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         Map<String, Object> data = Map.of(
                 "email", ex.getEmail(),
@@ -115,7 +120,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
             IllegalArgumentException ex, WebRequest request) {
 
-        log.warn("Illegal argument on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Illegal argument on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage() != null ? ex.getMessage() : "不正なリクエストです"))
@@ -131,7 +137,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
             jp.vemi.framework.exeption.MirelResourceNotFoundException ex, WebRequest request) {
 
-        log.warn("Resource not found on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Resource not found on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage()))
@@ -147,7 +154,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleQuotaExceededException(
             jp.vemi.framework.exeption.MirelQuotaExceededException ex, WebRequest request) {
 
-        log.warn("Quota exceeded on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Quota exceeded on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage()))
@@ -163,7 +171,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMirelValidationException(
             jp.vemi.framework.exeption.MirelValidationException ex, WebRequest request) {
 
-        log.warn("Business validation error on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Business validation error on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage()))
@@ -179,7 +188,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMirelApplicationException(
             jp.vemi.framework.exeption.MirelApplicationException ex, WebRequest request) {
 
-        log.warn("Application error on {}: {}", request.getDescription(false), ex.getMessage());
+        log.warn("Application error on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()));
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of(ex.getMessage()))
@@ -196,7 +206,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMirelSystemException(
             jp.vemi.framework.exeption.MirelSystemException ex, WebRequest request) {
 
-        log.error("System exception on {}: {}", request.getDescription(false), ex.getMessage(), ex);
+        log.error("System exception on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()), ex);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))
@@ -213,7 +224,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(
             RuntimeException ex, WebRequest request) {
 
-        log.error("Unexpected runtime exception on {}: {}", request.getDescription(false), ex.getMessage(), ex);
+        log.error("Unexpected runtime exception on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()), ex);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))
@@ -229,7 +241,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGenericException(
             Exception ex, WebRequest request) {
 
-        log.error("Unexpected error on {}: {}", request.getDescription(false), ex.getMessage(), ex);
+        log.error("Unexpected error on {}: {}", SanitizeUtil.forLog(request.getDescription(false)),
+                SanitizeUtil.forLog(ex.getMessage()), ex);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .errors(List.of("システムエラーが発生しました。管理者に連絡してください。"))

@@ -15,6 +15,7 @@ import jp.vemi.mirel.apps.mira.domain.model.ModelCapabilityValidation;
 import jp.vemi.mirel.apps.mira.infrastructure.config.MiraAiProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * モデル機能バリデーションサービス.
@@ -99,7 +100,7 @@ public class ModelCapabilityValidator {
         if (errors.isEmpty()) {
             return ModelCapabilityValidation.success();
         } else {
-            log.warn("Model capability validation failed for model '{}': {}", modelName, errors);
+            log.warn("Model capability validation failed for model '{}': {}", SanitizeUtil.forLog(modelName), errors);
             return ModelCapabilityValidation.failure(errors);
         }
     }

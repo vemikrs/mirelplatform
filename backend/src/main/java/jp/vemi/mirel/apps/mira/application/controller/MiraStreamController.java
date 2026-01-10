@@ -20,6 +20,7 @@ import jp.vemi.mirel.apps.mira.domain.service.MiraTenantContextManager;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 import reactor.core.publisher.Flux;
 
 /**
@@ -62,7 +63,7 @@ public class MiraStreamController {
             return Flux.just(MiraStreamResponse.error("INVALID_REQUEST", "Invalid request format"));
         }
         log.info("Stream Chat Request Received: RagEnabled={}, Mode={}", chatRequest.getRagEnabled(),
-                chatRequest.getMode());
+                SanitizeUtil.forLog(chatRequest.getMode()));
 
         try {
             return streamService.streamChat(chatRequest, tenantId, userId);

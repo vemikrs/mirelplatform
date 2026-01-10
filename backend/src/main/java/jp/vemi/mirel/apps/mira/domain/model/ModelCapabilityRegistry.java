@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * モデルごとの機能サポート状況を管理するレジストリ.
@@ -179,7 +180,7 @@ public class ModelCapabilityRegistry {
         for (Map.Entry<Pattern, Set<ModelCapability>> entry : MODEL_CAPABILITIES.entrySet()) {
             if (entry.getKey().matcher(modelName).matches()) {
                 log.debug("Model '{}' matched pattern '{}', capabilities: {}",
-                        modelName, entry.getKey().pattern(), entry.getValue());
+                        SanitizeUtil.forLog(modelName), entry.getKey().pattern(), entry.getValue());
                 return Collections.unmodifiableSet(entry.getValue());
             }
         }

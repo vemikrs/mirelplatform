@@ -14,6 +14,7 @@ import jp.vemi.mirel.foundation.web.api.auth.service.PasswordResetService;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -344,7 +345,7 @@ public class AuthenticationController {
                     ipAddress,
                     userAgent);
         } catch (Exception e) {
-            logger.warn("Verification email resend error: {}", request.getEmail(), e);
+            logger.warn("Verification email resend error: {}", SanitizeUtil.forLog(request.getEmail()), e);
             // エラー詳細を返さない（セキュリティ）
         }
 
@@ -370,14 +371,14 @@ public class AuthenticationController {
                     clientIp,
                     userAgent);
 
-            logger.info("Password reset requested for email: {}", request.getEmail());
+            logger.info("Password reset requested for email: {}", SanitizeUtil.forLog(request.getEmail()));
 
             // セキュリティ: 成功/失敗に関わらず同じレスポンス（ユーザー列挙攻撃対策）
             return ResponseEntity.ok("Password reset email sent");
 
         } catch (IllegalArgumentException e) {
             // Don't reveal if user exists - always return success
-            logger.warn("Password reset requested for non-existent email: {}", request.getEmail());
+            logger.warn("Password reset requested for non-existent email: {}", SanitizeUtil.forLog(request.getEmail()));
             return ResponseEntity.ok("Password reset email sent");
         } catch (Exception e) {
             logger.error("Password reset request failed", e);
