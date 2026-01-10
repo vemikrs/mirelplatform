@@ -17,10 +17,15 @@ RUN ./gradlew --no-daemon dependencies
 
 # ソースコードコピー（バックエンドのみ）
 COPY --chown=vscode:vscode backend/src backend/src
-# COPY --chown=vscode:vscode backend/test backend/test # テストコードは除外して軽量化
 
 # ビルド実行
 RUN ./gradlew --no-daemon :backend:build -x test
+
+# 実行可能JARを/workspace/app.jarにコピー（plain.jarを除外）
+# Gradleは backend-X.X.X.jar（実行可能）と backend-X.X.X-plain.jar（クラスのみ）を生成
+RUN JAR_FILE=$(find /workspace/backend/build/libs -name "*.jar" ! -name "*-plain.jar" | head -n 1) && \
+    cp "$JAR_FILE" /workspace/app.jar && \
+    echo "Selected JAR: $JAR_FILE"
 
 # Stage 2: Runtime Environment (Alpine Linuxで軽量化)
 FROM eclipse-temurin:21-jre-alpine AS runtime
@@ -36,8 +41,8 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-# ビルド成果物をコピー
-COPY --from=builder --chown=spring:spring /workspace/backend/build/libs/*.jar app.jar
+# ビルド成果物をコピー（ビルダーで選択済みの実行可能JAR）
+COPY --from=builder --chown=spring:spring /workspace/app.jar app.jar
 
 # 環境変数（SaaS向けデフォルト）
 ENV SERVER_PORT=8080 \
@@ -46,3 +51,4 @@ ENV SERVER_PORT=8080 \
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
