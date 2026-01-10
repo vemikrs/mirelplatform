@@ -37,8 +37,10 @@ RUN apk add --no-cache tzdata && \
 
 WORKDIR /app
 
-# 実行ユーザー作成
-RUN addgroup -S spring && adduser -S spring -G spring
+# 実行ユーザー作成とディレクトリ準備
+RUN addgroup -S spring && adduser -S spring -G spring && \
+    mkdir -p /app/logs && chown -R spring:spring /app
+
 USER spring:spring
 
 # ビルド成果物をコピー（ビルダーで選択済みの実行可能JAR）
