@@ -203,12 +203,13 @@ public class AuthenticationServiceImpl {
                 systemUser.setAccountLocked(true);
                 log.warn("Account locked due to multiple failed login attempts: {}",
                         SanitizeUtil.forLog(request.getUsernameOrEmail()));
-                authEventLogger.logAccountLocked(request.getUsernameOrEmail(), request.getIpAddress());
+                authEventLogger.logAccountLocked(SanitizeUtil.forLog(request.getUsernameOrEmail()),
+                        SanitizeUtil.forLog(request.getIpAddress()));
             }
 
             systemUserRepository.save(systemUser);
-            authEventLogger.logLoginFailure(request.getUsernameOrEmail(), "Invalid password",
-                    request.getIpAddress(), request.getUserAgent());
+            authEventLogger.logLoginFailure(SanitizeUtil.forLog(request.getUsernameOrEmail()), "Invalid password",
+                    SanitizeUtil.forLog(request.getIpAddress()), SanitizeUtil.forLog(request.getUserAgent()));
             throw new jp.vemi.framework.exeption.MirelValidationException("Invalid username/email or password");
         }
 
