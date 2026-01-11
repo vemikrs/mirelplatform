@@ -25,7 +25,7 @@ spring:
       jvmArguments:: -Xint
   sql:
     init:
-      mode: always
+      mode: never
   autoconfigure:
     exclude:
       # Spring AI AutoConfigure を全て無効化

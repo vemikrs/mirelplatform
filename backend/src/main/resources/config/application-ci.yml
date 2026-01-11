@@ -22,6 +22,9 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
+  sql:
+    init:
+      mode: always
   # CI環境ではメール送信をモック
   mail:
     host: localhost
