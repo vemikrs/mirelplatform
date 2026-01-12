@@ -136,7 +136,37 @@ mipla2:
     storage-dir: ${MIREL_STORAGE_DIR:}
 
 mirel:
+  # =====================================
+  # ストレージ設定
+  # =====================================
+  
+  # [非推奨] 旧形式のストレージディレクトリ設定
+  # 後方互換性のため維持していますが、新規実装では mirel.storage.local.base-dir を使用してください
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  
+  # [推奨] ストレージ抽象化設定
+  # type=local: ローカルファイルシステム（開発環境向け）
+  # type=gcs: Google Cloud Storage（GCP環境標準）
+  # type=r2: Cloudflare R2 / AWS S3（S3互換モード）
+  storage:
+    type: ${MIREL_STORAGE_TYPE:local}
+    local:
+      # ローカルストレージのベースディレクトリ
+      # 上位の storage-dir と同一の環境変数を参照
+      base-dir: ${MIREL_STORAGE_DIR:./data/storage}
+    gcs:
+      bucket: ${GCS_BUCKET:mirel-bucket}
+      storage-prefix: storage/
+      # 認証は Workload Identity (ADC) を自動使用するためキー設定不要
+    r2:
+      endpoint: https://${R2_ACCOUNT_ID:}.r2.cloudflarestorage.com
+      bucket: ${R2_BUCKET:mirel-bucket}
+      storage-prefix: storage/
+      logs-prefix: logs/
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      region: auto
+
   # セキュリティ設定
   security:
     # JWT署名鍵暗号化用マスターキー（Base64エンコード、32バイト以上）

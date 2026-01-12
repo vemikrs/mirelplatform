@@ -31,6 +31,7 @@ import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAudioT
         "jp.vemi.framework.security", // 要整理
         "jp.vemi.framework.web", // 要整理
         "jp.vemi.framework.crypto", // AesCryptoService
+        "jp.vemi.framework.storage", // StorageService
         "jp.vemi.mirel",
         "jp.vemi.mirel.config",
         "jp.vemi.mirel.foundation.web.api",

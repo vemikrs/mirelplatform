@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="logback/appender.xml"/>
-    <include resource="logback/logger.xml"/>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 環境プロファイルによる切り替え -->
     
-    <!-- ルートロガー設定 -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
-        <appender-ref ref="DEST_EXCEPTION" />
-    </root>
+    <!-- Local環境: コンソール + 例外ファイル (ただしR2アップロードは無効) -->
+    <springProfile name="local">
+        <include resource="logback/appender-local.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="DEST_EXCEPTION"/>
+        </root>
+    </springProfile>
+
+    <!-- Cloud (Prod/Dev) 環境: コンソールのみ (Cloud Logging連携) -->
+    <springProfile name="!local">
+        <include resource="logback/appender-cloud.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
 </configuration>

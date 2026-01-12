@@ -2,27 +2,46 @@ package jp.vemi.framework.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import jp.vemi.framework.config.StorageConfig;
 import jp.vemi.framework.exeption.MirelSystemException;
+import jp.vemi.framework.storage.LocalStorageService;
+import jp.vemi.framework.storage.StorageService;
 
 /**
  * Strorageに関するユーティリティクラスです。<br/>
- * 設定値はStorageConfigから取得します。
+ * <p>
+ * このクラスは {@link StorageService} へのブリッジとして動作します。
+ * クラウド環境（R2）では {@link StorageService} Bean を使用し、
+ * ローカル環境では従来通りのファイルシステム操作にフォールバックします。
+ * </p>
  *
  * @author mirelplaftofm
- *
  */
 public class StorageUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(StorageUtil.class);
+
+    // AtomicReference でスレッドセーフに保持
+    private static final java.util.concurrent.atomic.AtomicReference<ApplicationContext> applicationContextRef = new java.util.concurrent.atomic.AtomicReference<>();
+    private static final java.util.concurrent.atomic.AtomicReference<StorageService> storageServiceRef = new java.util.concurrent.atomic.AtomicReference<>();
 
     /**
      * private constructor to prevent instantiation
@@ -30,7 +49,47 @@ public class StorageUtil {
     private StorageUtil() {
     }
 
+    /**
+     * Spring ApplicationContext を設定します。
+     * StorageService Bean の取得に使用されます。
+     */
+    public static void setApplicationContext(ApplicationContext context) {
+        applicationContextRef.set(context);
+        storageServiceRef.set(null); // リセット
+    }
+
+    /**
+     * StorageService インスタンスを取得します。
+     */
+    private static StorageService getStorageService() {
+        StorageService cached = storageServiceRef.get();
+        if (cached != null) {
+            return cached;
+        }
+
+        ApplicationContext ctx = applicationContextRef.get();
+        if (ctx != null) {
+            try {
+                StorageService service = ctx.getBean(StorageService.class);
+                // Atomic CAS で設定（他スレッドが先に設定していた場合はそれを優先でも可だが、実用上は上書きで問題ない）
+                storageServiceRef.compareAndSet(null, service);
+                logger.debug("StorageService Bean obtained: {}", service.getClass().getSimpleName());
+                return service;
+            } catch (Exception e) {
+                logger.debug("StorageService Bean not available, using local fallback");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ローカルフォールバック用のベースディレクトリを取得します。
+     */
     public static String getBaseDir() {
+        StorageService service = getStorageService();
+        if (service != null) {
+            return service.getBasePath();
+        }
         return StorageConfig.getStorageDir();
     }
 
@@ -39,15 +98,15 @@ public class StorageUtil {
      * - 先頭のスラッシュはストレージ相対とみなして除去
      * - 正規化してベースディレクトリ配下であることを検証
      *
-     * @param storagePath ストレージ相対パス（先頭に/が付いていても可）
+     * @param storagePath
+     *            ストレージ相対パス（先頭に/が付いていても可）
      * @return ベースディレクトリ配下の正規化済み Path
-     * @throws IllegalArgumentException ベースディレクトリ外へ逸脱する場合
+     * @throws IllegalArgumentException
+     *             ベースディレクトリ外へ逸脱する場合
      */
     private static Path resolveWithinBase(String storagePath) {
         String sp = storagePath == null ? "" : storagePath;
-        // Windowsの区切りやバックスラッシュを防止
         sp = sp.replace('\\', '/');
-        // 先頭の/はストレージ相対と見なして除去
         if (sp.startsWith("/")) {
             sp = sp.replaceFirst("^/+", "");
         }
@@ -62,8 +121,6 @@ public class StorageUtil {
 
     /**
      * キャノニキャルパス
-     * @param path
-     * @return
      */
     public static String parseToCanonicalPath(String path) {
         return resolveWithinBase(path).toString();
@@ -71,21 +128,90 @@ public class StorageUtil {
 
     /**
      * getFile.<br/>
-     * @param storagePath パス
-     * @return ファイル
+     * <p>
+     * ストレージからファイルを取得します。
+     * R2/S3 の場合はローカルに一時ファイルをダウンロードします。
+     * </p>
+     * 
+     * <p>
+     * <b>重要: 一時ファイルのライフサイクル管理</b><br/>
+     * R2/S3 からダウンロードした一時ファイルは、呼び出し元が使用後に
+     * {@link java.nio.file.Files#deleteIfExists(java.nio.file.Path)} で
+     * 明示的に削除する責任があります。{@code deleteOnExit()} は
+     * 長時間稼働サーバーでメモリリークの原因となるため使用していません。
+     * </p>
+     * 
+     * <pre>{@code
+     * File temp = StorageUtil.getFile("path/to/file");
+     * try {
+     *     // ファイルを使用
+     * } finally {
+     *     Files.deleteIfExists(temp.toPath());
+     * }
+     * }</pre>
+     * 
+     * @param storagePath
+     *            ストレージ相対パス
+     * @return ファイル（LocalStorageServiceの場合は実ファイル、其以外は一時ファイル）
      */
     public static File getFile(String storagePath) {
+        StorageService service = getStorageService();
+
+        // LocalStorageService の場合は直接 File を返せる
+        if (service instanceof LocalStorageService) {
+            return ((LocalStorageService) service).getFile(storagePath);
+        }
+
+        // R2 の場合は一時ファイルにダウンロード
+        // 注意: 呼び出し元がファイル使用後に明示的に削除する責任があります
+        if (service != null && service.exists(storagePath)) {
+            try {
+                Path tempFile = Files.createTempFile("storage-", getFileName(storagePath));
+                try (InputStream is = service.getInputStream(storagePath)) {
+                    Files.copy(is, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+                // 長時間稼働を想定し deleteOnExit() は使用しない
+                // 呼び出し元が使用後に Files.deleteIfExists() で削除すること
+                logger.debug("Created temp file for R2 download: {}", tempFile);
+                return tempFile.toFile();
+            } catch (IOException e) {
+                logger.warn("Failed to download from StorageService, falling back to local: {}", e.getMessage());
+            }
+        }
+
+        // フォールバック: ローカルファイルシステム
         return resolveWithinBase(storagePath).toFile();
     }
+
+    private static String getFileName(String path) {
+        int lastSlash = path.lastIndexOf('/');
+        return lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+    }
+
     /**
      * 配下ファイルの取得.<br/>
-     * @param storagePath パス
+     * 
+     * @param storagePath
+     *            パス
      * @return {@link File} のリスト
      */
     public static List<String> getFiles(String storagePath) {
         if (StringUtils.isEmpty(storagePath))
             return Lists.newArrayList();
 
+        StorageService service = getStorageService();
+        if (service != null) {
+            List<String> files = service.listFiles(storagePath);
+            if (!files.isEmpty()) {
+                // StorageService.listFiles() は storagePath 配下のファイルパスを返す
+                // 返却値は既に storagePath を含むため、getBaseDir() のみを付加
+                return files.stream()
+                        .map(f -> Paths.get(getBaseDir(), f).normalize().toString())
+                        .collect(Collectors.toList());
+            }
+        }
+
+        // フォールバック: ローカルファイルシステム
         File file = getFile(storagePath);
         List<File> files = FileUtil.getFiles(file);
 
@@ -101,7 +227,51 @@ public class StorageUtil {
         return fileNames;
     }
 
+    /**
+     * ファイルの存在確認
+     */
+    public static boolean exists(String storagePath) {
+        StorageService service = getStorageService();
+        if (service != null) {
+            return service.exists(storagePath);
+        }
+        return resolveWithinBase(storagePath).toFile().exists();
+    }
+
+    /**
+     * InputStream を取得
+     */
+    public static InputStream getInputStream(String storagePath) throws IOException {
+        StorageService service = getStorageService();
+        if (service != null) {
+            return service.getInputStream(storagePath);
+        }
+        return Files.newInputStream(resolveWithinBase(storagePath));
+    }
+
+    /**
+     * ファイルを保存
+     */
+    public static void saveFile(String storagePath, byte[] data) throws IOException {
+        StorageService service = getStorageService();
+        if (service != null) {
+            service.saveFile(storagePath, data);
+            return;
+        }
+        Path path = resolveWithinBase(storagePath);
+        Files.createDirectories(path.getParent());
+        Files.write(path, data);
+    }
+
     public static URL getResource(String storagePath) {
+        StorageService service = getStorageService();
+        if (service != null) {
+            URL url = service.getPresignedUrl(storagePath, Duration.ofHours(1));
+            if (url != null) {
+                return url;
+            }
+        }
+
         try {
             Path resolved = resolveWithinBase(storagePath);
             return resolved.toUri().toURL();

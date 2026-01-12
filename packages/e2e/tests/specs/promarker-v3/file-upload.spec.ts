@@ -1,27 +1,62 @@
 import { test, expect } from '@playwright/test'
 import { ProMarkerV3Page } from '../../pages/promarker-v3.page'
 
-test.describe.skip('ProMarker v3 File Upload', () => {
+test.describe('ProMarker v3 File Upload', () => {
   let promarkerPage: ProMarkerV3Page
   let backendAvailable = false
 
   test.beforeAll(async ({ request }) => {
     try {
-      console.log('[file-upload] Reloading stencil master...');
-      const resp = await request.post('http://127.0.0.1:3000/mipla2/apps/mste/api/reloadStencilMaster', {
-        data: { content: {} },
+      console.log('[file-upload] Checking backend health...');
+      const resp = await request.get('http://127.0.0.1:3000/mipla2/actuator/health', {
         timeout: 5000,
       });
       backendAvailable = resp.ok();
-      console.log(`[file-upload] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+      console.error(`[file-upload] Reload result: ${resp.status()}, available: ${backendAvailable}`);
+      if (!backendAvailable) {
+          throw new Error(`Backend check failed with status: ${resp.status()}`);
+      }
     } catch (error) {
       console.error('[file-upload] Backend not available:', error);
       backendAvailable = false;
+      throw error; // Force fail to see error
     }
   });
 
   test.beforeEach(async ({ page }) => {
     test.skip(!backendAvailable, 'Backend not available - skipping');
+    
+    // Create unique user and signup (this logs us in via cookies)
+    const timestamp = Date.now();
+    const username = `testuser${timestamp}`;
+    const email = `testuser${timestamp}@example.com`;
+    
+    console.log(`[file-upload] Signing up as ${username}...`);
+    const signupResponse = await page.request.post('http://localhost:3000/mipla2/auth/signup', {
+      data: {
+        username,
+        email,
+        password: 'Password123!',
+        displayName: 'Test User',
+        firstName: 'Test',
+        lastName: 'User'
+      }
+    });
+    
+    if (!signupResponse.ok()) {
+      console.error(`[file-upload] Signup failed: ${signupResponse.status()} ${await signupResponse.text()}`);
+      throw new Error('Signup failed');
+    }
+    
+    console.log('[file-upload] Signup successful, checking cookies...');
+    const cookies = await page.context().cookies();
+    const accessToken = cookies.find(c => c.name === 'accessToken');
+    if (accessToken) {
+         console.log('[file-upload] Access token cookie found');
+    } else {
+         console.warn('[file-upload] Access token cookie NOT found. Auth might fail.');
+    }
+
     promarkerPage = new ProMarkerV3Page(page)
     
     // Set up wait for suggest API response BEFORE navigation

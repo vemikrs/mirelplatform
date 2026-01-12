@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2025 mirelplatform.
+ * Copyright(c) 2015-2026 mirelplatform.
  */
 package jp.vemi.mirel.foundation.log;
 
@@ -15,17 +15,25 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 1回のログ出力ごとに個別のファイルを作成するAppender.
  * <p>
+ * ローカル開発環境でのデバッグ用。
  * ファイル名形式: exception_{yyyy-MM-dd_HH-mm-ss-SSS}_{UUID}.log
  * </p>
  */
 public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
 
+    private static final Logger log = LoggerFactory.getLogger(OneFilePerExceptionAppender.class);
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
     private String directory = "logs/exceptions";
+
+    // 後方互換性のため残すが使用しない
+    private boolean useR2 = false;
 
     private Encoder<ILoggingEvent> encoder;
 
@@ -33,10 +41,23 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
         this.directory = directory;
     }
 
+    public void setUseR2(boolean useR2) {
+        if (useR2) {
+            log.warn(
+                    "OneFilePerExceptionAppender: 'useR2' is set to true but R2 upload is no longer supported. Logs will be saved locally only.");
+        }
+        this.useR2 = useR2;
+    }
+
+    public void setR2Prefix(String prefix) {
+        if (prefix != null && !prefix.isEmpty()) {
+            log.warn("OneFilePerExceptionAppender: 'r2Prefix' property ('{}') is ignored. R2 upload is not supported.",
+                    prefix);
+        }
+    }
+
     @SuppressWarnings("rawtypes")
     public void setEncoder(Encoder encoder) {
-        // System.out.println("OneFilePerExceptionAppender: setEncoder called with " +
-        // encoder);
         this.encoder = (Encoder<ILoggingEvent>) encoder;
     }
 
@@ -60,28 +81,27 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
             return;
         }
 
-        // ファイル名を生成
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String uuid = UUID.randomUUID().toString();
         String filename = String.format("exception_%s_%s.log", timestamp, uuid);
 
+        byte[] encoded = encoder.encode(eventObject);
+
+        saveToLocal(filename, encoded);
+    }
+
+    private void saveToLocal(String filename, byte[] data) {
         Path dirPath = Paths.get(directory);
         Path filePath = dirPath.resolve(filename);
 
         try {
-            // ディレクトリ作成
             if (!Files.exists(dirPath)) {
                 Files.createDirectories(dirPath);
             }
-
-            // ログ内容をエンコード
-            byte[] encoded = encoder.encode(eventObject);
-
-            // ファイル書き込み
-            Files.write(filePath, encoded);
-
+            Files.write(filePath, data);
         } catch (IOException e) {
             addError("Failed to write log file: " + filePath, e);
+            log.error("OneFilePerExceptionAppender: Failed to write log file: {}", filePath, e);
         }
     }
 }

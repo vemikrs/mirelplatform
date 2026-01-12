@@ -46,7 +46,7 @@ jobs:
                   # Remote Tag Search Loop (ui-coreパターン踏襲)
                   VERSION=$CURRENT_VERSION
                   while true; do
-                    TAG_NAME="frontend/v$VERSION"
+                    TAG_NAME="frontend-v3/v$VERSION"
                     echo "Checking if tag $TAG_NAME exists on remote..."
 
                     if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
@@ -59,7 +59,7 @@ jobs:
                     fi
                   done
 
-                  FINAL_TAG="frontend/v$VERSION"
+                  FINAL_TAG="frontend-v3/v$VERSION"
 
                   if [ "$VERSION" != "$CURRENT_VERSION" ]; then
                     echo "Version bumped from $CURRENT_VERSION to $VERSION"
