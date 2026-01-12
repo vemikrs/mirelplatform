@@ -34,22 +34,22 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import org.springframework.beans.factory.DisposableBean;
 
 /**
- * Cloudflare R2 (S3互換) 用のストレージサービス実装。
+ * AWS S3 互換ストレージ (Cloudflare R2 等) 用のストレージサービス実装。
  */
-public class R2StorageService implements StorageService, DisposableBean {
+public class S3StorageService implements StorageService, DisposableBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(R2StorageService.class);
+    private static final Logger logger = LoggerFactory.getLogger(S3StorageService.class);
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final String bucket;
     private final String prefix;
 
-    public R2StorageService(StorageProperties.R2Properties r2Props) {
+    public S3StorageService(StorageProperties.R2Properties r2Props) {
         this(r2Props, r2Props.getStoragePrefix());
     }
 
-    public R2StorageService(StorageProperties.R2Properties r2Props, String prefix) {
+    public S3StorageService(StorageProperties.R2Properties r2Props, String prefix) {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(
                 r2Props.getAccessKeyId(),
                 r2Props.getSecretAccessKey());
@@ -86,19 +86,19 @@ public class R2StorageService implements StorageService, DisposableBean {
         this.bucket = r2Props.getBucket();
         this.prefix = normalizePrefix(prefix);
 
-        logger.info("R2StorageService initialized - bucket: {}, prefix: {}", bucket, this.prefix);
+        logger.info("S3StorageService initialized - bucket: {}, prefix: {}", bucket, this.prefix);
     }
 
     /**
      * テスト用コンストラクタ。
      * S3Client と S3Presigner を直接注入できます。
      */
-    R2StorageService(S3Client s3Client, S3Presigner s3Presigner, String bucket, String prefix) {
+    S3StorageService(S3Client s3Client, S3Presigner s3Presigner, String bucket, String prefix) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
         this.bucket = bucket;
         this.prefix = normalizePrefix(prefix);
-        logger.info("R2StorageService initialized (test mode) - bucket: {}, prefix: {}", bucket, this.prefix);
+        logger.info("S3StorageService initialized (test mode) - bucket: {}, prefix: {}", bucket, this.prefix);
     }
 
     private String normalizePrefix(String prefix) {
@@ -271,7 +271,7 @@ public class R2StorageService implements StorageService, DisposableBean {
      */
     @Override
     public void destroy() {
-        logger.info("Closing R2StorageService resources");
+        logger.info("Closing S3StorageService resources");
         if (s3Client != null) {
             s3Client.close();
         }

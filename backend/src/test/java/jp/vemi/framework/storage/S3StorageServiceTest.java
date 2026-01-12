@@ -31,11 +31,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * R2StorageService のユニットテスト。
+ * S3StorageService のユニットテスト。
  * Mockito を使用して S3Client をモック。
  */
 @ExtendWith(MockitoExtension.class)
-class R2StorageServiceTest {
+class S3StorageServiceTest {
 
     private static final String BUCKET_NAME = "test-bucket";
     private static final String PREFIX = "storage/";
@@ -46,11 +46,11 @@ class R2StorageServiceTest {
     @Mock
     private S3Presigner s3Presigner;
 
-    private R2StorageService storageService;
+    private S3StorageService storageService;
 
     @BeforeEach
     void setUp() {
-        storageService = new R2StorageService(s3Client, s3Presigner, BUCKET_NAME, PREFIX);
+        storageService = new S3StorageService(s3Client, s3Presigner, BUCKET_NAME, PREFIX);
     }
 
     @Test

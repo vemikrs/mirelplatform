@@ -31,6 +31,7 @@ ext {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+        mavenBom "com.google.cloud:spring-cloud-gcp-dependencies:5.3.0"
     }
 }
 
@@ -106,6 +107,9 @@ dependencies {
     // Markdown Parser for Contextual Chunking
     implementation 'org.commonmark:commonmark:0.22.0'
     
+    // Google Cloud Storage (GCS)
+    implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
+
     // AWS SDK for S3 (Cloudflare R2 互換)
     implementation platform('software.amazon.awssdk:bom:2.25.0')
     implementation 'software.amazon.awssdk:s3'

@@ -21,7 +21,7 @@ import lombok.Setter;
 public class StorageProperties {
 
     /**
-     * ストレージタイプ: "local" または "r2"
+     * ストレージタイプ: "local", "r2", "gcs"
      */
     private String type = "local";
 
@@ -31,9 +31,14 @@ public class StorageProperties {
     private LocalProperties local = new LocalProperties();
 
     /**
-     * R2 ストレージ設定
+     * R2 (S3互換) ストレージ設定
      */
     private R2Properties r2 = new R2Properties();
+
+    /**
+     * Google Cloud Storage (GCS) 設定
+     */
+    private GcsProperties gcs = new GcsProperties();
 
     @Getter
     @Setter
@@ -81,5 +86,19 @@ public class StorageProperties {
          * リージョン（R2 は auto を使用）
          */
         private String region = "auto";
+    }
+
+    @Getter
+    @Setter
+    public static class GcsProperties {
+        /**
+         * GCS バケット名
+         */
+        private String bucket;
+
+        /**
+         * ストレージ用プレフィックス (ベースパス)
+         */
+        private String storagePrefix = "storage/";
     }
 }

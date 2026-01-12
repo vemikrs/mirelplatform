@@ -142,12 +142,17 @@ mirel:
   
   # ストレージ抽象化設定（推奨: 新形式）
   # type: local -> ローカルファイルシステム使用（開発環境向け）
-  # type: r2 -> Cloudflare R2 使用（本番環境向け）
+  # type: gcs -> Google Cloud Storage 使用（GCP環境標準）
+  # type: r2 -> Cloudflare R2 / AWS S3 使用（互換モード）
   storage:
-    # ストレージタイプ: "local" または "r2"
+    # ストレージタイプ: "local", "gcs", "r2"
     type: ${MIREL_STORAGE_TYPE:local}
     local:
       base-dir: ${MIREL_STORAGE_DIR:./data/storage}
+    gcs:
+      bucket: ${GCS_BUCKET:mirel-bucket}
+      storage-prefix: storage/
+      # 認証は Workload Identity (ADC) を自動使用するためキー設定不要
     r2:
       endpoint: https://${R2_ACCOUNT_ID:}.r2.cloudflarestorage.com
       bucket: ${R2_BUCKET:mirel-bucket}
