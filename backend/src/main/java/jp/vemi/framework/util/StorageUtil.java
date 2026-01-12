@@ -39,9 +39,9 @@ public class StorageUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageUtil.class);
 
-    // WeakReference で保持してメモリリーク防止
-    private static WeakReference<ApplicationContext> applicationContextRef;
-    private static WeakReference<StorageService> storageServiceRef;
+    // AtomicReference でスレッドセーフに保持
+    private static final java.util.concurrent.atomic.AtomicReference<ApplicationContext> applicationContextRef = new java.util.concurrent.atomic.AtomicReference<>();
+    private static final java.util.concurrent.atomic.AtomicReference<StorageService> storageServiceRef = new java.util.concurrent.atomic.AtomicReference<>();
 
     /**
      * private constructor to prevent instantiation
@@ -54,24 +54,25 @@ public class StorageUtil {
      * StorageService Bean の取得に使用されます。
      */
     public static void setApplicationContext(ApplicationContext context) {
-        applicationContextRef = new WeakReference<>(context);
-        storageServiceRef = null; // リセット
+        applicationContextRef.set(context);
+        storageServiceRef.set(null); // リセット
     }
 
     /**
      * StorageService インスタンスを取得します。
      */
     private static StorageService getStorageService() {
-        StorageService cached = storageServiceRef != null ? storageServiceRef.get() : null;
+        StorageService cached = storageServiceRef.get();
         if (cached != null) {
             return cached;
         }
 
-        ApplicationContext ctx = applicationContextRef != null ? applicationContextRef.get() : null;
+        ApplicationContext ctx = applicationContextRef.get();
         if (ctx != null) {
             try {
                 StorageService service = ctx.getBean(StorageService.class);
-                storageServiceRef = new WeakReference<>(service);
+                // Atomic CAS で設定（他スレッドが先に設定していた場合はそれを優先でも可だが、実用上は上書きで問題ない）
+                storageServiceRef.compareAndSet(null, service);
                 logger.debug("StorageService Bean obtained: {}", service.getClass().getSimpleName());
                 return service;
             } catch (Exception e) {
