@@ -105,7 +105,8 @@ public class FileRegisterServiceImpl implements FileRegisterService {
             // 画像圧縮処理（2MB以上の画像）
             if (isImageFile(fileName) && fileData.length > 2 * 1024 * 1024) {
                 byte[] compressed = compressImage(fileData);
-                if (compressed != null && compressed.length < fileData.length) {
+                // compressImage() は常に非null（失敗時は元データ）を返すため、サイズ比較のみ
+                if (compressed.length < fileData.length) {
                     fileData = compressed;
                     logger.debug("Image compressed: {} -> {} bytes", srcFile.length(), fileData.length);
                 }
@@ -157,7 +158,8 @@ public class FileRegisterServiceImpl implements FileRegisterService {
     private void addDirectoryToZip(ZipOutputStream zos, File dir, String basePath) throws IOException {
         File[] files = dir.listFiles();
         if (files == null) {
-            logger.warn("Unable to list files in directory (may not be a directory or I/O error occurred): {}",
+            // File.listFiles() はディレクトリでない場合、I/Oエラー、またはアクセス権限不足で null を返す
+            logger.debug("Unable to list files (not a directory, I/O error, or permission denied): {}",
                     dir.getPath());
             return;
         }
