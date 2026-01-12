@@ -130,15 +130,29 @@ public class StorageUtil {
      * getFile.<br/>
      * <p>
      * ストレージからファイルを取得します。
-     * R2 の場合はローカルに一時ファイルをダウンロードします。
+     * R2/S3 の場合はローカルに一時ファイルをダウンロードします。
      * </p>
-     * <b>注意:</b> R2 からダウンロードした一時ファイルは、呼び出し元が
-     * 使用後に {@link java.nio.file.Files#deleteIfExists(java.nio.file.Path)} で
-     * 明示的に削除する必要があります。
+     * 
+     * <p>
+     * <b>重要: 一時ファイルのライフサイクル管理</b><br/>
+     * R2/S3 からダウンロードした一時ファイルは、呼び出し元が使用後に
+     * {@link java.nio.file.Files#deleteIfExists(java.nio.file.Path)} で
+     * 明示的に削除する責任があります。{@code deleteOnExit()} は
+     * 長時間稼働サーバーでメモリリークの原因となるため使用していません。
+     * </p>
+     * 
+     * <pre>{@code
+     * File temp = StorageUtil.getFile("path/to/file");
+     * try {
+     *     // ファイルを使用
+     * } finally {
+     *     Files.deleteIfExists(temp.toPath());
+     * }
+     * }</pre>
      * 
      * @param storagePath
-     *            パス
-     * @return ファイル
+     *            ストレージ相対パス
+     * @return ファイル（LocalStorageServiceの場合は実ファイル、其以外は一時ファイル）
      */
     public static File getFile(String storagePath) {
         StorageService service = getStorageService();
@@ -189,10 +203,10 @@ public class StorageUtil {
         if (service != null) {
             List<String> files = service.listFiles(storagePath);
             if (!files.isEmpty()) {
-                // StorageService から返されるパスは storagePath からの相対パス
-                // ここでは storagePath を基準にフルパスを構築
+                // StorageService.listFiles() は storagePath 配下のファイルパスを返す
+                // 返却値は既に storagePath を含むため、getBaseDir() のみを付加
                 return files.stream()
-                        .map(f -> Paths.get(getBaseDir(), storagePath, f).normalize().toString())
+                        .map(f -> Paths.get(getBaseDir(), f).normalize().toString())
                         .collect(Collectors.toList());
             }
         }
