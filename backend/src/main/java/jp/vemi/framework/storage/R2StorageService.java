@@ -31,11 +31,12 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import org.springframework.beans.factory.DisposableBean;
 
 /**
  * Cloudflare R2 (S3互換) 用のストレージサービス実装。
  */
-public class R2StorageService implements StorageService {
+public class R2StorageService implements StorageService, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(R2StorageService.class);
 
@@ -252,9 +253,11 @@ public class R2StorageService implements StorageService {
     }
 
     /**
-     * リソースをクリーンアップします。
+     * Spring Bean ライフサイクルでリソースをクリーンアップします。
      */
-    public void close() {
+    @Override
+    public void destroy() {
+        logger.info("Closing R2StorageService resources");
         if (s3Client != null) {
             s3Client.close();
         }
