@@ -91,6 +91,10 @@ logging:
     org.hibernate: WARN
 
 mirel:
+  storage:
+    type: local
+    local:
+      base-dir: ./build/e2e-storage
   storage-dir: ./build/e2e-storage
   stencil:
     layers:
