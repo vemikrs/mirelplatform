@@ -101,10 +101,10 @@ class R2StorageServiceTest {
         byte[] data = "Hello, R2!".getBytes(StandardCharsets.UTF_8);
 
         GetObjectResponse response = GetObjectResponse.builder().build();
-        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<>(response,
-                AbortableInputStream.create(new ByteArrayInputStream(data)));
 
-        when(s3Client.getObject(any(GetObjectRequest.class))).thenReturn(responseStream);
+        when(s3Client.getObject(any(GetObjectRequest.class)))
+                .thenAnswer(invocation -> new ResponseInputStream<>(response,
+                        AbortableInputStream.create(new ByteArrayInputStream(data))));
 
         // When
         try (InputStream is = storageService.getInputStream(path)) {
