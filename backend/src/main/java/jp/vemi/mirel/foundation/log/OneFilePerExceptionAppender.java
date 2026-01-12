@@ -42,11 +42,18 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
     }
 
     public void setUseR2(boolean useR2) {
+        if (useR2) {
+            log.warn(
+                    "OneFilePerExceptionAppender: 'useR2' is set to true but R2 upload is no longer supported. Logs will be saved locally only.");
+        }
         this.useR2 = useR2;
     }
 
     public void setR2Prefix(String prefix) {
-        // No-op
+        if (prefix != null && !prefix.isEmpty()) {
+            log.warn("OneFilePerExceptionAppender: 'r2Prefix' property ('{}') is ignored. R2 upload is not supported.",
+                    prefix);
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -94,8 +101,7 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
             Files.write(filePath, data);
         } catch (IOException e) {
             addError("Failed to write log file: " + filePath, e);
-            System.err.println("OneFilePerExceptionAppender: Failed to write log file: " + filePath);
-            e.printStackTrace();
+            log.error("OneFilePerExceptionAppender: Failed to write log file: {}", filePath, e);
         }
     }
 }
