@@ -137,6 +137,21 @@ mipla2:
 
 mirel:
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
+  # ストレージ抽象化設定
+  storage:
+    # ストレージタイプ: "local" または "r2"
+    type: ${MIREL_STORAGE_TYPE:local}
+    local:
+      base-dir: ${MIREL_STORAGE_DIR:./data/storage}
+    r2:
+      endpoint: https://${R2_ACCOUNT_ID:}.r2.cloudflarestorage.com
+      bucket: ${R2_BUCKET:mirel-bucket}
+      storage-prefix: storage/
+      logs-prefix: logs/
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      region: auto
+
   # セキュリティ設定
   security:
     # JWT署名鍵暗号化用マスターキー（Base64エンコード、32バイト以上）

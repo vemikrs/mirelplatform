@@ -1,0 +1,6 @@
+# Cloud 環境用プロファイル設定
+# R2 ストレージを有効化
+
+mirel:
+  storage:
+    type: r2
