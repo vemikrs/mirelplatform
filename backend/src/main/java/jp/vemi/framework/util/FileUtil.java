@@ -29,7 +29,12 @@ import com.google.common.collect.Lists;
 
 /**
  * File management utility class.
+ * 
+ * @deprecated このクラスはローカルファイルシステム専用です。
+ *             R2/S3 互換ストレージをサポートする
+ *             {@link jp.vemi.framework.storage.StorageService} を使用してください。
  */
+@Deprecated
 public class FileUtil {
 
     final protected static int BUF_SIZE_DEFAULT = 1024;
