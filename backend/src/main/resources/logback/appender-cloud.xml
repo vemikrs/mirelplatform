@@ -26,4 +26,12 @@
             <level>ERROR</level>
         </filter>
     </appender>
+
+    <!-- アプリケーション配下のエラーログを例外ファイル出力にも送る -->
+    <logger name="jp.vemi.mirel" level="ERROR" additivity="true">
+        <appender-ref ref="DEST_EXCEPTION" />
+    </logger>
+    <logger name="jp.vemi.framework" level="ERROR" additivity="true">
+        <appender-ref ref="DEST_EXCEPTION" />
+    </logger>
 </included>
