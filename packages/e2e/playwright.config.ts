@@ -29,7 +29,7 @@ export default defineConfig({
   /* Start dev servers automatically for local E2E runs only (CI handles server startup separately) */
   webServer: process.env.CI ? undefined : [
     {
-      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 DATABASE_URL=jdbc:postgresql://localhost:5432/mirelplatform DATABASE_USER=mirel DATABASE_PASS=mirel REDIS_PORT=6379 SMTP_PORT=1025 ./gradlew --console=plain :backend:bootRun"',
+      command: 'bash -lc "cd ../../ && SPRING_PROFILES_ACTIVE=e2e SERVER_PORT=3000 DATABASE_URL=jdbc:postgresql://localhost:5433/mirelplatform_e2e DATABASE_USER=mirel_e2e DATABASE_PASS=mirel_e2e_password REDIS_PORT=6380 SMTP_PORT=1025 ./gradlew --console=plain :backend:bootRun"',
       url: 'http://localhost:3000/mipla2/actuator/health',
       reuseExistingServer: true,
       timeout: 180_000
