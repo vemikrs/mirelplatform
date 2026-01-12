@@ -127,6 +127,13 @@ public class StorageUtil {
 
     /**
      * getFile.<br/>
+     * <p>
+     * ストレージからファイルを取得します。
+     * R2 の場合はローカルに一時ファイルをダウンロードします。
+     * </p>
+     * <b>注意:</b> R2 からダウンロードした一時ファイルは、呼び出し元が
+     * 使用後に {@link java.nio.file.Files#deleteIfExists(java.nio.file.Path)} で
+     * 明示的に削除する必要があります。
      * 
      * @param storagePath
      *            パス

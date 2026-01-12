@@ -45,8 +45,8 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
     private StorageService logStorageService;
     private ExecutorService uploadExecutor;
 
-    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止）
-    private static WeakReference<ApplicationContext> applicationContextRef;
+    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止、volatile でスレッドセーフ）
+    private static volatile WeakReference<ApplicationContext> applicationContextRef;
 
     public static void setApplicationContext(ApplicationContext context) {
         applicationContextRef = new WeakReference<>(context);
@@ -141,6 +141,7 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
                     logStorageService.saveFile(r2Key, encoded);
                     log.debug("Exception log uploaded to R2: {}", r2Key);
                 } catch (IOException e) {
+                    log.warn("R2 upload failed, falling back to local: {}", e.getMessage());
                     // フォールバック: ローカルに保存
                     saveToLocal(filename, encoded);
                 }

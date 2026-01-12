@@ -36,8 +36,8 @@ public class R2LogAppender extends RollingFileAppender<ILoggingEvent> {
     private boolean uploadEnabled = true;
     private ExecutorService uploadExecutor;
 
-    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止）
-    private static WeakReference<ApplicationContext> applicationContextRef;
+    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止、volatile でスレッドセーフ）
+    private static volatile WeakReference<ApplicationContext> applicationContextRef;
 
     public static void setApplicationContext(ApplicationContext context) {
         applicationContextRef = new WeakReference<>(context);

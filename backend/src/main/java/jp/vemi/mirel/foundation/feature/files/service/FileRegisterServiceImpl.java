@@ -184,29 +184,41 @@ public class FileRegisterServiceImpl implements FileRegisterService {
         zos.closeEntry();
     }
 
+    /** 画像圧縮品質（0.0-1.0、1.0が最高品質） */
+    private static final double IMAGE_COMPRESSION_QUALITY = 0.8;
+
     private byte[] compressImage(byte[] imageData) {
+        Path tempInput = null;
+        Path tempOutput = null;
         try {
             // 一時ファイルに書き出して Thumbnailator で圧縮
-            Path tempInput = Files.createTempFile("img-", ".tmp");
-            Path tempOutput = Files.createTempFile("img-compressed-", ".tmp");
+            tempInput = Files.createTempFile("img-", ".tmp");
+            tempOutput = Files.createTempFile("img-compressed-", ".tmp");
 
-            try {
-                Files.write(tempInput, imageData);
+            Files.write(tempInput, imageData);
 
-                net.coobird.thumbnailator.Thumbnails.of(tempInput.toFile())
-                        .scale(1.0)
-                        .outputQuality(0.8)
-                        .toFile(tempOutput.toFile());
+            net.coobird.thumbnailator.Thumbnails.of(tempInput.toFile())
+                    .scale(1.0)
+                    .outputQuality(IMAGE_COMPRESSION_QUALITY)
+                    .toFile(tempOutput.toFile());
 
-                return Files.readAllBytes(tempOutput);
-            } finally {
-                Files.deleteIfExists(tempInput);
-                Files.deleteIfExists(tempOutput);
-            }
+            return Files.readAllBytes(tempOutput);
         } catch (Exception e) {
             logger.warn("Image compression failed, returning original data", e);
             // 圧縮失敗時は元データを返す（null ではなく）
             return imageData;
+        } finally {
+            // 一時ファイルを確実にクリーンアップ
+            try {
+                if (tempInput != null)
+                    Files.deleteIfExists(tempInput);
+            } catch (IOException ignored) {
+            }
+            try {
+                if (tempOutput != null)
+                    Files.deleteIfExists(tempOutput);
+            } catch (IOException ignored) {
+            }
         }
     }
 
