@@ -4,7 +4,6 @@
 package jp.vemi.framework.storage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -13,9 +12,9 @@ import lombok.Setter;
  * ストレージ設定プロパティ。
  * <p>
  * application.yml の mirel.storage 配下の設定をバインドします。
+ * StorageAutoConfiguration で @EnableConfigurationProperties により Bean 登録されます。
  * </p>
  */
-@Component
 @ConfigurationProperties(prefix = "mirel.storage")
 @Getter
 @Setter
