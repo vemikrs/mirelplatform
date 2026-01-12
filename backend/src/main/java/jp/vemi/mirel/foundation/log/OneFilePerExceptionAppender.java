@@ -135,17 +135,24 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
 
         if (useR2 && logStorageService != null) {
             // R2 にアップロード
-            uploadExecutor.submit(() -> {
-                try {
-                    String r2Key = r2Prefix + filename;
-                    logStorageService.saveFile(r2Key, encoded);
-                    log.debug("Exception log uploaded to R2: {}", r2Key);
-                } catch (IOException e) {
-                    log.warn("R2 upload failed, falling back to local: {}", e.getMessage());
-                    // フォールバック: ローカルに保存
-                    saveToLocal(filename, encoded);
-                }
-            });
+            // R2 にアップロード
+            try {
+                uploadExecutor.submit(() -> {
+                    try {
+                        String r2Key = r2Prefix + filename;
+                        logStorageService.saveFile(r2Key, encoded);
+                        log.debug("Exception log uploaded to R2: {}", r2Key);
+                    } catch (IOException e) {
+                        log.warn("R2 upload failed, falling back to local: {}", e.getMessage());
+                        // フォールバック: ローカルに保存
+                        saveToLocal(filename, encoded);
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Failed to submit R2 upload task (executor might be down), falling back to local: {}",
+                        e.getMessage());
+                saveToLocal(filename, encoded);
+            }
         } else {
             // ローカルに保存
             saveToLocal(filename, encoded);
@@ -161,8 +168,17 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
                 Files.createDirectories(dirPath);
             }
             Files.write(filePath, data);
+            // レビュー指摘対応: フォールバック時などの確実な記録のためにコンソールにも警告を出す（またはWARNログ）
+            // 再帰呼び出しを防ぐため、ここでは単純に System.err を併用するか、LogbackのStatusManagerを使うのが安全だが、
+            // ログループを避けるため System.err に留める、もしくは log.warn を使うがこの Appender 自身に出ないように注意が必要。
+            // ここではシンプルに log.warn を使う（この Appender が root に紐づいているとループする危険があるが、DEST_EXCEPTION
+            // は独立している想定）
+            // 安全策として System.err に出力しておく
+            System.err.println("OneFilePerExceptionAppender: Saved to local file: " + filePath);
         } catch (IOException e) {
             addError("Failed to write log file: " + filePath, e);
+            System.err.println("OneFilePerExceptionAppender: Failed to write log file: " + filePath);
+            e.printStackTrace();
         }
     }
 }

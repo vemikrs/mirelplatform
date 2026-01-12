@@ -212,12 +212,14 @@ public class FileRegisterServiceImpl implements FileRegisterService {
             try {
                 if (tempInput != null)
                     Files.deleteIfExists(tempInput);
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                logger.warn("Failed to delete temp input file: {}", tempInput, e);
             }
             try {
                 if (tempOutput != null)
                     Files.deleteIfExists(tempOutput);
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                logger.warn("Failed to delete temp output file: {}", tempOutput, e);
             }
         }
     }

@@ -9,6 +9,8 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
+
 /**
  * ストレージ操作を抽象化するインターフェース。
  * <p>
@@ -97,6 +99,7 @@ public interface StorageService {
      *            URL の有効期限
      * @return 署名付き URL（ファイルが存在しない場合は {@code null} の可能性あり）
      */
+    @Nullable
     URL getPresignedUrl(String path, Duration expiry);
 
     /**
@@ -108,4 +111,15 @@ public interface StorageService {
      * @return ベースパス
      */
     String getBasePath();
+
+    /**
+     * ストレージサービスのリソースを解放します。
+     * <p>
+     * Spring のライフサイクル外で明示的にクローズが必要な場合に使用します。
+     * 通常は Spring コンテナのシャットダウン時に自動的に呼び出されます。
+     * </p>
+     */
+    default void destroy() {
+        // デフォルトでは何もしない
+    }
 }
