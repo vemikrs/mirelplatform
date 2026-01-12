@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015-2025 mirelplatform.
+ * Copyright(c) 2015-2026 mirelplatform.
  */
 package jp.vemi.mirel.foundation.log;
 
@@ -14,29 +14,57 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import jp.vemi.framework.storage.StorageService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 /**
  * 1回のログ出力ごとに個別のファイルを作成するAppender.
  * <p>
+ * R2/ローカル両対応。mirel.storage.type=r2 の場合は R2 にアップロード。
  * ファイル名形式: exception_{yyyy-MM-dd_HH-mm-ss-SSS}_{UUID}.log
  * </p>
  */
 public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
 
+    private static final Logger log = LoggerFactory.getLogger(OneFilePerExceptionAppender.class);
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
     private String directory = "logs/exceptions";
+    private String r2Prefix = "logs/exceptions/";
+    private boolean useR2 = false;
 
     private Encoder<ILoggingEvent> encoder;
+    private StorageService logStorageService;
+    private ExecutorService uploadExecutor;
+
+    // Spring ApplicationContext を静的に保持
+    private static ApplicationContext applicationContext;
+
+    public static void setApplicationContext(ApplicationContext context) {
+        applicationContext = context;
+    }
 
     public void setDirectory(String directory) {
         this.directory = directory;
     }
 
+    public void setR2Prefix(String prefix) {
+        this.r2Prefix = prefix;
+    }
+
+    public void setUseR2(boolean useR2) {
+        this.useR2 = useR2;
+    }
+
     @SuppressWarnings("rawtypes")
     public void setEncoder(Encoder encoder) {
-        // System.out.println("OneFilePerExceptionAppender: setEncoder called with " +
-        // encoder);
         this.encoder = (Encoder<ILoggingEvent>) encoder;
     }
 
@@ -51,7 +79,40 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
             this.encoder.start();
         }
 
+        // R2 ストレージサービスを取得
+        if (applicationContext != null && useR2) {
+            try {
+                this.logStorageService = applicationContext.getBean("logStorageService", StorageService.class);
+                this.uploadExecutor = Executors.newSingleThreadExecutor(r -> {
+                    Thread t = new Thread(r, "ExceptionLogUploader");
+                    t.setDaemon(true);
+                    return t;
+                });
+                log.info("OneFilePerExceptionAppender initialized with R2 storage");
+            } catch (Exception e) {
+                log.warn("logStorageService not available, falling back to local storage: {}", e.getMessage());
+                this.useR2 = false;
+            }
+        }
+
         super.start();
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+
+        if (uploadExecutor != null) {
+            uploadExecutor.shutdown();
+            try {
+                if (!uploadExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    uploadExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                uploadExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
@@ -60,26 +121,39 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
             return;
         }
 
-        // ファイル名を生成
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String uuid = UUID.randomUUID().toString();
         String filename = String.format("exception_%s_%s.log", timestamp, uuid);
 
+        byte[] encoded = encoder.encode(eventObject);
+
+        if (useR2 && logStorageService != null) {
+            // R2 にアップロード
+            uploadExecutor.submit(() -> {
+                try {
+                    String r2Key = r2Prefix + filename;
+                    logStorageService.saveFile(r2Key, encoded);
+                    log.debug("Exception log uploaded to R2: {}", r2Key);
+                } catch (IOException e) {
+                    // フォールバック: ローカルに保存
+                    saveToLocal(filename, encoded);
+                }
+            });
+        } else {
+            // ローカルに保存
+            saveToLocal(filename, encoded);
+        }
+    }
+
+    private void saveToLocal(String filename, byte[] data) {
         Path dirPath = Paths.get(directory);
         Path filePath = dirPath.resolve(filename);
 
         try {
-            // ディレクトリ作成
             if (!Files.exists(dirPath)) {
                 Files.createDirectories(dirPath);
             }
-
-            // ログ内容をエンコード
-            byte[] encoded = encoder.encode(eventObject);
-
-            // ファイル書き込み
-            Files.write(filePath, encoded);
-
+            Files.write(filePath, data);
         } catch (IOException e) {
             addError("Failed to write log file: " + filePath, e);
         }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- クラウド環境用 Logback Appender 設定 -->
+<!-- R2 へのログアップロードを有効化 -->
+<included>
+    <!-- コンソール出力設定 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- アプリケーションログ（コンソールのみ、Cloud Logging へ転送） -->
+    <!-- Cloud Run では標準出力が Cloud Logging に自動収集されるため、FILE appender は使用しない -->
+
+    <!-- 例外ログ (1例外1ファイル、R2にアップロード) -->
+    <appender name="DEST_EXCEPTION" class="jp.vemi.mirel.foundation.log.OneFilePerExceptionAppender">
+        <directory>logs/exceptions</directory>
+        <r2Prefix>logs/exceptions/</r2Prefix>
+        <useR2>true</useR2>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%ex</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+</included>
