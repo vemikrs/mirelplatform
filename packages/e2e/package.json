@@ -1,6 +1,6 @@
 {
   "name": "@mirelplatform/e2e",
-  "version": "3.2.4",
+  "version": "3.2.13",
   "description": "E2E testing infrastructure for mirelplatform",
   "private": true,
   "scripts": {

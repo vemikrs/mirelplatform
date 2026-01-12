@@ -7,7 +7,9 @@ plugins {
 }
 
 group = 'jp.vemi'
-version = '0.0.1-SNAPSHOT'
+// VERSION ファイルから動的に読み込み（Single Source of Truth）
+def versionFile = file("${rootDir}/VERSION")
+version = versionFile.exists() ? versionFile.text.trim() : '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
@@ -130,7 +132,7 @@ dependencies {
 
 jar {
     archiveBaseName = 'mirelplatform'
-    archiveVersion = '1.0.0'
+    archiveVersion = version
 }
 
 springBoot {
@@ -152,3 +154,15 @@ tasks.named('test') {
 // test {
 //     enabled = false
 // }
+
+// application.yml 内の @...@ トークンを置換
+// Spring Boot の ${} プレースホルダーと競合しないようにReplaceTokensを使用
+import org.apache.tools.ant.filters.ReplaceTokens
+
+processResources {
+    filesMatching('config/application.yml') {
+        filter(ReplaceTokens, tokens: [
+            'project.version': project.version
+        ])
+    }
+}

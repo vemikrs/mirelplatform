@@ -38,12 +38,11 @@ jobs:
             - name: Check Version and Auto Bump
               id: check_version
               run: |
-                  cd apps/frontend-v3
-
-                  CURRENT_VERSION=$(node -p "require('./package.json').version")
+                  # Single Source of Truth から読み込み
+                  CURRENT_VERSION=$(cat VERSION)
                   echo "Current version: $CURRENT_VERSION"
 
-                  # Remote Tag Search Loop (ui-coreパターン踏襲)
+                  # Remote Tag Search Loop
                   VERSION=$CURRENT_VERSION
                   while true; do
                     TAG_NAME="frontend-v3/v$VERSION"
@@ -51,8 +50,10 @@ jobs:
 
                     if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
                       echo "Tag $TAG_NAME already exists. Bumping..."
-                      npm version patch --no-git-tag-version
-                      VERSION=$(node -p "require('./package.json').version")
+                      # VERSION を patch bump (shell のみ)
+                      IFS='.' read -ra PARTS <<< "$VERSION"
+                      PATCH=$((${PARTS[2]} + 1))
+                      VERSION="${PARTS[0]}.${PARTS[1]}.$PATCH"
                     else
                       echo "Tag $TAG_NAME does not exist. Using version $VERSION"
                       break
@@ -63,8 +64,14 @@ jobs:
 
                   if [ "$VERSION" != "$CURRENT_VERSION" ]; then
                     echo "Version bumped from $CURRENT_VERSION to $VERSION"
-                    git add package.json
-                    git commit -m "chore(release): bump frontend-v3 to $VERSION [skip ci]"
+                    # VERSION ファイルと全 package.json を同期更新
+                    echo "$VERSION" > VERSION
+                    cd apps/frontend-v3
+                    npm version $VERSION --no-git-tag-version --allow-same-version
+                    cd ../..
+                    jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+                    git add VERSION apps/frontend-v3/package.json package.json
+                    git commit -m "chore(release): bump to $VERSION [skip ci]"
                     git fetch origin master
                     git rebase origin/master
                     git push origin master

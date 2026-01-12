@@ -52,14 +52,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd packages/ui
-
-          # Get current version from package.json
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-
+          # Single Source of Truth から読み込み
+          CURRENT_VERSION=$(cat VERSION)
           echo "Current version: $CURRENT_VERSION"
 
-          # Loop until we find a version whose tag doesn't exist on remote
+          # Remote Tag Search Loop
           VERSION=$CURRENT_VERSION
           while true; do
             TAG_NAME="ui-core/v$VERSION"
@@ -67,8 +64,10 @@ jobs:
             
             if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
               echo "Tag $TAG_NAME already exists. Bumping..."
-              npm version patch --no-git-tag-version
-              VERSION=$(node -p "require('./package.json').version")
+              # VERSION を patch bump (shell のみ)
+              IFS='.' read -ra PARTS <<< "$VERSION"
+              PATCH=$((${PARTS[2]} + 1))
+              VERSION="${PARTS[0]}.${PARTS[1]}.$PATCH"
             else
               echo "Tag $TAG_NAME does not exist. Using version $VERSION"
               break
@@ -80,8 +79,14 @@ jobs:
           # Only commit and push if version changed
           if [ "$VERSION" != "$CURRENT_VERSION" ]; then
             echo "Version bumped from $CURRENT_VERSION to $VERSION"
-            git add package.json
-            git commit -m "chore(release): bump @mireljs/ui-core to $VERSION [skip ci]"
+            # VERSION ファイルと全 package.json を同期更新
+            echo "$VERSION" > VERSION
+            cd packages/ui
+            npm version $VERSION --no-git-tag-version --allow-same-version
+            cd ../..
+            jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+            git add VERSION packages/ui/package.json package.json
+            git commit -m "chore(release): bump to $VERSION [skip ci]"
             
             # Fetch and rebase to avoid non-fast-forward on rerun
             git fetch origin master

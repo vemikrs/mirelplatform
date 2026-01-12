@@ -46,9 +46,13 @@ USER spring:spring
 # ビルド成果物をコピー（ビルダーで選択済みの実行可能JAR）
 COPY --from=builder --chown=spring:spring /workspace/app.jar app.jar
 
+# ビルド引数（CIから注入）
+ARG APP_VERSION=0.0.1-SNAPSHOT
+
 # 環境変数（SaaS向けデフォルト）
 ENV SERVER_PORT=8080 \
-    SPRING_PROFILES_ACTIVE=prod
+    SPRING_PROFILES_ACTIVE=prod \
+    APP_VERSION=${APP_VERSION}
 
 EXPOSE 8080
 

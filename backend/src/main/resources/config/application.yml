@@ -219,7 +219,7 @@ email:
 # アプリケーション設定
 app:
   name: ${APP_NAME:mirelplatform}
-  version: ${APP_VERSION:0.0.1-SNAPSHOT}
+  version: ${APP_VERSION:@project.version@}
   base-url: ${APP_BASE_URL:http://localhost:5173}
   domain: ${APP_DOMAIN:localhost}
 
@@ -332,5 +332,5 @@ mira:
 info:
   app:
     name: mirelplatform
-    version: 1.0.0
+    version: \"@project.version@\"
     description: 汎用業務アプリケーション基盤
