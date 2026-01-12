@@ -11,6 +11,12 @@ spring:
     jdbc:
       initialize-schema: always
       schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
+  cloud:
+    gcp:
+      core:
+        enabled: false
+      storage:
+        enabled: false
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
