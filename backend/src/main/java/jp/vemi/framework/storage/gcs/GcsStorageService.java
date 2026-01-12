@@ -56,6 +56,14 @@ public class GcsStorageService implements StorageService {
         }
     }
 
+    /**
+     * ファイル内容をInputStreamとして取得します。
+     * <p>
+     * <b>注意:</b> 現在の実装は{@code blob.getContent()}で全内容をメモリに読み込むため、
+     * 大容量ファイル（数十MB以上）ではメモリ使用量に注意が必要です。
+     * 大容量ファイルを扱う場合は{@code Blob#reader()}を使用したストリーミング読み込みを検討してください。
+     * </p>
+     */
     @Override
     public InputStream getInputStream(String path) throws IOException {
         Blob blob = storage.get(BlobId.of(bucketName, resolveKey(path)));
