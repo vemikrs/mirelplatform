@@ -20,7 +20,8 @@ public class LogAppenderContextInitializer implements ApplicationContextAware {
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        R2LogAppender.setApplicationContext(applicationContext);
-        OneFilePerExceptionAppender.setApplicationContext(applicationContext);
+        // R2LogAppender.setApplicationContext(applicationContext); // R2LogAppender
+        // 削除済みのため不要
+        // OneFilePerExceptionAppender も ApplicationContext 不要化済み
     }
 }

@@ -8,27 +8,20 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import jp.vemi.framework.storage.StorageService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 
 /**
  * 1回のログ出力ごとに個別のファイルを作成するAppender.
  * <p>
- * R2/ローカル両対応。mirel.storage.type=r2 の場合は R2 にアップロード。
+ * ローカル開発環境でのデバッグ用。
  * ファイル名形式: exception_{yyyy-MM-dd_HH-mm-ss-SSS}_{UUID}.log
  * </p>
  */
@@ -38,34 +31,22 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
     private String directory = "logs/exceptions";
-    private String r2Prefix = "logs/exceptions/";
+
+    // 後方互換性のため残すが使用しない
     private boolean useR2 = false;
 
     private Encoder<ILoggingEvent> encoder;
-    private StorageService logStorageService;
-    private ExecutorService uploadExecutor;
-
-    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止、volatile でスレッドセーフ）
-    private static volatile WeakReference<ApplicationContext> applicationContextRef;
-
-    public static void setApplicationContext(ApplicationContext context) {
-        applicationContextRef = new WeakReference<>(context);
-    }
-
-    private static ApplicationContext getApplicationContext() {
-        return applicationContextRef != null ? applicationContextRef.get() : null;
-    }
 
     public void setDirectory(String directory) {
         this.directory = directory;
     }
 
-    public void setR2Prefix(String prefix) {
-        this.r2Prefix = prefix;
-    }
-
     public void setUseR2(boolean useR2) {
         this.useR2 = useR2;
+    }
+
+    public void setR2Prefix(String prefix) {
+        // No-op
     }
 
     @SuppressWarnings("rawtypes")
@@ -84,41 +65,7 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
             this.encoder.start();
         }
 
-        // R2 ストレージサービスを取得
-        ApplicationContext ctx = getApplicationContext();
-        if (ctx != null && useR2) {
-            try {
-                this.logStorageService = ctx.getBean("logStorageService", StorageService.class);
-                this.uploadExecutor = Executors.newSingleThreadExecutor(r -> {
-                    Thread t = new Thread(r, "ExceptionLogUploader");
-                    t.setDaemon(true);
-                    return t;
-                });
-                log.info("OneFilePerExceptionAppender initialized with R2 storage");
-            } catch (Exception e) {
-                log.warn("logStorageService not available, falling back to local storage: {}", e.getMessage());
-                this.useR2 = false;
-            }
-        }
-
         super.start();
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-
-        if (uploadExecutor != null) {
-            uploadExecutor.shutdown();
-            try {
-                if (!uploadExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                    uploadExecutor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                uploadExecutor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
     }
 
     @Override
@@ -133,30 +80,7 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
 
         byte[] encoded = encoder.encode(eventObject);
 
-        if (useR2 && logStorageService != null) {
-            // R2 にアップロード
-            // R2 にアップロード
-            try {
-                uploadExecutor.submit(() -> {
-                    try {
-                        String r2Key = r2Prefix + filename;
-                        logStorageService.saveFile(r2Key, encoded);
-                        log.debug("Exception log uploaded to R2: {}", r2Key);
-                    } catch (IOException e) {
-                        log.warn("R2 upload failed, falling back to local: {}", e.getMessage());
-                        // フォールバック: ローカルに保存
-                        saveToLocal(filename, encoded);
-                    }
-                });
-            } catch (Exception e) {
-                log.warn("Failed to submit R2 upload task (executor might be down), falling back to local: {}",
-                        e.getMessage());
-                saveToLocal(filename, encoded);
-            }
-        } else {
-            // ローカルに保存
-            saveToLocal(filename, encoded);
-        }
+        saveToLocal(filename, encoded);
     }
 
     private void saveToLocal(String filename, byte[] data) {
@@ -168,13 +92,6 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
                 Files.createDirectories(dirPath);
             }
             Files.write(filePath, data);
-            // レビュー指摘対応: フォールバック時などの確実な記録のためにコンソールにも警告を出す（またはWARNログ）
-            // 再帰呼び出しを防ぐため、ここでは単純に System.err を併用するか、LogbackのStatusManagerを使うのが安全だが、
-            // ログループを避けるため System.err に留める、もしくは log.warn を使うがこの Appender 自身に出ないように注意が必要。
-            // ここではシンプルに log.warn を使う（この Appender が root に紐づいているとループする危険があるが、DEST_EXCEPTION
-            // は独立している想定）
-            // 安全策として System.err に出力しておく
-            System.err.println("OneFilePerExceptionAppender: Saved to local file: " + filePath);
         } catch (IOException e) {
             addError("Failed to write log file: " + filePath, e);
             System.err.println("OneFilePerExceptionAppender: Failed to write log file: " + filePath);

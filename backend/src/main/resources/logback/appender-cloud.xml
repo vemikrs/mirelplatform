@@ -1,64 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- クラウド環境用 Logback Appender 設定 -->
-<!-- R2 へのログアップロードを有効化 -->
 <included>
-    <!-- コンソール出力設定 -->
+    <!-- コンソール出力 (Cloud Logging用) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
-
-    <!-- アプリケーションログ（コンソールのみ、Cloud Logging へ転送） -->
-    <!-- Cloud Run では標準出力が Cloud Logging に自動収集されるため、FILE appender は使用しない -->
-
-    <!-- 例外ログ (1例外1ファイル、R2にアップロード) -->
-    <appender name="DEST_EXCEPTION" class="jp.vemi.mirel.foundation.log.OneFilePerExceptionAppender">
-        <directory>logs/exceptions</directory>
-        <r2Prefix>logs/exceptions/</r2Prefix>
-        <useR2>true</useR2>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%ex</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
-        </filter>
-    </appender>
-
-    <!-- 通常ログ (日時ローテーション + R2アップロード) -->
-    <appender name="FILE_R2" class="jp.vemi.mirel.foundation.log.R2LogAppender">
-        <file>logs/app.log</file>
-        <r2Prefix>logs/app/</r2Prefix>
-        <!-- デフォルトでtrueだが明示 -->
-        <uploadEnabled>true</uploadEnabled>
-        
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-             <!-- JSON形式が望ましいが、既存パターンに合わせる -->
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-
-        <rollingPolicy class="jp.vemi.mirel.foundation.log.R2TimeBasedRollingPolicy">
-            <!-- 毎日ローテーション、gzip圧縮 -->
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-            <!-- 最大30日分保持 -->
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-    </appender>
-
-    <!-- ルートロガー設定: コンソールとR2ファイル出力 -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE_R2" />
-    </root>
-
-    <!-- アプリケーション配下のエラーログを例外ファイル出力にも送る -->
-    <logger name="jp.vemi.mirel" level="ERROR" additivity="true">
-        <appender-ref ref="DEST_EXCEPTION" />
-    </logger>
-    <logger name="jp.vemi.framework" level="ERROR" additivity="true">
-        <appender-ref ref="DEST_EXCEPTION" />
-    </logger>
 </included>
