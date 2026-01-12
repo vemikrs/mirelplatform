@@ -37,6 +37,18 @@ public class StorageAutoConfiguration {
     }
 
     /**
+     * ローカル環境用ログストレージサービス Bean。
+     * mirel.storage.type が "local" または未設定の場合に有効。
+     */
+    @Bean(name = "logStorageService")
+    @ConditionalOnProperty(name = "mirel.storage.type", havingValue = "local", matchIfMissing = true)
+    public StorageService localLogStorageService(StorageProperties props) {
+        String logDir = props.getLocal().getBaseDir() + "/logs";
+        logger.info("Configuring LocalLogStorageService with baseDir: {}", logDir);
+        return new LocalStorageService(logDir);
+    }
+
+    /**
      * R2 ストレージサービス Bean。
      * mirel.storage.type が "r2" の場合に有効。
      */
