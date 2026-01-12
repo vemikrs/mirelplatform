@@ -136,8 +136,13 @@ mipla2:
     storage-dir: ${MIREL_STORAGE_DIR:}
 
 mirel:
+  # 旧形式のストレージディレクトリ設定（後方互換性のため維持）
+  # 新規実装では mirel.storage を使用してください
   storage-dir: ${MIREL_STORAGE_DIR:./data/storage}
-  # ストレージ抽象化設定
+  
+  # ストレージ抽象化設定（推奨: 新形式）
+  # type: local -> ローカルファイルシステム使用（開発環境向け）
+  # type: r2 -> Cloudflare R2 使用（本番環境向け）
   storage:
     # ストレージタイプ: "local" または "r2"
     type: ${MIREL_STORAGE_TYPE:local}

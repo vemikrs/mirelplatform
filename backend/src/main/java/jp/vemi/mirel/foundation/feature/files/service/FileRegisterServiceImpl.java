@@ -156,8 +156,11 @@ public class FileRegisterServiceImpl implements FileRegisterService {
 
     private void addDirectoryToZip(ZipOutputStream zos, File dir, String basePath) throws IOException {
         File[] files = dir.listFiles();
-        if (files == null)
+        if (files == null) {
+            logger.warn("Unable to list files in directory (may not be a directory or I/O error occurred): {}",
+                    dir.getPath());
             return;
+        }
 
         for (File file : files) {
             String entryPath = basePath + "/" + file.getName();
@@ -201,8 +204,9 @@ public class FileRegisterServiceImpl implements FileRegisterService {
                 Files.deleteIfExists(tempOutput);
             }
         } catch (Exception e) {
-            logger.warn("Image compression failed", e);
-            return null;
+            logger.warn("Image compression failed, returning original data", e);
+            // 圧縮失敗時は元データを返す（null ではなく）
+            return imageData;
         }
     }
 

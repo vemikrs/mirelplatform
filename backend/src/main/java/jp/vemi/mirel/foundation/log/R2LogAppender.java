@@ -5,27 +5,20 @@ package jp.vemi.mirel.foundation.log;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.RollingPolicy;
-import ch.qos.logback.core.rolling.RollingPolicyBase;
-import ch.qos.logback.core.rolling.TriggeringPolicy;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import jp.vemi.framework.storage.StorageService;
-import jp.vemi.framework.storage.R2StorageService;
-import jp.vemi.framework.storage.StorageProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
 /**
  * R2 へログをアップロードする Logback Appender。
@@ -43,11 +36,15 @@ public class R2LogAppender extends RollingFileAppender<ILoggingEvent> {
     private boolean uploadEnabled = true;
     private ExecutorService uploadExecutor;
 
-    // Spring ApplicationContext を静的に保持（Logback は Spring 管理外のため）
-    private static ApplicationContext applicationContext;
+    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止）
+    private static WeakReference<ApplicationContext> applicationContextRef;
 
     public static void setApplicationContext(ApplicationContext context) {
-        applicationContext = context;
+        applicationContextRef = new WeakReference<>(context);
+    }
+
+    private static ApplicationContext getApplicationContext() {
+        return applicationContextRef != null ? applicationContextRef.get() : null;
     }
 
     public void setR2Prefix(String prefix) {
@@ -61,9 +58,10 @@ public class R2LogAppender extends RollingFileAppender<ILoggingEvent> {
     @Override
     public void start() {
         // StorageService を取得（Spring コンテキストから）
-        if (applicationContext != null && uploadEnabled) {
+        ApplicationContext ctx = getApplicationContext();
+        if (ctx != null && uploadEnabled) {
             try {
-                this.logStorageService = applicationContext.getBean("logStorageService", StorageService.class);
+                this.logStorageService = ctx.getBean("logStorageService", StorageService.class);
                 this.uploadExecutor = Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "R2LogUploader");
                     t.setDaemon(true);
@@ -112,8 +110,10 @@ public class R2LogAppender extends RollingFileAppender<ILoggingEvent> {
                 logStorageService.saveFile(r2Key, data);
                 log.info("Uploaded log file to R2: {}", r2Key);
 
-                // アップロード成功後、ローカルファイルを削除（オプション）
-                // Files.deleteIfExists(rotatedFile.toPath());
+                // アップロード成功後、ローカルファイルを削除
+                if (Files.deleteIfExists(rotatedFile.toPath())) {
+                    log.debug("Deleted local log file after R2 upload: {}", rotatedFile.getName());
+                }
             } catch (IOException e) {
                 log.error("Failed to upload log file to R2: {}", rotatedFile.getName(), e);
             }

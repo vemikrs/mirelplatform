@@ -3,6 +3,7 @@ package jp.vemi.framework.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -38,8 +39,9 @@ public class StorageUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageUtil.class);
 
-    private static ApplicationContext applicationContext;
-    private static StorageService storageServiceInstance;
+    // WeakReference で保持してメモリリーク防止
+    private static WeakReference<ApplicationContext> applicationContextRef;
+    private static WeakReference<StorageService> storageServiceRef;
 
     /**
      * private constructor to prevent instantiation
@@ -52,23 +54,31 @@ public class StorageUtil {
      * StorageService Bean の取得に使用されます。
      */
     public static void setApplicationContext(ApplicationContext context) {
-        applicationContext = context;
-        storageServiceInstance = null; // リセット
+        applicationContextRef = new WeakReference<>(context);
+        storageServiceRef = null; // リセット
     }
 
     /**
      * StorageService インスタンスを取得します。
      */
     private static StorageService getStorageService() {
-        if (storageServiceInstance == null && applicationContext != null) {
+        StorageService cached = storageServiceRef != null ? storageServiceRef.get() : null;
+        if (cached != null) {
+            return cached;
+        }
+
+        ApplicationContext ctx = applicationContextRef != null ? applicationContextRef.get() : null;
+        if (ctx != null) {
             try {
-                storageServiceInstance = applicationContext.getBean(StorageService.class);
-                logger.debug("StorageService Bean obtained: {}", storageServiceInstance.getClass().getSimpleName());
+                StorageService service = ctx.getBean(StorageService.class);
+                storageServiceRef = new WeakReference<>(service);
+                logger.debug("StorageService Bean obtained: {}", service.getClass().getSimpleName());
+                return service;
             } catch (Exception e) {
                 logger.debug("StorageService Bean not available, using local fallback");
             }
         }
-        return storageServiceInstance;
+        return null;
     }
 
     /**
@@ -131,13 +141,16 @@ public class StorageUtil {
         }
 
         // R2 の場合は一時ファイルにダウンロード
+        // 注意: 呼び出し元がファイル使用後に明示的に削除する責任があります
         if (service != null && service.exists(storagePath)) {
             try {
                 Path tempFile = Files.createTempFile("storage-", getFileName(storagePath));
                 try (InputStream is = service.getInputStream(storagePath)) {
                     Files.copy(is, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 }
-                tempFile.toFile().deleteOnExit();
+                // 長時間稼働を想定し deleteOnExit() は使用しない
+                // 呼び出し元が使用後に Files.deleteIfExists() で削除すること
+                logger.debug("Created temp file for R2 download: {}", tempFile);
                 return tempFile.toFile();
             } catch (IOException e) {
                 logger.warn("Failed to download from StorageService, falling back to local: {}", e.getMessage());
@@ -168,9 +181,10 @@ public class StorageUtil {
         if (service != null) {
             List<String> files = service.listFiles(storagePath);
             if (!files.isEmpty()) {
-                // StorageService から取得した相対パスをフルパスに変換
+                // StorageService から返されるパスは storagePath からの相対パス
+                // ここでは storagePath を基準にフルパスを構築
                 return files.stream()
-                        .map(f -> Paths.get(getBaseDir(), f).toString())
+                        .map(f -> Paths.get(getBaseDir(), storagePath, f).normalize().toString())
                         .collect(Collectors.toList());
             }
         }

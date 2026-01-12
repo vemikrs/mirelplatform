@@ -88,13 +88,14 @@ public interface StorageService {
      * <p>
      * ローカルストレージの場合は file:// URL を返します。
      * R2 の場合は有効期限付きの署名付き URL を返します。
+     * ファイルが存在しない場合は {@code null} を返す可能性があります。
      * </p>
      *
      * @param path
      *            ストレージ相対パス
      * @param expiry
      *            URL の有効期限
-     * @return 署名付き URL
+     * @return 署名付き URL（ファイルが存在しない場合は {@code null} の可能性あり）
      */
     URL getPresignedUrl(String path, Duration expiry);
 

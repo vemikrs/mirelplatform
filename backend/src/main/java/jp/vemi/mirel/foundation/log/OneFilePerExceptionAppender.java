@@ -8,6 +8,7 @@ import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.encoder.Encoder;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,11 +45,15 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
     private StorageService logStorageService;
     private ExecutorService uploadExecutor;
 
-    // Spring ApplicationContext を静的に保持
-    private static ApplicationContext applicationContext;
+    // Spring ApplicationContext を WeakReference で保持（メモリリーク防止）
+    private static WeakReference<ApplicationContext> applicationContextRef;
 
     public static void setApplicationContext(ApplicationContext context) {
-        applicationContext = context;
+        applicationContextRef = new WeakReference<>(context);
+    }
+
+    private static ApplicationContext getApplicationContext() {
+        return applicationContextRef != null ? applicationContextRef.get() : null;
     }
 
     public void setDirectory(String directory) {
@@ -80,9 +85,10 @@ public class OneFilePerExceptionAppender extends AppenderBase<ILoggingEvent> {
         }
 
         // R2 ストレージサービスを取得
-        if (applicationContext != null && useR2) {
+        ApplicationContext ctx = getApplicationContext();
+        if (ctx != null && useR2) {
             try {
-                this.logStorageService = applicationContext.getBean("logStorageService", StorageService.class);
+                this.logStorageService = ctx.getBean("logStorageService", StorageService.class);
                 this.uploadExecutor = Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "ExceptionLogUploader");
                     t.setDaemon(true);

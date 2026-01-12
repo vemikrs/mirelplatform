@@ -54,6 +54,20 @@ public class R2StorageService implements StorageService, DisposableBean {
                 r2Props.getAccessKeyId(),
                 r2Props.getSecretAccessKey());
 
+        // 認証情報のバリデーション
+        if (r2Props.getEndpoint() == null || r2Props.getEndpoint().isBlank()) {
+            throw new IllegalArgumentException("R2 endpoint is required but was not configured");
+        }
+        if (r2Props.getAccessKeyId() == null || r2Props.getAccessKeyId().isBlank()) {
+            throw new IllegalArgumentException("R2 access-key-id is required but was not configured");
+        }
+        if (r2Props.getSecretAccessKey() == null || r2Props.getSecretAccessKey().isBlank()) {
+            throw new IllegalArgumentException("R2 secret-access-key is required but was not configured");
+        }
+        if (r2Props.getBucket() == null || r2Props.getBucket().isBlank()) {
+            throw new IllegalArgumentException("R2 bucket is required but was not configured");
+        }
+
         URI endpoint = URI.create(r2Props.getEndpoint());
 
         this.s3Client = S3Client.builder()
