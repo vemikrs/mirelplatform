@@ -1,0 +1,96 @@
+name: Release Backend
+
+on:
+    push:
+        branches: ["master"]
+        paths:
+            - "backend/**"
+            - "VERSION"
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Configure Git
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Check Version and Create Tag
+              id: check_version
+              run: |
+                  # Single Source of Truth から読み込み
+                  CURRENT_VERSION=$(cat VERSION)
+                  echo "Current version: $CURRENT_VERSION"
+
+                  # Remote Tag Search Loop
+                  VERSION=$CURRENT_VERSION
+                  while true; do
+                    TAG_NAME="backend/v$VERSION"
+                    echo "Checking if tag $TAG_NAME exists on remote..."
+
+                    if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+                      echo "Tag $TAG_NAME already exists. Bumping..."
+                      # VERSION を patch bump (shell のみ)
+                      IFS='.' read -ra PARTS <<< "$VERSION"
+                      PATCH=$((${PARTS[2]} + 1))
+                      VERSION="${PARTS[0]}.${PARTS[1]}.$PATCH"
+                    else
+                      echo "Tag $TAG_NAME does not exist. Using version $VERSION"
+                      break
+                    fi
+                  done
+
+                  FINAL_TAG="backend/v$VERSION"
+
+                  if [ "$VERSION" != "$CURRENT_VERSION" ]; then
+                    echo "Version bumped from $CURRENT_VERSION to $VERSION"
+                    # VERSION ファイルと package.json を同期更新
+                    echo "$VERSION" > VERSION
+                    jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+                    git add VERSION package.json
+                    git commit -m "chore(release): bump to $VERSION [skip ci]"
+                    git fetch origin master
+                    git rebase origin/master
+                    git push origin master
+                    echo "bumped=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "No version bump needed"
+                    echo "bumped=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  echo "tag_name=$FINAL_TAG" >> $GITHUB_OUTPUT
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+            - name: Create Tag
+              run: |
+                  TAG_NAME="${{ steps.check_version.outputs.tag_name }}"
+                  if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+                    echo "Tag $TAG_NAME already exists on remote, skipping..."
+                  else
+                    git tag $TAG_NAME
+                    git push origin $TAG_NAME
+                  fi
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.check_version.outputs.tag_name }}
+                  name: Backend ${{ steps.check_version.outputs.tag_name }}
+                  body: |
+                      ## Backend Release ${{ steps.check_version.outputs.version }}
+                      
+                      Docker image: `ghcr.io/vemikrs/mirelplatform-backend:latest`
+                      
+                      See [Docker Build workflow](https://github.com/vemikrs/mirelplatform/actions/workflows/docker-build.yml) for image details.
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
