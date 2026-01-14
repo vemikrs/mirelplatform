@@ -5,15 +5,20 @@ package jp.vemi.framework.storage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 
 import jp.vemi.framework.storage.gcs.GcsStorageService;
+
+import java.io.IOException;
 
 /**
  * ストレージサービスの自動構成。
@@ -75,6 +80,30 @@ public class StorageAutoConfiguration {
         logger.info("Configuring S3LogStorageService (R2 Compatible) - bucket: {}, prefix: {}",
                 props.getR2().getBucket(), props.getR2().getLogsPrefix());
         return new S3StorageService(props.getR2(), props.getR2().getLogsPrefix());
+    }
+
+    /**
+     * Google Cloud Storage クライアント Bean。
+     * <p>
+     * Spring Cloud GCP の自動構成が機能しない場合のフォールバック。
+     * Cloud Run では Workload Identity (ADC) を自動使用します。
+     * ローカル開発では {@code gcloud auth application-default login} 後に動作します。
+     * </p>
+     *
+     * @return GCS クライアント
+     * @throws IOException
+     *             認証情報の取得に失敗した場合
+     */
+    @Bean
+    @ConditionalOnProperty(name = "mirel.storage.type", havingValue = "gcs")
+    @ConditionalOnMissingBean(Storage.class)
+    public Storage googleCloudStorage() throws IOException {
+        logger.info("Configuring Google Cloud Storage client with Application Default Credentials");
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        return StorageOptions.newBuilder()
+                .setCredentials(credentials)
+                .build()
+                .getService();
     }
 
     /**
