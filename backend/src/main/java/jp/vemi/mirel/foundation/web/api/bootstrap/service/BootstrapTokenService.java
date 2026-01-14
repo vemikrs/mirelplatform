@@ -3,18 +3,14 @@
  */
 package jp.vemi.mirel.foundation.web.api.bootstrap.service;
 
+import jp.vemi.framework.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Set;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -22,26 +18,23 @@ import java.util.UUID;
  * 
  * 初回起動時にトークンファイルを生成し、
  * Bootstrap完了後に削除します。
+ * 
+ * StorageService を使用して GCS/S3/ローカルを透過的にサポートします。
  */
 @Service
 public class BootstrapTokenService {
 
     private static final Logger logger = LoggerFactory.getLogger(BootstrapTokenService.class);
 
-    private static final String TOKEN_DIR = "bootstrap";
-    private static final String TOKEN_FILE = "setup-token.txt";
+    private static final String TOKEN_PATH = "bootstrap/setup-token.txt";
 
-    @Value("${mirel.storage-dir:./data/storage}")
-    private String storageDir;
+    private final StorageService storageService;
 
     // メモリキャッシュ（起動中のトークン検証用）
     private String cachedToken = null;
 
-    /**
-     * トークンファイルのパスを取得
-     */
-    private Path getTokenPath() {
-        return Paths.get(storageDir, TOKEN_DIR, TOKEN_FILE);
+    public BootstrapTokenService(StorageService storageService) {
+        this.storageService = storageService;
     }
 
     /**
@@ -50,11 +43,9 @@ public class BootstrapTokenService {
      * @return 生成されたトークン（既に完了済みの場合はnull）
      */
     public String generateTokenIfNeeded() {
-        Path tokenPath = getTokenPath();
-
         // 既にトークンファイルが存在する場合は読み込み
-        if (Files.exists(tokenPath)) {
-            return readTokenFromFile(tokenPath);
+        if (storageService.exists(TOKEN_PATH)) {
+            return readTokenFromStorage();
         }
 
         // 新規トークン生成
@@ -81,36 +72,29 @@ public class BootstrapTokenService {
                 """.formatted(token);
 
         try {
-            Files.createDirectories(tokenPath.getParent());
-            Files.writeString(tokenPath, content);
-
-            // Linuxの場合、ファイル権限を600に設定
-            try {
-                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rw-------");
-                Files.setPosixFilePermissions(tokenPath, perms);
-            } catch (UnsupportedOperationException e) {
-                // Windows等POSIX非対応OSでは無視
-                logger.debug("POSIX file permissions not supported on this OS");
+            byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+            try (InputStream inputStream = new ByteArrayInputStream(contentBytes)) {
+                storageService.saveFile(TOKEN_PATH, inputStream, (long) contentBytes.length);
             }
 
             // lgtm[java/sensitive-log] - logging fixed success message only, no sensitive
             // data
-            logger.info("Bootstrap token file created successfully");
+            logger.info("Bootstrap token file created successfully in storage");
             // Note: Token value intentionally not logged for security
 
             return token;
-        } catch (IOException e) {
-            logger.error("Failed to create bootstrap token file", e);
-            return null;
+        } catch (Exception e) {
+            logger.error("Failed to create bootstrap token file in storage", e);
+            throw new BootstrapStorageException("Failed to create bootstrap token file", e);
         }
     }
 
     /**
-     * トークンファイルからトークンを読み込み
+     * ストレージからトークンを読み込み
      */
-    private String readTokenFromFile(Path tokenPath) {
-        try {
-            String content = Files.readString(tokenPath);
+    private String readTokenFromStorage() {
+        try (InputStream inputStream = storageService.getInputStream(TOKEN_PATH)) {
+            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             // "トークン: " の後の値を抽出
             String[] lines = content.split("\n");
             for (String line : lines) {
@@ -119,8 +103,8 @@ public class BootstrapTokenService {
                     return cachedToken;
                 }
             }
-        } catch (IOException e) {
-            logger.error("Failed to read bootstrap token file", e);
+        } catch (Exception e) {
+            logger.error("Failed to read bootstrap token file from storage", e);
         }
         return null;
     }
@@ -142,10 +126,9 @@ public class BootstrapTokenService {
             return true;
         }
 
-        // ファイルから再読み込みして比較
-        Path tokenPath = getTokenPath();
-        if (Files.exists(tokenPath)) {
-            String fileToken = readTokenFromFile(tokenPath);
+        // ストレージから再読み込みして比較
+        if (storageService.exists(TOKEN_PATH)) {
+            String fileToken = readTokenFromStorage();
             return token.equals(fileToken);
         }
 
@@ -156,24 +139,32 @@ public class BootstrapTokenService {
      * トークンファイルが存在するか確認
      */
     public boolean tokenFileExists() {
-        return Files.exists(getTokenPath());
+        return storageService.exists(TOKEN_PATH);
     }
 
     /**
      * トークンファイルを削除
      */
     public void deleteTokenFile() {
-        Path tokenPath = getTokenPath();
         try {
-            if (Files.exists(tokenPath)) {
-                Files.delete(tokenPath);
+            if (storageService.exists(TOKEN_PATH)) {
+                storageService.delete(TOKEN_PATH);
                 // lgtm[java/sensitive-log] - logging fixed success message only, no sensitive
                 // data
-                logger.info("Bootstrap token file deleted successfully");
+                logger.info("Bootstrap token file deleted successfully from storage");
             }
             cachedToken = null;
-        } catch (IOException e) {
-            logger.error("Failed to delete bootstrap token file", e);
+        } catch (Exception e) {
+            logger.error("Failed to delete bootstrap token file from storage", e);
+        }
+    }
+
+    /**
+     * ストレージ操作のカスタム例外
+     */
+    public static class BootstrapStorageException extends RuntimeException {
+        public BootstrapStorageException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
