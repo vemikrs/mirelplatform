@@ -91,7 +91,10 @@ dependencies {
     // Spring AI - Google Vertex AI (Gemini)
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-embedding' // Added for Embedding (legacy naming?)
-    implementation 'com.google.cloud:google-cloud-vertexai:1.40.0' // Explicit dependency to resolve class lookup
+    // Vertex AI SDK - spring-cloud-gcp が古いバージョンをオーバーライドするのを防ぐため明示的に指定
+    implementation 'com.google.cloud:google-cloud-vertexai:1.40.0'
+    implementation 'com.google.api.grpc:proto-google-cloud-vertexai-v1:1.40.0'
+    implementation 'com.google.api.grpc:grpc-google-cloud-vertexai-v1:1.40.0'
 
     // Spring AI - PGVector Store
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
