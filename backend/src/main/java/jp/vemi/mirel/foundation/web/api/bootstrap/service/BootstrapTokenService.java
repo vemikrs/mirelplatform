@@ -34,7 +34,12 @@ public class BootstrapTokenService {
     private String cachedToken = null;
 
     public BootstrapTokenService(StorageService storageService) {
+        System.out.println("[DEBUG] BootstrapTokenService: Constructor called, StorageService type = "
+                + (storageService != null ? storageService.getClass().getName() : "null"));
+        System.out.flush();
         this.storageService = storageService;
+        System.out.println("[DEBUG] BootstrapTokenService: Constructor completed successfully");
+        System.out.flush();
     }
 
     /**

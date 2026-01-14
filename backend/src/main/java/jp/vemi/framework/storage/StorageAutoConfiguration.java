@@ -98,12 +98,41 @@ public class StorageAutoConfiguration {
     @ConditionalOnProperty(name = "mirel.storage.type", havingValue = "gcs")
     @ConditionalOnMissingBean(Storage.class)
     public Storage googleCloudStorage() throws IOException {
+        // DEBUG: 確実にCloud Loggingに出力するためstdoutにも出力
+        System.out.println("[DEBUG] StorageAutoConfiguration: Starting GCS client initialization");
+        System.out.flush();
         logger.info("Configuring Google Cloud Storage client with Application Default Credentials");
-        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-        return StorageOptions.newBuilder()
-                .setCredentials(credentials)
-                .build()
-                .getService();
+
+        try {
+            System.out.println("[DEBUG] StorageAutoConfiguration: Getting Application Default Credentials...");
+            System.out.flush();
+            GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+
+            System.out
+                    .println("[DEBUG] StorageAutoConfiguration: ADC obtained successfully, building Storage client...");
+            System.out.flush();
+            Storage storage = StorageOptions.newBuilder()
+                    .setCredentials(credentials)
+                    .build()
+                    .getService();
+
+            System.out.println("[DEBUG] StorageAutoConfiguration: GCS client created successfully");
+            System.out.flush();
+            return storage;
+        } catch (Exception e) {
+            // 例外を確実にログ出力（stdout/stderr両方）
+            System.err.println("[ERROR] StorageAutoConfiguration: Failed to create GCS client!");
+            System.err.println("[ERROR] Exception type: " + e.getClass().getName());
+            System.err.println("[ERROR] Exception message: " + e.getMessage());
+            e.printStackTrace(System.err);
+            System.err.flush();
+
+            System.out.println("[ERROR] StorageAutoConfiguration: GCS initialization failed - " + e.getMessage());
+            System.out.flush();
+
+            logger.error("Failed to create GCS client", e);
+            throw e;
+        }
     }
 
     /**
