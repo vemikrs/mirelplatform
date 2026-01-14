@@ -254,6 +254,12 @@ management:
   endpoint:
     health:
       show-details: always
+  # ヘルスインジケーター設定
+  health:
+    # Azure Communication Services (REST API) を使用する場合、
+    # SMTP ベースの MailHealthIndicator は不適切なため無効化
+    mail:
+      enabled: false
   info:
     env:
       enabled: true
