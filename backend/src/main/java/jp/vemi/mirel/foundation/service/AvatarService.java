@@ -9,10 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import jp.vemi.framework.storage.StorageService;
+
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -25,8 +24,7 @@ import java.util.UUID;
 @Slf4j
 public class AvatarService {
 
-    @Value("${mirel.storage-dir:./data/storage}")
-    private String storageDir;
+    private final StorageService storageService;
 
     @Value("${server.servlet.context-path:/mipla2}")
     private String contextPath;
@@ -66,21 +64,13 @@ public class AvatarService {
                 return null;
             }
 
-            // 保存先ディレクトリを作成
-            Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
-            if (!Files.exists(avatarsPath)) {
-                Files.createDirectories(avatarsPath);
-                log.info("Created avatars directory: {}", avatarsPath);
-            }
-
             // ファイル名生成（ユーザーID + 拡張子）
             String extension = extractExtension(avatarUrl);
-            String fileName = userId.toString() + extension;
-            Path filePath = avatarsPath.resolve(fileName);
+            String storagePath = AVATARS_DIR + "/" + userId.toString() + extension;
 
-            // ファイル保存
-            Files.write(filePath, imageBytes);
-            log.info("Saved avatar image: {} ({} bytes)", filePath, imageBytes.length);
+            // StorageService経由でファイル保存
+            storageService.saveFile(storagePath, imageBytes);
+            log.info("Saved avatar image: {} ({} bytes)", storagePath, imageBytes.length);
 
             // APIエンドポイントURLを返却
             return "/api/users/" + userId + "/avatar";
@@ -103,13 +93,11 @@ public class AvatarService {
      */
     public byte[] getAvatar(UUID userId) {
         try {
-            Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
-
             // 複数の拡張子を試す
-            for (String ext : new String[] { ".jpg", ".png", ".gif", ".jpeg" }) {
-                Path filePath = avatarsPath.resolve(userId.toString() + ext);
-                if (Files.exists(filePath)) {
-                    return Files.readAllBytes(filePath);
+            for (String ext : new String[] { ".jpg", ".png", ".gif", ".jpeg", ".webp" }) {
+                String storagePath = AVATARS_DIR + "/" + userId.toString() + ext;
+                if (storageService.exists(storagePath)) {
+                    return storageService.getBytes(storagePath);
                 }
             }
 
@@ -130,14 +118,12 @@ public class AvatarService {
      */
     public void deleteAvatar(UUID userId) {
         try {
-            Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
-
             // 複数の拡張子を試す
             for (String ext : new String[] { ".jpg", ".png", ".gif", ".jpeg", ".webp" }) {
-                Path filePath = avatarsPath.resolve(userId.toString() + ext);
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    log.info("Deleted avatar image: {}", filePath);
+                String storagePath = AVATARS_DIR + "/" + userId.toString() + ext;
+                if (storageService.exists(storagePath)) {
+                    storageService.delete(storagePath);
+                    log.info("Deleted avatar image: {}", storagePath);
                 }
             }
 
@@ -170,23 +156,15 @@ public class AvatarService {
                 return null;
             }
 
-            // 保存先ディレクトリを作成
-            Path avatarsPath = Paths.get(storageDir, AVATARS_DIR);
-            if (!Files.exists(avatarsPath)) {
-                Files.createDirectories(avatarsPath);
-                log.info("Created avatars directory: {}", avatarsPath);
-            }
-
             // 既存のアバターを削除
             deleteAvatar(userId);
 
             // ファイル名生成（ユーザーID + 拡張子）
-            String fileName = userId.toString() + extension;
-            Path filePath = avatarsPath.resolve(fileName);
+            String storagePath = AVATARS_DIR + "/" + userId.toString() + extension;
 
-            // ファイル保存
-            Files.write(filePath, imageBytes);
-            log.info("Saved avatar image: {} ({} bytes)", filePath, imageBytes.length);
+            // StorageService経由でファイル保存
+            storageService.saveFile(storagePath, imageBytes);
+            log.info("Saved avatar image: {} ({} bytes)", storagePath, imageBytes.length);
 
             // APIエンドポイントURLを返却
             return "/api/users/" + userId + "/avatar";
@@ -217,7 +195,7 @@ public class AvatarService {
         if (lastDotIndex > 0 && lastDotIndex < urlWithoutQuery.length() - 1) {
             String ext = urlWithoutQuery.substring(lastDotIndex);
             // 有効な画像拡張子かチェック
-            if (ext.matches("\\.(jpg|jpeg|png|gif)")) {
+            if (ext.matches("\\.(jpg|jpeg|png|gif|webp)")) {
                 return ext;
             }
         }
