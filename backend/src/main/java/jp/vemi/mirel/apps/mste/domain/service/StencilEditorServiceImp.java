@@ -197,14 +197,14 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 } catch (Exception e) {
                     logger.warn(
                             "Failed to write stencil file via StorageService. Fallback to local file write. path={}",
-                            filePath, e);
+                            SanitizeUtil.forLog(filePath.toString()), e);
                     // フォールバック: ローカルファイル書き込み
                     try {
                         Files.writeString(filePath, file.getContent());
                     } catch (IOException ioException) {
                         logger.error(
                                 "Failed to write stencil file via both StorageService and local file system. path={}",
-                                filePath, ioException);
+                                SanitizeUtil.forLog(filePath.toString()), ioException);
                         throw ioException;
                     }
                 }
