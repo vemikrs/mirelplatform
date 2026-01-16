@@ -15,7 +15,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles("e2e")
 @org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 public class TemplateEngineProcessorTest {
 

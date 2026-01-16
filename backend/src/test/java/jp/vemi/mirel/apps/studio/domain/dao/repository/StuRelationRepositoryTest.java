@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ActiveProfiles("test")
+@ActiveProfiles("e2e")
 @org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @ContextConfiguration(classes = StuRelationRepositoryTest.Config.class)
 class StuRelationRepositoryTest {

@@ -17,17 +17,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.Mockito.mock;
 
 @SpringBootTest(properties = {
-    "spring.main.allow-bean-definition-overriding=true",
-    "auth.method=jwt",
-    "auth.jwt.enabled=true",
-    "auth.jwt.secret=verylongsecretkeythatisatleast32byteslongforsecurityreasons",
-    "auth.jwt.expiration=3600",
-    "mipla2.security.api.csrf-enabled=true",
-    "mira.ai.provider=mock",
-    "mira.ai.mock.enabled=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "auth.method=jwt",
+        "auth.jwt.enabled=true",
+        "auth.jwt.secret=verylongsecretkeythatisatleast32byteslongforsecurityreasons",
+        "auth.jwt.expiration=3600",
+        "mipla2.security.api.csrf-enabled=true",
+        "mira.ai.provider=mock",
+        "mira.ai.mock.enabled=true"
 })
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("e2e")
 public class JwtAuthenticationTest {
 
     @TestConfiguration
@@ -59,6 +59,7 @@ public class JwtAuthenticationTest {
         // CSRFトークンがCookieとして発行されることを確認
         mockMvc.perform(get("/auth/health"))
                 .andExpect(status().isOk())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie().exists("XSRF-TOKEN"));
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie()
+                        .exists("XSRF-TOKEN"));
     }
 }

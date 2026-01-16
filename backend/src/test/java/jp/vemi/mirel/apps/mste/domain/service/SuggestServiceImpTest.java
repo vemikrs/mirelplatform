@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 
 @SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles("e2e")
 @org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @TestPropertySource(properties = {
         "spring.session.jdbc.initialize-schema=never",
