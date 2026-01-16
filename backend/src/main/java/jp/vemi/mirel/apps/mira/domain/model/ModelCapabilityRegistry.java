@@ -101,9 +101,9 @@ public class ModelCapabilityRegistry {
                 ));
 
         // Meta Llama 3.2 Vision 系 (マルチモーダル対応)
-        // ReDoS対策: 単純な contains チェック的なパターンに変更
+        // ReDoS対策: .*の連続を避け、-visionで部分一致
         MODEL_CAPABILITIES.put(
-                Pattern.compile("(?i)^(meta/)?llama-3\\.2.*vision.*"),
+                Pattern.compile("(?i)^(meta/)?llama-3\\.2[^/]*-vision"),
                 EnumSet.of(
                         ModelCapability.MULTIMODAL_INPUT,
                         ModelCapability.STREAMING));
