@@ -113,6 +113,52 @@ public interface StorageService {
     String getBasePath();
 
     /**
+     * ファイル内容をバイト配列として取得します。
+     * <p>
+     * <b>注意:</b> 大容量ファイルではメモリ使用量に注意。
+     * </p>
+     *
+     * @param path
+     *            ストレージ相対パス
+     * @return ファイル内容のバイト配列
+     * @throws IOException
+     *             ファイルが存在しない、または読み込みエラー
+     */
+    default byte[] getBytes(String path) throws IOException {
+        try (InputStream is = getInputStream(path)) {
+            return is.readAllBytes();
+        }
+    }
+
+    /**
+     * ファイル内容を文字列として取得します（UTF-8）。
+     *
+     * @param path
+     *            ストレージ相対パス
+     * @return ファイル内容の文字列
+     * @throws IOException
+     *             ファイルが存在しない、または読み込みエラー
+     */
+    default String readString(String path) throws IOException {
+        return new String(getBytes(path), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 文字列をファイルとして保存します（UTF-8）。
+     *
+     * @param path
+     *            ストレージ相対パス
+     * @param content
+     *            保存する文字列
+     * @throws IOException
+     *             保存エラー
+     */
+    default void writeString(String path, String content) throws IOException {
+        byte[] data = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        saveFile(path, data);
+    }
+
+    /**
      * ストレージサービスのリソースを解放します。
      * <p>
      * Spring のライフサイクル外で明示的にクローズが必要な場合に使用します。
