@@ -96,10 +96,6 @@ class AdminFeatureFlagControllerTest {
                     .andReturn();
 
             int status = result.getResponse().getStatus();
-            String content = result.getResponse().getContentAsString();
-            System.out.println("=== AdminFeatureFlagControllerTest Debug ===");
-            System.out.println("Status: " + status);
-            System.out.println("Content: " + content);
 
             // 200 OK または 500 (サービスエラーでもテストはパス - 認可が通ることを確認)
             org.assertj.core.api.Assertions.assertThat(status)

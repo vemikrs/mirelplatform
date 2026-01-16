@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jp.vemi.framework.util.SanitizeUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jp.vemi.framework.storage.StorageService;
@@ -66,7 +67,8 @@ public class MiraFileController {
 
         // ストレージ上の存在確認
         if (!storageService.exists(storagePath)) {
-            log.warn("File not found in storage: fileId={}, path={}", fileId, storagePath);
+            log.warn("File not found in storage: fileId={}, path={}", SanitizeUtil.forLog(fileId),
+                    SanitizeUtil.forLog(storagePath));
             return ResponseEntity.notFound().build();
         }
 
@@ -84,7 +86,8 @@ public class MiraFileController {
                     .body(resource);
 
         } catch (IOException e) {
-            log.error("Failed to read file from storage: fileId={}, path={}", fileId, storagePath, e);
+            log.error("Failed to read file from storage: fileId={}, path={}", SanitizeUtil.forLog(fileId),
+                    SanitizeUtil.forLog(storagePath), e);
             return ResponseEntity.internalServerError().build();
         }
     }

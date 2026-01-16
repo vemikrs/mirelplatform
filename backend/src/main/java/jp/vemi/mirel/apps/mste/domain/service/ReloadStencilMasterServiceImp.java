@@ -520,14 +520,10 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     protected StencilSettingsYml readYamlFromPath(String filePath) {
         StencilSettingsYml settings = null;
         try {
-            InputStream stream;
             // StorageService経由 or ローカルファイル
-            if (storageService.exists(filePath)) {
-                stream = storageService.getInputStream(filePath);
-            } else {
-                stream = new FileSystemResource(filePath).getInputStream();
-            }
-            try (stream) {
+            try (InputStream stream = storageService.exists(filePath)
+                    ? storageService.getInputStream(filePath)
+                    : new FileSystemResource(filePath).getInputStream()) {
                 settings = new Yaml().loadAs(stream, StencilSettingsYml.class);
             }
 

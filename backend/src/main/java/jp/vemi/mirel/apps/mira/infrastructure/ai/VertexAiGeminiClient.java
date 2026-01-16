@@ -280,8 +280,10 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
                     // StorageService経由でファイル読み込み
                     if (storageService == null) {
-                        log.warn("StorageService is not available");
-                        return null;
+                        log.error(
+                                "StorageService is not available. Multimodal requests with attached files require StorageService.");
+                        throw new IllegalStateException(
+                                "StorageService is required to handle attached files for multimodal requests.");
                     }
                     if (!storageService.exists(storagePath)) {
                         log.warn("File does not exist in storage: {}", storagePath);

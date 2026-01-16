@@ -116,12 +116,11 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 return response;
             }
 
-            if (!Files.exists(settingsPath)) {
-                // StorageService経由でも確認
-                if (!storageService.exists(settingsPath.toString())) {
-                    response.addError("stencil-settings.ymlが見つかりません");
-                    return response;
-                }
+            // StorageService経由またはローカルでファイル存在確認
+            boolean fileExists = storageService.exists(settingsPath.toString()) || Files.exists(settingsPath);
+            if (!fileExists) {
+                response.addError("stencil-settings.ymlが見つかりません");
+                return response;
             }
 
             String yamlContent;
@@ -196,8 +195,18 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 try {
                     storageService.writeString(filePath.toString(), file.getContent());
                 } catch (Exception e) {
-                    // フォールバック: ローカルファイル写き込み
-                    Files.writeString(filePath, file.getContent());
+                    logger.warn(
+                            "Failed to write stencil file via StorageService. Fallback to local file write. path={}",
+                            filePath, e);
+                    // フォールバック: ローカルファイル書き込み
+                    try {
+                        Files.writeString(filePath, file.getContent());
+                    } catch (IOException ioException) {
+                        logger.error(
+                                "Failed to write stencil file via both StorageService and local file system. path={}",
+                                filePath, ioException);
+                        throw ioException;
+                    }
                 }
             }
 

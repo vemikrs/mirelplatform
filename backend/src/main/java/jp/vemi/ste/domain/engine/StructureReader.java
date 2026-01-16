@@ -118,7 +118,6 @@ public class StructureReader {
                 demodels.add(sheetName);
             }
         });
-        ;
 
         Map<String, List<Map<String, Object>>> dataElementsItems = Maps.newLinkedHashMap();
         for (String demodel : demodels) {

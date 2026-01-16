@@ -49,7 +49,7 @@ public class GuestModeTest {
         int status = result.getResponse().getStatus();
         // ゲストモード有効時: 401 (Unauthorized) や 403 (Forbidden) ではないことを確認
         // 404 (Not Found) または 200 (OK) が期待される値
-        assertThat(status).as("Guest mode should not return 401 Unauthorized")
-                .isNotEqualTo(401);
+        assertThat(status).as("Guest mode should not return 401 Unauthorized or 403 Forbidden")
+                .isNotIn(401, 403);
     }
 }
