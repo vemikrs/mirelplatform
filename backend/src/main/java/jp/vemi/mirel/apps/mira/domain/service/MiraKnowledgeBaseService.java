@@ -3,7 +3,7 @@
  */
 package jp.vemi.mirel.apps.mira.domain.service;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -13,7 +13,8 @@ import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraIndexingProgressReposit
 import jp.vemi.mirel.apps.mira.domain.dao.repository.MiraKnowledgeDocumentRepository;
 import jp.vemi.mirel.foundation.abst.dao.entity.FileManagement;
 import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
+import jp.vemi.framework.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jp.vemi.framework.util.SanitizeUtil;
@@ -52,6 +54,7 @@ public class MiraKnowledgeBaseService {
     private final jp.vemi.mirel.apps.mira.domain.dao.repository.MiraSearchLogRepository searchLogRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private final MiraIndexingProgressRepository indexingProgressRepository;
+    private final StorageService storageService;
 
     /**
      * ファイルをインデックスに登録します。
@@ -81,19 +84,28 @@ public class MiraKnowledgeBaseService {
             throw new IllegalArgumentException("File path is empty for fileId: " + fileId);
         }
 
-        File file = new File(fileConfig.getFilePath());
-        if (!file.exists()) {
-            throw new IllegalArgumentException("Physical file not found: " + fileConfig.getFilePath());
+        // StorageService経由でファイル存在確認
+        String storagePath = fileConfig.getFilePath();
+        if (!storageService.exists(storagePath)) {
+            throw new IllegalArgumentException("Physical file not found in storage: " + storagePath);
         }
 
-        FileSystemResource resource = new FileSystemResource(file) {
-            @Override
-            public String getFilename() {
-                return fileConfig.getFileName();
-            }
-        };
-        log.info("Creating TikaDocumentReader for file: {}, fileName: {}, resource.getFilename: {}",
-                file.getAbsolutePath(), fileConfig.getFileName(), resource.getFilename());
+        final String fileName = fileConfig.getFileName();
+        Resource resource;
+        try {
+            InputStream is = storageService.getInputStream(storagePath);
+            resource = new InputStreamResource(is) {
+                @Override
+                public String getFilename() {
+                    return fileName;
+                }
+            };
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read file from storage: " + storagePath, e);
+        }
+
+        log.info("Creating TikaDocumentReader for file: {}, fileName: {}",
+                storagePath, fileConfig.getFileName());
         List<Document> documents;
 
         // Use Tika directly to extract text content first, to avoid "Raw Zip/XML"
@@ -101,7 +113,11 @@ public class MiraKnowledgeBaseService {
         Tika tika = new Tika();
         String fileContent;
         try {
-            fileContent = tika.parseToString(file);
+            // StorageService経由でバイト配列を取得してTikaに渡す
+            byte[] fileBytes = storageService.getBytes(storagePath);
+            try (java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(fileBytes)) {
+                fileContent = tika.parseToString(bais);
+            }
         } catch (Exception e) {
             log.warn("Tika parse failed, falling back to TikaDocumentReader", e);
             // Fallback to original logic if Tika fails (though unlikely if file exists)
@@ -135,7 +151,7 @@ public class MiraKnowledgeBaseService {
 
         // チャンク分割
         List<Document> splitDocuments;
-        String fileName = fileConfig.getFileName().toLowerCase();
+        String fileNameLower = fileConfig.getFileName().toLowerCase();
 
         // 既存のナレッジドキュメントからdescriptionを取得（Phase 3: 手動注釈）
         String description = null;
@@ -148,12 +164,12 @@ public class MiraKnowledgeBaseService {
         jp.vemi.mirel.apps.mira.domain.model.GlobalContext globalContext = jp.vemi.mirel.apps.mira.domain.model.GlobalContext
                 .builder()
                 .fileName(fileConfig.getFileName())
-                .category(determineCategory(fileName))
+                .category(determineCategory(fileNameLower))
                 .description(description)
                 .build();
 
-        if (fileName.endsWith(".md") || fileName.endsWith(".markdown")) {
-            log.info("Using MiraMarkdownSplitter for file: {}", fileName);
+        if (fileNameLower.endsWith(".md") || fileNameLower.endsWith(".markdown")) {
+            log.info("Using MiraMarkdownSplitter for file: {}", fileNameLower);
             splitDocuments = markdownSplitter.apply(documents, globalContext);
         } else {
             // Default token splitter for other formats
@@ -287,19 +303,22 @@ public class MiraKnowledgeBaseService {
         FileManagement fileConfig = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
 
-        File file = new File(fileConfig.getFilePath());
-        if (!file.exists()) {
-            throw new IllegalArgumentException("Physical file not found: " + fileConfig.getFilePath());
+        String storagePath = fileConfig.getFilePath();
+        if (!storageService.exists(storagePath)) {
+            throw new IllegalArgumentException("Physical file not found in storage: " + storagePath);
         }
 
         try {
             // Use Apache Tika directly to read content as text
             Tika tika = new Tika();
-            return tika.parseToString(file);
+            byte[] fileBytes = storageService.getBytes(storagePath);
+            try (java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(fileBytes)) {
+                return tika.parseToString(bais);
+            }
         } catch (Exception e) {
             log.warn("Failed to read file content with Tika, falling back to plain text read: {}", e.getMessage());
             try {
-                return java.nio.file.Files.readString(java.nio.file.Path.of(fileConfig.getFilePath()));
+                return storageService.readString(storagePath);
             } catch (java.io.IOException ioe) {
                 throw new RuntimeException("Failed to read file content", ioe);
             }
@@ -319,9 +338,9 @@ public class MiraKnowledgeBaseService {
         FileManagement fileConfig = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found: " + fileId));
 
-        // ファイル書き込み
+        // StorageService経由でファイル書き込み
         try {
-            java.nio.file.Files.writeString(java.nio.file.Path.of(fileConfig.getFilePath()), content);
+            storageService.writeString(fileConfig.getFilePath(), content);
         } catch (java.io.IOException e) {
             throw new RuntimeException("Failed to write file content", e);
         }

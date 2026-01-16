@@ -15,7 +15,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
 
@@ -43,9 +43,12 @@ public class AzureOpenAiClient implements AiProviderClient {
     private final boolean available;
 
     private static final String PROVIDER_NAME = "azure-openai";
-    
+
     @Autowired(required = false)
     private jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository fileManagementRepository;
+
+    @Autowired(required = false)
+    private jp.vemi.framework.storage.StorageService storageService;
 
     public AzureOpenAiClient(MiraAiProperties properties) {
         this.properties = properties;
@@ -181,11 +184,12 @@ public class AzureOpenAiClient implements AiProviderClient {
 
         return messages;
     }
-    
+
     /**
      * マルチモーダルユーザーメッセージを作成.
      * 
-     * @param msg AIリクエストメッセージ
+     * @param msg
+     *            AIリクエストメッセージ
      * @return マルチモーダルUserMessage
      */
     private UserMessage createMultimodalUserMessage(AiRequest.Message msg) {
@@ -196,42 +200,52 @@ public class AzureOpenAiClient implements AiProviderClient {
             final List<Media> media = msg.getAttachedFiles().stream().map(attachedFile -> {
 
                 try {
-                log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(), attachedFile.getMimeType());
-                String filePath = getFilePathFromFileId(attachedFile.getFileId());
-                if (filePath == null) {
-                    log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                    log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(),
+                            attachedFile.getMimeType());
+                    String storagePath = getFilePathFromFileId(attachedFile.getFileId());
+                    if (storagePath == null) {
+                        log.warn("File not found for fileId: {}", attachedFile.getFileId());
+                        return null;
+                    }
+
+                    // StorageService経由でファイル読み込み
+                    if (storageService == null) {
+                        log.warn("StorageService is not available");
+                        return null;
+                    }
+                    if (!storageService.exists(storagePath)) {
+                        log.warn("File does not exist in storage: {}", storagePath);
+                        return null;
+                    }
+
+                    byte[] fileBytes = storageService.getBytes(storagePath);
+                    ByteArrayResource resource = new ByteArrayResource(fileBytes);
+                    log.debug("File loaded successfully from storage: {} ({} bytes)", storagePath, fileBytes.length);
+
+                    return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
+
+                } catch (Exception e) {
+                    log.error("Failed to load file: {}", attachedFile.getFileId(), e);
                     return null;
                 }
-                FileSystemResource resource = new FileSystemResource(filePath);
-                if (!resource.exists()) {
-                    log.warn("File does not exist: {}", filePath);
-                    return null;
-                }
-                log.debug("File loaded successfully: {}", filePath);
+            }).filter(java.util.Objects::nonNull).toList();
 
-                return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
-
-            } catch (Exception e) {
-                log.error("Failed to load file: {}", attachedFile.getFileId(), e);
-                return null;
-            }
-        }).filter(java.util.Objects::nonNull).toList();
-
-        return UserMessage.builder()
-                .text(msg.getContent())
-                .media(media)
-                .build();
+            return UserMessage.builder()
+                    .text(msg.getContent())
+                    .media(media)
+                    .build();
 
         } catch (Exception e) {
             log.error("Failed to create multimodal user message", e);
             return new UserMessage(msg.getContent());
         }
     }
-    
+
     /**
      * FileIDからファイルパスを取得.
      * 
-     * @param fileId ファイルID
+     * @param fileId
+     *            ファイルID
      * @return ファイルパス
      */
     private String getFilePathFromFileId(String fileId) {
@@ -239,10 +253,10 @@ public class AzureOpenAiClient implements AiProviderClient {
             log.warn("FileManagementRepository is not available");
             return null;
         }
-        
+
         return fileManagementRepository.findById(fileId)
                 .map(fm -> fm.getFilePath())
                 .orElse(null);
     }
-    
+
 }

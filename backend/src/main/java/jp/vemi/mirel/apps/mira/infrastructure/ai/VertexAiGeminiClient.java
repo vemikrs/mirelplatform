@@ -4,13 +4,10 @@
 package jp.vemi.mirel.apps.mira.infrastructure.ai;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.Duration; // Added
-import reactor.util.retry.Retry; // Added
+import java.time.Duration;
+import reactor.util.retry.Retry;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -23,7 +20,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
 
@@ -52,6 +49,9 @@ public class VertexAiGeminiClient implements AiProviderClient {
 
     @Autowired(required = false)
     private jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository fileManagementRepository;
+
+    @Autowired(required = false)
+    private jp.vemi.framework.storage.StorageService storageService;
 
     public VertexAiGeminiClient(MiraAiProperties properties) {
         this.properties = properties;
@@ -272,17 +272,25 @@ public class VertexAiGeminiClient implements AiProviderClient {
                 try {
                     log.debug("Loading file: fileId={}, mimeType={}", attachedFile.getFileId(),
                             attachedFile.getMimeType());
-                    String filePath = getFilePathFromFileId(attachedFile.getFileId());
-                    if (filePath == null) {
+                    String storagePath = getFilePathFromFileId(attachedFile.getFileId());
+                    if (storagePath == null) {
                         log.warn("File not found for fileId: {}", attachedFile.getFileId());
                         return null;
                     }
-                    FileSystemResource resource = new FileSystemResource(filePath);
-                    if (!resource.exists()) {
-                        log.warn("File does not exist: {}", filePath);
+
+                    // StorageService経由でファイル読み込み
+                    if (storageService == null) {
+                        log.warn("StorageService is not available");
                         return null;
                     }
-                    log.debug("File loaded successfully: {}", filePath);
+                    if (!storageService.exists(storagePath)) {
+                        log.warn("File does not exist in storage: {}", storagePath);
+                        return null;
+                    }
+
+                    byte[] fileBytes = storageService.getBytes(storagePath);
+                    ByteArrayResource resource = new ByteArrayResource(fileBytes);
+                    log.debug("File loaded successfully from storage: {} ({} bytes)", storagePath, fileBytes.length);
 
                     return new Media(MimeTypeUtils.parseMimeType(attachedFile.getMimeType()), resource);
 
