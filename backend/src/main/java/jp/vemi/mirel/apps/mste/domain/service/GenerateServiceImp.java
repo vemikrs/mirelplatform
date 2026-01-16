@@ -4,6 +4,7 @@
 package jp.vemi.mirel.apps.mste.domain.service;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import jp.vemi.framework.exeption.MessagingException;
+import jp.vemi.framework.storage.StorageService;
 import jp.vemi.framework.util.InstanceUtil;
 import jp.vemi.mirel.apps.mste.domain.dto.GenerateParameter;
 import jp.vemi.mirel.apps.mste.domain.dto.GenerateResult;
@@ -48,6 +50,9 @@ public class GenerateServiceImp implements GenerateService {
     /** Spring標準のリソース検索機能 */
     @Autowired
     protected ResourcePatternResolver resourcePatternResolver;
+
+    @Autowired
+    protected StorageService storageService;
 
     /**
      * {@inheritDoc}
@@ -103,7 +108,7 @@ public class GenerateServiceImp implements GenerateService {
             String filePath;
             try {
                 filePath = engine.execute();
-                
+
             } catch (MessagingException e) {
                 e.printStackTrace();
                 resp.addErrors(e.messages);
@@ -146,7 +151,21 @@ public class GenerateServiceImp implements GenerateService {
         }
 
         StructureReader sreader = new StructureReader();
-        Map<String, List<Map<String, Object>>> tac = sreader.read(item.getFilePath());
+        Map<String, List<Map<String, Object>>> tac;
+        try {
+            // StorageService経由 or ローカルで読み込み
+            if (storageService.exists(item.getFilePath())) {
+                try (InputStream is = storageService.getInputStream(item.getFilePath())) {
+                    tac = sreader.read(is);
+                }
+            } else {
+                tac = sreader.read(item.getFilePath());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.addError("ファイル読み込みエラー: " + item.getFilePath());
+            return once;
+        }
         for (Map.Entry<String, List<Map<String, Object>>> entry : tac.entrySet()) {
             once.put(entry.getKey(), entry.getValue());
         }

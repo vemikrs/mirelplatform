@@ -44,13 +44,29 @@ public class StructureReader {
     }
 
     public Map<String, List<Map<String, Object>>> read() {
-        // TODO: This is a development/testing method. Remove hardcoded path and use proper configuration.
+        // TODO: This is a development/testing method. Remove hardcoded path and use
+        // proper configuration.
         throw new UnsupportedOperationException("Use read(String filePath) method with proper file path");
     }
 
     public Map<String, List<Map<String, Object>>> read(String filePath) {
-
         Workbook workbook = this.getWorkbook(filePath);
+        return readFromWorkbook(workbook);
+    }
+
+    /**
+     * InputStreamからExcelを読み込んで構造化データを返す（StorageService対応）
+     * 
+     * @param inputStream
+     *            Excel入力ストリーム
+     * @return 構造化データ
+     */
+    public Map<String, List<Map<String, Object>>> read(InputStream inputStream) {
+        Workbook workbook = this.getWorkbook(inputStream);
+        return readFromWorkbook(workbook);
+    }
+
+    private Map<String, List<Map<String, Object>>> readFromWorkbook(Workbook workbook) {
 
         Sheet masterSheet = workbook.getSheet(Const.SHEET_NAME_MASTER);
 
@@ -67,7 +83,7 @@ public class StructureReader {
             if (null == item) {
                 continue;
             }
-    
+
             if (false == isHeaderReaded) {
                 item.forEach(cell -> {
                     headerItem.put(cell.getColumnIndex(),
@@ -85,7 +101,7 @@ public class StructureReader {
 
             item.forEach(cell -> {
                 Tuple2<String, CellType> cellitem = headerItem.get(cell.getColumnIndex());
-                if(null == cellitem) {
+                if (null == cellitem) {
                     return;
                 }
                 detailKeyValue.put(cellitem.getV1(), getCellValue(cell));
@@ -98,11 +114,12 @@ public class StructureReader {
         Set<String> demodels = Sets.newLinkedHashSet();
         details.forEach(map -> {
             String sheetName = (String) map.get("model");
-            if(false == StringUtils.isEmpty(sheetName)) {
+            if (false == StringUtils.isEmpty(sheetName)) {
                 demodels.add(sheetName);
             }
-        });;
-        
+        });
+        ;
+
         Map<String, List<Map<String, Object>>> dataElementsItems = Maps.newLinkedHashMap();
         for (String demodel : demodels) {
             List<Map<String, Object>> indicate = details.stream().filter(detail -> {
@@ -118,7 +135,7 @@ public class StructureReader {
 
     protected static String getMapValueAsString(Map<String, Object> map, String key) {
         Object value = map.get(key);
-        if(null == value) {
+        if (null == value) {
             return "";
         } else {
             return value.toString();
@@ -131,19 +148,19 @@ public class StructureReader {
 
         String sheetName = getMapValueAsString(firstInputColumnDef, "sheetName");
         double startLineDouble = (double) firstInputColumnDef.get("startLine");
-        int startIdx = ((int) startLineDouble) -1;
+        int startIdx = ((int) startLineDouble) - 1;
 
         List<Map<String, Object>> sheetData = Lists.newArrayList();
 
         Sheet sheet = workbook.getSheet(sheetName);
-        if(null == sheet) {
+        if (null == sheet) {
             log("シートがありません。シート名：" + sheetName);
             return sheetData;
         }
 
         List<Map<String, Object>> columnDefs = Lists.newArrayList();
         for (Map<String, Object> columnDef : inputColumnDefs) {
-            String refa = (String)columnDef.get("column");
+            String refa = (String) columnDef.get("column");
             CellReference ref = new CellReference(refa + "1");
             short columnIdx = ref.getCol();
             columnDef.put("columnIdx", columnIdx);
@@ -210,7 +227,7 @@ public class StructureReader {
         } else {
             valueType = cellType;
         }
-        switch(valueType) {
+        switch (valueType) {
             case NUMERIC: // including datetime
                 if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
                     // datetime format.
@@ -233,7 +250,7 @@ public class StructureReader {
         }
     }
 
-    protected String getCellValueAsString(Cell cell){
+    protected String getCellValueAsString(Cell cell) {
         Object cellValue = getCellValue(cell);
 
         if (cellValue == null) {
@@ -246,7 +263,8 @@ public class StructureReader {
 
         if (cellValue instanceof Date) {
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS");
-            LocalDateTime localDateTime = LocalDateTime.ofInstant(Date.class.cast(cellValue).toInstant(), ZoneId.systemDefault());
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(Date.class.cast(cellValue).toInstant(),
+                    ZoneId.systemDefault());
             return dateTimeFormatter.format(localDateTime);
         }
 
@@ -267,14 +285,20 @@ public class StructureReader {
             throw new MirelSystemException(e);
         }
 
+        return getWorkbook(isp);
+    }
+
+    /**
+     * InputStreamからWorkbookを取得（StorageService対応）
+     */
+    protected Workbook getWorkbook(InputStream inputStream) {
         try {
-            return WorkbookFactory.create(isp);
+            return WorkbookFactory.create(inputStream);
         } catch (EncryptedDocumentException | IOException e) {
             e.printStackTrace();
             throw new MirelSystemException(e);
         } finally {
-            CloseableUtil.close(isp);
+            CloseableUtil.close(inputStream);
         }
-
     }
 }
