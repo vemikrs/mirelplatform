@@ -8,6 +8,7 @@ import jp.vemi.mirel.foundation.web.api.admin.dto.FeatureFlagDto;
 import jp.vemi.mirel.foundation.web.api.admin.service.FeatureFlagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,7 +62,7 @@ public class FeatureController {
                 applicationId, userId, tenantId);
             return ResponseEntity.ok(features);
         } catch (Exception e) {
-            logger.error("Failed to get available features for application: {}", applicationId, e);
+            logger.error("Failed to get available features for application: {}", SanitizeUtil.forLog(applicationId), e);
             return ResponseEntity.internalServerError().build();
         }
     }

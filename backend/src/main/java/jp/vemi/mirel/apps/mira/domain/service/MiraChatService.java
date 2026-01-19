@@ -834,7 +834,7 @@ public class MiraChatService {
                     // 以前はここで何も返さず下流で save してしまい、所有者が上書きされていた可能性がある
                     log.warn(
                             "Conversation ownership mismatch or invalid status. Creating new conversation instead of using requestedId={}. user={}, tenant={}",
-                            conversationId, userId, tenantId);
+                            SanitizeUtil.forLog(conversationId), SanitizeUtil.forLog(userId), SanitizeUtil.forLog(tenantId));
                     return createConversation(tenantId, userId, mode, null);
                 }
             }

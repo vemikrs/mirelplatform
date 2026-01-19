@@ -123,8 +123,8 @@ public class ExecutionContextFilter extends OncePerRequestFilter {
                         // 構造化ログ (JSON形式) - ExecutionContext解決成功
                         String structuredLog = String.format(
                                 "{\"event\":\"executionContext.resolved\",\"userId\":\"%s\",\"tenantId\":\"%s\",\"requestId\":\"%s\"}",
-                                userId,
-                                tenantId,
+                                SanitizeUtil.forLog(userId),
+                                SanitizeUtil.forLog(tenantId),
                                 context.getRequestId());
                         logger.info(structuredLog);
                     }
