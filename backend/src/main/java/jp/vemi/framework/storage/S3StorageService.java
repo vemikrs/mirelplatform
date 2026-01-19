@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -172,7 +173,7 @@ public class S3StorageService implements StorageService, DisposableBean {
                     .contentLength((long) data.length)
                     .build();
             s3Client.putObject(request, RequestBody.fromBytes(data));
-            logger.debug("Saved file to R2: {}", key);
+            logger.debug("Saved file to R2: {}", SanitizeUtil.forLog(key));
         } catch (Exception e) {
             throw new IOException("Failed to save file: " + path, e);
         }
@@ -219,7 +220,7 @@ public class S3StorageService implements StorageService, DisposableBean {
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
-            logger.error("Failed to check existence: {}", path, e);
+            logger.error("Failed to check existence: {}", SanitizeUtil.forLog(path), e);
             return false;
         }
     }

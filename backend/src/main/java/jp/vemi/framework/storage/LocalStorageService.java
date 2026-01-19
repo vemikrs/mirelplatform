@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jp.vemi.framework.util.SanitizeUtil;
 
 /**
  * ローカルファイルシステム用のストレージサービス実装。
@@ -64,7 +65,7 @@ public class LocalStorageService implements StorageService {
         Path filePath = resolveSecurePath(path);
         Files.createDirectories(filePath.getParent());
         Files.copy(data, filePath, StandardCopyOption.REPLACE_EXISTING);
-        logger.debug("Saved file to: {}", filePath);
+        logger.debug("Saved file to: {}", SanitizeUtil.forLog(filePath));
     }
 
     @Override

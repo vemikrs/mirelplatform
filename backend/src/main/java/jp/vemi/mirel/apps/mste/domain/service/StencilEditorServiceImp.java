@@ -303,7 +303,7 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
                         files.add(file);
                     } catch (IOException e) {
-                        logger.error("ファイル読込エラー: " + path, e);
+                        logger.error("ファイル読込エラー: {}", SanitizeUtil.forLog(path), e);
                     }
                 });
 
@@ -361,10 +361,10 @@ public class StencilEditorServiceImp implements StencilEditorService {
                                     String yamlSerial = (String) configData.get("serial");
                                     if (yamlSerial != null && !yamlSerial.isEmpty()) {
                                         displaySerial = yamlSerial;
-                                        logger.debug("Version history: dir={}, yaml serial={}", dirName, yamlSerial);
+                                        logger.debug("Version history: dir={}, yaml serial={}", SanitizeUtil.forLog(dirName), SanitizeUtil.forLog(yamlSerial));
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("Failed to read serial from YAML: {}", settingsPath, e);
+                                    logger.warn("Failed to read serial from YAML: {}", SanitizeUtil.forLog(settingsPath), e);
                                 }
                             }
 
