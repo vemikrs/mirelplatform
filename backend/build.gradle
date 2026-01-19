@@ -154,6 +154,9 @@ tasks.withType(Test) {
 
 tasks.named('test') {
     useJUnitPlatform()
+    maxHeapSize = '3g'
+    jvmArgs '-XX:+UseG1GC'
+    forkEvery = 50 // OOMを防止するため50テストごとにJVMをフォーク
 }
 
 // test {

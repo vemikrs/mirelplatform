@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.yaml.snakeyaml.Yaml;
 
 import jp.vemi.framework.config.StorageConfig;
+import jp.vemi.framework.storage.StorageService;
 import jp.vemi.framework.util.FileUtil;
 import jp.vemi.mirel.apps.mste.domain.dao.entity.MsteStencil;
 import jp.vemi.mirel.apps.mste.domain.dao.repository.MsteStencilRepository;
@@ -56,6 +57,9 @@ public class StencilEditorServiceImp implements StencilEditorService {
 
     @Autowired
     private MsteStencilRepository stencilRepository;
+
+    @Autowired
+    private StorageService storageService;
 
     /**
      * {@inheritDoc}
@@ -112,12 +116,19 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 return response;
             }
 
-            if (!Files.exists(settingsPath)) {
+            // StorageService経由またはローカルでファイル存在確認
+            boolean fileExists = storageService.exists(settingsPath.toString()) || Files.exists(settingsPath);
+            if (!fileExists) {
                 response.addError("stencil-settings.ymlが見つかりません");
                 return response;
             }
 
-            String yamlContent = Files.readString(settingsPath);
+            String yamlContent;
+            if (storageService.exists(settingsPath.toString())) {
+                yamlContent = storageService.readString(settingsPath.toString());
+            } else {
+                yamlContent = Files.readString(settingsPath);
+            }
             // フォルダ名を正として、YAML内serialを上書き
             StencilConfigDto config = parseStencilConfig(yamlContent, stencilId, serial);
             config.setSerial(serial); // ディレクトリ名で上書き
@@ -180,7 +191,23 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 }
 
                 Files.createDirectories(filePath.getParent());
-                Files.writeString(filePath, file.getContent());
+                // StorageService経由でもローカルでも保存
+                try {
+                    storageService.writeString(filePath.toString(), file.getContent());
+                } catch (Exception e) {
+                    logger.warn(
+                            "Failed to write stencil file via StorageService. Fallback to local file write. path={}",
+                            SanitizeUtil.forLog(filePath.toString()), e);
+                    // フォールバック: ローカルファイル書き込み
+                    try {
+                        Files.writeString(filePath, file.getContent());
+                    } catch (IOException ioException) {
+                        logger.error(
+                                "Failed to write stencil file via both StorageService and local file system. path={}",
+                                SanitizeUtil.forLog(filePath.toString()), ioException);
+                        throw ioException;
+                    }
+                }
             }
 
             // DB更新
@@ -256,7 +283,13 @@ public class StencilEditorServiceImp implements StencilEditorService {
                 .forEach(path -> {
                     try {
                         String relativePath = stencilPath.relativize(path).toString();
-                        String content = Files.readString(path);
+                        String content;
+                        // StorageService経由 or ローカル
+                        if (storageService.exists(path.toString())) {
+                            content = storageService.readString(path.toString());
+                        } else {
+                            content = Files.readString(path);
+                        }
                         String fileName = path.getFileName().toString();
 
                         StencilFileDto file = StencilFileDto.builder()
@@ -312,7 +345,12 @@ public class StencilEditorServiceImp implements StencilEditorService {
                             Path settingsPath = path.resolve("stencil-settings.yml");
                             if (Files.exists(settingsPath)) {
                                 try {
-                                    String yamlContent = Files.readString(settingsPath);
+                                    String yamlContent;
+                                    if (storageService.exists(settingsPath.toString())) {
+                                        yamlContent = storageService.readString(settingsPath.toString());
+                                    } else {
+                                        yamlContent = Files.readString(settingsPath);
+                                    }
                                     @SuppressWarnings("unchecked")
                                     var data = (java.util.Map<String, Object>) yaml.load(yamlContent);
                                     @SuppressWarnings("unchecked")
@@ -722,7 +760,12 @@ public class StencilEditorServiceImp implements StencilEditorService {
                     }
                 }
             } else {
-                // ファイルシステムの処理
+                // ファイルシステムの処理 - StorageService経由 or ローカル
+                if (storageService.exists(filePath)) {
+                    try (InputStream is = storageService.getInputStream(filePath)) {
+                        return yaml.loadAs(is, StencilSettingsYml.class);
+                    }
+                }
                 File file = new File(filePath);
                 if (file.exists()) {
                     try (InputStream is = Files.newInputStream(file.toPath())) {

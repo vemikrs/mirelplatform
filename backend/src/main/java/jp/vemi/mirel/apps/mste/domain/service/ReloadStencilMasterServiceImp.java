@@ -30,6 +30,7 @@ import org.yaml.snakeyaml.constructor.ConstructorException;
 
 import jp.vemi.framework.exeption.MirelApplicationException;
 import jp.vemi.framework.exeption.MirelSystemException;
+import jp.vemi.framework.storage.StorageService;
 import jp.vemi.framework.util.FileUtil;
 import jp.vemi.framework.util.StorageUtil;
 import jp.vemi.framework.config.StorageConfig;
@@ -65,6 +66,9 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     @Autowired
     protected ResourcePatternResolver resourcePatternResolver;
 
+    @Autowired
+    protected StorageService storageService;
+
     /**
      * {@inheritDoc}
      */
@@ -99,7 +103,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
             // save stencil record.
             for (String fileName : allFiles) {
                 try {
-                    StencilSettingsYml settings = readYaml(new File(fileName));
+                    StencilSettingsYml settings = readYamlFromPath(fileName);
                     if (settings == null || settings.getStencil() == null
                             || settings.getStencil().getConfig() == null) {
                         logger.warn("Invalid stencil settings in {}", fileName);
@@ -167,7 +171,7 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
 
             for (String layerDir : layerDirs) {
                 logger.debug("Searching layer directory: {}", layerDir);
-                if (new File(layerDir).exists()) {
+                if (storageService.exists(layerDir) || new File(layerDir).exists()) {
                     List<String> layerFiles = FileUtil.findByFileName(layerDir, "stencil-settings.yml");
                     allFiles.addAll(layerFiles);
                     logger.info("Found {} stencil files in layer: {}", layerFiles.size(), layerDir);
@@ -403,8 +407,13 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
     private void readFileManagementLegacy() {
         String dir = StorageUtil.getBaseDir() + TemplateEngineProcessor.getStencilMasterStorageDir();
         String fileDir = dir + "/_filemanagement";
-        File fileDirFile = new File(fileDir);
 
+        // StorageService経由 or ローカルで存在確認
+        if (!storageService.exists(fileDir) && !new File(fileDir).exists()) {
+            return;
+        }
+
+        File fileDirFile = new File(fileDir);
         if (!fileDirFile.exists()) {
             return;
         }
@@ -498,19 +507,33 @@ public class ReloadStencilMasterServiceImp implements ReloadStencilMasterService
      * @return {@link StencilSettingsYml ステンシル定義YAML}
      */
     protected StencilSettingsYml readYaml(File file) {
+        return readYamlFromPath(file.getAbsolutePath());
+    }
+
+    /**
+     * read Stencil settings file from path (StorageService compatible).
+     * 
+     * @param filePath
+     *            Setting file path
+     * @return {@link StencilSettingsYml ステンシル定義YAML}
+     */
+    protected StencilSettingsYml readYamlFromPath(String filePath) {
         StencilSettingsYml settings = null;
-        try (InputStream stream = new FileSystemResource(file).getInputStream()) {
-            settings = new Yaml().loadAs(stream, StencilSettingsYml.class);
+        try {
+            // StorageService経由 or ローカルファイル
+            try (InputStream stream = storageService.exists(filePath)
+                    ? storageService.getInputStream(filePath)
+                    : new FileSystemResource(filePath).getInputStream()) {
+                settings = new Yaml().loadAs(stream, StencilSettingsYml.class);
+            }
 
             // NOTE: 親設定のマージはDB保存時には不要。
             // 実行時にTemplateEngineProcessor.getStencilSettings()が統一的にマージします。
 
         } catch (final ConstructorException e) {
-
             String msg = "yamlの読込でエラーが発生しました。";
             throw new MirelApplicationException(msg, e);
         } catch (final IOException e) {
-
             throw new MirelSystemException("yamlの読込で入出力エラーが発生しました。", e);
         }
         return settings;

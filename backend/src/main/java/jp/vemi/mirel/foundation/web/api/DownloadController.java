@@ -3,12 +3,11 @@
  */
 package jp.vemi.mirel.foundation.web.api;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -44,16 +43,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import groovy.lang.Tuple3;
+import jp.vemi.framework.storage.StorageService;
 import jp.vemi.framework.util.InstanceUtil;
 import jp.vemi.mirel.foundation.feature.files.service.FileDownloadService;
 import jp.vemi.mirel.foundation.feature.files.dto.FileDownloadParameter;
 import jp.vemi.mirel.foundation.feature.files.dto.FileDownloadResult;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ファイルダウンロードコントローラ.<br/>
  */
+@Slf4j
 @RestController
 @Tag(name = "File Management", description = "ファイルのアップロード・ダウンロード管理API")
 public class DownloadController {
@@ -64,33 +66,30 @@ public class DownloadController {
     @Autowired
     FileDownloadService service;
 
+    @Autowired
+    StorageService storageService;
+
     /**
      * GETメソッドによるファイルダウンロード.<br/>
      * 
-     * @param path ファイルIDのカンマ区切りリスト
-     * @param response HTTPレスポンス
+     * @param path
+     *            ファイルIDのカンマ区切りリスト
+     * @param response
+     *            HTTPレスポンス
      * @return {@link ResponseEntity}
      */
-    @Operation(
-        summary = "ファイルダウンロード (GET)",
-        description = "ファイルIDを指定してファイルをダウンロードします。" +
-                      " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
-                      " カンマ区切りで複数のファイルIDを指定可能です。" +
-                      " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdを指定してください。"
-    )
+    @Operation(summary = "ファイルダウンロード (GET)", description = "ファイルIDを指定してファイルをダウンロードします。" +
+            " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
+            " カンマ区切りで複数のファイルIDを指定可能です。" +
+            " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdを指定してください。")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200", 
-            description = "ファイルダウンロード成功",
-            content = @Content(mediaType = "application/octet-stream")
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "ファイルダウンロード成功", content = @Content(mediaType = "application/octet-stream")),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
     })
     @RequestMapping(path = "commons/dlsite/{path}", method = RequestMethod.GET)
     public ResponseEntity<ApiResponse<FileDownloadResult>> index4Get(
-            @Parameter(description = "ファイルID (カンマ区切りで複数指定可能)", example = "abc123,def456")
-            @NotEmpty @PathVariable String path,
+            @Parameter(description = "ファイルID (カンマ区切りで複数指定可能)", example = "abc123,def456") @NotEmpty @PathVariable String path,
             final HttpServletResponse response) {
         String[] spliteds = path.split(",");
 
@@ -109,38 +108,23 @@ public class DownloadController {
     /**
      * POSTメソッドによるファイルダウンロード. <br/>
      * 
-     * @param request リクエストボディ (fileIdリスト)
-     * @param response HTTPレスポンス
+     * @param request
+     *            リクエストボディ (fileIdリスト)
+     * @param response
+     *            HTTPレスポンス
      * @return レスポンスエンティティ
      */
-    @Operation(
-        summary = "ファイルダウンロード (POST)",
-        description = "リクエストボディでファイルIDを指定してファイルをダウンロードします。" +
-                      " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
-                      " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdをcontentに指定してください。"
-    )
+    @Operation(summary = "ファイルダウンロード (POST)", description = "リクエストボディでファイルIDを指定してファイルをダウンロードします。" +
+            " 複数ファイル指定時はZIP形式で圧縮してダウンロードします。" +
+            " 生成API('/apps/mste/api/generate')の戻り値filesに含まれるfileIdをcontentに指定してください。")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200", 
-            description = "ファイルダウンロード成功",
-            content = @Content(mediaType = "application/octet-stream")
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "ファイルダウンロード成功", content = @Content(mediaType = "application/octet-stream")),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "ファイルが見つかりません"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "ダウンロード処理エラー")
     })
     @RequestMapping(path = "commons/download", method = RequestMethod.POST)
     public ResponseEntity<ApiResponse<FileDownloadResult>> index(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "ダウンロード対象ファイル情報",
-                required = true,
-                content = @Content(
-                    schema = @Schema(implementation = Map.class),
-                    examples = @ExampleObject(
-                        value = "{\"content\":[{\"fileId\":\"abc123\"},{\"fileId\":\"def456\"}]}"
-                    )
-                )
-            )
-            @RequestBody final Map<String, Object> request,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "ダウンロード対象ファイル情報", required = true, content = @Content(schema = @Schema(implementation = Map.class), examples = @ExampleObject(value = "{\"content\":[{\"fileId\":\"abc123\"},{\"fileId\":\"def456\"}]}"))) @RequestBody final Map<String, Object> request,
             final HttpServletResponse response) {
         return miho(request, response);
     }
@@ -190,23 +174,29 @@ public class DownloadController {
         if (paths.size() > 1) {
             try (ZipOutputStream zostream = new ZipOutputStream(response.getOutputStream())) {
                 for (final Tuple3<String, String, Path> item : apiResp.getData().paths) {
-                    File entryFile = item.getV3().toFile();
+                    String storagePath = item.getV3().toString();
                     // ZIP エントリ名のサニタイズ（パスセパレータを除去し、ベース名のみ使用）
-                    String parentName = new File(entryFile.getParent()).getName();
-                    String safeParent = parentName.replace('/', '_').replace('\\', '_');
-                    String baseName = new File(item.getV2()).getName();
-                    String safeBase = baseName.replace('/', '_').replace('\\', '_');
-                    final ZipEntry entry = new ZipEntry(safeParent + "-" + safeBase);
+                    String entryFileName = item.getV2();
+                    String safeBase = entryFileName.replace('/', '_').replace('\\', '_');
+                    final ZipEntry entry = new ZipEntry(item.getV1() + "-" + safeBase);
                     zostream.putNextEntry(entry);
-                    zostream.write(Files.readAllBytes(item.getV3()));
+                    // StorageService経由でファイル読み込み
+                    try (InputStream is = storageService.getInputStream(storagePath)) {
+                        is.transferTo(zostream);
+                    }
                 }
             } catch (final IOException e) {
+                log.error("Failed to create zip file", e);
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } else if (paths.size() == 1) {
             try {
-                Files.copy(paths.stream().findFirst().get().getV3(), response.getOutputStream());
+                String storagePath = paths.stream().findFirst().get().getV3().toString();
+                try (InputStream is = storageService.getInputStream(storagePath)) {
+                    is.transferTo(response.getOutputStream());
+                }
             } catch (IOException e) {
+                log.error("Failed to stream file", e);
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } else {

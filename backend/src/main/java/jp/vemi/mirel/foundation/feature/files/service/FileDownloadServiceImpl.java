@@ -15,22 +15,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import groovy.lang.Tuple3;
+import jp.vemi.framework.storage.StorageService;
 import jp.vemi.mirel.foundation.abst.dao.entity.FileManagement;
 import jp.vemi.mirel.foundation.abst.dao.repository.FileManagementRepository;
 import jp.vemi.mirel.foundation.feature.files.dto.FileDownloadParameter;
 import jp.vemi.mirel.foundation.feature.files.dto.FileDownloadResult;
 import jp.vemi.mirel.foundation.web.api.dto.ApiRequest;
 import jp.vemi.mirel.foundation.web.api.dto.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link FileDownloadService} の具象です。 .<br/>
  */
+@Slf4j
 @Service
 public class FileDownloadServiceImpl implements FileDownloadService {
 
     /** {@link FileManagementRepository} */
     @Autowired
     protected FileManagementRepository fileManagementRepository;
+
+    @Autowired
+    protected StorageService storageService;
 
     protected Date getToday() {
         return new Date();
@@ -54,7 +60,7 @@ public class FileDownloadServiceImpl implements FileDownloadService {
             try {
                 item = fileManagementRepository.findById(fileId).get();
             } catch (NoSuchElementException e) {
-                e.printStackTrace();
+                log.warn("File not found: fileId={}", fileId, e);
                 resp.addError("ファイルが見つかりません。ファイル管理ID：" + fileId);
                 return;
             }
@@ -90,15 +96,17 @@ public class FileDownloadServiceImpl implements FileDownloadService {
         // transfer to File model
         fmItems.forEach(item -> {
 
-            Path path = Paths.get(item.getFilePath());
+            String storagePath = item.getFilePath();
 
-            // file not exists
-            if (false == path.toFile().exists()) {
-                resp.addError("ファイルがストレージから取得できみせんでした。ファイル名：" + item.fileName);
+            // StorageService経由でファイル存在確認
+            if (!storageService.exists(storagePath)) {
+                log.warn("File not found in storage: path={}", storagePath);
+                resp.addError("ファイルがストレージから取得できませんでした。ファイル名：" + item.fileName);
                 return;
             }
 
-            // ok.
+            // ok. パスは論理パスとして保持（実際のダウンロードはDownloadControllerでStorageService経由）
+            Path path = Paths.get(storagePath);
             resp.getData().paths.add(new Tuple3<String, String, Path>(item.getFileId(), item.getFileName(), path));
         });
 

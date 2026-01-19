@@ -27,8 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
         "auth.jwt.secret=test-secret-key-that-is-at-least-32-characters-long",
         "spring.main.allow-bean-definition-overriding=true"
 })
+@org.springframework.test.context.ActiveProfiles("e2e")
 @DisplayName("JWT ロール変換 統合テスト")
 class JwtRoleConversionIntegrationTest {
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.mail.javamail.JavaMailSender javaMailSender;
 
     @Autowired
     private JwtService jwtService;

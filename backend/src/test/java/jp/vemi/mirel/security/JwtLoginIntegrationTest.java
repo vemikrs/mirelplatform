@@ -34,17 +34,17 @@ import jp.vemi.mirel.foundation.web.api.auth.dto.LoginRequest;
 import static org.mockito.Mockito.mock;
 
 @SpringBootTest(properties = {
-    "spring.main.allow-bean-definition-overriding=true",
-    "auth.method=jwt",
-    "auth.jwt.enabled=true",
-    "auth.jwt.secret=verylongsecretkeythatisatleast32byteslongforsecurityreasons",
-    "auth.jwt.expiration=3600",
-    "mipla2.security.api.csrf-enabled=true",
-    "mira.ai.provider=mock",
-    "mira.ai.mock.enabled=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "auth.method=jwt",
+        "auth.jwt.enabled=true",
+        "auth.jwt.secret=verylongsecretkeythatisatleast32byteslongforsecurityreasons",
+        "auth.jwt.expiration=3600",
+        "mipla2.security.api.csrf-enabled=true",
+        "mira.ai.provider=mock",
+        "mira.ai.mock.enabled=true"
 })
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("e2e")
 public class JwtLoginIntegrationTest {
 
     @TestConfiguration

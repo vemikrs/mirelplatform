@@ -99,7 +99,7 @@ class DynamicEntityServiceTest {
 
         service.delete(modelId, id);
 
-        verify(jdbcTemplate).update(eq("DELETE FROM dyn_test_model WHERE id = ?"), any(UUID.class));
+        verify(jdbcTemplate).update(eq("DELETE FROM dyn_test_model WHERE id = ?"), eq(id));
     }
 
     @Test

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - TemplateEngineProcessor.getSerialNos() の動作確認
  */
 @SpringBootTest(classes = jp.vemi.mirel.MiplaApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles("e2e")
 @org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LayeredStencilStorageTest {

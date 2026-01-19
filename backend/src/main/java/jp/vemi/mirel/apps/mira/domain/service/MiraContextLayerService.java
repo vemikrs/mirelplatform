@@ -151,12 +151,12 @@ public class MiraContextLayerService {
     public MiraContextLayer saveContext(MiraContextLayer layer) {
         if (log.isDebugEnabled()) {
             log.debug("[MiraContextLayerService] saveContext: scope={}, category={}",
-                    layer.getScope(), layer.getCategory());
+                    layer.getScope(), SanitizeUtil.forLog(layer.getCategory()));
         }
 
         MiraContextLayer saved = repository.save(layer);
         log.info("[MiraContextLayerService] Saved context: id={}, scope={}, category={}",
-                saved.getId(), saved.getScope(), SanitizeUtil.forLog(saved.getCategory()));
+                SanitizeUtil.forLog(saved.getId()), saved.getScope(), SanitizeUtil.forLog(saved.getCategory()));
         return saved;
     }
 
