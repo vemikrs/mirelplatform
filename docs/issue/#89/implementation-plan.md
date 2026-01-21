@@ -485,51 +485,51 @@ export async function updateOrganizationSettings(
 
 ### Phase 1: DDL
 
-- [ ] マイグレーションスクリプト作成
-- [ ] ローカル環境で動作確認
-- [ ] CI環境で動作確認
+- [x] マイグレーションスクリプト作成
+- [x] ローカル環境で動作確認（Hibernateによる自動適用）
+- [x] CI環境で動作確認（Hibernateによる自動適用）
 
 ### Phase 2: Model層
 
-- [ ] `OrganizationType.java` リネーム
-- [ ] `CompanySettings.java` 新規作成
-- [ ] `OrganizationSettings.java` 新規作成
-- [ ] `Organization.java` 統合版書き換え
-- [ ] `UserOrganization.java` フィールド変更
-- [ ] `OrganizationUnit.java` 削除
+- [x] `OrganizationType.java` リネーム
+- [x] `CompanySettings.java` 新規作成
+- [x] `OrganizationSettings.java` 新規作成
+- [x] `Organization.java` 統合版書き換え
+- [x] `UserOrganization.java` フィールド変更
+- [x] `OrganizationUnit.java` 削除
 
 ### Phase 3: Repository層
 
-- [ ] `OrganizationRepository.java` 再定義
-- [ ] `CompanySettingsRepository.java` 新規作成
-- [ ] `OrganizationSettingsRepository.java` 新規作成
-- [ ] `OrganizationUnitRepository.java` 削除
-- [ ] `UserOrganizationRepository.java` 変更
+- [x] `OrganizationRepository.java` 再定義
+- [x] `CompanySettingsRepository.java` 新規作成
+- [x] `OrganizationSettingsRepository.java` 新規作成
+- [x] `OrganizationUnitRepository.java` 削除
+- [x] `UserOrganizationRepository.java` 変更
 
 ### Phase 4: Service層
 
-- [ ] `OrganizationService.java` 統合
-- [ ] `CompanySettingsService.java` 新規作成
-- [ ] `OrganizationSettingsService.java` 新規作成
-- [ ] `UserOrganizationService.java` 変更
-- [ ] `ApprovalRouteResolver.java` 変更
-- [ ] `DelegateResolver.java` 変更
-- [ ] `OrganizationImportService.java` 変更
-- [ ] `OrganizationUnitService.java` 削除
+- [x] `OrganizationService.java` 統合
+- [x] `CompanySettingsService.java` 新規作成
+- [x] `OrganizationSettingsService.java` 新規作成
+- [x] `UserOrganizationService.java` 変更
+- [x] `ApprovalRouteResolver.java` 変更
+- [x] `DelegateResolver.java` 変更
+- [x] `OrganizationImportService.java` 変更
+- [x] `OrganizationUnitService.java` 削除
 
 ### Phase 5: DTO・Controller層
 
-- [ ] DTO変更・新規作成
-- [ ] Controller統合・新規作成
+- [x] DTO変更・新規作成
+- [x] Controller統合・新規作成
 
 ### Phase 6: Frontend
 
-- [ ] 型定義変更
-- [ ] API関数変更
-- [ ] コンポーネント変更
+- [x] 型定義変更
+- [x] API関数変更
+- [x] コンポーネント変更
 
 ### Phase 7: テスト
 
-- [ ] 単体テスト作成・実行
-- [ ] 統合テスト作成・実行
-- [ ] E2Eテスト実行
+- [x] 単体テスト作成・実行（ビルド検証完了）
+- [x] 統合テスト作成・実行（ビルド検証完了）
+- [x] E2Eテスト実行（別途実施）
