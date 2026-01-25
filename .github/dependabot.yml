@@ -41,3 +41,19 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # Spring Boot: 段階的にアップグレードするため、現行メジャー/マイナーバージョン内のみ許可
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+      # Spring Security: メジャーバージョンジャンプを防ぐ
+      - dependency-name: "org.springframework.security:*"
+        update-types: ["version-update:semver-major"]
+      # Springdoc OpenAPI: v3.xはSpring Boot 3.4+が必要
+      - dependency-name: "org.springdoc:*"
+        update-types: ["version-update:semver-major"]
+      # Hibernate: Spring Bootとの互換性を維持
+      - dependency-name: "org.hibernate.orm:*"
+        update-types: ["version-update:semver-major"]
+      # SNAPSHOTバージョンを除外
+      - dependency-name: "*"
+        versions: ["*-SNAPSHOT", "*-SNAPSHOT*"]
