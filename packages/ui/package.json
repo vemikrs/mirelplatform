@@ -1,6 +1,6 @@
 {
   "name": "@mireljs/ui-core",
-  "version": "3.2.13",
+  "version": "3.2.24",
   "description": "mirel Design System - shadcn/ui + Radix UI wrapper",
   "repository": {
     "type": "git",
@@ -69,21 +69,21 @@
     "@uiw/codemirror-theme-vscode": "^4.25.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^0.563.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
-    "@types/node": "^25.0.5",
-    "@types/react": "^19.2.8",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^25.0.10",
+    "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
-    "happy-dom": "^20.1.0",
+    "happy-dom": "^20.3.7",
     "postcss": "^8.5.6",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4",
     "@vitejs/plugin-react": "^5.1.2",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   }
 }
