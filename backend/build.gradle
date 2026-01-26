@@ -60,7 +60,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql:42.7.3'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.apache.commons:commons-lang3:3.17.0'
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'org.apache.poi:poi:5.2.3'
     implementation('org.apache.poi:poi-ooxml:5.2.3') {
         exclude group: 'stax', module: 'stax-api'
