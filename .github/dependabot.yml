@@ -56,7 +56,7 @@ updates:
         update-types: ["version-update:semver-major"]
       # Jakarta Persistence API: 3.2.xはHibernate 7.0向けのため、3.1.xに固定
       - dependency-name: "jakarta.persistence:jakarta.persistence-api"
-        versions: [">=3.2.0"]
+        versions: ["3.2.*", "3.3.*", "3.4.*", "3.5.*", "4.*"]
       # SNAPSHOTバージョンを除外
       - dependency-name: "*"
         versions: ["*-SNAPSHOT", "*-SNAPSHOT*"]
