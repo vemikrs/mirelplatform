@@ -43,6 +43,9 @@ updates:
           - "patch"
     ignore:
       # Spring Boot: 段階的にアップグレードするため、現行メジャー/マイナーバージョン内のみ許可
+      # プラグインとライブラリ両方を無視する必要がある
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.springframework.boot:*"
         update-types: ["version-update:semver-major"]
       # Spring Security: メジャーバージョンジャンプを防ぐ
