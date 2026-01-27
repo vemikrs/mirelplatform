@@ -76,7 +76,7 @@ dependencies {
     
     // Redis (分散レート制限・セッション管理)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.5.10'
-    implementation 'io.lettuce:lettuce-core:6.3.2.RELEASE'
+    // lettuce-core: Spring Bootの依存関係管理に任せる（6.3.xはSpring Boot 3.5+と互換性なし）
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.14.1'
     
     // Azure Communication Services (メール送信)
