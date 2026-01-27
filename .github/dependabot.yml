@@ -54,9 +54,6 @@ updates:
       # Hibernate: Spring Bootとの互換性を維持
       - dependency-name: "org.hibernate.orm:*"
         update-types: ["version-update:semver-major"]
-      # Jakarta Persistence API: 3.2.xはHibernate 7.0向けのため、3.1.xに固定
+      # Jakarta Persistence API: 3.2.x以降はHibernate 7.0向けのため、3.1.xにとどめる
+      # Gradleでは versions に glob が使えないため、依存関係自体を無視
       - dependency-name: "jakarta.persistence:jakarta.persistence-api"
-        versions: ["3.2.*", "3.3.*", "3.4.*", "3.5.*", "4.*"]
-      # SNAPSHOTバージョンを除外
-      - dependency-name: "*"
-        versions: ["*-SNAPSHOT", "*-SNAPSHOT*"]
