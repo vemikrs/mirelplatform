@@ -20,8 +20,8 @@ export default defineConfig({
   /* Reduce concurrent workers to prevent frontend crashes */
   workers: process.env.CI ? 1 : 2,  // Reduced from 4 to 2 to prevent resource exhaustion
   
-  /* Disable maxFailures to run all tests */
-  maxFailures: undefined,  // Run all tests to completion
+  /* Fail fast on CI: stop after 5 failures to catch fundamental issues early */
+  maxFailures: process.env.CI ? 5 : undefined,
   
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'list',
