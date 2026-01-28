@@ -10,37 +10,37 @@ import {
   Trash 
 } from 'lucide-react';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@mirel/ui';
-import type { OrganizationUnit } from '../types';
+import type { Organization } from '../types';
 import { cn } from '@/lib/utils/cn';
 
 interface OrganizationTreeProps {
-  units: OrganizationUnit[];
-  onSelect: (unit: OrganizationUnit) => void;
-  selectedUnitId?: string;
-  onAddSubUnit?: (parentUnit: OrganizationUnit) => void;
-  onEditUnit?: (unit: OrganizationUnit) => void;
-  onDeleteUnit?: (unit: OrganizationUnit) => void;
+  organizations: Organization[];
+  onSelect: (org: Organization) => void;
+  selectedOrgId?: string;
+  onAddSubOrg?: (parentOrg: Organization) => void;
+  onEditOrg?: (org: Organization) => void;
+  onDeleteOrg?: (org: Organization) => void;
 }
 
 export function OrganizationTree({ 
-  units, 
+  organizations, 
   onSelect, 
-  selectedUnitId,
-  onAddSubUnit,
-  onEditUnit,
-  onDeleteUnit
+  selectedOrgId,
+  onAddSubOrg,
+  onEditOrg,
+  onDeleteOrg
 }: OrganizationTreeProps) {
   return (
     <div className="space-y-1">
-      {units.map(unit => (
+      {organizations.map(org => (
         <TreeNode 
-          key={unit.unitId} 
-          unit={unit} 
+          key={org.id} 
+          org={org} 
           onSelect={onSelect} 
-          selectedUnitId={selectedUnitId}
-          onAddSubUnit={onAddSubUnit}
-          onEditUnit={onEditUnit}
-          onDeleteUnit={onDeleteUnit}
+          selectedOrgId={selectedOrgId}
+          onAddSubOrg={onAddSubOrg}
+          onEditOrg={onEditOrg}
+          onDeleteOrg={onDeleteOrg}
           level={0}
         />
       ))}
@@ -49,27 +49,27 @@ export function OrganizationTree({
 }
 
 interface TreeNodeProps {
-  unit: OrganizationUnit;
-  onSelect: (unit: OrganizationUnit) => void;
-  selectedUnitId?: string;
-  onAddSubUnit?: (parentUnit: OrganizationUnit) => void;
-  onEditUnit?: (unit: OrganizationUnit) => void;
-  onDeleteUnit?: (unit: OrganizationUnit) => void;
+  org: Organization;
+  onSelect: (org: Organization) => void;
+  selectedOrgId?: string;
+  onAddSubOrg?: (parentOrg: Organization) => void;
+  onEditOrg?: (org: Organization) => void;
+  onDeleteOrg?: (org: Organization) => void;
   level: number;
 }
 
 function TreeNode({ 
-  unit, 
+  org, 
   onSelect, 
-  selectedUnitId,
-  onAddSubUnit,
-  onEditUnit,
-  onDeleteUnit,
+  selectedOrgId,
+  onAddSubOrg,
+  onEditOrg,
+  onDeleteOrg,
   level 
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const hasChildren = unit.children && unit.children.length > 0;
-  const isSelected = unit.unitId === selectedUnitId;
+  const hasChildren = org.children && org.children.length > 0;
+  const isSelected = org.id === selectedOrgId;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -77,7 +77,7 @@ function TreeNode({
   };
 
   const handleSelect = () => {
-    onSelect(unit);
+    onSelect(org);
   };
 
   return (
@@ -105,7 +105,7 @@ function TreeNode({
         </div>
         
         <span className="flex-1 truncate text-sm font-medium">
-          {unit.name}
+          {org.displayName || org.name}
         </span>
 
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -116,15 +116,15 @@ function TreeNode({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onAddSubUnit?.(unit)}>
+              <DropdownMenuItem onClick={() => onAddSubOrg?.(org)}>
                 <Plus className="mr-2 size-4" />
                 配下組織を追加
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEditUnit?.(unit)}>
+              <DropdownMenuItem onClick={() => onEditOrg?.(org)}>
                 <Edit className="mr-2 size-4" />
                 編集
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDeleteUnit?.(unit)} className="text-destructive">
+              <DropdownMenuItem onClick={() => onDeleteOrg?.(org)} className="text-destructive">
                 <Trash className="mr-2 size-4" />
                 削除
               </DropdownMenuItem>
@@ -135,15 +135,15 @@ function TreeNode({
 
       {isExpanded && hasChildren && (
         <div>
-          {unit.children!.map(child => (
+          {org.children!.map(child => (
             <TreeNode 
-              key={child.unitId} 
-              unit={child} 
+              key={child.id} 
+              org={child} 
               onSelect={onSelect} 
-              selectedUnitId={selectedUnitId}
-              onAddSubUnit={onAddSubUnit}
-              onEditUnit={onEditUnit}
-              onDeleteUnit={onDeleteUnit}
+              selectedOrgId={selectedOrgId}
+              onAddSubOrg={onAddSubOrg}
+              onEditOrg={onEditOrg}
+              onDeleteOrg={onDeleteOrg}
               level={level + 1}
             />
           ))}

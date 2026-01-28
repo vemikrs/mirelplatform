@@ -11,14 +11,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jp.vemi.mirel.foundation.organization.model.Delegation;
-import jp.vemi.mirel.foundation.organization.model.OrganizationUnit;
+import jp.vemi.mirel.foundation.organization.model.Organization;
 import jp.vemi.mirel.foundation.organization.model.PositionType;
 import jp.vemi.mirel.foundation.organization.model.UserOrganization;
 import jp.vemi.mirel.foundation.organization.repository.DelegationRepository;
-import jp.vemi.mirel.foundation.organization.repository.OrganizationUnitRepository;
+import jp.vemi.mirel.foundation.organization.repository.OrganizationRepository;
 import jp.vemi.mirel.foundation.organization.repository.UserOrganizationRepository;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 代理者解決サービス.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -26,16 +29,10 @@ public class DelegateResolver {
 
     private final DelegationRepository delegationRepository;
     private final UserOrganizationRepository userOrganizationRepository;
-    private final OrganizationUnitRepository organizationUnitRepository;
+    private final OrganizationRepository organizationRepository;
 
     /**
      * 代理承認者を解決します.
-     * 
-     * @param primaryApproverId
-     *            本来の承認者ID
-     * @param targetDate
-     *            対象日
-     * @return 代理承認者ID（見つからない場合はEmpty）
      */
     @Transactional(readOnly = true)
     public Optional<String> findDelegate(String primaryApproverId, LocalDate targetDate) {
@@ -52,16 +49,13 @@ public class DelegateResolver {
             return Optional.empty();
         }
 
-        OrganizationUnit unit = organizationUnitRepository.findById(primary.getUnitId()).orElse(null);
-        if (unit == null) {
+        Organization org = organizationRepository.findById(primary.getOrganizationId()).orElse(null);
+        if (org == null) {
             return Optional.empty();
         }
 
-        // 2.1 同組織の副長を探す（簡易実装：役職名に「副」が含まれる、または特定のジョブコードなど）
-        // ここでは実装省略
-
         // 2.2 上位組織の長にエスカレーション
-        OrganizationUnit parent = getParentUnit(unit);
+        Organization parent = getParentOrg(org);
         if (parent != null) {
             UserOrganization parentManager = findManager(parent);
             if (parentManager != null) {
@@ -79,16 +73,16 @@ public class DelegateResolver {
                 .orElse(null);
     }
 
-    private OrganizationUnit getParentUnit(OrganizationUnit unit) {
-        if (unit.getParentUnitId() == null) {
+    private Organization getParentOrg(Organization org) {
+        if (org.getParentId() == null) {
             return null;
         }
-        return organizationUnitRepository.findById(unit.getParentUnitId()).orElse(null);
+        return organizationRepository.findById(org.getParentId()).orElse(null);
     }
 
-    private UserOrganization findManager(OrganizationUnit unit) {
-        return userOrganizationRepository.findByUnitId(unit.getUnitId()).stream()
-                .filter(uo -> Boolean.TRUE.equals(uo.getIsManager()))
+    private UserOrganization findManager(Organization org) {
+        return userOrganizationRepository.findByOrganizationId(org.getId()).stream()
+                .filter(UserOrganization::isManager)  // isManager() uses role.equalsIgnoreCase("manager")
                 .findFirst()
                 .orElse(null);
     }

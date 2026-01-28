@@ -1,2 +1,11 @@
-organization_id,tenant_id,name,code,fiscal_year_start,is_active,version,delete_flag,create_user_id,create_date,update_user_id,update_date
-org-sample-001,default,Sample Trading Corp,SAMPLE,4,true,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+id,tenant_id,parent_id,name,display_name,code,type,path,level,sort_order,is_active,start_date,end_date,period_code,version,delete_flag,create_user_id,create_date,update_user_id,update_date
+org-sample-001,default,,Sample Trading Corp,Sample Trading Corp,SAMPLE,COMPANY,/,0,1,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-div-sales,default,org-sample-001,Sales Division,Sales Div,DIV-SALES,DIVISION,/org-sample-001/,1,10,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-div-admin,default,org-sample-001,Administration Division,Admin Div,DIV-ADMIN,DIVISION,/org-sample-001/,1,20,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-dept-dom-sales,default,org-div-sales,Domestic Sales Dept,Domestic Sales,DEPT-DOM,DEPARTMENT,/org-sample-001/org-div-sales/,2,10,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-dept-ovs-sales,default,org-div-sales,Overseas Sales Dept,Overseas Sales,DEPT-OVS,DEPARTMENT,/org-sample-001/org-div-sales/,2,20,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-dept-hr,default,org-div-admin,Human Resources Dept,HR,DEPT-HR,DEPARTMENT,/org-sample-001/org-div-admin/,2,10,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-dept-ga,default,org-div-admin,General Affairs Dept,GA,DEPT-GA,DEPARTMENT,/org-sample-001/org-div-admin/,2,20,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-dept-acc,default,org-div-admin,Accounting Dept,Accounting,DEPT-ACC,DEPARTMENT,/org-sample-001/org-div-admin/,2,30,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-sect-dom-1,default,org-dept-dom-sales,Sales Section 1,Section 1,SECT-DOM1,SECTION,/org-sample-001/org-div-sales/org-dept-dom-sales/,3,10,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00
+org-sect-dom-2,default,org-dept-dom-sales,Sales Section 2,Section 2,SECT-DOM2,SECTION,/org-sample-001/org-div-sales/org-dept-dom-sales/,3,20,true,2023-04-01,,2024,1,false,admin,2023-01-01T00:00:00,admin,2023-01-01T00:00:00

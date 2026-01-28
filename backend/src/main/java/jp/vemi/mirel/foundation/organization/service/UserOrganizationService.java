@@ -10,27 +10,27 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jp.vemi.mirel.foundation.organization.dto.OrganizationDto;
 import jp.vemi.mirel.foundation.organization.dto.UserOrganizationDto;
 import jp.vemi.mirel.foundation.organization.model.UserOrganization;
-import jp.vemi.mirel.foundation.organization.repository.OrganizationUnitRepository;
+import jp.vemi.mirel.foundation.organization.repository.OrganizationRepository;
 import jp.vemi.mirel.foundation.organization.repository.UserOrganizationRepository;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * ユーザー所属サービス.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class UserOrganizationService {
 
     private final UserOrganizationRepository userOrganizationRepository;
-    private final OrganizationUnitRepository organizationUnitRepository;
-    private final OrganizationUnitService organizationUnitService;
+    private final OrganizationRepository organizationRepository;
+    private final OrganizationService organizationService;
 
     /**
      * ユーザーの所属一覧を取得します.
-     * 
-     * @param userId
-     *            ユーザーID
-     * @return 所属DTOリスト
      */
     @Transactional(readOnly = true)
     public List<UserOrganizationDto> findByUserId(String userId) {
@@ -42,46 +42,37 @@ public class UserOrganizationService {
     /**
      * 組織のメンバーを取得します.
      * 
-     * @param unitId
-     *            組織ID
-     * @param includeSubUnits
-     *            配下組織を含めるか
+     * @param organizationId 組織ID
+     * @param includeSubOrgs 配下組織を含めるか
      * @return 所属DTOリスト
      */
     @Transactional(readOnly = true)
-    public List<UserOrganizationDto> findMembers(String unitId, boolean includeSubUnits) {
-        List<String> unitIds = new java.util.ArrayList<>();
-        unitIds.add(unitId);
+    public List<UserOrganizationDto> findMembers(String organizationId, boolean includeSubOrgs) {
+        List<String> orgIds = new java.util.ArrayList<>();
+        orgIds.add(organizationId);
 
-        if (includeSubUnits) {
-            List<jp.vemi.mirel.foundation.organization.dto.OrganizationUnitDto> descendants = organizationUnitService
-                    .getDescendants(unitId);
-            descendants.forEach(d -> unitIds.add(d.getUnitId()));
+        if (includeSubOrgs) {
+            List<OrganizationDto> descendants = organizationService.getDescendants(organizationId);
+            descendants.forEach(d -> orgIds.add(d.getId()));
         }
 
-        return userOrganizationRepository.findByUnitIdIn(unitIds).stream()
+        return userOrganizationRepository.findByOrganizationIdIn(orgIds).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     /**
      * ユーザーを組織に所属させます.
-     * 
-     * @param userId
-     *            ユーザーID
-     * @param dto
-     *            所属DTO
-     * @return 作成された所属DTO
      */
     public UserOrganizationDto assignUser(String userId, UserOrganizationDto dto) {
         UserOrganization entity = new UserOrganization();
         entity.setId(UUID.randomUUID().toString());
         entity.setUserId(userId);
-        entity.setUnitId(dto.getUnitId());
+        entity.setOrganizationId(dto.getOrganizationId());
         entity.setPositionType(dto.getPositionType());
+        entity.setRole(dto.getRole());
         entity.setJobTitle(dto.getJobTitle());
         entity.setJobGrade(dto.getJobGrade());
-        entity.setIsManager(dto.getIsManager());
         entity.setCanApprove(dto.getCanApprove());
         entity.setStartDate(dto.getStartDate());
         entity.setEndDate(dto.getEndDate());
@@ -94,19 +85,19 @@ public class UserOrganizationService {
         UserOrganizationDto dto = new UserOrganizationDto();
         dto.setId(entity.getId());
         dto.setUserId(entity.getUserId());
-        dto.setUnitId(entity.getUnitId());
+        dto.setOrganizationId(entity.getOrganizationId());
         dto.setPositionType(entity.getPositionType());
+        dto.setRole(entity.getRole());
         dto.setJobTitle(entity.getJobTitle());
         dto.setJobGrade(entity.getJobGrade());
-        dto.setIsManager(entity.getIsManager());
         dto.setCanApprove(entity.getCanApprove());
         dto.setStartDate(entity.getStartDate());
         dto.setEndDate(entity.getEndDate());
 
         // 組織情報を取得して設定
-        organizationUnitRepository.findById(entity.getUnitId()).ifPresent(unit -> {
-            dto.setUnitName(unit.getName());
-            dto.setUnitCode(unit.getCode());
+        organizationRepository.findById(entity.getOrganizationId()).ifPresent(org -> {
+            dto.setOrganizationName(org.getName());
+            dto.setOrganizationCode(org.getCode());
         });
 
         return dto;

@@ -1,4 +1,8 @@
-export type UnitType = 
+// ============================================================
+// 組織種別
+// ============================================================
+
+export type OrganizationType = 
   | 'COMPANY'
   | 'DIVISION'
   | 'DEPARTMENT'
@@ -12,41 +16,69 @@ export type PositionType =
   | 'SECONDARY'
   | 'TEMPORARY';
 
+// ============================================================
+// 統合組織エンティティ
+// ============================================================
+
 export interface Organization {
-  organizationId: string;
+  id: string;
+  tenantId: string;
+  parentId?: string;
   name: string;
-  code: string;
-  description?: string;
-  fiscalYearStart?: number;
+  displayName?: string;
+  code?: string;
+  type: OrganizationType;
+  path?: string;
+  level: number;
+  sortOrder?: number;
   isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+  periodCode?: string;
+  children?: Organization[];
+  companySettings?: CompanySettings;
+  organizationSettings?: OrganizationSettings;
 }
 
-export interface OrganizationUnit {
-  unitId: string;
+// ============================================================
+// 設定エンティティ
+// ============================================================
+
+export interface CompanySettings {
+  id: string;
   organizationId: string;
-  parentUnitId?: string;
-  name: string;
-  code: string;
-  unitType: UnitType;
-  level: number;
-  sortOrder: number;
-  isActive: boolean;
-  effectiveFrom?: string;
-  effectiveTo?: string;
-  children?: OrganizationUnit[];
+  periodCode?: string;
+  fiscalYearStart?: number;
+  currencyCode?: string;
+  timezone?: string;
+  locale?: string;
 }
+
+export interface OrganizationSettings {
+  id: string;
+  organizationId: string;
+  periodCode?: string;
+  allowFlexibleSchedule?: boolean;
+  requireApproval?: boolean;
+  maxMemberCount?: number;
+  extendedSettings?: Record<string, unknown>;
+}
+
+// ============================================================
+// ユーザー所属
+// ============================================================
 
 export interface UserOrganization {
   id: string;
   userId: string;
-  unitId: string;
+  organizationId: string; // 旧: unitId
   positionType: PositionType;
+  role?: string; // 旧: isManager
   jobTitle?: string;
   jobGrade?: number;
-  isManager: boolean;
   canApprove: boolean;
   startDate?: string;
   endDate?: string;
-  unitName?: string;
-  unitCode?: string;
+  organizationName?: string; // 旧: unitName
+  organizationCode?: string; // 旧: unitCode
 }

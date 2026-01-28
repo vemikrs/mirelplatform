@@ -11,30 +11,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jp.vemi.mirel.foundation.organization.dto.ApprovalStep;
 import jp.vemi.mirel.foundation.organization.model.ApproverType;
-import jp.vemi.mirel.foundation.organization.model.OrganizationUnit;
+import jp.vemi.mirel.foundation.organization.model.Organization;
+import jp.vemi.mirel.foundation.organization.model.OrganizationType;
 import jp.vemi.mirel.foundation.organization.model.PositionType;
-import jp.vemi.mirel.foundation.organization.model.UnitType;
 import jp.vemi.mirel.foundation.organization.model.UserOrganization;
-import jp.vemi.mirel.foundation.organization.repository.OrganizationUnitRepository;
+import jp.vemi.mirel.foundation.organization.repository.OrganizationRepository;
 import jp.vemi.mirel.foundation.organization.repository.UserOrganizationRepository;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 承認ルート解決サービス.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ApprovalRouteResolver {
 
     private final UserOrganizationRepository userOrganizationRepository;
-    private final OrganizationUnitRepository organizationUnitRepository;
+    private final OrganizationRepository organizationRepository;
 
     /**
      * 承認ルートを解決します.
-     * 
-     * @param applicantUserId
-     *            申請者ID
-     * @param routeDefinition
-     *            ルート定義（カンマ区切りのApproverType）
-     * @return 承認ステップのリスト
      */
     @Transactional(readOnly = true)
     public List<ApprovalStep> resolveRoute(String applicantUserId, String routeDefinition) {
@@ -46,9 +43,9 @@ public class ApprovalRouteResolver {
             throw new IllegalStateException("Primary organization not found for user: " + applicantUserId);
         }
 
-        OrganizationUnit currentUnit = organizationUnitRepository.findById(primary.getUnitId()).orElse(null);
-        if (currentUnit == null) {
-            throw new IllegalStateException("Organization unit not found: " + primary.getUnitId());
+        Organization currentOrg = organizationRepository.findById(primary.getOrganizationId()).orElse(null);
+        if (currentOrg == null) {
+            throw new IllegalStateException("Organization not found: " + primary.getOrganizationId());
         }
 
         // 2. ルート定義をパース
@@ -57,24 +54,16 @@ public class ApprovalRouteResolver {
         // 3. 各ステップの承認者を解決
         for (String typeStr : types) {
             ApproverType type = ApproverType.valueOf(typeStr.trim());
-            ApprovalStep step = resolveStep(currentUnit, type);
+            ApprovalStep step = resolveStep(currentOrg, type);
 
             if (step != null) {
                 steps.add(step);
             }
 
-            // 次のステップ用に組織を上に辿る（必要に応じて）
-            // 簡易実装として、DEPARTMENT_HEADなどの後は親に移動するロジックを入れるか、
-            // あるいはresolveStep内で適切な組織を探すか。
-            // ここではresolveStep内で探索し、currentUnitは更新しない（または必要に応じて更新）
-            // 設計書では「次のステップ用に組織を上に辿る」とあるが、
-            // 連続して承認者を求める場合、例えば「課長→部長」の場合、
-            // 課長を見つけた後、その組織の親（部）に移動する必要がある。
-
             if (shouldMoveToParent(type)) {
-                OrganizationUnit parent = getParentUnit(currentUnit);
+                Organization parent = getParentOrg(currentOrg);
                 if (parent != null) {
-                    currentUnit = parent;
+                    currentOrg = parent;
                 }
             }
         }
@@ -83,8 +72,6 @@ public class ApprovalRouteResolver {
     }
 
     private boolean shouldMoveToParent(ApproverType type) {
-        // 承認者タイプに応じて親に移動するか判定
-        // 例: 課長承認後は親組織（部）へ
         return type == ApproverType.SECTION_HEAD || type == ApproverType.DEPARTMENT_HEAD;
     }
 
@@ -95,45 +82,40 @@ public class ApprovalRouteResolver {
                 .orElse(null);
     }
 
-    private OrganizationUnit getParentUnit(OrganizationUnit unit) {
-        if (unit.getParentUnitId() == null) {
+    private Organization getParentOrg(Organization org) {
+        if (org.getParentId() == null) {
             return null;
         }
-        return organizationUnitRepository.findById(unit.getParentUnitId()).orElse(null);
+        return organizationRepository.findById(org.getParentId()).orElse(null);
     }
 
-    private ApprovalStep resolveStep(OrganizationUnit startUnit, ApproverType type) {
-        OrganizationUnit targetUnit = startUnit;
+    private ApprovalStep resolveStep(Organization startOrg, ApproverType type) {
+        Organization targetOrg = startOrg;
         UserOrganization approver = null;
 
         switch (type) {
             case DIRECT_MANAGER:
-                // 直属上長：現在の組織の長
-                approver = findManager(targetUnit);
+                approver = findManager(targetOrg);
                 break;
             case SECTION_HEAD:
-                // 課長：現在の組織から上に辿ってSECTIONを探し、その長
-                targetUnit = findUnitByType(startUnit, UnitType.SECTION);
-                if (targetUnit != null) {
-                    approver = findManager(targetUnit);
+                targetOrg = findOrgByType(startOrg, OrganizationType.SECTION);
+                if (targetOrg != null) {
+                    approver = findManager(targetOrg);
                 }
                 break;
             case DEPARTMENT_HEAD:
-                // 部長
-                targetUnit = findUnitByType(startUnit, UnitType.DEPARTMENT);
-                if (targetUnit != null) {
-                    approver = findManager(targetUnit);
+                targetOrg = findOrgByType(startOrg, OrganizationType.DEPARTMENT);
+                if (targetOrg != null) {
+                    approver = findManager(targetOrg);
                 }
                 break;
             case DIVISION_HEAD:
-                // 本部長
-                targetUnit = findUnitByType(startUnit, UnitType.DIVISION);
-                if (targetUnit != null) {
-                    approver = findManager(targetUnit);
+                targetOrg = findOrgByType(startOrg, OrganizationType.DIVISION);
+                if (targetOrg != null) {
+                    approver = findManager(targetOrg);
                 }
                 break;
             default:
-                // その他は未実装
                 break;
         }
 
@@ -141,9 +123,9 @@ public class ApprovalRouteResolver {
             ApprovalStep step = new ApprovalStep();
             step.setType(type);
             step.setApproverUserId(approver.getUserId());
-            if (targetUnit != null) {
-                step.setUnitId(targetUnit.getUnitId());
-                step.setUnitName(targetUnit.getName());
+            if (targetOrg != null) {
+                step.setOrganizationId(targetOrg.getId());
+                step.setOrganizationName(targetOrg.getName());
             }
             return step;
         }
@@ -151,20 +133,20 @@ public class ApprovalRouteResolver {
         return null;
     }
 
-    private OrganizationUnit findUnitByType(OrganizationUnit startUnit, UnitType type) {
-        OrganizationUnit current = startUnit;
+    private Organization findOrgByType(Organization startOrg, OrganizationType type) {
+        Organization current = startOrg;
         while (current != null) {
-            if (current.getUnitType() == type) {
+            if (current.getType() == type) {
                 return current;
             }
-            current = getParentUnit(current);
+            current = getParentOrg(current);
         }
         return null;
     }
 
-    private UserOrganization findManager(OrganizationUnit unit) {
-        return userOrganizationRepository.findByUnitId(unit.getUnitId()).stream()
-                .filter(uo -> Boolean.TRUE.equals(uo.getIsManager()))
+    private UserOrganization findManager(Organization org) {
+        return userOrganizationRepository.findByOrganizationId(org.getId()).stream()
+                .filter(UserOrganization::isManager)  // isManager() uses role.equalsIgnoreCase("manager")
                 .findFirst()
                 .orElse(null);
     }
