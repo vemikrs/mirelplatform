@@ -27,8 +27,8 @@ echo "   ポート: 3000"
 echo "   プロファイル: dev"
 echo "   ログ: logs/backend.log"
 
-# setsid を使ってプロセスを完全に切り離す（新しいセッションで起動）
-setsid bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun" > logs/backend.log 2>&1 &
+# nohup を使ってプロセスを完全に切り離す（macOS/Linux両対応）
+nohup bash -c "cd '$PROJECT_ROOT' && SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun" > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
@@ -48,13 +48,13 @@ if [ ! -d "apps/frontend-v3/node_modules" ]; then
     fi
 fi
 
-# Vite 開発サーバ起動（setsid で完全に切り離し）
+# Vite 開発サーバ起動（nohup で完全に切り離し - macOS/Linux両対応）
 if command -v pnpm >/dev/null 2>&1; then
     FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && pnpm dev"
 else
     FRONTEND_CMD="cd '$PROJECT_ROOT/apps/frontend-v3' && npm run dev"
 fi
-setsid bash -c "$FRONTEND_CMD" > logs/frontend.log 2>&1 &
+nohup bash -c "$FRONTEND_CMD" > logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
 

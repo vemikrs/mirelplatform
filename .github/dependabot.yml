@@ -1,0 +1,62 @@
+# Dependabot設定
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # npm (pnpm) - ルートおよびworkspaces
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Gradle (backend)
+  - package-ecosystem: "gradle"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Spring Boot: 段階的にアップグレードするため、現行メジャー/マイナーバージョン内のみ許可
+      # プラグインとライブラリ両方を無視する必要がある
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+      # Spring Security: メジャーバージョンジャンプを防ぐ
+      - dependency-name: "org.springframework.security:*"
+        update-types: ["version-update:semver-major"]
+      # Springdoc OpenAPI: v3.xはSpring Boot 3.4+が必要
+      - dependency-name: "org.springdoc:*"
+        update-types: ["version-update:semver-major"]
+      # Hibernate: Spring Bootとの互換性を維持
+      - dependency-name: "org.hibernate.orm:*"
+        update-types: ["version-update:semver-major"]
+      # Jakarta Persistence API: 3.2.x以降はHibernate 7.0向けのため、3.1.xにとどめる
+      # Gradleでは versions に glob が使えないため、依存関係自体を無視
+      - dependency-name: "jakarta.persistence:jakarta.persistence-api"

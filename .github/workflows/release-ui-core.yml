@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -31,7 +31,7 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -98,6 +98,22 @@ jobs:
             echo "bumped=true" >> $GITHUB_OUTPUT
           else
             echo "No version bump needed"
+            # package.json が VERSION と同期しているか確認（あるべき姿の維持）
+            cd packages/ui
+            PKG_VERSION=$(jq -r '.version' package.json)
+            cd ../..
+            if [ "$PKG_VERSION" != "$VERSION" ]; then
+              echo "package.json ($PKG_VERSION) is out of sync with VERSION ($VERSION). Syncing..."
+              cd packages/ui
+              npm version $VERSION --no-git-tag-version --allow-same-version
+              cd ../..
+              jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+              git add packages/ui/package.json package.json
+              git commit -m "chore(release): sync package.json to $VERSION [skip ci]"
+              git fetch origin master
+              git rebase origin/master
+              git push origin master
+            fi
             echo "bumped=false" >> $GITHUB_OUTPUT
           fi
 

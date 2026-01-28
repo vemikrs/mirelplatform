@@ -14,12 +14,14 @@ import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAu
 import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiImageAutoConfiguration;
 import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAudioTranscriptionAutoConfiguration;
+import com.google.cloud.spring.autoconfigure.storage.GcpStorageAutoConfiguration;
 
 @SpringBootApplication(exclude = {
         AzureOpenAiChatAutoConfiguration.class,
         AzureOpenAiEmbeddingAutoConfiguration.class,
         AzureOpenAiImageAutoConfiguration.class,
-        AzureOpenAiAudioTranscriptionAutoConfiguration.class
+        AzureOpenAiAudioTranscriptionAutoConfiguration.class,
+        GcpStorageAutoConfiguration.class
 })
 @EnableAspectJAutoProxy
 @EnableMethodSecurity(prePostEnabled = true)
