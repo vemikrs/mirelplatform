@@ -403,6 +403,27 @@ export const MiraChatInput = forwardRef<MiraChatInputHandle, MiraChatInputProps>
   };
   
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // ===== IME Composition 対応 =====
+    // IME（Input Method Editor）で日本語等を入力中は、キーイベント処理を無視する。
+    // 
+    // 技術仕様:
+    // - isComposing: DOM Level 3 Events で定義された標準プロパティ
+    // - IMEで文字を変換中（未確定状態）の場合に true となる
+    // - Enterキーで変換を確定する操作と、メッセージ送信を区別するために必要
+    // 
+    // 対象環境:
+    // - 全OS（Windows/macOS/Linux）、全モダンブラウザで動作
+    // - 日本語IME（ATOK、Google日本語入力、MS-IME等）
+    // - 中国語・韓国語等のIMEも同様
+    // 
+    // React固有の注意点:
+    // - React の SyntheticEvent では isComposing が直接公開されていないため、
+    //   nativeEvent 経由でアクセスする必要がある
+    // ================================
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
+    
     // Ctrl/Cmd + Shift + M でコンテキストスイッチャー
     if (e.key === 'M' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
       e.preventDefault();
