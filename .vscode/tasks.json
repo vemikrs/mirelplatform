@@ -76,7 +76,7 @@
     {
       "label": "Backend: Start Spring Boot",
       "type": "shell",
-      "command": "lsof -ti:3000 | xargs -r kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "lsof -ti:3000 | xargs kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -105,7 +105,7 @@
     {
       "label": "Backend: Start WITHOUT Devtools",
       "type": "shell",
-      "command": "lsof -ti:3000 | xargs -r kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
+      "command": "lsof -ti:3000 | xargs kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_DEVTOOLS_RESTART_ENABLED=false SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -134,7 +134,7 @@
     {
       "label": "Backend: Start with CLEAN_INSERT",
       "type": "shell",
-      "command": "lsof -ti:3000 | xargs -r kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=CLEAN_INSERT'",
+      "command": "lsof -ti:3000 | xargs kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=CLEAN_INSERT'",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -163,7 +163,7 @@
     {
       "label": "Backend: Start with UPSERT",
       "type": "shell",
-      "command": "lsof -ti:3000 | xargs -r kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=UPSERT'",
+      "command": "lsof -ti:3000 | xargs kill 2>/dev/null || true; set -a; [ -f .env ] && . .env; set +a; SPRING_PROFILES_ACTIVE=dev SERVER_PORT=3000 ./gradlew --console=plain :backend:bootRun --args='--mirel.data.load-mode=UPSERT'",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -192,7 +192,7 @@
     {
       "label": "Frontend-v3: Start Vite",
       "type": "shell",
-      "command": "lsof -ti:5173 | xargs -r kill 2>/dev/null || true; pnpm --filter frontend-v3 dev",
+      "command": "lsof -ti:5173 | xargs kill 2>/dev/null || true; pnpm --filter frontend-v3 dev",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
@@ -220,7 +220,7 @@
     {
       "label": "Frontend-v3: Preview",
       "type": "shell",
-      "command": "lsof -ti:4173 | xargs -r kill 2>/dev/null || true; pnpm --filter frontend-v3 preview -- --host 0.0.0.0 --port 4173",
+      "command": "lsof -ti:4173 | xargs kill 2>/dev/null || true; pnpm --filter frontend-v3 preview -- --host 0.0.0.0 --port 4173",
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
