@@ -59,6 +59,7 @@ import { MiraPlaygroundPage } from '@/features/mira/components/pages/MiraPlaygro
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { TitleUpdater } from '@/components/TitleUpdater';
+import { AuthLoadingFallback } from '@/components/auth/AuthLoadingFallback';
 import type { NavigationConfig } from './navigation.schema';
 
 // キャッシュ変数を削除
@@ -200,6 +201,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     handle: { title: 'ホーム' },
     loader: authLoader,
+    hydrateFallbackElement: <AuthLoadingFallback />,
     errorElement: <InternalServerErrorPage />,
     children: [
       {
