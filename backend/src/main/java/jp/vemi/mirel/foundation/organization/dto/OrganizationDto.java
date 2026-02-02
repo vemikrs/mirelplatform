@@ -3,14 +3,46 @@
  */
 package jp.vemi.mirel.foundation.organization.dto;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import jp.vemi.mirel.foundation.organization.model.OrganizationType;
 import lombok.Data;
 
+/**
+ * 組織DTO（統合版）.
+ */
 @Data
 public class OrganizationDto {
-    private String organizationId;
+    private String id;
+    private String tenantId;
+    private String parentId;
     private String name;
+    private String displayName;
     private String code;
-    private String description;
-    private Integer fiscalYearStart;
+    private OrganizationType type;
+    private String path;
+    private Integer level;
+    private Integer sortOrder;
     private Boolean isActive;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String periodCode;
+
+    // ツリー操作用
+    private List<OrganizationDto> children;
+
+    /**
+     * 子ノードリストを取得します（防御コピー）.
+     * 
+     * @return 子ノードリストのコピー（nullの場合はnull）
+     */
+    public List<OrganizationDto> getChildren() {
+        return children == null ? null : new ArrayList<>(children);
+    }
+
+    // 設定（オプション）
+    private CompanySettingsDto companySettings;
+    private OrganizationSettingsDto organizationSettings;
 }

@@ -6,7 +6,9 @@ package jp.vemi.mirel.foundation.organization.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,67 +17,83 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-import jp.vemi.mirel.foundation.organization.dto.OrganizationUnitDto;
-import jp.vemi.mirel.foundation.organization.model.UnitType;
+import jp.vemi.mirel.foundation.feature.TenantContext;
+import jp.vemi.mirel.foundation.organization.dto.OrganizationDto;
+import jp.vemi.mirel.foundation.organization.model.OrganizationType;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 組織インポートサービス.
+ */
 @Service
 @RequiredArgsConstructor
 public class OrganizationImportService {
 
-    private final OrganizationUnitService organizationUnitService;
+    private final OrganizationService organizationService;
 
     @Data
-    public static class UnitCsvRow {
-        private String unitId;
-        private String parentUnitId;
+    public static class OrganizationCsvRow {
+        private String id;
+        private String parentId;
         private String name;
+        private String displayName;
         private String code;
-        private String unitType;
-        private String effectiveFrom;
+        private String type;
+        private String startDate;
     }
 
     /**
-     * 組織ユニットをCSVからインポートします.
+     * 組織をCSVからインポートします.
      * 
-     * @param organizationId
-     *            組織ID
-     * @param csvStream
-     *            CSV入力ストリーム
-     * @throws IOException
-     *             入出力エラー
+     * @param tenantId テナントID
+     * @param csvStream CSV入力ストリーム
+     * @throws IOException 入出力エラー
      */
     @Transactional
-    public void importUnits(String organizationId, InputStream csvStream) throws IOException {
+    public void importOrganizations(String tenantId, InputStream csvStream) throws IOException {
+        // tenantId を TenantContext に設定
+        TenantContext.setTenantId(tenantId);
+
         CsvMapper mapper = new CsvMapper();
-        CsvSchema schema = mapper.schemaFor(UnitCsvRow.class).withHeader();
+        CsvSchema schema = mapper.schemaFor(OrganizationCsvRow.class).withHeader();
 
-        try (MappingIterator<UnitCsvRow> it = mapper.readerFor(UnitCsvRow.class).with(schema).readValues(csvStream)) {
-            List<UnitCsvRow> rows = it.readAll();
+        try (MappingIterator<OrganizationCsvRow> it = mapper.readerFor(OrganizationCsvRow.class).with(schema).readValues(csvStream)) {
+            List<OrganizationCsvRow> rows = it.readAll();
 
-            for (UnitCsvRow row : rows) {
-                OrganizationUnitDto dto = new OrganizationUnitDto();
-                dto.setUnitId(row.getUnitId()); // ID指定があれば更新またはID指定作成
-                dto.setParentUnitId(row.getParentUnitId());
+            // CSV id → 生成UUID のマッピング（親子参照解決用）
+            Map<String, String> idMapping = new HashMap<>();
+
+            for (OrganizationCsvRow row : rows) {
+                OrganizationDto dto = new OrganizationDto();
+                
+                // parentId を idMapping で変換（既にインポート済みの親を参照）
+                String resolvedParentId = null;
+                if (row.getParentId() != null && !row.getParentId().isEmpty()) {
+                    resolvedParentId = idMapping.get(row.getParentId());
+                    if (resolvedParentId == null) {
+                        // マッピングにない場合は元のIDをそのまま使用（既存データ参照の可能性）
+                        resolvedParentId = row.getParentId();
+                    }
+                }
+                dto.setParentId(resolvedParentId);
+                
                 dto.setName(row.getName());
+                dto.setDisplayName(row.getDisplayName());
                 dto.setCode(row.getCode());
-                if (row.getUnitType() != null) {
-                    dto.setUnitType(UnitType.valueOf(row.getUnitType()));
+                if (row.getType() != null && !row.getType().isEmpty()) {
+                    dto.setType(OrganizationType.valueOf(row.getType()));
                 }
-                if (row.getEffectiveFrom() != null && !row.getEffectiveFrom().isEmpty()) {
-                    dto.setEffectiveFrom(LocalDate.parse(row.getEffectiveFrom()));
+                if (row.getStartDate() != null && !row.getStartDate().isEmpty()) {
+                    dto.setStartDate(LocalDate.parse(row.getStartDate()));
                 }
 
-                // 簡易実装：常に作成（ID指定があれば上書きロジックが必要だが、Serviceのcreateは新規作成前提かも）
-                // OrganizationUnitServiceにupsert的なメソッドがないので、createを呼ぶが、
-                // IDが指定されている場合はcreate内でIDを使うように修正が必要かもしれない。
-                // いったんcreateを呼ぶ。
-
-                // 注意: 親ユニットがまだ存在しない場合のエラーハンドリングが必要だが、
-                // ここではCSVが親→子の順で並んでいる、またはID指定で解決できると仮定。
-
-                organizationUnitService.create(organizationId, dto);
+                OrganizationDto created = organizationService.create(dto);
+                
+                // CSV id → 生成UUID をマッピングに追加
+                if (row.getId() != null && !row.getId().isEmpty()) {
+                    idMapping.put(row.getId(), created.getId());
+                }
             }
         }
     }

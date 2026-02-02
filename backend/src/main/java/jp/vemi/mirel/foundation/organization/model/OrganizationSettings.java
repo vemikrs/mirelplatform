@@ -5,57 +5,51 @@ package jp.vemi.mirel.foundation.organization.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.util.Date;
+import java.util.Map;
 
 /**
- * ユーザー所属情報.
+ * 組織設定.
+ * 各組織ノードに紐づく設定を管理する。
  */
 @Setter
 @Getter
 @Entity
-@Table(name = "mir_user_organization")
-public class UserOrganization {
+@Table(name = "mir_organization_settings",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"organization_id", "period_code"}))
+public class OrganizationSettings {
 
     @Id
     private String id;
 
-    @Column(name = "user_id", nullable = false)
-    private String userId;
-
     @Column(name = "organization_id", nullable = false)
-    private String organizationId; // 旧: unitId
+    private String organizationId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "position_type")
-    private PositionType positionType; // PRIMARY, SECONDARY, TEMPORARY
+    @Column(name = "period_code")
+    private String periodCode;
 
-    @Column(name = "role", length = 50)
-    private String role; // 旧: isManager -> "manager", "leader", "member" 等
+    @Column(name = "allow_flexible_schedule", columnDefinition = "boolean default false")
+    private Boolean allowFlexibleSchedule = false;
 
-    @Column(name = "job_title")
-    private String jobTitle; // 部長、課長、担当
+    @Column(name = "require_approval", columnDefinition = "boolean default true")
+    private Boolean requireApproval = true;
 
-    @Column(name = "job_grade")
-    private Integer jobGrade; // 職位等級（承認権限判定用）
+    @Column(name = "max_member_count")
+    private Integer maxMemberCount;
 
-    @Column(name = "can_approve", columnDefinition = "boolean default false")
-    private Boolean canApprove = false; // 承認権限
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "extended_settings", columnDefinition = "jsonb")
+    private Map<String, Object> extendedSettings;
 
     /** バージョン */
     @Version
@@ -92,17 +86,10 @@ public class UserOrganization {
         setDefault(this);
     }
 
-    public static void setDefault(final UserOrganization entity) {
+    public static void setDefault(final OrganizationSettings entity) {
         if (entity.createDate == null) {
             entity.createDate = new Date();
         }
         entity.updateDate = new Date();
-    }
-
-    /**
-     * このユーザーがマネージャーロールかどうか.
-     */
-    public boolean isManager() {
-        return "manager".equalsIgnoreCase(role);
     }
 }

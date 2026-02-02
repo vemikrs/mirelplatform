@@ -5,57 +5,47 @@ package jp.vemi.mirel.foundation.organization.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDate;
 import java.util.Date;
 
 /**
- * ユーザー所属情報.
+ * 会社設定.
+ * Root組織（type=COMPANY）に紐づく会社レベルの設定を管理する。
  */
 @Setter
 @Getter
 @Entity
-@Table(name = "mir_user_organization")
-public class UserOrganization {
+@Table(name = "mir_company_settings", 
+       uniqueConstraints = @UniqueConstraint(columnNames = {"organization_id", "period_code"}))
+public class CompanySettings {
 
     @Id
     private String id;
 
-    @Column(name = "user_id", nullable = false)
-    private String userId;
-
     @Column(name = "organization_id", nullable = false)
-    private String organizationId; // 旧: unitId
+    private String organizationId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "position_type")
-    private PositionType positionType; // PRIMARY, SECONDARY, TEMPORARY
+    @Column(name = "period_code")
+    private String periodCode;
 
-    @Column(name = "role", length = 50)
-    private String role; // 旧: isManager -> "manager", "leader", "member" 等
+    @Column(name = "fiscal_year_start")
+    private Integer fiscalYearStart = 4; // 4月始まり
 
-    @Column(name = "job_title")
-    private String jobTitle; // 部長、課長、担当
+    @Column(name = "currency_code", length = 3)
+    private String currencyCode = "JPY";
 
-    @Column(name = "job_grade")
-    private Integer jobGrade; // 職位等級（承認権限判定用）
+    @Column(name = "timezone", length = 50)
+    private String timezone = "Asia/Tokyo";
 
-    @Column(name = "can_approve", columnDefinition = "boolean default false")
-    private Boolean canApprove = false; // 承認権限
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Column(name = "locale", length = 10)
+    private String locale = "ja_JP";
 
     /** バージョン */
     @Version
@@ -92,17 +82,10 @@ public class UserOrganization {
         setDefault(this);
     }
 
-    public static void setDefault(final UserOrganization entity) {
+    public static void setDefault(final CompanySettings entity) {
         if (entity.createDate == null) {
             entity.createDate = new Date();
         }
         entity.updateDate = new Date();
-    }
-
-    /**
-     * このユーザーがマネージャーロールかどうか.
-     */
-    public boolean isManager() {
-        return "manager".equalsIgnoreCase(role);
     }
 }

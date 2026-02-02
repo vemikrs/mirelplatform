@@ -5,17 +5,25 @@ package jp.vemi.mirel.foundation.organization.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
 /**
- * 組織ルート（テナント配下に複数持てる設計）.
+ * 統合組織エンティティ（再帰的ツリー構造）.
+ * 
+ * 旧 Organization（会社）と OrganizationUnit（部署）を統合。
+ * type=COMPANY のノードがルートとなり、その配下に階層構造を持つ。
  */
 @Setter
 @Getter
@@ -24,25 +32,46 @@ import java.util.Date;
 public class Organization {
 
     @Id
-    @Column(name = "organization_id")
-    private String organizationId;
+    private String id;
 
     @Column(name = "tenant_id", nullable = false)
     private String tenantId;
 
+    @Column(name = "parent_id")
+    private String parentId; // null = ルートノード（COMPANY）
+
     @Column(nullable = false)
-    private String name; // 株式会社○○
+    private String name; // 正式名称（株式会社○○、開発部など）
+
+    @Column(name = "display_name")
+    private String displayName; // 表示名
 
     @Column(unique = true)
-    private String code; // CORP001
+    private String code; // 組織コード
 
-    private String description;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private OrganizationType type; // COMPANY, DIVISION, DEPARTMENT, SECTION, TEAM, PROJECT, VIRTUAL
 
-    @Column(name = "fiscal_year_start")
-    private Integer fiscalYearStart; // 4 = 4月始まり
+    @Column(name = "path", length = 1024)
+    private String path; // 階層パス（例: /root/div/dept）
+
+    private Integer level; // 階層レベル（ROOT=0）
+
+    @Column(name = "sort_order")
+    private Integer sortOrder; // 同一階層内の表示順
 
     @Column(name = "is_active", columnDefinition = "boolean default true")
     private Boolean isActive = true;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "period_code")
+    private String periodCode; // 期間コード（リレーション管理用）
 
     /** バージョン */
     @Version
@@ -50,24 +79,35 @@ public class Organization {
     private Long version = 1L;
 
     /** 削除フラグ */
-    @Column(columnDefinition = "boolean default false")
+    @Column(name = "delete_flag", columnDefinition = "boolean default false")
     private Boolean deleteFlag = false;
 
     /** 作成ユーザ */
-    @Column()
+    @Column(name = "create_user_id")
     private String createUserId;
 
     /** 作成日 */
-    @Column()
+    @Column(name = "create_date")
     private Date createDate;
 
     /** 更新ユーザ */
-    @Column()
+    @Column(name = "update_user_id")
     private String updateUserId;
 
     /** 更新日 */
-    @Column()
+    @Column(name = "update_date")
     private Date updateDate;
+
+    // ツリー操作用（永続化対象外）
+    @Transient
+    private List<Organization> children;
+
+    // 設定（永続化対象外、APIで別途取得）
+    @Transient
+    private CompanySettings companySettings;
+
+    @Transient
+    private OrganizationSettings organizationSettings;
 
     @PrePersist
     public void onPrePersist() {
@@ -83,8 +123,13 @@ public class Organization {
         if (entity.createDate == null) {
             entity.createDate = new Date();
         }
-        if (entity.updateDate == null) {
-            entity.updateDate = new Date();
-        }
+        entity.updateDate = new Date();
+    }
+
+    /**
+     * このノードがルート（COMPANY）かどうか.
+     */
+    public boolean isRoot() {
+        return parentId == null || type == OrganizationType.COMPANY;
     }
 }
