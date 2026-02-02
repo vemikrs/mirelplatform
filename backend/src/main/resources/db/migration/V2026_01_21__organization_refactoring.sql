@@ -54,6 +54,15 @@ CREATE TABLE IF NOT EXISTS mir_organization_settings (
 CREATE INDEX IF NOT EXISTS idx_organization_settings_org ON mir_organization_settings(organization_id);
 CREATE INDEX IF NOT EXISTS idx_organization_settings_period ON mir_organization_settings(period_code);
 
+-- 外部キー制約（参照用: Hibernate DDL-Autoにより自動適用されるため手動実行は不要）
+-- 手動でFKを追加する場合は以下を実行:
+-- ALTER TABLE mir_company_settings
+--   ADD CONSTRAINT fk_company_settings_org
+--   FOREIGN KEY (organization_id) REFERENCES mir_organization(id) ON DELETE CASCADE;
+-- ALTER TABLE mir_organization_settings
+--   ADD CONSTRAINT fk_organization_settings_org
+--   FOREIGN KEY (organization_id) REFERENCES mir_organization(id) ON DELETE CASCADE;
+
 -- ==============================
 -- Step 2: mir_organization 統合（mir_organization_unit との統合）
 -- ==============================

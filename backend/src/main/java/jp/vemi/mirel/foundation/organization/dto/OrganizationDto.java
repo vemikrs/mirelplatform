@@ -4,6 +4,7 @@
 package jp.vemi.mirel.foundation.organization.dto;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import jp.vemi.mirel.foundation.organization.model.OrganizationType;
@@ -31,6 +32,15 @@ public class OrganizationDto {
 
     // ツリー操作用
     private List<OrganizationDto> children;
+
+    /**
+     * 子ノードリストを取得します（防御コピー）.
+     * 
+     * @return 子ノードリストのコピー（nullの場合はnull）
+     */
+    public List<OrganizationDto> getChildren() {
+        return children == null ? null : new ArrayList<>(children);
+    }
 
     // 設定（オプション）
     private CompanySettingsDto companySettings;

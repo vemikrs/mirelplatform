@@ -4,8 +4,8 @@
 package jp.vemi.mirel.foundation.web.api.organization;
 
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,11 +57,13 @@ public class OrganizationSettingsController {
      * 会社設定を更新.
      */
     @PutMapping("/company/{settingsId}")
-    public Optional<CompanySettingsDto> updateCompanySettings(
+    public ResponseEntity<CompanySettingsDto> updateCompanySettings(
             @PathVariable String organizationId,
             @PathVariable String settingsId,
             @RequestBody CompanySettingsDto dto) {
-        return companySettingsService.update(settingsId, dto);
+        return companySettingsService.update(settingsId, dto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // === 組織設定 ===
@@ -78,10 +80,12 @@ public class OrganizationSettingsController {
      * 期間コード指定で組織設定を取得.
      */
     @GetMapping("/period")
-    public Optional<OrganizationSettingsDto> getOrganizationSettingsByPeriod(
+    public ResponseEntity<OrganizationSettingsDto> getOrganizationSettingsByPeriod(
             @PathVariable String organizationId,
             @RequestParam String periodCode) {
-        return organizationSettingsService.findByOrganizationIdAndPeriodCode(organizationId, periodCode);
+        return organizationSettingsService.findByOrganizationIdAndPeriodCode(organizationId, periodCode)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -99,10 +103,12 @@ public class OrganizationSettingsController {
      * 組織設定を更新.
      */
     @PutMapping("/{settingsId}")
-    public Optional<OrganizationSettingsDto> updateOrganizationSettings(
+    public ResponseEntity<OrganizationSettingsDto> updateOrganizationSettings(
             @PathVariable String organizationId,
             @PathVariable String settingsId,
             @RequestBody OrganizationSettingsDto dto) {
-        return organizationSettingsService.update(settingsId, dto);
+        return organizationSettingsService.update(settingsId, dto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
