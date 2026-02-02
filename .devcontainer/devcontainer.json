@@ -50,10 +50,7 @@
       "extensions": [
         "vscjava.vscode-java-pack",
         "vscjava.vscode-gradle",
-        "redhat.vscode-xml",
         "gabrielbb.vscode-lombok",
-        "oderwat.indent-rainbow",
-        "Vue.volar",
         "bradlc.vscode-tailwindcss",
         "ms-vscode.vscode-typescript-next"
       ]

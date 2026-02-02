@@ -297,7 +297,20 @@ jobs:
 
           echo "✅ All services are ready!"
 
+      - name: Run smoke tests
+        id: smoke
+        working-directory: packages/e2e
+        run: |
+          echo "Running smoke tests to verify basic functionality..."
+          pnpm exec playwright test --project=${{ matrix.browser }} --grep="@smoke" --max-failures=1
+          echo "✅ Smoke tests passed!"
+        env:
+          CI: true
+          E2E_BASE_URL: http://localhost:5173
+          MAILHOG_API_URL: http://localhost:8026
+
       - name: Run E2E tests
+        if: success()
         working-directory: packages/e2e
         run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
