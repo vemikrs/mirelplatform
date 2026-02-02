@@ -5,7 +5,7 @@ import { LoginPage } from './pages/auth/login.page';
  * Smoke test for ProMarker v3 application
  * Basic verification that the application is accessible and responsive
  */
-test.describe('ProMarker Smoke Test', () => {
+test.describe('ProMarker Smoke Test @smoke', () => {
   test.beforeEach(async ({ page }) => {
     // Listen for console logs
     page.on('console', msg => console.log(`[Browser Console] ${msg.text()}`));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
@@ -19,39 +19,34 @@ import { OrganizationTree } from '../components/OrganizationTree';
 import { 
   getOrganizations, 
   getOrganizationTree, 
-  getOrganizationUnitMembers 
+  getOrganizationMembers 
 } from '../api';
-import type { OrganizationUnit } from '../types';
+import type { Organization } from '../types';
 
 export function OrganizationManagementPage() {
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<OrganizationUnit | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
-  // Fetch Organizations
+  // Fetch Organizations (to get tenantId)
   const { data: organizations } = useQuery({
     queryKey: ['organizations'],
     queryFn: getOrganizations,
   });
 
-  // Set default organization
-  React.useEffect(() => {
-    if (organizations && organizations.length > 0 && !selectedOrgId) {
-      setSelectedOrgId(organizations[0]?.organizationId ?? null);
-    }
-  }, [organizations, selectedOrgId]);
+  // Get tenantId from first organization
+  const tenantId = organizations?.[0]?.tenantId;
 
   // Fetch Tree
   const { data: treeData, isLoading: isTreeLoading } = useQuery({
-    queryKey: ['organization-tree', selectedOrgId],
-    queryFn: () => getOrganizationTree(selectedOrgId as string),
-    enabled: !!selectedOrgId,
+    queryKey: ['organization-tree', tenantId],
+    queryFn: () => getOrganizationTree(tenantId as string),
+    enabled: !!tenantId,
   });
 
   // Fetch Members
   const { data: members } = useQuery({
-    queryKey: ['organization-members', selectedOrgId, selectedUnit?.unitId],
-    queryFn: () => getOrganizationUnitMembers(selectedOrgId!, selectedUnit!.unitId),
-    enabled: !!selectedOrgId && !!selectedUnit,
+    queryKey: ['organization-members', selectedOrg?.id],
+    queryFn: () => getOrganizationMembers(selectedOrg!.id),
+    enabled: !!selectedOrg,
   });
 
   return (
@@ -84,9 +79,9 @@ export function OrganizationManagementPage() {
                 <div className="text-center py-4 text-muted-foreground">読み込み中...</div>
               ) : treeData ? (
                 <OrganizationTree
-                  units={treeData}
-                  onSelect={setSelectedUnit}
-                  selectedUnitId={selectedUnit?.unitId}
+                  organizations={treeData}
+                  onSelect={setSelectedOrg}
+                  selectedOrgId={selectedOrg?.id}
                 />
               ) : (
                 <div className="text-center py-4 text-muted-foreground">組織データがありません</div>
@@ -95,17 +90,17 @@ export function OrganizationManagementPage() {
           </Card>
         </div>
 
-        {/* Right Content: Unit Details */}
+        {/* Right Content: Organization Details */}
         <div className="col-span-8 flex flex-col gap-4">
-          {selectedUnit ? (
+          {selectedOrg ? (
             <Card className="flex-1 flex flex-col overflow-hidden">
               <CardHeader className="py-4 px-6 border-b">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <CardTitle>{selectedUnit.name}</CardTitle>
+                    <CardTitle>{selectedOrg.displayName || selectedOrg.name}</CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="outline">{selectedUnit.unitType}</Badge>
-                      <span>Code: {selectedUnit.code}</span>
+                      <Badge variant="outline">{selectedOrg.type}</Badge>
+                      {selectedOrg.code && <span>Code: {selectedOrg.code}</span>}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -124,13 +119,21 @@ export function OrganizationManagementPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground block">有効期間</span>
-                        <span>{selectedUnit.effectiveFrom || '-'} 〜 {selectedUnit.effectiveTo || '-'}</span>
+                        <span>{selectedOrg.startDate || '-'} 〜 {selectedOrg.endDate || '-'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block">ステータス</span>
-                        <Badge variant={selectedUnit.isActive ? 'success' : 'neutral'}>
-                          {selectedUnit.isActive ? '有効' : '無効'}
+                        <Badge variant={selectedOrg.isActive ? 'success' : 'neutral'}>
+                          {selectedOrg.isActive ? '有効' : '無効'}
                         </Badge>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">階層レベル</span>
+                        <span>{selectedOrg.level}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">パス</span>
+                        <span className="text-xs font-mono">{selectedOrg.path || '-'}</span>
                       </div>
                     </div>
                   </div>
@@ -156,7 +159,7 @@ export function OrganizationManagementPage() {
                               <th className="py-2 px-4 text-left font-medium">氏名</th>
                               <th className="py-2 px-4 text-left font-medium">役職</th>
                               <th className="py-2 px-4 text-left font-medium">区分</th>
-                              <th className="py-2 px-4 text-left font-medium">権限</th>
+                              <th className="py-2 px-4 text-left font-medium">役割</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -170,7 +173,7 @@ export function OrganizationManagementPage() {
                                   </Badge>
                                 </td>
                                 <td className="py-2 px-4">
-                                  {member.isManager && <Badge variant="info" className="text-xs mr-1">長</Badge>}
+                                  {member.role && <Badge variant="info" className="text-xs mr-1">{member.role}</Badge>}
                                   {member.canApprove && <Badge variant="neutral" className="text-xs">承認</Badge>}
                                 </td>
                               </tr>
