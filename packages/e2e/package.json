@@ -15,9 +15,9 @@
     "install:browsers": "playwright install --with-deps"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.0",
-    "@playwright/test": "^1.58.1",
-    "@types/node": "^25.2.0",
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.2.2",
     "axe-core": "^4.11.1",
     "typescript": "^5.9.3"
   },
