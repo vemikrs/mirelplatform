@@ -70,7 +70,7 @@ jobs:
         run: pnpm exec playwright test --list
 
       - name: Upload validation results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: validation-results
@@ -319,7 +319,7 @@ jobs:
           MAILHOG_API_URL: http://localhost:8026
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-results-${{ matrix.browser }}
@@ -329,7 +329,7 @@ jobs:
           retention-days: 7
 
       - name: Upload screenshots
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-screenshots-${{ matrix.browser }}
@@ -545,7 +545,7 @@ jobs:
           MAILHOG_API_URL: http://localhost:8026
 
       - name: Upload accessibility results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: accessibility-audit-results
