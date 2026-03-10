@@ -67,3 +67,4 @@ tmp/
 
 # Environment variables
 .env
+.DS_Store
