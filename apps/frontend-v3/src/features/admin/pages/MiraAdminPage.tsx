@@ -866,7 +866,7 @@ const InsightsTab = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value?: number) => (value ?? 0).toLocaleString()} />
+                    <Tooltip formatter={(value: any) => (typeof value === 'number' ? value.toLocaleString() : value)} />
                     <Legend />
                     <Bar dataKey="total" fill="#8884d8" name="Tokens" />
                   </BarChart>
