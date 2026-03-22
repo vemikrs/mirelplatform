@@ -60,3 +60,7 @@ updates:
       # Jakarta Persistence API: 3.2.x以降はHibernate 7.0向けのため、3.1.xにとどめる
       # Gradleでは versions に glob が使えないため、依存関係自体を無視
       - dependency-name: "jakarta.persistence:jakarta.persistence-api"
+      # spring-cloud-gcp: 8.x は Spring Boot 3.4.x ターゲットで 3.5.x と非互換 (Bean重複問題)
+      # 7.x 系の patch/minor は引き続き受け入れる。8.x 互換性確認後に手動でメジャーアップ
+      - dependency-name: "com.google.cloud:spring-cloud-gcp-dependencies"
+        update-types: ["version-update:semver-major"]
