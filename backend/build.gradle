@@ -92,9 +92,9 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-embedding' // Added for Embedding (legacy naming?)
     // Vertex AI SDK - spring-cloud-gcp が古いバージョンをオーバーライドするのを防ぐため明示的に指定
-    implementation 'com.google.cloud:google-cloud-vertexai:1.48.0'
-    implementation 'com.google.api.grpc:proto-google-cloud-vertexai-v1:1.48.0'
-    implementation 'com.google.api.grpc:grpc-google-cloud-vertexai-v1:1.48.0'
+    implementation 'com.google.cloud:google-cloud-vertexai:1.49.0'
+    implementation 'com.google.api.grpc:proto-google-cloud-vertexai-v1:1.49.0'
+    implementation 'com.google.api.grpc:grpc-google-cloud-vertexai-v1:1.49.0'
 
     // Spring AI - PGVector Store
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
@@ -118,7 +118,7 @@ dependencies {
     implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
 
     // AWS SDK for S3 (Cloudflare R2 互換)
-    implementation platform('software.amazon.awssdk:bom:2.42.18')
+    implementation platform('software.amazon.awssdk:bom:2.42.20')
     implementation 'software.amazon.awssdk:s3'
     
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
