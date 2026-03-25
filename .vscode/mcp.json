@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "ado": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@azure-devops/mcp", "vemijp", "-d", "core", "work", "work-items", "repositories", "pipelines", "wiki"]
+    }
+  }
+}
