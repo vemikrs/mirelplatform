@@ -10,6 +10,10 @@ on:
 permissions:
     contents: write
 
+concurrency:
+    group: frontend-build-release
+    cancel-in-progress: false
+
 jobs:
     build-and-release:
         runs-on: ubuntu-latest
