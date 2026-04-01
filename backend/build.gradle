@@ -67,8 +67,8 @@ dependencies {
     }
     implementation 'commons-io:commons-io:2.21.0'
     implementation 'org.freemarker:freemarker:2.3.34'
-    implementation 'com.codeborne:selenide:7.15.0'
-    implementation 'org.hibernate.orm:hibernate-core:6.6.45.Final'
+    implementation 'com.codeborne:selenide:7.15.1'
+    implementation 'org.hibernate.orm:hibernate-core:6.6.46.Final'
     // implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0' // Managed by Spring Boot
     implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0' // 3.2.xはHibernate 7.0向け、Spring Boot 3.xは3.1.xが必要
@@ -92,9 +92,9 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-embedding' // Added for Embedding (legacy naming?)
     // Vertex AI SDK - spring-cloud-gcp が古いバージョンをオーバーライドするのを防ぐため明示的に指定
-    implementation 'com.google.cloud:google-cloud-vertexai:1.49.0'
-    implementation 'com.google.api.grpc:proto-google-cloud-vertexai-v1:1.49.0'
-    implementation 'com.google.api.grpc:grpc-google-cloud-vertexai-v1:1.49.0'
+    implementation 'com.google.cloud:google-cloud-vertexai:1.50.0'
+    implementation 'com.google.api.grpc:proto-google-cloud-vertexai-v1:1.50.0'
+    implementation 'com.google.api.grpc:grpc-google-cloud-vertexai-v1:1.50.0'
 
     // Spring AI - PGVector Store
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
@@ -112,13 +112,13 @@ dependencies {
     implementation 'net.coobird:thumbnailator:0.4.21'
     
     // Markdown Parser for Contextual Chunking
-    implementation 'org.commonmark:commonmark:0.27.1'
+    implementation 'org.commonmark:commonmark:0.28.0'
     
     // Google Cloud Storage (GCS)
     implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
 
     // AWS SDK for S3 (Cloudflare R2 互換)
-    implementation platform('software.amazon.awssdk:bom:2.42.22')
+    implementation platform('software.amazon.awssdk:bom:2.42.25')
     implementation 'software.amazon.awssdk:s3'
     
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
