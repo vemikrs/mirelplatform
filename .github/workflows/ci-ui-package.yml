@@ -1,0 +1,40 @@
+name: CI - @mirel/ui Package
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - "packages/ui/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter @mirel/ui typecheck
+
+      - name: Build
+        run: |
+          cd packages/ui
+          pnpm build
