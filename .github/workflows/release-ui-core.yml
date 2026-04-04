@@ -35,7 +35,6 @@ jobs:
         with:
           node-version: "22"
           cache: "pnpm"
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -136,8 +135,6 @@ jobs:
           pnpm build
 
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd packages/ui
           VERSION="${{ steps.check_version.outputs.version }}"
