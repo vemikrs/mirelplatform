@@ -36,6 +36,12 @@ jobs:
           node-version: "22"
           cache: "pnpm"
 
+      - name: Update npm for OIDC provenance support
+        run: |
+          # corepack を使い、壊れた npm インストーラーを回避して npm@latest を取得する
+          corepack enable
+          corepack prepare npm@latest --activate
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
