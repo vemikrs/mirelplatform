@@ -1,103 +1,77 @@
 # ProMarker E2E Testing
 
-This workspace contains end-to-end tests for the mirelplatform using Playwright.
+Playwright による ProMarker (React 19 + Vite) の E2E テストパッケージ。
 
 ## Prerequisites
 
-- Node.js 18.x (enforced by engines field)
-- Java 21 (for backend)
-- Backend and frontend services running
+- Node.js 22.x / pnpm 9+
+- Java 21（バックエンド用）
+- Playwright ブラウザ（Chromium）
 
-## Installation
+## Setup
 
 ```bash
-# Install dependencies
-npm install
-
-# Install Playwright browsers
-npm run install:browsers
+# ブラウザインストール
+pnpm --filter e2e install:browsers
 ```
 
 ## Running Tests
 
 ```bash
-# Run all tests
-npm test
+# 全テスト実行（バックエンド・フロントエンドを自動起動）
+pnpm test:e2e
 
-# Run tests with UI mode
-npm run test:ui
+# UI モード（対話的）
+pnpm test:e2e:ui
 
-# Run tests in headed mode (see browser)
-npm run test:headed
+# 個別 Spec
+pnpm --filter e2e test tests/specs/promarker-v3/<file>.spec.ts
 
-# Debug tests
-npm run test:debug
-
-# View test report
-npm run test:report
-
-# Generate new tests with Codegen
-npm run test:codegen
+# レポート表示
+pnpm --filter e2e test:report
 ```
 
-## Environment Variables
-
-- `E2E_BASE_URL`: Base URL for the application (default: http://localhost:3000)
+> **Note**: `webServer` 設定により Spring Boot (port 3000) と Vite (port 5173) が自動起動されます。
+> 既に起動済みの場合は `reuseExistingServer: true` が適用されます。
 
 ## Test Structure
 
 ```
 tests/
-├── smoke.spec.ts           # Basic smoke tests
-├── specs/                  # Feature-specific test specs
-│   ├── promarker-basic.spec.ts
-│   ├── promarker-workflow.spec.ts
-│   ├── promarker-accessibility.spec.ts
-│   └── ...
-├── pages/                  # Page Object Model
-│   ├── base.page.ts
-│   └── promarker.page.ts
-├── fixtures/               # Test data and fixtures
-├── utils/                  # Utility functions
-└── global-setup.ts         # Global test setup
+├── specs/promarker-v3/    # React v3 テスト（アクティブ）
+├── pages/                 # Page Object Model
+├── fixtures/              # テストデータ
+├── utils/                 # ユーティリティ
+├── global-setup.ts
+└── global-teardown.ts
+```
 
 ## Configuration
 
-Tests are configured via `playwright.config.ts`:
-- Japanese locale (ja-JP)
-- Asia/Tokyo timezone
-- Chromium browser by default
-- Screenshots and videos on failure
-- HTML report generation
-
-## CI Integration
-
-Tests run automatically in CI:
-1. Backend and frontend are started
-2. Services health is checked
-3. E2E tests execute from this workspace
-4. Reports are uploaded as artifacts
-
-## Writing Tests
-
-Follow the Page Object Model pattern:
-
-```typescript
-import { test, expect } from '@playwright/test';
-import { ProMarkerPage } from '../pages/promarker.page';
-
-test('my test', async ({ page }) => {
-  const proMarkerPage = new ProMarkerPage(page);
-  await proMarkerPage.navigate();
-  await proMarkerPage.verifyPageLoaded();
-  // ... your test logic
-});
-```
+`playwright.config.ts` で管理:
+- **Locale**: ja-JP / Asia/Tokyo
+- **Browser**: Chromium（デフォルト）
+- **Workers**: 2（ローカル）/ 1（CI）
+- **Retries**: 1（ローカル）/ 2（CI）
+- **Timeout**: 30s / Expect: 10s
 
 ## Troubleshooting
 
-### Tests fail to start
-- Ensure backend is running on port 3000
+| 症状 | 対処 |
+|------|------|
+| `ERR_CONNECTION_REFUSED` | ポート 3000/5173 が空いているか確認 |
+| API タイムアウト | バックエンドのログを確認。timeout は 30s に設定済み |
+| Flaky テスト | retry が有効。根本原因は Issue に起票 |
+
+## Reports
+
+- HTML: `playwright-report/index.html`
+- JUnit XML: `test-results/junit.xml`（CI用）
+
+## 関連ドキュメント
+
+- Copilot 向け実装ポリシー: `.github/copilot/e2e.md`
+- CI 設定: `docs/dev/CI_CONFIGURATION.md`
 - Ensure frontend is running on port 8080
 - Check E2E_BASE_URL is set correctly
 

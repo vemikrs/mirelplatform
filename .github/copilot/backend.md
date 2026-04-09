@@ -53,4 +53,4 @@ mira:
 - [ ] `./gradlew :backend:check` が成功。
 - [ ] 例外ハンドリングは `GlobalExceptionHandler` 経由で `ApiError` に変換される。
 - [ ] 新規設定は `backend/src/main/resources/config/application.yml` or `application-*.yml` に追記し、`.env` 参照時は `spring.config.import=optional:file:.env` を利用。
-- [ ] REST API 変更は `docs/api-*` への反映を検討。
+- [ ] REST API 変更は `docs/promarker/01_SPECIFICATION.md` §6 への反映を検討。

@@ -190,5 +190,5 @@ validation-improvement-plan.md の以下のセクションで参照：
 ## 関連ドキュメント
 
 - `/docs/issue/#33/validation-improvement-plan.md` - Validation機能改善計画
-- `/.github/docs/api-reference.md` - API仕様書
+- `/docs/promarker/01_SPECIFICATION.md` - ProMarker仕様書
 - `/README.md` - mirelplatform概要
