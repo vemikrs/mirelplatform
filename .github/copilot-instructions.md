@@ -1,6 +1,6 @@
 # mirelplatform - GitHub Copilot Instructions
 
-> **基本ルール**: すべての応答は日本語。指示ファイルの内容は常に最新のベストプラクティス（2025/11時点）に沿ってメンテすること。[GitHub公式ブログの指針](https://github.blog/ai-and-ml/github-copilot/5-tips-for-writing-better-custom-instructions-for-copilot/)や[Monorepo向けCopilot運用事例](https://github.com/orgs/community/discussions/179916)を参考に、各ドメインの文脈を明示する。
+> **基本ルール**: すべての応答は日本語。指示ファイルの内容は常に最新のベストプラクティス（2026/04時点）に沿ってメンテすること。[GitHub公式ブログの指針](https://github.blog/ai-and-ml/github-copilot/5-tips-for-writing-better-custom-instructions-for-copilot/)や[Monorepo向けCopilot運用事例](https://github.com/orgs/community/discussions/179916)を参考に、各ドメインの文脈を明示する。
 
 ## 1. プロジェクト全体像
 
@@ -57,13 +57,7 @@ docs/                  # 仕様・検証ログ・Issue別記録
 scripts/               # サービス起動/停止/ビルドスクリプト (直接実行は避ける)
 ```
 
-### ドメイン別ベストプラクティス
-
-- **Frontend**: React19, `src/app`(ルーティング), `src/features/promarker`(機能単位)。API呼び出しは `src/lib/api` 経由で `/mapi/*` のみ使用。UIコンポーネントは可能な限り `@mirel/ui` を利用し、Tailwindは `@apply` 禁止・`class-variance-authority` でバリアント管理。
-- **Packages/ui**: Radixコンポーネントを拡張。DOM直書き禁止、アクセシビリティ属性を維持。`Dialog` 等のスタイル調整はここで集約し、アプリ側では props で調整。
-- **Backend**: `jp.vemi.mirel.apps.mste` 配下に API/Service/Domain を分離。リクエストDTOは `domain/dto`, Service戻り値は `ApiResponse` で統一。`/mapi` から流入したパラメータは `ApiRequest<*>.model` で受ける。
-- **E2E**: Playwright は `packages/e2e/tests/specs/promarker-v3/` に集約。テストは `apps/frontend-v3` を起動せず、Playwright config が `frontend-v3 dev` タスクを自動起動する。新規テストは `page-objects` を必ず経由。
-- **Mira AI**: `jp.vemi.mirel.apps.mira` 配下で AI アシスタント機能を提供。プロバイダは `AiProviderClient` インタフェースで抽象化し、`AiProviderFactory` でプロバイダ選択。設定は `mira.ai.*` プレフィックスで管理。
+### ドメイン別の詳細は各スコープファイル (§11) を参照。
 
 ## 5. 開発環境とタスク実行
 
@@ -110,14 +104,9 @@ scripts/               # サービス起動/停止/ビルドスクリプト (直
 - 一時ファイルは `data/storage/` 配下に生成され、72時間でクリーンアップ。テストでは `FileManagementService` をモックする。
 - Playwright でアップロードする秘密情報は `packages/e2e/tests/fixtures` に保存しない。
 
-## 9. 作業手順テンプレート
+## 9. 作業手順
 
-1. GitHub Issue または ADO Work Item から TODO を切り出し、`manage_todo_list` で追跡。
-2. 関連ファイルを読み込み (`read_file`, `grep_search`) → 必要なら `file_search`。
-3. 変更は `apply_patch` or `edit_notebook_file`。複数ファイル修正時は差分を小さく保つ。
-4. `run_task` 経由でビルド/テスト。失敗時はログ抜粋を共有し、再現手順と暫定策を記録。
-5. 変更後は `get_errors` or ツール出力でエラー確認。必要に応じ `pnpm lint` / `gradlew check`。
-6. PR（GitHub）へのコメントと、Issue（GitHub Issue または ADO WI）への結果要約を行い、`docs/issue/#<id>/` に詳細を追記。コメント末尾は **"Powered by Copilot 🤖"**。
+標準的な作業フローは `.agent/workflows/standard-procedure.md` を参照。
 
 ## 10. 参考リンク
 
