@@ -1,6 +1,6 @@
 {
   "name": "@mireljs/ui-core",
-  "version": "3.2.57",
+  "version": "3.2.58",
   "description": "mirel Design System - shadcn/ui + Radix UI wrapper",
   "repository": {
     "type": "git",
