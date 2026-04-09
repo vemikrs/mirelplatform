@@ -121,14 +121,14 @@ strategy:
 ## Reference Files
 
 - **Active Workflow**: `.github/workflows/e2e-tests.yml` (enabled with full jobs)
-- **Documentation**: `docs/E2E_TESTING.md` (complete testing guide)
+- **Documentation**: `packages/e2e/README.md` (E2E testing guide)
 - **Configuration**: `playwright.config.ts` (Playwright settings)
 - **Scripts**: `scripts/e2e/run-tests.sh` (local execution helper)
 
 ## Support
 
 For questions or issues:
-1. Review `docs/E2E_TESTING.md` for detailed documentation
+1. Review `packages/e2e/README.md` for detailed documentation
 2. Check workflow logs in GitHub Actions
 3. Run validation locally: `npm run test:e2e:validate`
 

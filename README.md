@@ -158,8 +158,8 @@ cd apps/frontend-v3 && npm run dev
 詳細なドキュメントは `docs/` ディレクトリ配下に格納されています。
 
 - **[mirel Studio ドキュメント](./docs/studio/00_INDEX.md)**: Studio の機能・仕様詳細
-- **API 仕様**: 各種 API ドキュメント (コードベース内)
-- **E2E テスト**: [E2E Testing Guide](./docs/E2E_TESTING.md)
+- **API 仕様**: [ProMarker 仕様書](./docs/promarker/01_SPECIFICATION.md)
+- **E2E テスト**: [E2E Testing](./packages/e2e/README.md)
 
 ---
 
