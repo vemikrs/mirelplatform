@@ -18,7 +18,7 @@
       "jdkDistro": "tem"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "18",
+      "version": "24",
       "nvmVersion": "latest"
     },
     "ghcr.io/devcontainers/features/git:1": {},
