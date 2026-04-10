@@ -94,7 +94,7 @@ jobs:
       - name: Verify Node.js version
         run: |
           echo "Node version: $(node --version)"
-          node --version | grep "v22" || (echo "ERROR: Node 22 not detected!" && exit 1)
+          node --version | grep "v24" || (echo "ERROR: Node 24 not detected!" && exit 1)
 
       - name: Install E2E test dependencies
         working-directory: packages/e2e
@@ -155,7 +155,7 @@ jobs:
       - name: Verify Node.js version
         run: |
           echo "Node version: $(node --version)"
-          node --version | grep "v22" || (echo "ERROR: Node 22 not detected!" && exit 1)
+          node --version | grep "v24" || (echo "ERROR: Node 24 not detected!" && exit 1)
 
       - name: Setup Java
         uses: actions/setup-java@v5
