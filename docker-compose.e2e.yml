@@ -40,7 +40,7 @@ services:
       -c full_page_writes=off
 
   redis-e2e:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: mirelplatform-redis-e2e
     ports:
       - "6380:6379"  # Use different port to avoid conflict with dev environment
