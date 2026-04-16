@@ -224,7 +224,7 @@ importers:
         version: 25.6.0
       axe-core:
         specifier: ^4.11.2
-        version: 4.11.2
+        version: 4.11.3
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -2134,8 +2134,8 @@ packages:
     peerDependencies:
       postcss: ^8.1.0
 
-  axe-core@4.11.2:
-    resolution: {integrity: sha512-byD6KPdvo72y/wj2T/4zGEvvlis+PsZsn/yPS3pEO+sFpcrqRpX/TJCxvVaEsNeMrfQbCr7w163YqoD9IYwHXw==}
+  axe-core@4.11.3:
+    resolution: {integrity: sha512-zBQouZixDTbo3jMGqHKyePxYxr1e5W8UdTmBQ7sNtaA9M2bE32daxxPLS/jojhKOHxQ7LWwPjfiwf/fhaJWzlg==}
     engines: {node: '>=4'}
 
   axios@1.15.0:
@@ -3630,7 +3630,7 @@ snapshots:
 
   '@axe-core/playwright@4.11.1(playwright-core@1.59.1)':
     dependencies:
-      axe-core: 4.11.2
+      axe-core: 4.11.3
       playwright-core: 1.59.1
 
   '@babel/code-frame@7.27.1':
@@ -5562,7 +5562,7 @@ snapshots:
       postcss: 8.5.9
       postcss-value-parser: 4.2.0
 
-  axe-core@4.11.2: {}
+  axe-core@4.11.3: {}
 
   axios@1.15.0:
     dependencies:
