@@ -116,7 +116,7 @@ jobs:
                   retention-days: 30
 
             - name: Create Release & Upload Asset
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   tag_name: ${{ steps.check_version.outputs.tag_name }}
                   name: Frontend ${{ steps.check_version.outputs.tag_name }}
