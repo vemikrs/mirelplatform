@@ -16,6 +16,14 @@ overrides:
 importers:
 
   .:
+    configDependencies: {}
+    packageManagerDependencies:
+      '@pnpm/exe':
+        specifier: 10.33.0
+        version: 10.33.0
+      pnpm:
+        specifier: 10.33.0
+        version: 10.33.0
     devDependencies:
       prettier:
         specifier: ^3.8.3
@@ -903,6 +911,46 @@ packages:
   '@playwright/test@1.59.1':
     resolution: {integrity: sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==}
     engines: {node: '>=18'}
+    hasBin: true
+
+  '@pnpm/exe@10.33.0':
+    resolution: {integrity: sha512-sGsjztJBelzVMd0RhceDJ3p8Hk7eBcpu4G/TF6REzIvNdkKyxDT0czc1BWyo8Kbg+U0OBtK/TAGXN7Art4rTdg==}
+    hasBin: true
+
+  '@pnpm/linux-arm64@10.33.0':
+    resolution: {integrity: sha512-oYb5NxEyImqaTkLVX/7jL59m9Vfmd07iLWzr4Pg2LIk4XEtAllNcnksNHcp5Uf+lFk/BggtpOdvC84TG3VnbFw==}
+    cpu: [arm64]
+    os: [linux]
+    hasBin: true
+
+  '@pnpm/linux-x64@10.33.0':
+    resolution: {integrity: sha512-JYD2GXDF2roKpvTg5s032lYcUcT9lMedYlzxoqitWTjKlkMhl2gXRYpiDHdi2mWC5nFOJYlgYbUuy6jh3rXhng==}
+    cpu: [x64]
+    os: [linux]
+    hasBin: true
+
+  '@pnpm/macos-arm64@10.33.0':
+    resolution: {integrity: sha512-3w9Pqpw0swnAbnEdAKumMuKj+TPaGratnqC49bC41vjR1pNs0UMwVdOxiIROUMQy5OHKPx0IH/wOOP0hkhJd+g==}
+    cpu: [arm64]
+    os: [darwin]
+    hasBin: true
+
+  '@pnpm/macos-x64@10.33.0':
+    resolution: {integrity: sha512-SBeiLjU/9ORMIXAMsD6+Ltaaesniwh49FeFcG6kA64Zxr30U9SyzeZDnNOyWCGFjHeCmGfzCnSpNEN4VNo827g==}
+    cpu: [x64]
+    os: [darwin]
+    hasBin: true
+
+  '@pnpm/win-arm64@10.33.0':
+    resolution: {integrity: sha512-8X3NQqmfNVZ+dCu+EfD7ZkAgDgIKKdAgBBKcvhvMoMJq/nWHOfqDLxewE9TQ7qzVLuUKG/9b/xBVRVjdtDOm0w==}
+    cpu: [arm64]
+    os: [win32]
+    hasBin: true
+
+  '@pnpm/win-x64@10.33.0':
+    resolution: {integrity: sha512-wiPVvxmTuB6FFn+rZ4FfSk1WTn+cxiQ7MTJEEz1k9VZLN/yZujGrv/WLYH2JcwzVTgObfmQuBKeNgEUavEL0Qg==}
+    cpu: [x64]
+    os: [win32]
     hasBin: true
 
   '@radix-ui/number@1.1.1':
@@ -2962,6 +3010,11 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  pnpm@10.33.0:
+    resolution: {integrity: sha512-EFaLtKavtYyes2MNqQzJUWQXq+vT+rvmc58K55VyjaFJHp21pUTHatjrdXD1xLs9bGN7LLQb/c20f6gjyGSTGQ==}
+    engines: {node: '>=18.12'}
+    hasBin: true
+
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
@@ -4214,6 +4267,33 @@ snapshots:
   '@playwright/test@1.59.1':
     dependencies:
       playwright: 1.59.1
+
+  '@pnpm/exe@10.33.0':
+    optionalDependencies:
+      '@pnpm/linux-arm64': 10.33.0
+      '@pnpm/linux-x64': 10.33.0
+      '@pnpm/macos-arm64': 10.33.0
+      '@pnpm/macos-x64': 10.33.0
+      '@pnpm/win-arm64': 10.33.0
+      '@pnpm/win-x64': 10.33.0
+
+  '@pnpm/linux-arm64@10.33.0':
+    optional: true
+
+  '@pnpm/linux-x64@10.33.0':
+    optional: true
+
+  '@pnpm/macos-arm64@10.33.0':
+    optional: true
+
+  '@pnpm/macos-x64@10.33.0':
+    optional: true
+
+  '@pnpm/win-arm64@10.33.0':
+    optional: true
+
+  '@pnpm/win-x64@10.33.0':
+    optional: true
 
   '@radix-ui/number@1.1.1': {}
 
@@ -6296,6 +6376,8 @@ snapshots:
       playwright-core: 1.59.1
     optionalDependencies:
       fsevents: 2.3.2
+
+  pnpm@10.33.0: {}
 
   postcss-value-parser@4.2.0: {}
 
