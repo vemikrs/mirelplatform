@@ -81,6 +81,12 @@ jobs:
 
           FINAL_TAG="ui-core/v$VERSION"
 
+          # Diagnostic: capture working tree state right after checkout+install
+          # (before any intentional write) to see if pnpm install left drift.
+          echo "::group::git status right after install"
+          git status --porcelain
+          echo "::endgroup::"
+
           # Only commit and push if version changed
           if [ "$VERSION" != "$CURRENT_VERSION" ]; then
             echo "Version bumped from $CURRENT_VERSION to $VERSION"
@@ -92,14 +98,19 @@ jobs:
             jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
             git add VERSION packages/ui/package.json package.json
             git commit -m "chore(release): bump to $VERSION [skip ci]"
-            
+
+            echo "::group::git status after commit, before rebase"
+            git status --porcelain
+            git diff --stat
+            echo "::endgroup::"
+
             # Fetch and rebase to avoid non-fast-forward on rerun
             git fetch origin master
-            git rebase origin/master
-            
+            git -c rebase.autoStash=true rebase origin/master
+
             # Push changes to master
             git push origin master
-            
+
             echo "bumped=true" >> $GITHUB_OUTPUT
           else
             echo "No version bump needed"
@@ -115,8 +126,14 @@ jobs:
               jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
               git add packages/ui/package.json package.json
               git commit -m "chore(release): sync package.json to $VERSION [skip ci]"
+
+              echo "::group::git status after sync commit, before rebase"
+              git status --porcelain
+              git diff --stat
+              echo "::endgroup::"
+
               git fetch origin master
-              git rebase origin/master
+              git -c rebase.autoStash=true rebase origin/master
               git push origin master
             fi
             echo "bumped=false" >> $GITHUB_OUTPUT
