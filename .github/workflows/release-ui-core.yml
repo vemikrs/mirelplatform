@@ -83,8 +83,14 @@ jobs:
 
           # Diagnostic: capture working tree state right after checkout+install
           # (before any intentional write) to see if pnpm install left drift.
+          # run 24600445487 で " M pnpm-lock.yaml" を確認済み。実際の diff 中身を
+          # 取得して恒久対応（master に追記）の判断材料にする。
           echo "::group::git status right after install"
           git status --porcelain
+          echo "::endgroup::"
+
+          echo "::group::git diff pnpm-lock.yaml (full, right after install)"
+          git --no-pager diff pnpm-lock.yaml
           echo "::endgroup::"
 
           # Only commit and push if version changed
