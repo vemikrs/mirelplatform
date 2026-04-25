@@ -70,13 +70,18 @@ export const useGenerate = () => {
           );
 
           // Extract filename from Content-Disposition header
-          const contentDisposition = response.headers['content-disposition'];
-          const downloadFileName = contentDisposition 
-            ? decodeURIComponent(contentDisposition.split('=')[1])
+          const contentDispositionRaw = response.headers['content-disposition'];
+          const contentDisposition =
+            typeof contentDispositionRaw === 'string' ? contentDispositionRaw : '';
+          const filenamePart = contentDisposition.split('=')[1];
+          const downloadFileName = filenamePart
+            ? decodeURIComponent(filenamePart)
             : fileName;
 
           // Create blob and trigger download
-          const blob = new Blob([response.data], { type: response.headers['content-type'] });
+          const contentTypeRaw = response.headers['content-type'];
+          const contentType = typeof contentTypeRaw === 'string' ? contentTypeRaw : undefined;
+          const blob = new Blob([response.data], { type: contentType });
           const url = (window.URL || (window as any).webkitURL).createObjectURL(blob);
           
           const link = document.createElement('a');
